@@ -37,6 +37,8 @@ import {
   normalizeLegacyMarketCategoriesResponse,
   normalizeLegacyMarketCategoryResponse,
   normalizeLegacyMarketProductResponse,
+  normalizeLegacyMarketPromotionsResponse,
+  normalizeLegacyMarketRecentOrdersResponse,
   normalizeLegacyCreateRequestResponse,
   normalizeLegacyRequestListResponse,
   normalizeLegacyApproveRequestResponse,
@@ -373,6 +375,21 @@ export default defineEventHandler(async (event) => {
       if (method === 'GET' && targetPathSegments[1]) {
         return normalizeLegacyMarketCategoryResponse(legacyData);
       }
+    }
+
+    if (targetPathSegments[0] === 'promotion' && method === 'GET') {
+      if (targetPathSegments.length === 1) {
+        return normalizeLegacyMarketPromotionsResponse(legacyData);
+      }
+    }
+
+    if (
+      targetPathSegments[0] === 'product' &&
+      method === 'GET' &&
+      targetPathSegments[1] === 'recent-orders' &&
+      targetPathSegments[2]
+    ) {
+      return normalizeLegacyMarketRecentOrdersResponse(legacyData);
     }
 
     if (targetPathSegments[0] === 'product') {

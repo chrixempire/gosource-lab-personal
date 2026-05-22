@@ -19,7 +19,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean];
 }>();
 
-const { clearCart, lines, loadCart, setQuantityForUnit, subtotalNaira, removeLine } =
+const { clearCart, isGuestCartMode, lines, loadCart, setQuantityForUnit, subtotalNaira, removeLine } =
   useMarketplaceCart();
 const {
   isAddingToRequest,
@@ -172,6 +172,10 @@ watch(
 
     if (isAddingToRequest.value) {
       void bootstrapFromRoute();
+      return;
+    }
+
+    if (isGuestCartMode.value) {
       return;
     }
 

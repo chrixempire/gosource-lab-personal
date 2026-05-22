@@ -214,13 +214,13 @@ const stepTitle = computed(() => {
 
 const stepDescription = computed(() => {
   if (step.value === 1) {
-    return 'Start your GoSource onboarding by creating your business account to continue with OTP verification and setup.';
+    return 'Start your GoSource onboarding by creating your business account and entering the business owner’s details for verification.';
   }
   if (step.value === 2) {
     return `Enter the ${otpLength.value}-digit code sent to ${flowState.value.email}. You can paste the full code in one action.`;
   }
   if (step.value === 3) {
-    return 'Complete your profile details to continue to your GoSource marketplace workspace.';
+    return 'Complete your profile with the owner details to continue to your GoSource marketplace workspace.';
   }
   return '';
 });

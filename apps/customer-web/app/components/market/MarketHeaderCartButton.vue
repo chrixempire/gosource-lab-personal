@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ShoppingCart } from 'lucide-vue-next';
+import { useCustomerSession } from '~/composables/useCustomerSession';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { useMarketplaceUi } from '~/composables/useMarketplaceUi';
@@ -9,9 +10,10 @@ const { totalItemCount } = useMarketplaceCart();
 const { isAddingToRequest, bootstrapFromRoute } = useRequestAddItemsMode();
 const { cartDrawerOpen } = useMarketplaceUi();
 const { ensureBranchForAction } = useMarketBranchGate();
+const { hasSession } = useCustomerSession();
 
 async function openCart() {
-  if (!(await ensureBranchForAction())) {
+  if (hasSession.value && !(await ensureBranchForAction())) {
     return;
   }
 

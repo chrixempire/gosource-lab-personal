@@ -157,10 +157,10 @@ function onOpenChange(value: boolean) {
       <DrawerHeader class="relative pr-10">
         <DrawerClose class="absolute right-3 top-3" />
         <div class="flex flex-col gap-1">
-          <DrawerTitle class="text-[24px] font-semibold tracking-[0.2px] text-grey-900">
+          <DrawerTitle class="font-display text-[24px] font-semibold leading-7 tracking-[-0.02em] text-grey-900">
             Create your first branch
           </DrawerTitle>
-          <DrawerDescription class="text-[12px] leading-5 text-grey-text">
+          <DrawerDescription class="text-[13px] leading-5 text-grey-text">
             Add the first branch for your business so orders, members, and branch operations can begin from one place.
           </DrawerDescription>
         </div>
@@ -207,10 +207,10 @@ function onOpenChange(value: boolean) {
         <DialogClose class="absolute right-3 top-3 sm:right-4 sm:top-4" />
         <div class="flex flex-col gap-1 pr-8">
           <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-grey-300">Branch Setup</p>
-          <DialogTitle class="text-[24px] font-semibold tracking-[0.2px] text-grey-900">
+          <DialogTitle class="font-display text-[24px] font-semibold leading-7 tracking-[-0.02em] text-grey-900">
             Create your first branch
           </DialogTitle>
-          <DialogDescription class="text-[12px] leading-5 text-grey-text">
+          <DialogDescription class="text-[13px] leading-5 text-grey-text">
             Set up your first business branch to manage orders, team members, and operations from one place.
           </DialogDescription>
         </div>

@@ -90,9 +90,7 @@ const mobileHeaderTitle = computed(() => {
   return pageTitle.value;
 });
 
-const showHeaderCart = computed(
-  () => props.showMarketHeaderCart && Boolean(session.value?.data),
-);
+const showHeaderCart = computed(() => props.showMarketHeaderCart);
 
 const showMarketHeaderSearch = computed(
   () => showHeaderCart.value && route.path.startsWith('/market'),
