@@ -14,6 +14,7 @@ import { useReorderProducts } from '~/composables/useReorderProducts';
 import { useCustomerOrderService } from '~/services/order.service';
 
 const { reorderProducts, reordering } = useReorderProducts();
+const downloadingInvoice = ref(false);
 
 const route = useRoute();
 const router = useRouter();
@@ -98,9 +99,11 @@ function goBack() {
 }
 
 async function handleDownloadInvoice() {
-  if (!orderId.value) {
+  if (!orderId.value || downloadingInvoice.value) {
     return;
   }
+
+  downloadingInvoice.value = true;
 
   try {
     const response = await fetch(getOrderInvoiceUrl(orderId.value), {
@@ -120,6 +123,8 @@ async function handleDownloadInvoice() {
     URL.revokeObjectURL(objectUrl);
   } catch {
     toast.error('Unable to download invoice right now.');
+  } finally {
+    downloadingInvoice.value = false;
   }
 }
 
@@ -138,6 +143,7 @@ async function handleReorder() {
       :view="detailsView"
       :loading="loading"
       :reorder-loading="reordering"
+      :download-invoice-loading="downloadingInvoice"
       @back="goBack"
       @download-invoice="handleDownloadInvoice"
       @reorder="handleReorder"

@@ -7,6 +7,7 @@ defineProps<{
   view: OrderDetailsView | null;
   loading?: boolean;
   reorderLoading?: boolean;
+  downloadInvoiceLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -81,6 +82,8 @@ const emit = defineEmits<{
           size="small"
           class="!w-fit shrink-0"
           :left-icon="Download"
+          :loading="downloadInvoiceLoading"
+          :disabled="downloadInvoiceLoading"
           @click="emit('downloadInvoice')"
         >
           Download invoice

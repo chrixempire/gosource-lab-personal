@@ -254,6 +254,11 @@ export default defineEventHandler(async (event) => {
   }
 
   const targetUrl = buildTargetUrl(targetBaseUrl, targetPathSegments, proxyQuery);
+  const isOrderInvoiceDownload =
+    method === 'GET' &&
+    targetPathSegments[0] === 'order' &&
+    targetPathSegments.length === 3 &&
+    targetPathSegments[2] === 'invoice';
 
   const execute = async () => {
     try {
@@ -262,6 +267,7 @@ export default defineEventHandler(async (event) => {
         headers,
         body: parsedBody ? JSON.stringify(parsedBody) : rawBody,
         ignoreResponseError: true,
+        responseType: isOrderInvoiceDownload ? 'arrayBuffer' : undefined,
       });
     } catch (error) {
       return forwardApiError(
@@ -317,17 +323,21 @@ export default defineEventHandler(async (event) => {
   if (isLegacyCustomerApiMode(event)) {
     const legacyData = response._data;
 
-    if (
-      targetPathSegments[0] === 'order' &&
-      method === 'GET' &&
-      targetPathSegments.length === 3 &&
-      targetPathSegments[2] === 'invoice'
-    ) {
+    if (isOrderInvoiceDownload) {
       setResponseHeader(event, 'content-type', response.headers.get('content-type') ?? 'application/pdf');
       const disposition = response.headers.get('content-disposition');
       if (disposition) {
         setResponseHeader(event, 'content-disposition', disposition);
       }
+
+      if (legacyData instanceof ArrayBuffer) {
+        return Buffer.from(legacyData);
+      }
+
+      if (legacyData instanceof Uint8Array) {
+        return Buffer.from(legacyData);
+      }
+
       return legacyData;
     }
 

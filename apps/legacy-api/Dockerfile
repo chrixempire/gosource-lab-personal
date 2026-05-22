@@ -23,6 +23,18 @@ LABEL org.opencontainers.image.source="https://github.com/ipcafrica/gosource-api
       org.opencontainers.image.description="Gosource API - Restaurant/Food Delivery Backend" \
       org.opencontainers.image.licenses="PROPRIETARY"
 
+# Chromium for Puppeteer PDF generation (order/PO invoices).
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 WORKDIR /app
 
 USER node

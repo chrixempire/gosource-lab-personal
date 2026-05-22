@@ -20,9 +20,10 @@ import {
 import { useMediaQuery } from '@vueuse/core';
 import { CircleCheckBig } from 'lucide-vue-next';
 
-const props = defineProps<{
+defineProps<{
   open: boolean;
   reference: string;
+  downloadInvoiceLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -66,7 +67,14 @@ function handleOpenChange(value: boolean) {
       </DrawerBody>
 
       <DrawerFooter class="gap-3">
-        <Button variant="neutral" size="medium" class="w-full" @click="emit('downloadInvoice')">
+        <Button
+          variant="neutral"
+          size="medium"
+          class="w-full"
+          :loading="downloadInvoiceLoading"
+          :disabled="downloadInvoiceLoading"
+          @click="emit('downloadInvoice')"
+        >
           Download invoice
         </Button>
         <Button variant="primary" size="medium" class="w-full" @click="emit('trackOrder')">
@@ -100,7 +108,14 @@ function handleOpenChange(value: boolean) {
       </DialogBody>
 
       <DialogFooter class="grid grid-cols-2 gap-3">
-        <Button variant="neutral" size="medium" class="w-full" @click="emit('downloadInvoice')">
+        <Button
+          variant="neutral"
+          size="medium"
+          class="w-full"
+          :loading="downloadInvoiceLoading"
+          :disabled="downloadInvoiceLoading"
+          @click="emit('downloadInvoice')"
+        >
           Download invoice
         </Button>
         <Button variant="primary" size="medium" class="w-full" @click="emit('trackOrder')">
