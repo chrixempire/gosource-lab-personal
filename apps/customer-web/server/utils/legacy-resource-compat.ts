@@ -44,6 +44,9 @@ import type {
   MarketCategoryResponse,
   MarketProduct,
   MarketProductResponse,
+  MarketPromotion,
+  MarketPromotionsResponse,
+  MarketRecentOrdersResponse,
 } from '../../app/lib/marketplace-data';
 import { cartLineKey, getMarketUnitPrice, getMeasureShortHand } from '../../app/lib/marketplace-data';
 
@@ -417,6 +420,15 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
     ? toStringValue(categoryRaw.name)
     : toStringValue(categoryRaw);
   const inStock = toOptionalBoolean(product.inStock) ?? true;
+  const promotionRaw = asRecord(product.promotion);
+  const promotionDiscountValue = toNumber(promotionRaw.discountValue);
+  const promotion =
+    promotionDiscountValue > 0
+      ? {
+          discountValue: promotionDiscountValue,
+          isPercentageDiscounted: toBoolean(promotionRaw.isPercentageDiscounted),
+        }
+      : undefined;
 
   return {
     id: toStringValue(product._id) || toStringValue(product.id),
@@ -428,6 +440,7 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
     priceNaira: effectivePrice,
     compareAtNaira,
     discountPct,
+    promotion,
     unit,
     unitChoices: unitChoices?.length ? unitChoices : undefined,
     unitOptions: unitOptions.length > 1 ? unitOptions : undefined,
@@ -499,6 +512,39 @@ export function normalizeLegacyMarketProductResponse(payload: unknown): MarketPr
     status: true,
     message: toStringValue(root.message) || 'Product retrieved successfully',
     data: normalizeLegacyMarketProduct(root.data),
+  };
+}
+
+function normalizeLegacyMarketPromotion(raw: unknown): MarketPromotion {
+  const promotion = asRecord(raw);
+  const products = asArray(promotion.products).map(normalizeLegacyMarketProduct);
+
+  return {
+    id: toStringValue(promotion._id) || toStringValue(promotion.id),
+    name: toStringValue(promotion.name),
+    description: toStringValue(promotion.description),
+    icon: toNullableString(promotion.icon) ?? undefined,
+    isPercentageDiscounted: toBoolean(promotion.isPercentageDiscounted),
+    discountValue: toNumber(promotion.discountValue),
+    products,
+  };
+}
+
+export function normalizeLegacyMarketPromotionsResponse(payload: unknown): MarketPromotionsResponse {
+  const root = asRecord(payload);
+  return {
+    status: true,
+    message: toStringValue(root.message) || 'Promotions retrieved successfully',
+    data: asArray(root.data).map(normalizeLegacyMarketPromotion),
+  };
+}
+
+export function normalizeLegacyMarketRecentOrdersResponse(payload: unknown): MarketRecentOrdersResponse {
+  const root = asRecord(payload);
+  return {
+    status: true,
+    message: toStringValue(root.message) || 'Recent order products retrieved successfully',
+    data: asArray(root.data).map(normalizeLegacyMarketProduct),
   };
 }
 

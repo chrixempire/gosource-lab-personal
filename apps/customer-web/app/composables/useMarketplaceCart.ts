@@ -9,8 +9,17 @@ import {
   isMarketProductInStock,
   parseCartLineKey,
 } from '~/lib/marketplace-data';
+import { useCustomerSession } from '~/composables/useCustomerSession';
+import { useGuestCartSync } from '~/composables/useGuestCartSync';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useRequestAddItemsMode } from '~/composables/useRequestAddItemsMode';
+import {
+  cartItemsToGuestStoredLines,
+  guestStoredLinesToCartItems,
+  getGuestCartSnapshot,
+  readGuestCartFromStorage,
+  writeGuestCartToStorage,
+} from '~/lib/guest-market-cart';
 import { useCustomerMarketService } from '~/services/market.service';
 import { extractApiResponseMessage } from '~/utils/api-error';
 
@@ -36,14 +45,18 @@ export function useMarketplaceCart() {
   const loading = useState('marketplace-cart-loading', () => false);
   const initializedBranchId = useState<string | null>('marketplace-cart-initialized-branch-id', () => null);
   const autoLoadStarted = useState('marketplace-cart-auto-load-started', () => false);
+  const { hasSession, sessionResolved, whenReady } = useCustomerSession();
   const {
     activeBranchId,
     ensureBranchForAction,
     fetchBranchesInBackground,
-    hasSession,
   } = useMarketBranchGate();
+  const { syncing, syncGuestCartToServer } = useGuestCartSync();
   const marketService = useCustomerMarketService();
   const requestAddMode = useRequestAddItemsMode();
+  const isGuestCartMode = computed(
+    () => import.meta.client && sessionResolved.value && !hasSession.value,
+  );
 
   const lines = computed<CartLine[]>(() =>
     rawLines.value
@@ -83,7 +96,75 @@ export function useMarketplaceCart() {
     cartTotalNaira.value = totalPrice;
   }
 
+  function loadGuestCartToState() {
+    const stored = readGuestCartFromStorage();
+    const items = guestStoredLinesToCartItems(stored);
+    const total = items.reduce((sum, line) => sum + line.lineTotalNaira, 0);
+    applyCart(items, total);
+    initializedBranchId.value = 'guest';
+  }
+
+  function persistGuestCartFromState() {
+    writeGuestCartToStorage(cartItemsToGuestStoredLines(rawLines.value));
+    cartTotalNaira.value = subtotalNaira.value;
+  }
+
+  function flushGuestCartToStorage() {
+    if (isGuestCartMode.value) {
+      persistGuestCartFromState();
+    }
+  }
+
+  async function waitForGuestCartSync() {
+    if (!syncing.value) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      const stop = watch(syncing, (inFlight) => {
+        if (!inFlight) {
+          stop();
+          resolve();
+        }
+      });
+    });
+  }
+
+  async function ensureGuestCartSyncedBeforeServerLoad() {
+    if (!import.meta.client) {
+      return;
+    }
+
+    const pending = getGuestCartSnapshot(rawLines.value);
+    if (!pending.length) {
+      await waitForGuestCartSync();
+      return;
+    }
+
+    await syncGuestCartToServer();
+    await waitForGuestCartSync();
+  }
+
+  async function initializeCart() {
+    if (import.meta.client) {
+      await whenReady();
+    }
+
+    if (isGuestCartMode.value) {
+      loadGuestCartToState();
+      return;
+    }
+
+    if (hasSession.value) {
+      await syncGuestCartToServer();
+      await loadCart(true);
+    }
+  }
+
   async function getBranchIdForCartAction(openGate = true) {
+    if (isGuestCartMode.value) {
+      return null;
+    }
     if (!activeBranchId.value) {
       await fetchBranchesInBackground(true);
     }
@@ -99,6 +180,18 @@ export function useMarketplaceCart() {
   }
 
   async function loadCart(force = false) {
+    if (isGuestCartMode.value) {
+      if (force && rawLines.value.length) {
+        persistGuestCartFromState();
+        return;
+      }
+
+      loadGuestCartToState();
+      return;
+    }
+
+    await ensureGuestCartSyncedBeforeServerLoad();
+
     if (loading.value) {
       return;
     }
@@ -172,11 +265,52 @@ export function useMarketplaceCart() {
     raw: number,
     options?: { silent?: boolean },
   ) {
-    const branchId = await getBranchIdForCartAction();
     const next = Math.max(0, Math.min(999, Math.floor(Number.isFinite(raw) ? raw : 0)));
     const existing = findLine(productId, unit);
-    const persistedCartId = hasPersistedCartId(existing?.id) ? existing.id : null;
     const previousQty = existing?.quantity ?? 0;
+
+    if (isGuestCartMode.value) {
+      const product = existing?.product ?? getMarketProductById(productId);
+      if (!product) {
+        return false;
+      }
+
+      if (next > 0 && !isMarketProductInStock(product)) {
+        return false;
+      }
+
+      if (next <= 0) {
+        removeOptimisticLine(productId, unit);
+      } else {
+        replaceOptimisticLine({
+          id: cartLineKey(productId, unit),
+          productId,
+          unit,
+          quantity: next,
+          product,
+          lineTotalNaira: getMarketUnitPrice(product, unit) * next,
+        });
+      }
+
+      persistGuestCartFromState();
+
+      if (!options?.silent) {
+        if (!existing && next > 0) {
+          toast.success('Added to cart');
+        } else if (existing && next > previousQty) {
+          toast.success('Quantity increased');
+        } else if (existing && next < previousQty && next > 0) {
+          toast.success('Quantity decreased');
+        } else if (next <= 0) {
+          toast.success('Removed from cart');
+        }
+      }
+
+      return next > 0;
+    }
+
+    const branchId = await getBranchIdForCartAction();
+    const persistedCartId = hasPersistedCartId(existing?.id) ? existing.id : null;
 
     if (next <= 0) {
       if (existing) {
@@ -312,6 +446,12 @@ export function useMarketplaceCart() {
   }
 
   async function clearCart() {
+    if (isGuestCartMode.value) {
+      applyCart([], 0);
+      persistGuestCartFromState();
+      return;
+    }
+
     const branchId = await getBranchIdForCartAction();
     if (!branchId) {
       return;
@@ -331,38 +471,55 @@ export function useMarketplaceCart() {
     autoLoadStarted.value = true;
     onMounted(() => {
       if (!requestAddMode.isAddingToRequest.value) {
-        void loadCart();
+        void initializeCart();
       }
     });
 
     watch(activeBranchId, (branchId, previousBranchId) => {
-      if (requestAddMode.isAddingToRequest.value) {
+      if (requestAddMode.isAddingToRequest.value || isGuestCartMode.value) {
         return;
       }
 
       if (branchId && branchId !== previousBranchId) {
-        void loadCart(true);
+        void (async () => {
+          if (readGuestCartFromStorage().length) {
+            await syncGuestCartToServer();
+          }
+          await loadCart(true);
+        })();
       }
     });
 
-    watch(hasSession, (nextHasSession) => {
+    watch(hasSession, (nextHasSession, previousHasSession) => {
       if (requestAddMode.isAddingToRequest.value) {
         return;
       }
 
-      if (nextHasSession) {
-        void loadCart(true);
+      if (nextHasSession && !previousHasSession) {
+        void (async () => {
+          persistGuestCartFromState();
+          await syncGuestCartToServer();
+          await loadCart(true);
+        })();
+        return;
+      }
+
+      if (!nextHasSession && previousHasSession) {
+        loadGuestCartToState();
       }
     });
   }
 
   return {
+    isGuestCartMode,
     qtyByLineKey,
     lines,
     loading,
     totalItemCount,
     subtotalNaira,
+    initializeCart,
     loadCart,
+    flushGuestCartToStorage,
     clearCart,
     getCartQtyForUnit,
     getQtyForUnit,

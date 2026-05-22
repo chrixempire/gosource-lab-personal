@@ -77,6 +77,22 @@ async function onAdd(e: MouseEvent) {
           :class="{ grayscale: !inStock }"
         />
 
+        <div
+          v-if="product.promotion && product.promotion.discountValue > 0"
+          class="absolute left-2 top-2 z-10 flex size-14 flex-col items-center justify-center rounded-full border-2 border-white bg-primary-600 p-1 text-white shadow-lg"
+        >
+          <p class="text-center text-sm font-bold leading-none">
+            {{
+              product.promotion.isPercentageDiscounted
+                ? `${product.promotion.discountValue}%`
+                : `₦${product.promotion.discountValue}`
+            }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-medium leading-none">
+            Off
+          </p>
+        </div>
+
         <div class="absolute right-2 top-2 z-10" @click.stop>
           <Button
             v-if="!inStock"

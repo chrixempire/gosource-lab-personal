@@ -12,10 +12,10 @@ defineProps<{
       <p class="text-xs font-semibold uppercase tracking-[0.22em] text-grey-300">
         {{ badge }}
       </p>
-      <h1 class="font-display text-[1.75rem] leading-tight tracking-[-0.02em] text-grey-900 sm:text-[2rem]">
+      <h1 class="font-display text-[24px] leading-7 tracking-[-0.02em] text-grey-900">
         {{ title }}
       </h1>
-      <p class="mx-auto max-w-76 text-[13px] leading-5 text-grey-300 sm:text-sm sm:leading-6">
+      <p class="mx-auto max-w-76 text-[13px] leading-5 text-grey-300">
         {{ description }}
       </p>
     </div>

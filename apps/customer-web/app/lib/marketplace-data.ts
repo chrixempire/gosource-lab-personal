@@ -5,11 +5,18 @@ export type MarketUnitChoice = {
   discountedPriceNaira?: number;
 };
 
+export type MarketProductPromotion = {
+  discountValue: number;
+  isPercentageDiscounted: boolean;
+};
+
 export type MarketProduct = {
   id: string;
   name: string;
   description: string;
   imageUrl?: string;
+  /** Active promotion discount badge (legacy `product.promotion`). */
+  promotion?: MarketProductPromotion;
   /** Richer copy for modal / product page */
   longDescription?: string;
   /** Shown as “Brand: …” in product UI */
@@ -45,6 +52,28 @@ export type MarketCategory = {
 export function categoriesWithProducts(categories: MarketCategory[] | null | undefined): MarketCategory[] {
   return (categories ?? []).filter((category) => (category.products?.length ?? 0) > 0);
 }
+
+export type MarketPromotion = {
+  id: string;
+  name: string;
+  description: string;
+  icon?: string;
+  isPercentageDiscounted: boolean;
+  discountValue: number;
+  products: MarketProduct[];
+};
+
+export type MarketPromotionsResponse = {
+  status?: boolean;
+  message?: string;
+  data: MarketPromotion[];
+};
+
+export type MarketRecentOrdersResponse = {
+  status?: boolean;
+  message?: string;
+  data: MarketProduct[];
+};
 
 export type MarketCategoriesResponse = {
   status?: boolean;

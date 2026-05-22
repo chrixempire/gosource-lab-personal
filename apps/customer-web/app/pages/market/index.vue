@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import type { MarketProduct } from '~/lib/marketplace-data';
+import type { MarketProduct, MarketPromotion } from '~/lib/marketplace-data';
 import MarketBranchSetupBanner from '~/components/market/MarketBranchSetupBanner.vue';
 import MarketCategoryRail from '~/components/market/MarketCategoryRail.vue';
 import MarketProductAddModal from '~/components/market/MarketProductAddModal.vue';
+import MarketProductRailSection from '~/components/market/MarketProductRailSection.vue';
 import MarketProductSection from '~/components/market/MarketProductSection.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { useCustomerSession } from '~/composables/useCustomerSession';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useMarketCatalog } from '~/composables/useMarketCatalog';
 import { categoriesWithProducts } from '~/lib/marketplace-data';
@@ -16,8 +18,9 @@ definePageMeta({
   keepalive: true,
 });
 
+const { hasSession } = useCustomerSession();
 const { categories, catalogList, hydrateFromStorage, setCategories } = useMarketCatalog();
-const { listCategories } = useCustomerMarketService();
+const { listCategories, listPromotions, listRecentOrders } = useCustomerMarketService();
 
 if (import.meta.client) {
   const persisted = readCachedCategoriesFromStorage({ allowStale: true }) ?? [];
@@ -51,6 +54,30 @@ watch(
 
 const visibleCategories = computed(() => categoriesWithProducts(catalogList()));
 
+const promotions = ref<MarketPromotion[]>([]);
+const recentOrderProducts = ref<MarketProduct[]>([]);
+const recentOrdersExpanded = ref(false);
+const expandedPromotionId = ref<string | null>(null);
+
+const visiblePromotions = computed(() =>
+  promotions.value.filter((promo) => promo.products.length > 0),
+);
+
+const showPromotionsBlock = computed(
+  () => visiblePromotions.value.length > 0 && !recentOrdersExpanded.value,
+);
+
+const showRecentOrdersBlock = computed(
+  () =>
+    hasSession.value &&
+    recentOrderProducts.value.length > 0 &&
+    !expandedPromotionId.value,
+);
+
+const showCategoryCatalog = computed(
+  () => !recentOrdersExpanded.value && !expandedPromotionId.value,
+);
+
 const hasPersistedCatalog = computed(() => {
   if (catalogList().length > 0) {
     return true;
@@ -64,6 +91,7 @@ const hasPersistedCatalog = computed(() => {
 const isFetchingFirstCatalog = ref(false);
 
 const {
+  activeBranchId,
   clearProductModalResume,
   fetchBranchesInBackground,
   hasBranch,
@@ -211,6 +239,18 @@ watch(
   },
 );
 
+watch(
+  [activeBranchId, hasSession] as const,
+  ([branchId, signedIn]) => {
+    if (!signedIn) {
+      recentOrderProducts.value = [];
+      return;
+    }
+    void loadRecentOrders(branchId ?? '');
+  },
+  { immediate: true },
+);
+
 function refreshCatalogInBackground() {
   void listCategories({ force: false, quiet: true })
     .then((response) => {
@@ -221,9 +261,38 @@ function refreshCatalogInBackground() {
     .catch(() => undefined);
 }
 
+function refreshPromotionsInBackground() {
+  void listPromotions({ quiet: true })
+    .then((response) => {
+      promotions.value = (response.data ?? []).filter((promo) => promo.products.length > 0);
+    })
+    .catch(() => undefined);
+}
+
+async function loadRecentOrders(branchId: string) {
+  if (!branchId) {
+    recentOrderProducts.value = [];
+    return;
+  }
+
+  try {
+    const response = await listRecentOrders(branchId, { quiet: true });
+    recentOrderProducts.value = response.data ?? [];
+  } catch {
+    recentOrderProducts.value = [];
+  }
+}
+
+function onPromotionExpandChange(promotionId: string, expanded: boolean) {
+  expandedPromotionId.value = expanded ? promotionId : null;
+}
+
 onMounted(() => {
   hydrateFromStorage();
-  void fetchBranchesInBackground();
+  if (hasSession.value) {
+    void fetchBranchesInBackground();
+  }
+  refreshPromotionsInBackground();
 
   if (visibleCategories.value.length > 0) {
     refreshCatalogInBackground();
@@ -255,6 +324,10 @@ onMounted(() => {
 
 onActivated(() => {
   hydrateFromStorage();
+  refreshPromotionsInBackground();
+  if (hasSession.value && activeBranchId.value) {
+    void loadRecentOrders(activeBranchId.value);
+  }
   if (visibleCategories.value.length > 0) {
     refreshCatalogInBackground();
   }
@@ -285,12 +358,38 @@ onUnmounted(() => {
           />
         </div>
 
-        <div class="mt-6 space-y-2">
-          <MarketProductSection
-            v-for="cat in visibleCategories"
-            :key="cat.id"
-            :category="cat"
+        <div class="mt-6 space-y-8">
+          <template v-if="showPromotionsBlock">
+            <MarketProductRailSection
+              v-for="promo in visiblePromotions"
+              v-show="!expandedPromotionId || expandedPromotionId === promo.id"
+              :key="promo.id"
+              :title="promo.name"
+              :products="promo.products"
+              variant="promotion"
+              :icon-html="promo.icon"
+              expandable
+              :expanded="expandedPromotionId === promo.id"
+              @update:expanded="onPromotionExpandChange(promo.id, $event)"
+            />
+          </template>
+
+          <MarketProductRailSection
+            v-if="showRecentOrdersBlock"
+            title="Recently ordered items"
+            :products="recentOrderProducts"
+            expandable
+            :expanded="recentOrdersExpanded"
+            @update:expanded="recentOrdersExpanded = $event"
           />
+
+          <template v-if="showCategoryCatalog">
+            <MarketProductSection
+              v-for="cat in visibleCategories"
+              :key="cat.id"
+              :category="cat"
+            />
+          </template>
         </div>
       </template>
 

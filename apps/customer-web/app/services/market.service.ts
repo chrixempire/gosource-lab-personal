@@ -6,6 +6,8 @@ import type {
   MarketCategoryResponse,
   MarketProduct,
   MarketProductResponse,
+  MarketPromotionsResponse,
+  MarketRecentOrdersResponse,
 } from '~/lib/marketplace-data';
 import { toast } from '@gosource/ui';
 import { extractApiErrorMessage } from '~/utils/api-error';
@@ -162,6 +164,21 @@ export function useCustomerMarketService() {
     productCache.value = nextProducts;
   }
 
+  function warmProductEntries(products: MarketProduct[]) {
+    if (!products.length) {
+      return;
+    }
+
+    const fetchedAt = Date.now();
+    const nextProducts = { ...productCache.value };
+    for (const product of products) {
+      if (product.id) {
+        nextProducts[product.id] = { data: product, fetchedAt };
+      }
+    }
+    productCache.value = nextProducts;
+  }
+
   return {
     async listCategories(options: { force?: boolean; quiet?: boolean } = {}) {
       hydrateCachesFromStorage();
@@ -217,6 +234,46 @@ export function useCustomerMarketService() {
       } catch (error) {
         if (!options.quiet) {
           toast.error(extractApiErrorMessage(error, 'Unable to fetch category right now'));
+        }
+        throw error;
+      }
+    },
+    async listPromotions(options: { quiet?: boolean } = {}) {
+      try {
+        const response = await $fetch<MarketPromotionsResponse>('/api/proxy/promotion', {
+          credentials: 'same-origin',
+        });
+        const promotions = response.data ?? [];
+        for (const promotion of promotions) {
+          warmProductEntries(promotion.products ?? []);
+        }
+        return response;
+      } catch (error) {
+        if (!options.quiet) {
+          toast.error(extractApiErrorMessage(error, 'Unable to fetch promotions right now'));
+        }
+        throw error;
+      }
+    },
+    async listRecentOrders(branchId: string, options: { quiet?: boolean } = {}) {
+      if (!branchId) {
+        return {
+          status: true,
+          message: 'Recent order products retrieved successfully',
+          data: [],
+        } satisfies MarketRecentOrdersResponse;
+      }
+
+      try {
+        const response = await $fetch<MarketRecentOrdersResponse>(
+          `/api/proxy/product/recent-orders/${branchId}`,
+          { credentials: 'same-origin' },
+        );
+        warmProductEntries(response.data ?? []);
+        return response;
+      } catch (error) {
+        if (!options.quiet) {
+          toast.error(extractApiErrorMessage(error, 'Unable to fetch recent orders right now'));
         }
         throw error;
       }

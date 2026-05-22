@@ -8,6 +8,7 @@ import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { useMarketplaceUi } from '~/composables/useMarketplaceUi';
 import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerRequestService } from '~/services/request.service';
+import { customerSignInLocation } from '~/lib/auth-redirect';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
 const MIN_REQUEST_SUBTOTAL_NAIRA = 25_000;
@@ -17,7 +18,7 @@ export function useCartRequestAction() {
   const session = useState<CustomerMeResponse | null>('customer-session', () => null);
   const { cartDrawerOpen } = useMarketplaceUi();
   const { activeBranchId, ensureBranchForAction, hasSession } = useMarketBranchGate();
-  const { lines, loadCart, subtotalNaira } = useMarketplaceCart();
+  const { flushGuestCartToStorage, lines, loadCart, subtotalNaira } = useMarketplaceCart();
   const { getBranch } = useCustomerBranchService();
   const { createRequest } = useCustomerRequestService();
   const { isLegacyMode } = useCustomerApiMode();
@@ -125,7 +126,9 @@ export function useCartRequestAction() {
 
   async function submitCartAsRequest() {
     if (!hasSession.value) {
-      await router.push('/auth/sign-in');
+      flushGuestCartToStorage();
+      closeCartDrawer();
+      await router.push(customerSignInLocation('/market'));
       return;
     }
 
