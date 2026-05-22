@@ -1,0 +1,28 @@
+<script setup lang="ts">
+import { computed, type HTMLAttributes } from 'vue';
+import { CalendarCell, type CalendarCellProps, useForwardProps } from 'reka-ui';
+import { cn } from '../lib/cn';
+
+const props = defineProps<CalendarCellProps & { class?: HTMLAttributes['class'] }>();
+
+const delegatedProps = computed(() => {
+  const { class: _class, ...delegated } = props;
+  return delegated;
+});
+
+const forwardedProps = useForwardProps(delegatedProps);
+</script>
+
+<template>
+  <CalendarCell
+    :class="
+      cn(
+        'relative h-9 w-9 p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([data-selected])]:rounded-md [&:has([data-selected])]:bg-primary-50 [&:has([data-selected][data-outside-view])]:bg-primary-50/60',
+        props.class,
+      )
+    "
+    v-bind="forwardedProps"
+  >
+    <slot />
+  </CalendarCell>
+</template>

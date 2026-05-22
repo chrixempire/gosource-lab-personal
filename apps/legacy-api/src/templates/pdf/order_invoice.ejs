@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Order Invoice</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          'Inter',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        color: #101928;
+        background: #ffffff;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      td,
+      th {
+        text-align: left;
+        font-weight: 400;
+        letter-spacing: -0.2px;
+        color: #101928;
+        font-size: 12px;
+        vertical-align: top;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .invoice-brand {
+        background-color: #09420c;
+        padding: 14px 28px;
+        margin: 0 0 28px;
+      }
+
+      .invoice-brand img {
+        display: block;
+        max-height: 32px;
+        width: auto;
+      }
+
+      .invoice-content {
+        padding: 0;
+      }
+
+      .table-head {
+        color: #667185;
+        padding-bottom: 4px;
+        font-size: 12px;
+      }
+
+      .details-block {
+        width: 100%;
+        margin: 0 0 0;
+      }
+
+      .details-row td {
+        padding-bottom: 10px;
+        word-wrap: break-word;
+      }
+
+      .details-row-4 td {
+        width: 25%;
+      }
+
+      .details-row-3 td {
+        width: 33.333%;
+      }
+
+      .details-address {
+        margin-top: 24px;
+        width: 100%;
+      }
+
+      .details-address .address-value {
+        padding-bottom: 10px;
+        line-height: 1.45;
+      }
+
+      /* Matches @gosource/ui TableShell + TableHeadRow */
+      .invoice-table-shell {
+        margin-top: 48px;
+        overflow: hidden;
+        border: 1px solid #e4e7ec;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 20px 48px -28px rgba(16, 24, 40, 0.14);
+      }
+
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .invoice-table thead tr {
+        background-color: #e8f8e9;
+      }
+
+      .invoice-table thead th {
+        padding: 10px 16px;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.25;
+        border-bottom: 1px solid #e4e7ec;
+      }
+
+      .invoice-table tbody td {
+        padding: 12px 16px;
+        font-size: 12px;
+        color: #101928;
+        font-weight: 500;
+        border-bottom: 1px solid #e4e7ec;
+        vertical-align: middle;
+      }
+
+      .invoice-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .receipt-outer {
+        width: 100%;
+        margin: 16px 0 0;
+      }
+
+      /* Div shell — border-radius on <td> is unreliable in PDF; match table shell pattern */
+      .receipt-wrap {
+        overflow: hidden;
+        border-radius: 10px;
+        border: 1px solid #e4e7ec;
+        background: #f7f9fc;
+        padding: 8px 12px;
+        box-shadow: 0 12px 32px -24px rgba(16, 24, 40, 0.1);
+      }
+
+      .receipt td {
+        height: 32px;
+        padding: 8px 0;
+        border-bottom: 1px solid #e4e7ec;
+        font-weight: 400;
+      }
+
+      .receipt tr:last-child td {
+        border-bottom: none;
+        font-weight: 700;
+      }
+
+      .receipt .right {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .receipt .right .amount {
+        font-weight: 700;
+      }
+
+      .receipt tr:not(:last-child) .right .naira {
+        font-weight: 500;
+      }
+
+      .receipt tr:last-child .right .naira,
+      .receipt tr:last-child .right .amount {
+        font-weight: 700;
+      }
+
+      .naira {
+        font-weight: 500;
+      }
+
+      .footer {
+        margin-top: 40px;
+        padding: 32px 0 0;
+        background-color: #f9fafb;
+        width: 100%;
+      }
+
+      .footer .content {
+        color: #667185;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 0 0 20px;
+      }
+
+      .footer .footer-title {
+        font-weight: 700;
+        padding: 24px 0 20px;
+      }
+
+      .footer a {
+        color: #09420c;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="invoice-brand">
+      <img src="<%= logoSrc %>" alt="GoSource" />
+    </header>
+
+    <main class="invoice-content">
+      <!-- Row 1: 4 fields -->
+      <table class="details-block">
+        <thead>
+          <tr class="details-row details-row-4">
+            <td class="table-head">Order Date</td>
+            <td class="table-head">Business name</td>
+            <td class="table-head">Full name</td>
+            <td class="table-head">No. of Orders</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="details-row details-row-4">
+            <td><%= orderDate %></td>
+            <td><%= businessName %></td>
+            <td><%= fullName %></td>
+            <td><%= productCount %></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Row 2: 3 fields -->
+      <table class="details-block" style="margin-top: 24px">
+        <thead>
+          <tr class="details-row details-row-3">
+            <td class="table-head">Order Time</td>
+            <td class="table-head">Payment Method</td>
+            <td class="table-head">Order Id</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="details-row details-row-3">
+            <td><%= orderTime %></td>
+            <td><%= paymentMethod %></td>
+            <td><%= orderReference %></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Row 3: delivery address -->
+      <table class="details-address">
+        <thead>
+          <tr>
+            <td class="table-head">Delivery Address</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="address-value"><%- deliveryAddressHtml %></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Line items (TableShell + green header row) -->
+      <section class="invoice-table-shell">
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th scope="col">No.</th>
+              <th scope="col">Item</th>
+              <th scope="col">Qty</th>
+              <th scope="col">Rate</th>
+              <th scope="col">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% lineItems.forEach(function (line) { %>
+              <tr>
+                <td><%= line.no %></td>
+                <td><%= line.name %></td>
+                <td><%= line.qtyLabel %></td>
+                <td>
+                  <span class="naira">NGN </span><%= formatPrice(line.rate) %>
+                </td>
+                <td>
+                  <span class="naira">NGN </span><%= formatPrice(line.price) %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Totals (subtotal card) -->
+      <div class="receipt-outer">
+        <div class="receipt-wrap">
+          <table class="receipt" style="width: 100%; background: none">
+            <tbody>
+              <tr>
+                <td>Subtotal</td>
+                <td class="right">
+                  <span class="naira">NGN </span><span class="amount"><%= formatPrice(subtotal) %></span>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Market runs
+                  <% if (marketRunsCouponNote) { %>(coupon was used)<% } %>
+                </td>
+                <td class="right">
+                  <span class="naira">NGN </span><span class="amount"><%= formatPrice(marketRuns) %></span>
+                </td>
+              </tr>
+              <tr>
+                <td>Service charge</td>
+                <td class="right">
+                  <span class="naira">NGN </span><span class="amount"><%= formatPrice(serviceCharge) %></span>
+                </td>
+              </tr>
+              <tr>
+                <td>Total</td>
+                <td class="right">
+                  <span class="naira">NGN </span><span class="amount"><%= formatPrice(total) %></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <table class="footer">
+        <tbody>
+          <tr>
+            <td class="content footer-title">Terms &amp; Conditions</td>
+          </tr>
+          <tr>
+            <td class="content">
+              Please note that all goods received in good conditions are not eligible for return.
+              All defected goods should not be tampered with as we would withdraw them for
+              replacement.
+            </td>
+          </tr>
+          <tr>
+            <td class="content">
+              Facing any problems? send a mail to
+              <a href="mailto:admin@ipc-africa.com">admin@ipc-africa.com</a>
+              or call +234 806 858 0685
+            </td>
+          </tr>
+          <tr>
+            <td class="content">
+              3D Dr. Adewale Oshin Street, Off Chief Collins Uchidiuno St, Lekki Phase 1 105102,
+              Lekki, Lagos
+            </td>
+          </tr>
+          <tr>
+            <td class="content">
+              Copyright©2023 Independent purchasing company | All rights reserved.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { getProxyRouteRule } from './proxy-route-allowlist.ts';
+
+test('allows product and category market routes', () => {
+  assert.ok(getProxyRouteRule('GET', ['category']));
+  assert.ok(getProxyRouteRule('GET', ['category', 'cat_123']));
+  assert.ok(getProxyRouteRule('GET', ['product', 'prod_123']));
+});
+
+test('allows invite routes that need explicit authorization', () => {
+  const inviteRule = getProxyRouteRule('GET', ['employee', 'invite', 'invite_123']);
+  const setupRule = getProxyRouteRule('POST', ['employee', 'setup-account']);
+
+  assert.equal(inviteRule?.allowExplicitAuthorization, true);
+  assert.equal(setupRule?.allowExplicitAuthorization, true);
+});
+
+test('allows wallet routes including verify-bvn', () => {
+  assert.ok(getProxyRouteRule('GET', ['wallet']));
+  assert.ok(getProxyRouteRule('POST', ['wallet']));
+  assert.ok(getProxyRouteRule('POST', ['wallet', 'verify-bvn']));
+  assert.ok(getProxyRouteRule('POST', ['wallet', 'fund']));
+  assert.ok(getProxyRouteRule('GET', ['wallet', 'transactions']));
+});
+
+test('rejects routes outside the explicit allowlist', () => {
+  assert.equal(getProxyRouteRule('GET', ['auth', 'login']), null);
+  assert.equal(getProxyRouteRule('GET', ['employee', 'branch-pending-invites', 'abc']), null);
+  assert.equal(getProxyRouteRule('POST', ['product', 'feed']), null);
+  assert.equal(getProxyRouteRule('POST', ['wallet', 'confirm-transaction']), null);
+});

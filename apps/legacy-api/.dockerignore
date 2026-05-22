@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.*
+*.env
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Logs
+*.log
+logs
+
+# Test files
+coverage
+test
+*.spec.ts
+*.test.ts
+jest.config.*
+
+# Documentation
+*.md
+docs
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and credentials
+*.pem
+*.key
+credentials*
+secrets*

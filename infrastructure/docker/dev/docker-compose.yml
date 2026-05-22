@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gosource-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gosource
+      POSTGRES_PASSWORD: gosource
+      POSTGRES_DB: gosource_api
+    ports:
+      - '5432:5432'
+    volumes:
+      - gosource_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gosource -d gosource_api']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  gosource_postgres_data:

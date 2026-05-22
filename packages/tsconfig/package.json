@@ -1,0 +1,5 @@
+{
+  "name": "@gosource/tsconfig",
+  "private": true,
+  "main": "./base.json"
+}

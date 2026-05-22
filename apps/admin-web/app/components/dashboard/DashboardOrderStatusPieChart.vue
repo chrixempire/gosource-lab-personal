@@ -1,0 +1,195 @@
+<script setup lang="ts">
+import type { ChartConfiguration } from 'chart.js';
+import { Chart } from 'chart.js';
+import { ensureDashboardChartsRegistered } from '~/lib/dashboard-charts';
+import {
+  DASHBOARD_PIE_OTHER_STATUSES_HINT,
+  DASHBOARD_STATUS_COLORS,
+  formatDashboardPieStatusLabel,
+} from '~/lib/dashboard-date';
+import type { DashboardStatusSlice } from '~/types/dashboard';
+import LoadingState from '~/components/shared/LoadingState.vue';
+import EmptyState from '~/components/shared/EmptyState.vue';
+
+const props = defineProps<{
+  slices: DashboardStatusSlice[];
+  pending?: boolean;
+}>();
+
+const canvasRef = ref<HTMLCanvasElement | null>(null);
+const chartContainerRef = ref<HTMLElement | null>(null);
+let chart: Chart | null = null;
+let resizeObserver: ResizeObserver | null = null;
+
+const visibleSlices = computed(() => props.slices.filter((slice) => slice.count > 0));
+
+const chartConfig = computed((): ChartConfiguration<'doughnut'> => ({
+  type: 'doughnut',
+  data: {
+    labels: visibleSlices.value.map((slice) => formatDashboardPieStatusLabel(slice.status)),
+    datasets: [
+      {
+        data: visibleSlices.value.map((slice) => slice.percentage),
+        backgroundColor: visibleSlices.value.map(
+          (slice) => DASHBOARD_STATUS_COLORS[slice.status] ?? DASHBOARD_STATUS_COLORS.other,
+        ),
+        borderWidth: 4,
+        borderColor: '#ffffff',
+        hoverBorderColor: '#ffffff',
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          boxWidth: 10,
+          padding: 8,
+          font: { size: 11 },
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label(context) {
+            const slice = visibleSlices.value[context.dataIndex];
+            if (!slice) {
+              return '';
+            }
+
+            const lines = [
+              `${context.label}: ${slice.percentage}% (${slice.count} orders)`,
+            ];
+
+            if (slice.status === 'other') {
+              lines.push(DASHBOARD_PIE_OTHER_STATUSES_HINT);
+            }
+
+            return lines;
+          },
+        },
+      },
+    },
+  },
+}));
+
+function destroyChart() {
+  chart?.destroy();
+  chart = null;
+}
+
+function renderChart() {
+  if (!import.meta.client || !canvasRef.value || !visibleSlices.value.length || props.pending) {
+    return;
+  }
+
+  ensureDashboardChartsRegistered();
+
+  if (chart) {
+    chart.data = chartConfig.value.data!;
+    chart.options = chartConfig.value.options!;
+    chart.update();
+    chart.resize();
+    return;
+  }
+
+  chart = new Chart(canvasRef.value, chartConfig.value);
+  chart.resize();
+}
+
+function scheduleChartRender() {
+  if (!import.meta.client) {
+    return;
+  }
+
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      if (props.pending) {
+        return;
+      }
+
+      if (!visibleSlices.value.length) {
+        destroyChart();
+        return;
+      }
+
+      renderChart();
+    });
+  });
+}
+
+function bindResizeObserver() {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+
+  const container = chartContainerRef.value;
+  if (!container) {
+    return;
+  }
+
+  resizeObserver = new ResizeObserver(() => {
+    if (!props.pending && visibleSlices.value.length) {
+      scheduleChartRender();
+    }
+  });
+  resizeObserver.observe(container);
+}
+
+watch(
+  () => [props.slices, props.pending] as const,
+  () => {
+    scheduleChartRender();
+  },
+  { deep: true, flush: 'post' },
+);
+
+watch([canvasRef, chartContainerRef], ([canvas, container]) => {
+  if (container) {
+    bindResizeObserver();
+  }
+
+  if (canvas) {
+    scheduleChartRender();
+  }
+});
+
+onMounted(() => {
+  bindResizeObserver();
+  scheduleChartRender();
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  destroyChart();
+});
+</script>
+
+<template>
+  <article class="flex w-full min-w-0 flex-col rounded-2xl border border-grey-50 bg-white p-4 shadow-sm">
+    <header class="mb-2 shrink-0">
+      <h3 class="text-sm font-semibold text-grey-900">Order status</h3>
+      <p class="text-xs text-grey-300">Share of orders by status for the selected period.</p>
+    </header>
+
+    <div v-if="pending" class="flex h-[300px] items-center justify-center">
+      <LoadingState label="Loading chart…" />
+    </div>
+    <div
+      v-else-if="!visibleSlices.length"
+      class="flex h-[300px] items-center justify-center"
+    >
+      <EmptyState
+        class="flex h-full w-full flex-col justify-center"
+        title="No status data"
+        description="There are no orders in this period to chart."
+      />
+    </div>
+    <div v-else ref="chartContainerRef" class="relative h-[300px] w-full">
+      <canvas ref="canvasRef" class="block h-full w-full" />
+    </div>
+  </article>
+</template>

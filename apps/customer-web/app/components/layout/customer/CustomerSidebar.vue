@@ -1,0 +1,181 @@
+<script setup lang="ts">
+import type { Component } from 'vue';
+import type { CustomerMeResponse } from '@gosource/api-client';
+import {
+  SidebarContent,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@gosource/ui';
+import {
+  ClipboardList,
+  CreditCard,
+  ChevronDown,
+  LayoutGrid,
+  Layers3,
+  MessageCircleQuestion,
+  NotebookPen,
+  ShieldCheck,
+  ShoppingBag,
+  Store,
+  Users,
+} from 'lucide-vue-next';
+import CustomerUserMenu from './CustomerUserMenu.vue';
+import { isBusinessOwnerSession } from '~/lib/customer-roles';
+
+type NavLeaf = {
+  label: string;
+  icon: Component;
+  path: string;
+};
+
+const props = defineProps<{
+  session: CustomerMeResponse | null;
+}>();
+
+const emit = defineEmits<{
+  logoutRequest: [];
+  mobileNavClose: [];
+}>();
+
+const route = useRoute();
+const settingsOpen = ref(false);
+
+const visibleNavItems = computed(() => {
+  const owner = isBusinessOwnerSession(props.session);
+
+  return navItems.filter((item) => {
+    if (item.path === '/wallet') {
+      return owner;
+    }
+
+    return true;
+  });
+});
+
+function onEnter(element: Element) {
+  const target = element as HTMLElement;
+  target.style.height = '0px';
+  target.style.opacity = '0';
+  target.style.transform = 'translateY(-4px)';
+
+  requestAnimationFrame(() => {
+    target.style.height = `${target.scrollHeight}px`;
+    target.style.opacity = '1';
+    target.style.transform = 'translateY(0)';
+  });
+}
+
+function onAfterEnter(element: Element) {
+  const target = element as HTMLElement;
+  target.style.height = 'auto';
+}
+
+function onLeave(element: Element) {
+  const target = element as HTMLElement;
+  target.style.height = `${target.scrollHeight}px`;
+  target.style.opacity = '1';
+  target.style.transform = 'translateY(0)';
+
+  requestAnimationFrame(() => {
+    target.style.height = '0px';
+    target.style.opacity = '0';
+    target.style.transform = 'translateY(-4px)';
+  });
+}
+
+const navItems: NavLeaf[] = [
+  { label: 'Market', icon: LayoutGrid, path: '/market' },
+  { label: 'Orders', icon: ShoppingBag, path: '/track-orders' },
+  { label: 'Wallet', icon: CreditCard, path: '/wallet' },
+  { label: 'Request', icon: ClipboardList, path: '/manage-requests' },
+  { label: 'Lists', icon: Layers3, path: '/lists' },
+  { label: 'Branches', icon: Store, path: '/branches' },
+  { label: 'Members', icon: Users, path: '/members' },
+];
+
+const settingsItems = [
+  { label: 'My Profile', icon: NotebookPen, path: '/settings/my-profile' },
+  { label: 'Business Profile', icon: Store, path: '/settings/business-profile' },
+  { label: 'Security', icon: ShieldCheck, path: '/settings/security' },
+  { label: 'Help & Support', icon: MessageCircleQuestion, path: '/settings/help-support' },
+];
+
+function isActivePath(path: string) {
+  return route.path === path || route.path.startsWith(`${path}/`);
+}
+
+function closeMobileNav() {
+  emit('mobileNavClose');
+}
+</script>
+
+<template>
+  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-white text-grey-900">
+    <SidebarContent class="min-h-0 px-4 py-5">
+      <SidebarMenu>
+        <SidebarMenuItem v-for="item in visibleNavItems" :key="item.label">
+          <NuxtLink :to="item.path" class="block w-full min-w-0 no-underline" @click="closeMobileNav">
+            <SidebarMenuButton
+              as="span"
+              :active="isActivePath(item.path)"
+              class="rounded-[16px]"
+            >
+              <component :is="item.icon" class="size-[18px]" />
+              <span class="flex-1">{{ item.label }}</span>
+            </SidebarMenuButton>
+          </NuxtLink>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarContent>
+
+    <SidebarFooter class="w-full px-4 pb-0">
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <button
+            type="button"
+            class="flex w-full cursor-pointer items-center gap-3 rounded-[16px] px-4 py-2.5 text-left text-sm font-medium text-grey-text transition-colors hover:bg-primary-50/70 hover:text-primary-500"
+            @click="settingsOpen = !settingsOpen"
+          >
+            <ShieldCheck class="size-[18px]" />
+            <span class="flex-1">Settings</span>
+            <ChevronDown
+              class="size-4 transition-transform"
+              :class="settingsOpen ? 'rotate-0' : '-rotate-90'"
+            />
+          </button>
+        </SidebarMenuItem>
+      </SidebarMenu>
+
+      <Transition
+        enter-active-class="transition-[height,opacity,transform] duration-220 ease-out"
+        leave-active-class="transition-[height,opacity,transform] duration-180 ease-in"
+        @enter="onEnter"
+        @after-enter="onAfterEnter"
+        @leave="onLeave"
+      >
+        <div v-if="settingsOpen" class="w-full overflow-hidden px-4 pb-4 pt-2 will-change-[height,opacity,transform]">
+          <SidebarMenu class="border-l border-grey-50 pl-4">
+            <SidebarMenuItem v-for="item in settingsItems" :key="item.label">
+              <NuxtLink :to="item.path" class="block w-full min-w-0 no-underline" @click="closeMobileNav">
+                <SidebarMenuButton
+                  as="span"
+                  :active="isActivePath(item.path)"
+                  class="rounded-[14px] px-2 py-2"
+                >
+                  <component :is="item.icon" class="size-4" />
+                  <span>{{ item.label }}</span>
+                </SidebarMenuButton>
+              </NuxtLink>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </div>
+      </Transition>
+
+      <div class="mt-1 w-full border-t border-grey-50 pb-3 pt-3">
+        <CustomerUserMenu sidebar :session="props.session" @logout-request="emit('logoutRequest')" />
+      </div>
+    </SidebarFooter>
+  </div>
+</template>

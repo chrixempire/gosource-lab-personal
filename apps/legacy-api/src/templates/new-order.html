@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Template</title>
+    <link href="https://fonts.cdnfonts.com/css/graphik-trial" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <table style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #fff;">
+        <style>
+            @import url('https://fonts.cdnfonts.com/css/graphik-trial');
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        </style>
+        <tr>
+            <td>
+                <table style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #fff;">
+                    <tr>
+                        <td style="text-align: left; font-weight: 400; line-height: 21px; letter-spacing: -0.2px; color: #101928; font-family: 'Inter', 'Arial', sans-serif; width: 100%; background-color: #09420C; color: #fff; padding: 24px; font-size: 24px; font-weight: bold; margin-left: 0;"
+                            colspan="2">
+                            <img src="https://gosource.sfo3.cdn.digitaloceanspaces.com/Frame%201000002518.png" alt="">
+                        </td>
+                    </tr>
+                </table>
+                <table style="padding-top: 40px; padding-right: 24px; padding-left: 24px; padding-bottom: 24px;">
+                    <tr>
+                        <td colspan="2" style="font-size: 18px; color: #101928; font-family: 'Inter', 'Arial', sans-serif; ">Hi [BUSINESS],</td>
+                    </tr>
+                    <tr>
+                        <td style="font-size: 20px; padding-top: 24px; font-family: 'Inter', 'Arial', sans-serif; " colspan="2" class="greeting"><b>[SUBJECT] 🥳</b></td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top: 24px; font-size: 16px; margin-bottom: 24px; color: #101928; font-family: 'Inter', 'Arial', sans-serif; " colspan="2">
+                            Details of your order are shown below:
+                        </td>
+                    </tr>
+                </table>
+                <!-- RECEIPT TABLE -->
+                <table style=" padding-bottom: 24px; max-width: 600px; width: 100%; font-family: 'Inter', 'Arial', sans-serif; ">
+                    <tr>
+                        <td class="receipt-wrap">
+                            <table class="receipt" style="background: none; border-collapse: collapse; width: 100%;">
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Total</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>₦ [TOTAL_PRICE]</b></td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Subtotal</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>₦ [SUB_TOTAL]</b></td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Market Runs</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>₦ [DELIVERY_FEE]</b></td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Service charge</td>
+                                    <td style="text-align: right;  white-space: nowrap; text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>₦ [SERVICE_CHARGE]</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="height: 32px; padding-top: 8px; padding-bottom: 8px;">Payment method</td>
+                                    <td style="height: 32px; padding-top: 8px; padding-bottom: 8px; text-align: right;  white-space: nowrap;" class="right"><b>[PAYMENT_METHOD]</b>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top: 24px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="receipt-wrap">
+                            <table class="receipt" style="background: none; width: 100%;">
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Full name</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>[FULLNAME]</b></td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Phone number</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right">[PHONE_NUMBER]</td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Street address</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>[STREET_ADDRESS]</b></td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Local govt. area</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>[LGA]</b></td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        State</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>[STATE]</b></td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;">
+                                        Date</td>
+                                    <td style="text-align: right;  white-space: nowrap; height: 32px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #E4E7EC;"
+                                        class="right"><b>[DATE]</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="height: 32px; padding-top: 8px; padding-bottom: 8px;">Time</td>
+                                    <td style="height: 32px; padding-top: 8px; padding-bottom: 8px; text-align: right;  white-space: nowrap;" class="right"><b>[TIME]</b>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                <table>
+                    <tr>
+                        <td style=" font-size: 16px; line-height: 21px; color: #101928; letter-spacing: -0.2px; font-family: 'Inter', 'Arial', sans-serif; padding-top: 24px;  text-align: left; padding-right: 24px; padding-left: 24px; padding-bottom: 24px; width: 100%;"">
+                            Best regards, <br>
+                            Team GoSource. 💚
+                        </td>
+                    </tr>
+                </table>
+                <!-- footer -->
+                <table
+                    style="max-width: 600px; margin: 0 auto; background-color: #fff; padding-top: 32px; padding-right: 24px; padding-left: 24px; padding-bottom: 32px; background-color: #F9FAFB; font-family: 'Inter', 'Arial', sans-serif; font-size: 14px;">
+                    <tr>
+                        <td colspan="2"
+                            style=" font-size: 16px; line-height: 21px; color: #101928; letter-spacing: -0.2px; padding-bottom: 20px; font-family: 'Inter', 'Arial', sans-serif; font-size: 14px;">
+                            Facing any problems? send a mail to <a style="color: #19B820;"
+                                href="mailto:admin@ipc-africa.com">admin@ipc-africa.com</a> or call 0906 182 7124
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"
+                            style=" font-size: 16px; line-height: 21px; color: #101928; letter-spacing: -0.2px; padding-bottom: 20px; font-family: 'Inter', 'Arial', sans-serif; font-size: 14px;">
+                            3D Dr. Adewale Oshin Street, Off Chief Collins Uchidiuno St, Lekki Phase 1 105102,
+                            Lekki,
+                            Lagos
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"
+                            style=" font-size: 16px; line-height: 21px; color: #101928; letter-spacing: -0.2px; padding-bottom: 20px; font-family: 'Inter', 'Arial', sans-serif; font-size: 14px;">
+                            Copyright©2023 Independent purchasing company | All rights reserved.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <a href="#"
+                                style="color: #19B820; font-family: 'Inter', 'Arial', sans-serif; font-size: 14px; margin-right: 24px;">X</a>
+                            <a href="#"
+                                style="color: #19B820; font-family: 'Inter', 'Arial', sans-serif; font-size: 14px; margin-right: 24px;">Linkedin</a>
+                            <a href="#"
+                                style="color: #19B820; font-family: 'Inter', 'Arial', sans-serif; font-size: 14px; margin-right: 24px;">Instagram</a>
+                            <a href="#"
+                                style="color: #19B820; font-family: 'Inter', 'Arial', sans-serif; font-size: 14px;">Facebook</a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

@@ -1,0 +1,168 @@
+<script setup lang="ts">
+import {
+  Checkbox,
+  TableBody,
+  TableCell,
+  TableHeadRow,
+  TableHeader,
+  TableRow,
+  TableShell,
+  TableSkeleton,
+} from '@gosource/ui';
+import ListActionsMenu from '~/components/lists/ListActionsMenu.vue';
+import ListCoverImage from '~/components/lists/ListCoverImage.vue';
+import type { ShoppingListListItem } from '~/lib/shopping-list';
+import { formatShoppingListCurrency, formatShoppingListDate } from '~/lib/shopping-list';
+
+const props = defineProps<{
+  lists: ShoppingListListItem[];
+  loading?: boolean;
+}>();
+
+const emit = defineEmits<{
+  rowClick: [list: ShoppingListListItem];
+  view: [list: ShoppingListListItem];
+  move: [list: ShoppingListListItem];
+  edit: [list: ShoppingListListItem];
+  delete: [list: ShoppingListListItem];
+  selectionChange: [ids: string[]];
+}>();
+
+const tableGridTemplate =
+  '44px minmax(0,1.4fr) minmax(0,0.45fr) minmax(0,0.7fr) minmax(0,0.7fr) 3rem';
+
+const skeletonColumns = [
+  { kind: 'checkbox' as const },
+  {
+    kind: 'stack' as const,
+    avatar: true,
+    lineClass: 'w-full',
+    sublineClass: 'w-4/5',
+  },
+  { kind: 'line' as const, lineClass: 'w-12' },
+  { kind: 'line' as const, lineClass: 'w-24' },
+  { kind: 'line' as const, lineClass: 'w-24' },
+  { kind: 'line' as const, lineClass: 'h-8 w-8' },
+];
+
+const selectedIds = ref<string[]>([]);
+
+const allSelected = computed(
+  () => props.lists.length > 0 && props.lists.every((list) => selectedIds.value.includes(list.id)),
+);
+
+const selectionState = computed<boolean | 'indeterminate'>(() => {
+  if (selectedIds.value.length === 0) {
+    return false;
+  }
+
+  if (allSelected.value) {
+    return true;
+  }
+
+  return 'indeterminate';
+});
+
+watch(
+  () => props.lists.map((list) => list.id),
+  (ids) => {
+    selectedIds.value = selectedIds.value.filter((id) => ids.includes(id));
+    emit('selectionChange', [...selectedIds.value]);
+  },
+  { immediate: true },
+);
+
+function toggleAllRows() {
+  if (allSelected.value) {
+    selectedIds.value = [];
+  } else {
+    selectedIds.value = props.lists.map((list) => list.id);
+  }
+
+  emit('selectionChange', [...selectedIds.value]);
+}
+
+function toggleRowSelection(listId: string) {
+  if (selectedIds.value.includes(listId)) {
+    selectedIds.value = selectedIds.value.filter((id) => id !== listId);
+  } else {
+    selectedIds.value = [...selectedIds.value, listId];
+  }
+
+  emit('selectionChange', [...selectedIds.value]);
+}
+</script>
+
+<template>
+  <TableShell class="flex flex-col">
+    <TableHeader>
+      <TableHeadRow
+        :style="{ gridTemplateColumns: tableGridTemplate }"
+        :class="loading ? 'pointer-events-none opacity-60' : undefined"
+      >
+        <TableCell class="flex items-center justify-center">
+          <Checkbox
+            :model-value="selectionState"
+            :disabled="loading"
+            aria-label="Select all lists"
+            @update:model-value="toggleAllRows"
+          />
+        </TableCell>
+        <TableCell>List name</TableCell>
+        <TableCell>Items</TableCell>
+        <TableCell>Amount</TableCell>
+        <TableCell>Updated</TableCell>
+        <TableCell class="sr-only">Actions</TableCell>
+      </TableHeadRow>
+    </TableHeader>
+
+    <TableSkeleton
+      v-if="loading"
+      :columns="skeletonColumns"
+      :grid-template-columns="tableGridTemplate"
+    />
+
+    <TableBody v-else>
+      <TableRow
+        v-for="list in lists"
+        :key="list.id"
+        class="cursor-pointer transition-colors duration-150 hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
+        :style="{ gridTemplateColumns: tableGridTemplate }"
+        @click="emit('rowClick', list)"
+      >
+        <TableCell class="flex items-center justify-center">
+          <Checkbox
+            :model-value="selectedIds.includes(list.id)"
+            :aria-label="`Select ${list.name}`"
+            @update:model-value="toggleRowSelection(list.id)"
+            @click.stop
+          />
+        </TableCell>
+        <TableCell class="flex items-center gap-3">
+          <ListCoverImage
+            :src="list.coverImageUrl"
+            :alt="list.name"
+            shape="circle"
+          />
+          <div class="min-w-0">
+            <p class="truncate font-medium text-grey-900">{{ list.name }}</p>
+            <p v-if="list.description" class="mt-0.5 truncate text-xs text-grey-300">
+              {{ list.description }}
+            </p>
+          </div>
+        </TableCell>
+        <TableCell>{{ list.itemCount }}</TableCell>
+        <TableCell>{{ formatShoppingListCurrency(list.amount) }}</TableCell>
+        <TableCell>{{ formatShoppingListDate(list.updatedAt) }}</TableCell>
+        <TableCell class="flex items-center justify-end">
+          <ListActionsMenu
+            @view="emit('view', list)"
+            @move="emit('move', list)"
+            @edit="emit('edit', list)"
+            @delete="emit('delete', list)"
+          />
+        </TableCell>
+      </TableRow>
+    </TableBody>
+  </TableShell>
+</template>

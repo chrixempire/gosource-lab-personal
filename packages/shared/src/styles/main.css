@@ -1,0 +1,296 @@
+@import './fonts.css';
+
+@source '../../../ui/src';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-background-default: var(--background-default);
+  --color-background-active: var(--background-active);
+  --color-background-canvas: var(--background-canvas);
+  --color-background-on-canvas: var(--background-on-canvas);
+  --color-button-primary: var(--button-primary);
+  --color-button-primary-clicked: var(--button-primary-clicked);
+  --color-button-neutral: var(--button-neutral);
+  --color-button-neutral-clicked: var(--button-neutral-clicked);
+  --color-button-disabled: var(--button-disabled);
+  --color-button-negative: var(--button-negative);
+  --color-button-negative-clicked: var(--button-negative-clicked);
+  --color-default: var(--text-default);
+  --color-text-default: var(--text-default);
+  --color-on-solid-bg: var(--on-solid-bg);
+  --color-border-default: var(--border-default);
+  --color-border-on-bg: var(--border-on-bg);
+  --color-border-input-default: var(--border-input-default);
+  --color-border-input-active: var(--border-input-active);
+
+  --color-grey-text: #344054;
+  --color-disabled: #f0f2f5;
+  --color-grey-50: #e4e7ec;
+  --color-grey-55: #f9fafb;
+  --color-grey-300: #667185;
+  --color-grey-400: #98a2b3;
+  --color-grey-900: #101928;
+  --color-orange-50: #fdf5f4;
+  --color-orange-500: #e54120;
+  --color-orange-brick: #e9822e;
+  --color-negative-50: #fef3f2;
+  --color-negative-500: #cb1a14;
+  --color-negative-800: #7a0e0a;
+  --color-primary-50: #e8f8e9;
+  --color-primary-500: #19b820;
+  --color-primary-800: #09420c;
+  --color-success-75: #daf1e2;
+  --color-success-100: #91d6a8;
+  --color-success-700: #036b26;
+  --color-warning-75: #fdeed4;
+  --color-warning-700: #865503;
+
+  --font-sans:
+    'SF Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Clash Display', ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background: rgb(255, 255, 255);
+  --foreground: rgb(16, 25, 40);
+  --card: rgb(255, 255, 255);
+  --card-foreground: rgb(16, 25, 40);
+  --popover: rgb(255, 255, 255);
+  --popover-foreground: rgb(16, 25, 40);
+  --primary: #19b820;
+  --primary-foreground: #e8f8e9;
+  --secondary: rgb(245, 245, 245);
+  --secondary-foreground: rgb(23, 23, 23);
+  --muted: rgb(245, 245, 245);
+  --muted-foreground: rgb(115, 115, 115);
+  --accent: rgb(245, 245, 245);
+  --accent-foreground: rgb(23, 23, 23);
+  --destructive: rgb(231, 0, 11);
+  --destructive-foreground: rgb(255, 255, 255);
+  --border: rgb(229, 229, 229);
+  --input: rgb(229, 229, 229);
+  --ring: rgb(22, 163, 74);
+  --sidebar: rgb(250, 250, 250);
+  --sidebar-foreground: rgb(16, 25, 40);
+  --sidebar-primary: rgb(23, 23, 23);
+  --sidebar-primary-foreground: rgb(250, 250, 250);
+  --sidebar-accent: rgb(245, 245, 245);
+  --sidebar-accent-foreground: rgb(23, 23, 23);
+  --sidebar-border: rgb(229, 229, 229);
+  --sidebar-ring: rgb(161, 161, 161);
+
+  --background-default: #e4e7ec;
+  --background-active: #a3acbd;
+  --background-canvas: #f0f2f5;
+  --background-on-canvas: #ffffff;
+
+  --button-primary: #19b820;
+  --button-primary-clicked: #09420c;
+  --button-neutral: #f0f2f5;
+  --button-neutral-clicked: #a3acbd;
+  --button-disabled: #e4e7ec;
+  --button-negative: #d42620;
+  --button-negative-clicked: #b9201b;
+
+  --text-default: #232b38;
+  --on-solid-bg: #ffffff;
+
+  --border-default: #e4e7ec;
+  --border-on-bg: #e4e7ec;
+  --border-input-default: #e4e7ec;
+  --border-input-active: #19b820;
+
+  /*
+    Button inner elevation (Figma-style): inset 0 -2px blur 1 — shadow color is a darker,
+    semi-transparent mix derived from each fill token so it tracks theme changes.
+  */
+  --button-inner-from-primary: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-primary) 58%, black) 50%,
+    transparent
+  );
+  --button-inner-from-negative: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-negative) 58%, black) 50%,
+    transparent
+  );
+  --button-inner-from-neutral: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-neutral) 45%, black) 45%,
+    transparent
+  );
+  --button-inner-from-secondary: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--secondary) 40%, black) 42%,
+    transparent
+  );
+  --button-inner-from-surface: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--background-default) 52%, black) 48%,
+    transparent
+  );
+  --button-inner-from-background: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--background) 78%, black) 35%,
+    transparent
+  );
+
+  --button-elevated-inner-primary: inset 0 -2px 1px 0 var(--button-inner-from-primary);
+  --button-elevated-inner-negative: inset 0 -2px 1px 0 var(--button-inner-from-negative);
+  --button-elevated-inner-neutral: inset 0 -2px 1px 0 var(--button-inner-from-neutral);
+  --button-elevated-inner-secondary: inset 0 -2px 1px 0 var(--button-inner-from-secondary);
+  --button-elevated-inner-surface: inset 0 -2px 1px 0 var(--button-inner-from-surface);
+  --button-elevated-inner-outline: inset 0 -2px 1px 0 var(--button-inner-from-background);
+
+  /* Hover: rim tied to the same tokens as hover fills (see gosource-admin-v2 button variants). */
+  --button-inner-from-primary-hover: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-primary-clicked) 58%, black) 50%,
+    transparent
+  );
+  --button-inner-from-negative-hover: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-negative-clicked) 58%, black) 50%,
+    transparent
+  );
+  --button-inner-from-neutral-hover: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-neutral-clicked) 48%, black) 45%,
+    transparent
+  );
+  --button-inner-from-secondary-hover: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--secondary) 52%, black) 42%,
+    transparent
+  );
+  --button-inner-from-surface-hover: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--background-active) 52%, black) 48%,
+    transparent
+  );
+  --button-inner-from-accent-hover: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--accent) 45%, black) 42%,
+    transparent
+  );
+
+  --button-elevated-inner-primary-hover: inset 0 -2px 1px 0 var(--button-inner-from-primary-hover);
+  --button-elevated-inner-negative-hover: inset 0 -2px 1px 0 var(--button-inner-from-negative-hover);
+  --button-elevated-inner-neutral-hover: inset 0 -2px 1px 0 var(--button-inner-from-neutral-hover);
+  --button-elevated-inner-secondary-hover: inset 0 -2px 1px 0 var(--button-inner-from-secondary-hover);
+  --button-elevated-inner-surface-hover: inset 0 -2px 1px 0 var(--button-inner-from-surface-hover);
+  --button-elevated-inner-outline-hover: inset 0 -2px 1px 0 var(--button-inner-from-accent-hover);
+
+  /* Pressed: rim from active (clicked) fill so it matches hover/rest elevation logic. */
+  --button-inner-pressed-primary: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-primary-clicked) 70%, black) 38%,
+    transparent
+  );
+  --button-inner-pressed-negative: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-negative-clicked) 70%, black) 38%,
+    transparent
+  );
+  --button-inner-pressed-neutral: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--button-neutral-clicked) 55%, black) 38%,
+    transparent
+  );
+  --button-inner-pressed-secondary: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--secondary) 58%, black) 38%,
+    transparent
+  );
+  --button-inner-pressed-surface: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--background-active) 62%, black) 38%,
+    transparent
+  );
+  --button-inner-pressed-outline: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--accent) 55%, black) 32%,
+    transparent
+  );
+
+  --button-elevated-pressed-primary: inset 0 2px 2px 0 var(--button-inner-pressed-primary);
+  --button-elevated-pressed-negative: inset 0 2px 2px 0 var(--button-inner-pressed-negative);
+  --button-elevated-pressed-neutral: inset 0 2px 2px 0 var(--button-inner-pressed-neutral);
+  --button-elevated-pressed-secondary: inset 0 2px 2px 0 var(--button-inner-pressed-secondary);
+  --button-elevated-pressed-surface: inset 0 2px 2px 0 var(--button-inner-pressed-surface);
+  --button-elevated-pressed-outline: inset 0 2px 2px 0 var(--button-inner-pressed-outline);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    @apply bg-background text-foreground antialiased;
+    color: var(--color-grey-text);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    color: var(--color-grey-900);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-heading);
+  }
+
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-clash-display {
+    font-family: var(--font-display);
+  }
+}

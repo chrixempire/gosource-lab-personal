@@ -1,0 +1,32 @@
+{
+  "name": "@gosource/api",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node -e \"console.log('@gosource/api dev is paused (not in use). See apps/api/README.md'); process.exit(0)\"",
+    "dev:run": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.6",
+    "@nestjs/platform-express": "^11.1.6",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "helmet": "^8.1.0",
+    "mongodb": "^7.2.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.8",
+    "@types/node": "^24.3.1",
+    "dotenv": "^17.4.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0"
+  }
+}
