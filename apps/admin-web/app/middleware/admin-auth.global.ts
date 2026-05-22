@@ -1,4 +1,5 @@
 import { useAdminSession } from '~/composables/useAdminSession';
+import { adminSignInLocation } from '~/lib/auth-redirect';
 
 function isPublicAdminRoute(path: string) {
   if (path.startsWith('/auth')) {
@@ -20,6 +21,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (!hasSession.value) {
-    return navigateTo('/auth/sign-in');
+    return navigateTo(adminSignInLocation(to.fullPath));
   }
 });

@@ -2,7 +2,9 @@ import type { AdminSessionState } from '~/types/admin-session';
 import {
   fetchAdminProfile,
   getAccessTokenCookie,
+  getRefreshTokenCookie,
   getAdminSessionSnapshot,
+  refreshAdminSession,
 } from '~~/server/utils/admin-auth-session';
 
 export default defineNuxtPlugin(async () => {
@@ -27,18 +29,39 @@ export default defineNuxtPlugin(async () => {
   }
 
   const accessToken = getAccessTokenCookie(event);
-  if (!accessToken) {
+  const refreshToken = getRefreshTokenCookie(event);
+
+  if (!accessToken && !refreshToken) {
     session.value = null;
     sessionResolved.value = true;
     return;
   }
 
   try {
-    session.value = await fetchAdminProfile(event, accessToken, { mergeWith: snapshot });
-  } catch {
-    if (!snapshot) {
-      session.value = null;
+    if (!accessToken && refreshToken) {
+      session.value = await refreshAdminSession(event);
+      return;
     }
+
+    session.value = await fetchAdminProfile(event, accessToken!, { mergeWith: snapshot });
+  } catch (error) {
+    const unauthorized =
+      typeof error === 'object' &&
+      error !== null &&
+      (Number((error as { status?: number; statusCode?: number }).status) === 401 ||
+        Number((error as { status?: number; statusCode?: number }).statusCode) === 401);
+
+    if (refreshToken && unauthorized) {
+      try {
+        session.value = await refreshAdminSession(event);
+        return;
+      } catch {
+        session.value = snapshot ?? null;
+        return;
+      }
+    }
+
+    session.value = snapshot ?? null;
   } finally {
     sessionResolved.value = true;
   }

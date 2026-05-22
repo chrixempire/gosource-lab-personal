@@ -9,6 +9,7 @@ import {
   createWalletApi,
 } from '@gosource/api-client';
 import type { CustomerMeResponse } from '@gosource/api-client';
+import { customerSignInLocation } from '~/lib/auth-redirect';
 
 export default defineNuxtPlugin(() => {
   const route = useRoute();
@@ -35,7 +36,7 @@ export default defineNuxtPlugin(() => {
       session.value = null;
 
       if (import.meta.client && !route.path.startsWith('/auth')) {
-        await navigateTo('/auth/sign-in');
+        await navigateTo(customerSignInLocation(route.fullPath));
       }
     },
   });

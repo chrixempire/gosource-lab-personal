@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Input } from '@gosource/ui';
 import { useDebounceFn } from '@vueuse/core';
 import { Minus, Plus, Trash2 } from 'lucide-vue-next';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
@@ -12,8 +13,8 @@ const props = withDefaults(
     productId?: string;
     /** Unit label matching cart line keys (see `effectiveUnitChoices`). */
     unit?: string;
-    /** `modal`: taller strip. `cart`: compact strip for cart drawer and request lines. */
-    variant?: 'card' | 'modal' | 'cart';
+    /** `modal`: taller strip. `cart`: compact strip for cart drawer and request lines. `detail`: grey picker on product detail / modal. */
+    variant?: 'card' | 'modal' | 'cart' | 'detail';
     /** Controlled quantity (request edit, etc.). */
     modelValue?: number;
     disabled?: boolean;
@@ -117,6 +118,11 @@ function onQtyInput() {
   debouncedCommitDraft();
 }
 
+function onDraftQtyUpdate(value: string) {
+  draftQty.value = value;
+  onQtyInput();
+}
+
 async function flushDebounceAndCommit() {
   cancelDebouncedCommit();
   await commitDraft();
@@ -191,13 +197,14 @@ async function onPlus() {
 
 const isModal = computed(() => props.variant === 'modal');
 const isCart = computed(() => props.variant === 'cart');
+const isDetail = computed(() => props.variant === 'detail');
 
 const showTrashOnMinus = computed(() => {
   if (qty.value > 1) {
     return false;
   }
 
-  if (isControlled.value) {
+  if (isControlled.value && !isDetail.value) {
     return props.allowRemoveAtMin;
   }
 
@@ -207,69 +214,136 @@ const showTrashOnMinus = computed(() => {
 const minusDisabled = computed(
   () => props.disabled || (isControlled.value && qty.value <= 1 && !props.allowRemoveAtMin),
 );
+
+const stripShellClass = computed(() => {
+  if (isDetail.value) {
+    return 'h-12 min-h-12 w-[12rem] shrink-0 overflow-hidden rounded-full bg-grey-50';
+  }
+
+  if (isModal.value) {
+    return 'h-12 min-h-12 overflow-hidden rounded-full bg-button-primary p-0.5 shadow-md';
+  }
+
+  if (isCart.value) {
+    return 'h-7 min-h-7 w-full max-w-[7.5rem] overflow-hidden rounded-full bg-button-primary p-0.5 shadow-md';
+  }
+
+  return 'h-9 min-h-9 overflow-hidden rounded-full bg-button-primary p-0.5 shadow-md';
+});
+
+const stripLayoutClass = computed(() => (isDetail.value ? 'items-stretch' : 'items-center'));
+
+const minusBtnClass = computed(() => {
+  if (isDetail.value) {
+    return [
+      'flex min-h-0 min-w-0 basis-[35%] flex-shrink-0 flex-grow-0 items-center justify-center rounded-l-full rounded-r-none text-grey-700 transition-colors disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-[#d0d5dd]',
+      minusDisabled.value ? 'opacity-50' : '',
+    ];
+  }
+
+  const basis = isCart.value ? 'basis-[35%] min-w-0' : 'min-w-0 basis-[35%]';
+
+  return [
+    `flex min-h-0 flex-shrink-0 flex-grow-0 items-center justify-center self-stretch rounded-l-full rounded-r-none ${basis}`,
+    'text-white transition-colors enabled:cursor-pointer enabled:hover:bg-white/15',
+    minusDisabled.value ? 'cursor-not-allowed opacity-50' : '',
+  ];
+});
+
+const plusBtnClass = computed(() => {
+  if (isDetail.value) {
+    return [
+      'flex min-h-0 min-w-0 basis-[35%] flex-shrink-0 flex-grow-0 items-center justify-center rounded-r-full rounded-l-none text-grey-700 transition-colors disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-[#d0d5dd]',
+      props.disabled ? 'opacity-50' : '',
+    ];
+  }
+
+  const basis = isCart.value ? 'basis-[35%] min-w-0' : 'min-w-0 basis-[35%]';
+
+  return [
+    `flex min-h-0 flex-shrink-0 flex-grow-0 items-center justify-center self-stretch rounded-r-full rounded-l-none ${basis}`,
+    'text-white transition-colors enabled:cursor-pointer enabled:hover:bg-white/15',
+    props.disabled ? 'cursor-not-allowed opacity-50' : '',
+  ];
+});
+
+const centerShellClass = computed(() => {
+  if (isDetail.value) {
+    return 'flex min-h-0 min-w-0 basis-[30%] flex-shrink-0 flex-grow-0 items-stretch self-stretch p-0';
+  }
+
+  return 'flex min-h-0 min-w-0 basis-[30%] flex-shrink-0 flex-grow-0 items-center justify-center p-0';
+});
+
+const stripInputClass = computed(() => {
+  const base =
+    '!min-h-0 !w-full !px-1 !py-0 !text-center !font-semibold !tabular-nums !shadow-none disabled:!opacity-100';
+
+  if (isDetail.value) {
+    return `${base} !h-full !rounded-md !border !border-grey-50 !bg-white !text-[16px] !text-grey-900 focus:!border-border-input-active disabled:!bg-white`;
+  }
+
+  const size = isModal.value ? '!text-base' : isCart.value ? '!text-[12px]' : '!text-[14px]';
+  const height = isModal.value ? '!h-11' : isCart.value ? '!h-6' : '!h-8';
+
+  return `${base} ${height} ${size} !rounded-md !border-2 !border-white !bg-white !text-[#04550B] focus:!border-white focus:!ring-2 focus:!ring-white/80 disabled:!bg-white`;
+});
+
+const iconSizeClass = computed(() =>
+  isDetail.value || isModal.value ? 'size-5' : isCart.value ? 'size-3' : 'size-4',
+);
 </script>
 
 <template>
   <div
     :class="[
-      'flex w-full items-stretch rounded-full bg-button-primary p-0.5 shadow-md',
-      isModal ? 'h-12 min-h-12' : isCart ? 'h-7 min-h-7 w-full max-w-[7.5rem]' : 'h-9 min-h-9',
+      'flex',
+      stripLayoutClass,
+      isDetail ? '' : 'w-full',
+      stripShellClass,
       disabled && 'pointer-events-none opacity-60',
     ]"
     @click.stop
   >
     <button
       type="button"
-      :class="[
-        'flex min-h-0 flex-shrink-0 flex-grow-0 items-center justify-center rounded-full text-white transition hover:bg-white/15',
-        isCart ? 'basis-[30%] min-w-0' : 'min-w-0 basis-[35%]',
-        isModal ? 'text-lg' : '',
-        minusDisabled ? 'cursor-not-allowed' : 'cursor-pointer',
-      ]"
+      :class="minusBtnClass"
       :disabled="minusDisabled"
       :aria-label="showTrashOnMinus ? 'Remove item' : 'Decrease quantity'"
       @click="onMinusOrTrash"
     >
-      <Trash2 v-if="showTrashOnMinus" :class="isModal ? 'size-5' : isCart ? 'size-3' : 'size-4'" />
-      <Minus v-else :class="isModal ? 'size-5' : isCart ? 'size-3' : 'size-4'" />
+      <Trash2 v-if="showTrashOnMinus" :class="iconSizeClass" />
+      <Minus v-else :class="iconSizeClass" />
     </button>
 
     <div
       :class="[
-        'flex min-h-0 flex-shrink-0 flex-grow-0 items-center justify-center rounded-md border-2 border-white bg-white shadow-inner focus-within:border-white focus-within:ring-2 focus-within:ring-white/80',
-        isModal ? 'min-h-10 basis-[30%] px-1' : isCart ? 'min-h-6 min-w-0 basis-[40%] px-1' : 'min-h-8 basis-[30%] px-1',
+        'flex min-h-0 flex-shrink-0 flex-grow-0',
+        centerShellClass,
       ]"
     >
-      <input
-        v-model="draftQty"
+      <Input
+        :model-value="draftQty"
         type="text"
         inputmode="numeric"
         maxlength="3"
         :disabled="disabled"
-        :class="[
-          'w-full min-w-0 bg-transparent text-center font-semibold tabular-nums text-[#04550B] outline-none ring-0 placeholder:text-grey-300',
-          isModal ? 'text-base' : isCart ? 'text-[12px]' : 'text-[14px]',
-        ]"
+        :class="stripInputClass"
         aria-label="Quantity"
-        @input="onQtyInput"
+        @update:model-value="onDraftQtyUpdate"
         @blur="onQtyBlur"
         @keydown.enter.prevent="onQtyEnter"
-      >
+      />
     </div>
 
     <button
       type="button"
-      :class="[
-        'flex min-h-0 flex-shrink-0 flex-grow-0 items-center justify-center rounded-full text-white transition hover:bg-white/15',
-        isCart ? 'basis-[30%] min-w-0' : 'min-w-0 basis-[35%]',
-        isModal ? 'text-lg' : '',
-        disabled ? 'cursor-not-allowed' : 'cursor-pointer',
-      ]"
+      :class="plusBtnClass"
       :disabled="disabled"
       aria-label="Increase quantity"
       @click="onPlus"
     >
-      <Plus :class="isModal ? 'size-5' : isCart ? 'size-3' : 'size-4'" />
+      <Plus :class="iconSizeClass" />
     </button>
   </div>
 </template>

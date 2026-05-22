@@ -7,7 +7,7 @@ import { Button, RadioGroup, RadioGroupItem } from '@gosource/ui';
 import { ChevronLeft, ClipboardList } from 'lucide-vue-next';
 import { useAddToList } from '~/composables/useAddToList';
 import MarketBranchSetupBanner from '~/components/market/MarketBranchSetupBanner.vue';
-import MarketProductQtyStrip from '~/components/market/MarketProductQtyStrip.vue';
+import MarketProductDetailCartActions from '~/components/market/MarketProductDetailCartActions.vue';
 import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import MarketSimilarProductsStrip from '~/components/market/MarketSimilarProductsStrip.vue';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
@@ -93,7 +93,7 @@ useHead({
   title: computed(() => (product.value ? `${product.value.name} · Market` : 'Market')),
 });
 
-const { addOne, getQtyForUnit } = useMarketplaceCart();
+const { getQtyForUnit } = useMarketplaceCart();
 const { openPickerFromProduct } = useAddToList();
 
 const unitChoices = computed(() => (product.value ? effectiveUnitChoices(product.value) : []));
@@ -163,18 +163,6 @@ const listAddQuantity = computed(() => {
   const lineQty = selectedLineQty.value;
   return lineQty > 0 ? lineQty : 1;
 });
-
-async function onAddToCart() {
-  if (!product.value || !inStock.value) {
-    return;
-  }
-
-  try {
-    await addOne(product.value.id, selectedUnit.value);
-  } catch {
-    /* toasts handled in market service */
-  }
-}
 
 async function onAddToList() {
   if (!product.value || !inStock.value || !selectedUnit.value) {
@@ -288,35 +276,13 @@ async function onAddToList() {
           </section>
 
           <div class="w-full min-w-0 lg:max-w-[80%]">
-            <div class="w-full max-w-full space-y-2 lg:w-2/5">
-              <Button
-                v-if="!inStock"
-                size="large"
-                variant="destructive"
-                class="!h-14 w-full !rounded-full !text-[17px] !font-semibold shadow-md"
-                type="button"
-                disabled
-              >
-                Out of stock
-              </Button>
-              <template v-else-if="selectedLineQty === 0">
-                <Button
-                  size="large"
-                  class="!h-14 w-full !rounded-full !text-[17px] !font-semibold shadow-md"
-                  type="button"
-                  @click="onAddToCart"
-                >
-                  Add to cart
-                </Button>
-              </template>
-              <template v-else>
-                <MarketProductQtyStrip
-                  :product-id="product.id"
-                  :unit="selectedUnit"
-                  variant="modal"
-                />
-              </template>
-            </div>
+            <MarketProductDetailCartActions
+              v-if="product"
+              :product="product"
+              :unit="selectedUnit"
+              :in-stock="inStock"
+              class="w-full max-w-full lg:w-2/5"
+            />
           </div>
         </div>
       </div>

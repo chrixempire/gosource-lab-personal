@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     return forwardApiError(event, error, 'Unable to sign in right now') as never;
   }
 
-  if (!result?.access_token || !result?.data?.id) {
+  if (!result?.access_token || !result?.refresh_token || !result?.data?.id) {
     throw createError({
       statusCode: 401,
       statusMessage: 'A complete admin session is required',
@@ -41,7 +41,14 @@ export default defineEventHandler(async (event) => {
     data: user,
   });
 
-  setAdminAuthSession(event, result.access_token, session);
+  setAdminAuthSession(
+    event,
+    {
+      accessToken: result.access_token,
+      refreshToken: result.refresh_token,
+    },
+    session,
+  );
 
   return session;
 });

@@ -19,6 +19,7 @@ import {
   VerifyOTPDto,
 } from './dto/set-password.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
+import { AdminRefreshTokenDto } from './dto/admin-refresh-token.dto';
 import { AdminRolesGuard } from './guard/adminRole.guard';
 import { CreateAdminRoleDto } from './dto/create-role.dto';
 import { AdminRoles } from './enum/admin.enum';
@@ -51,6 +52,12 @@ export class AuthController {
   @Post('login')
   async login(@Body() data: AdminLoginDto) {
     return await this.adminAuthService.login(data);
+  }
+
+  @HttpCode(200)
+  @Post('refresh')
+  async refresh(@Body() data: AdminRefreshTokenDto) {
+    return await this.adminAuthService.refresh(data);
   }
 
   @AdminAuth()

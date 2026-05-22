@@ -14,10 +14,9 @@ import {
   RadioGroupItem,
 } from '@gosource/ui';
 import { useAddToList } from '~/composables/useAddToList';
-import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { formatNaira, useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { ClipboardList } from 'lucide-vue-next';
-import MarketProductQtyStrip from './MarketProductQtyStrip.vue';
+import MarketProductDetailCartActions from './MarketProductDetailCartActions.vue';
 import MarketProductImage from './MarketProductImage.vue';
 
 const props = defineProps<{
@@ -33,11 +32,7 @@ function onDialogOpen(value: boolean) {
   emit('update:open', value);
 }
 
-const { addOne, getQtyForUnit } = useMarketplaceCart();
-const {
-  openBranchGate,
-  requestProductModalResume,
-} = useMarketBranchGate();
+const { getQtyForUnit } = useMarketplaceCart();
 const { openPickerFromProduct } = useAddToList();
 
 const unitChoices = computed(() => (props.product ? effectiveUnitChoices(props.product) : []));
@@ -78,24 +73,6 @@ const displayUnitChoices = computed(() =>
 
 function close() {
   onDialogOpen(false);
-}
-
-async function onAddToCart() {
-  if (!props.product || !inStock.value) {
-    return;
-  }
-
-  try {
-    const added = await addOne(props.product.id, selectedUnit.value);
-    if (!added) {
-      requestProductModalResume(props.product);
-      close();
-      await nextTick();
-      openBranchGate();
-    }
-  } catch {
-    /* toasts handled in market service */
-  }
 }
 
 async function onAddToList() {
@@ -224,35 +201,14 @@ const detailText = computed(() => props.product?.longDescription ?? props.produc
             </section>
 
             <div class="hidden w-full min-w-0 lg:block lg:max-w-[80%]">
-              <div class="w-full max-w-full space-y-2 lg:w-3/5">
-                <Button
-                  v-if="!inStock"
-                  size="large"
-                  variant="destructive"
-                  class="h-14! w-full rounded-full! text-[17px]! !font-semibold shadow-md"
-                  type="button"
-                  disabled
-                >
-                  Out of stock
-                </Button>
-                <template v-else-if="selectedLineQty === 0">
-                  <Button
-                    size="large"
-                    class="h-14! w-full rounded-full! text-[17px]! !font-semibold shadow-md"
-                    type="button"
-                    @click="onAddToCart"
-                  >
-                    Add to cart
-                  </Button>
-                </template>
-                <template v-else>
-                  <MarketProductQtyStrip
-                    :product-id="product.id"
-                    :unit="selectedUnit"
-                    variant="modal"
-                  />
-                </template>
-              </div>
+              <MarketProductDetailCartActions
+                :product="product"
+                :unit="selectedUnit"
+                :in-stock="inStock"
+                close-on-success
+                class="w-full max-w-full lg:w-3/5"
+                @close="close"
+              />
             </div>
           </div>
         </div>
@@ -262,34 +218,14 @@ const detailText = computed(() => props.product?.longDescription ?? props.produc
         v-if="product"
         class="shrink-0 flex-col gap-2 border-t border-grey-50 bg-background-on-canvas !px-4 !py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:!px-6 lg:hidden"
       >
-        <Button
-          v-if="!inStock"
-          size="large"
-          variant="destructive"
-          class="!basis-auto !grow-0 mx-auto !h-14 w-full max-w-md !rounded-full !text-[17px] !font-semibold shadow-md"
-          type="button"
-          disabled
-        >
-          Out of stock
-        </Button>
-        <template v-else-if="selectedLineQty === 0">
-          <Button
-            size="large"
-            class="!basis-auto !grow-0 mx-auto !h-14 w-full max-w-md !rounded-full !text-[17px] !font-semibold shadow-md"
-            type="button"
-            @click="onAddToCart"
-          >
-            Add to cart
-          </Button>
-        </template>
-        <template v-else>
-          <MarketProductQtyStrip
-            :product-id="product.id"
-            :unit="selectedUnit"
-            variant="modal"
-            class="!basis-auto !grow-0 mx-auto w-full max-w-md min-w-0"
-          />
-        </template>
+        <MarketProductDetailCartActions
+          :product="product"
+          :unit="selectedUnit"
+          :in-stock="inStock"
+          close-on-success
+          class="mx-auto w-full max-w-md min-w-0"
+          @close="close"
+        />
       </DialogFooter>
     </DialogContent>
   </Dialog>

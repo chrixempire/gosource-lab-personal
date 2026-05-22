@@ -4,6 +4,7 @@ import { BrandLogo, Button, Input, PasswordInput, toast } from '@gosource/ui';
 import AuthCardShell from '~/components/auth/shared/AuthCardShell.vue';
 import AuthPageShell from '~/components/auth/shared/AuthPageShell.vue';
 import { validateEmail } from '~/utils/auth-validation';
+import { sanitizeAuthRedirectPath, customerDefaultAfterLogin } from '~/lib/auth-redirect';
 import { extractApiErrorMessage, extractApiResponseMessage } from '~/utils/api-error';
 
 definePageMeta({
@@ -56,7 +57,7 @@ async function submit() {
     });
     session.value = result;
     toast.success(extractApiResponseMessage(result, 'Signed in'));
-    await navigateTo('/market');
+    await navigateTo(sanitizeAuthRedirectPath(route.query.redirect, customerDefaultAfterLogin()));
   } catch (error) {
     const message = extractApiErrorMessage(error, 'Unable to sign in right now');
     errorMessage.value = message;

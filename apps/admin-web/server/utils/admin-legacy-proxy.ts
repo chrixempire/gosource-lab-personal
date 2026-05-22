@@ -12,8 +12,8 @@ export function getLegacyReceiptEmailHost(event: H3Event) {
 
   return new URL(getAdminLegacyApiBaseUrl(event)).host;
 }
-import { getAccessTokenCookie } from './admin-auth-session';
 import { forwardApiError } from './forward-api-error';
+import { withAdminLegacyAuthRetry } from './admin-legacy-proxy-auth';
 
 type LegacyQueryValue =
   | string
@@ -32,15 +32,6 @@ export async function fetchAdminLegacyApi<T>(
     fallbackMessage?: string;
   },
 ): Promise<T> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
   const query = Object.fromEntries(
     Object.entries(options?.query ?? {}).filter(([, value]) => {
@@ -55,12 +46,14 @@ export async function fetchAdminLegacyApi<T>(
   ) as Record<string, string | number | boolean | string[] | number[]>;
 
   try {
-    return (await $fetch(`${baseUrl}${path}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      query,
-    })) as T;
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        query,
+      }) as Promise<T>,
+    );
   } catch (error) {
     const code =
       typeof error === 'object' && error !== null && 'code' in error
@@ -87,25 +80,18 @@ export async function patchAdminLegacyApi<T>(
   body: Record<string, unknown>,
   options?: { fallbackMessage?: string },
 ): Promise<T> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
 
   try {
-    return (await $fetch(`${baseUrl}${path}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body,
-    })) as T;
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body,
+      }) as Promise<T>,
+    );
   } catch (error) {
     return forwardApiError(
       event,
@@ -121,26 +107,19 @@ export async function postAdminLegacyApi<T>(
   body: Record<string, unknown>,
   options?: { fallbackMessage?: string; headers?: Record<string, string> },
 ): Promise<T> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
 
   try {
-    return (await $fetch(`${baseUrl}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        ...options?.headers,
-      },
-      body,
-    })) as T;
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          ...options?.headers,
+        },
+        body,
+      }) as Promise<T>,
+    );
   } catch (error) {
     return forwardApiError(
       event,
@@ -156,15 +135,6 @@ export async function patchAdminLegacyFormData<T>(
   fields: Record<string, string | number | boolean | undefined | null>,
   options?: { fallbackMessage?: string },
 ): Promise<T> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
   const formData = new FormData();
 
@@ -176,13 +146,15 @@ export async function patchAdminLegacyFormData<T>(
   }
 
   try {
-    return (await $fetch(`${baseUrl}${path}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: formData,
-    })) as T;
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      }) as Promise<T>,
+    );
   } catch (error) {
     return forwardApiError(
       event,
@@ -198,15 +170,6 @@ export async function postAdminLegacyFormData<T>(
   fields: Record<string, string | number | boolean | undefined | null>,
   options?: { fallbackMessage?: string },
 ): Promise<T> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
   const formData = new FormData();
 
@@ -218,13 +181,15 @@ export async function postAdminLegacyFormData<T>(
   }
 
   try {
-    return (await $fetch(`${baseUrl}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: formData,
-    })) as T;
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      }) as Promise<T>,
+    );
   } catch (error) {
     return forwardApiError(
       event,
@@ -240,25 +205,18 @@ export async function deleteAdminLegacyApi<T>(
   body: Record<string, unknown>,
   options?: { fallbackMessage?: string },
 ): Promise<T> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
 
   try {
-    return (await $fetch(`${baseUrl}${path}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body,
-    })) as T;
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body,
+      }) as Promise<T>,
+    );
   } catch (error) {
     return forwardApiError(
       event,
@@ -274,25 +232,18 @@ export async function postAdminLegacyMultipart<T>(
   formData: FormData,
   options?: { fallbackMessage?: string },
 ): Promise<T> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
 
   try {
-    return (await $fetch(`${baseUrl}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: formData,
-    })) as T;
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      }) as Promise<T>,
+    );
   } catch (error) {
     return forwardApiError(
       event,
@@ -308,25 +259,18 @@ export async function patchAdminLegacyMultipart<T>(
   formData: FormData,
   options?: { fallbackMessage?: string },
 ): Promise<T> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
 
   try {
-    return (await $fetch(`${baseUrl}${path}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: formData,
-    })) as T;
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      }) as Promise<T>,
+    );
   } catch (error) {
     return forwardApiError(
       event,
@@ -341,24 +285,17 @@ export async function fetchAdminLegacyBinary(
   path: string,
   options?: { fallbackMessage?: string },
 ): Promise<ArrayBuffer> {
-  const accessToken = getAccessTokenCookie(event);
-
-  if (!accessToken) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'No admin session was found',
-    });
-  }
-
   const baseUrl = getAdminLegacyApiBaseUrl(event);
 
   try {
-    return await $fetch<ArrayBuffer>(`${baseUrl}${path}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      responseType: 'arrayBuffer',
-    });
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch<ArrayBuffer>(`${baseUrl}${path}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        responseType: 'arrayBuffer',
+      }),
+    );
   } catch (error) {
     return forwardApiError(
       event,

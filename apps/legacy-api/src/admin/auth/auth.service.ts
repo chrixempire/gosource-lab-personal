@@ -125,6 +125,52 @@ export class AuthService {
    * @param data
    * @returns
    */
+  private buildAdminTokenPayload(admin: {
+    _id: unknown;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string | null;
+    roleId?: { name?: string } | null;
+  }) {
+    return {
+      id: admin._id,
+      role: admin?.roleId?.name,
+      email: admin.email,
+      firstName: admin.firstName,
+      lastName: admin.lastName,
+      phoneNumber: admin?.phoneNumber,
+    };
+  }
+
+  private async issueAdminAuthTokens(admin: {
+    _id: unknown;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string | null;
+    roleId?: { name?: string } | null;
+  }) {
+    const payload = this.buildAdminTokenPayload(admin);
+
+    const access_token = await this.jwtService.signAsync(
+      { ...payload, tokenType: 'access' },
+      { expiresIn: '15m' },
+    );
+
+    const refresh_token = await this.jwtService.signAsync(
+      { ...payload, tokenType: 'refresh' },
+      { expiresIn: '14d' },
+    );
+
+    return {
+      message: 'Admin login successful',
+      data: payload,
+      access_token,
+      refresh_token,
+    };
+  }
+
   async login(data: any): Promise<any> {
     const admin: any = await this.adminUserModel
       .findOne({ email: data.email })
@@ -146,21 +192,47 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const payload = {
-      id: admin._id,
-      role: admin?.roleId?.name, // optional chaining for users without role
-      email: admin.email,
-      firstName: admin.firstName,
-      lastName: admin.lastName,
-      phoneNumber: admin?.phoneNumber,
-    };
+    return this.issueAdminAuthTokens(admin);
+  }
 
-    const access_token = await this.jwtService.signAsync(payload);
+  async refresh(data: { refreshToken: string }): Promise<any> {
+    const incomingToken = data.refreshToken?.trim();
+
+    if (!incomingToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    let decoded: Record<string, unknown>;
+
+    try {
+      decoded = await this.jwtService.verifyAsync(incomingToken, {
+        secret: process.env.JWT_SECRET,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (decoded.tokenType !== 'refresh') {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const adminId = decoded.id;
+
+    if (!adminId) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const admin: any = await this.adminUserModel
+      .findById(adminId)
+      .populate('roleId');
+
+    if (!admin) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
 
     return {
-      message: 'Admin login successful',
-      data: payload,
-      access_token,
+      ...(await this.issueAdminAuthTokens(admin)),
+      message: 'Session refreshed successfully',
     };
   }
 

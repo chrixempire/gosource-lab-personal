@@ -288,21 +288,6 @@ watch(requestId, () => {
     </div>
 
     <div v-if="loading" class="flex flex-col gap-6">
-      <section class="rounded-[24px] border border-grey-50 bg-white p-5">
-        <div class="h-6 w-36 animate-pulse rounded bg-grey-50" />
-        <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
-        <div class="mt-5">
-          <div class="mb-3 h-3 w-16 animate-pulse rounded bg-grey-50" />
-          <div class="space-y-3">
-            <div
-              v-for="index in 4"
-              :key="index"
-              class="h-4 animate-pulse rounded bg-grey-50"
-            />
-          </div>
-        </div>
-      </section>
-
       <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
         <section class="rounded-[24px] border border-grey-50 bg-white p-5">
           <div class="h-6 w-40 animate-pulse rounded bg-grey-50" />
@@ -310,7 +295,7 @@ watch(requestId, () => {
           <div class="mt-5 grid gap-3">
             <div
               v-for="index in 4"
-              :key="index"
+              :key="`payment-${index}`"
               class="rounded-[18px] border border-grey-50 p-4"
             >
               <div class="h-5 w-32 animate-pulse rounded bg-grey-50" />
@@ -320,18 +305,33 @@ watch(requestId, () => {
         </section>
 
         <section class="rounded-[24px] border border-grey-50 bg-white p-5">
-          <div class="h-11 w-full animate-pulse rounded-[16px] bg-grey-50" />
+          <div class="h-6 w-36 animate-pulse rounded bg-grey-50" />
+          <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
+          <div class="mt-5 space-y-3">
+            <div
+              v-for="index in 4"
+              :key="`summary-${index}`"
+              class="h-4 animate-pulse rounded bg-grey-50"
+            />
+          </div>
+          <div class="mt-6 h-11 w-full animate-pulse rounded-[16px] bg-grey-50" />
         </section>
       </div>
 
-      <div class="grid gap-6 xl:grid-cols-2">
-        <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+        <div class="h-6 w-36 animate-pulse rounded bg-grey-50" />
+        <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
+        <div class="mt-5 h-32 animate-pulse rounded-[18px] bg-grey-55" />
+      </section>
+
+      <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <section class="min-w-0 rounded-[24px] border border-grey-50 bg-white p-5">
           <div class="h-6 w-40 animate-pulse rounded bg-grey-50" />
           <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
           <div class="mt-5 grid gap-4 min-[560px]:grid-cols-2">
             <div
               v-for="index in 4"
-              :key="index"
+              :key="`delivery-${index}`"
               class="rounded-[18px] bg-grey-55 px-4 py-4"
             >
               <div class="h-3 w-20 animate-pulse rounded bg-grey-50" />
@@ -343,11 +343,6 @@ watch(requestId, () => {
     </div>
 
     <div v-else-if="request" class="flex flex-col gap-6">
-      <CheckoutRequestItems
-        :request="request"
-        :format-currency="formatRequestCurrency"
-      />
-
       <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
         <CheckoutPaymentMethod
           v-model="selectedMethod"
@@ -369,8 +364,13 @@ watch(requestId, () => {
         />
       </div>
 
-      <div class="grid gap-6 xl:grid-cols-2">
-        <CheckoutDeliveryDetails :request="request" />
+      <CheckoutRequestItems
+        :request="request"
+        :format-currency="formatRequestCurrency"
+      />
+
+      <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <CheckoutDeliveryDetails class="min-w-0" :request="request" />
       </div>
     </div>
 

@@ -3,8 +3,10 @@ import type { H3Event } from 'h3';
 import { getAdminLegacyApiBaseUrl } from './admin-api-base';
 
 const ACCESS_COOKIE_NAME = 'gosource_admin_access';
+const REFRESH_COOKIE_NAME = 'gosource_admin_refresh';
 const SESSION_COOKIE_NAME = 'gosource_admin_session';
-const ACCESS_MAX_AGE_SECONDS = 60 * 60 * 12;
+const ACCESS_MAX_AGE_SECONDS = 60 * 15;
+const REFRESH_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
 
 import type { AdminSessionState, AdminSessionUser } from '~/types/admin-session';
 
@@ -23,6 +25,10 @@ export function getAccessTokenCookie(event: H3Event) {
   return getCookie(event, ACCESS_COOKIE_NAME) ?? null;
 }
 
+export function getRefreshTokenCookie(event: H3Event) {
+  return getCookie(event, REFRESH_COOKIE_NAME) ?? null;
+}
+
 export function getAdminSessionSnapshot(event: H3Event): AdminSessionState | null {
   const raw = getCookie(event, SESSION_COOKIE_NAME);
   if (!raw) {
@@ -36,14 +42,34 @@ export function getAdminSessionSnapshot(event: H3Event): AdminSessionState | nul
   }
 }
 
-export function setAdminAuthCookie(event: H3Event, accessToken: string) {
-  setCookie(event, ACCESS_COOKIE_NAME, accessToken, {
+export function setAdminAuthCookies(
+  event: H3Event,
+  tokens: {
+    accessToken: string;
+    refreshToken?: string;
+  },
+) {
+  const refreshToken = tokens.refreshToken ?? tokens.accessToken;
+
+  setCookie(event, ACCESS_COOKIE_NAME, tokens.accessToken, {
     httpOnly: true,
     sameSite: 'lax',
     secure: shouldUseSecureCookies(),
     path: '/',
     maxAge: ACCESS_MAX_AGE_SECONDS,
   });
+
+  setCookie(event, REFRESH_COOKIE_NAME, refreshToken, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: shouldUseSecureCookies(),
+    path: '/',
+    maxAge: REFRESH_MAX_AGE_SECONDS,
+  });
+}
+
+export function setAdminAuthCookie(event: H3Event, accessToken: string) {
+  setAdminAuthCookies(event, { accessToken });
 }
 
 export function setAdminSessionSnapshot(event: H3Event, session: AdminSessionState) {
@@ -52,22 +78,86 @@ export function setAdminSessionSnapshot(event: H3Event, session: AdminSessionSta
     sameSite: 'lax',
     secure: shouldUseSecureCookies(),
     path: '/',
-    maxAge: ACCESS_MAX_AGE_SECONDS,
+    maxAge: REFRESH_MAX_AGE_SECONDS,
   });
 }
 
 export function setAdminAuthSession(
   event: H3Event,
-  accessToken: string,
+  tokens: {
+    accessToken: string;
+    refreshToken?: string;
+  },
   session: AdminSessionState,
 ) {
-  setAdminAuthCookie(event, accessToken);
+  setAdminAuthCookies(event, tokens);
   setAdminSessionSnapshot(event, session);
+}
+
+export async function refreshAdminSession(event: H3Event) {
+  const refreshToken = getRefreshTokenCookie(event);
+
+  if (!refreshToken) {
+    clearAdminAuthCookies(event);
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'No admin refresh session was found',
+    });
+  }
+
+  const baseUrl = getAdminLegacyApiBaseUrl(event);
+
+  try {
+    const refreshed = await $fetch<{
+      message: string;
+      data: AdminSessionUser;
+      access_token: string;
+      refresh_token?: string;
+    }>(`${baseUrl}/admin/auth/refresh`, {
+      method: 'POST',
+      body: { refreshToken },
+    });
+
+    if (!refreshed?.access_token || !refreshed?.data?.id) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Session refresh failed',
+      });
+    }
+
+    const user = normalizeAdminSessionUser(refreshed.data);
+    if (!user) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Session refresh failed',
+      });
+    }
+
+    const session = toClientAdminSession({
+      message: refreshed.message,
+      data: user,
+    });
+
+    setAdminAuthSession(
+      event,
+      {
+        accessToken: refreshed.access_token,
+        refreshToken: refreshed.refresh_token,
+      },
+      session,
+    );
+
+    return session;
+  } catch (error) {
+    clearAdminAuthCookies(event);
+    throw error;
+  }
 }
 
 export function clearAdminAuthCookies(event: H3Event) {
   const options = { path: '/' };
   deleteCookie(event, ACCESS_COOKIE_NAME, options);
+  deleteCookie(event, REFRESH_COOKIE_NAME, options);
   deleteCookie(event, SESSION_COOKIE_NAME, options);
 }
 
@@ -247,6 +337,7 @@ export async function loginAdminOnLegacyApi(
     message: string;
     data: AdminSessionUser;
     access_token: string;
+    refresh_token: string;
   }>(`${baseUrl}/admin/auth/login`, {
     method: 'POST',
     body,

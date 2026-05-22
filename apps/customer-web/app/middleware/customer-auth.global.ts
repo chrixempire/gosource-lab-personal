@@ -1,4 +1,5 @@
 import { useCustomerSession } from '~/composables/useCustomerSession';
+import { customerSignInLocation } from '~/lib/auth-redirect';
 
 function isPublicCustomerRoute(path: string) {
   return path === '/' || path.startsWith('/auth');
@@ -16,6 +17,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (!hasSession.value) {
-    return navigateTo('/auth/sign-in');
+    return navigateTo(customerSignInLocation(to.fullPath));
   }
 });
