@@ -9,13 +9,13 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
 RUN npm run build
 
-RUN rm -rf node_modules && npm ci --omit=dev
+RUN rm -rf node_modules && npm install --omit=dev --legacy-peer-deps
 
 FROM node:20-alpine AS production
 
