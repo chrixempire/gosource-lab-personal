@@ -38,6 +38,7 @@ const approvedOrderId = ref<string | null>(null);
 const selectedMethod = ref<CheckoutPaymentMethodValue | null>(null);
 const transferDialogOpen = ref(false);
 const successDialogOpen = ref(false);
+const downloadingInvoice = ref(false);
 const walletBalance = ref<number | null>(null);
 
 const { mutate: paystackMutate } = usePaystack();
@@ -205,6 +206,12 @@ async function downloadApprovedInvoice() {
     return;
   }
 
+  if (downloadingInvoice.value) {
+    return;
+  }
+
+  downloadingInvoice.value = true;
+
   try {
     const response = await fetch(getOrderInvoiceUrl(approvedOrderId.value), {
       credentials: 'include',
@@ -223,6 +230,8 @@ async function downloadApprovedInvoice() {
     URL.revokeObjectURL(objectUrl);
   } catch {
     toast.error('Unable to download invoice right now.');
+  } finally {
+    downloadingInvoice.value = false;
   }
 }
 
@@ -391,6 +400,7 @@ watch(requestId, () => {
     <CheckoutSuccessDialog
       :open="successDialogOpen"
       :reference="approvedRequest?.reference ?? request?.reference ?? ''"
+      :download-invoice-loading="downloadingInvoice"
       @update:open="successDialogOpen = $event"
       @close="goBackToRequests"
       @download-invoice="downloadApprovedInvoice"

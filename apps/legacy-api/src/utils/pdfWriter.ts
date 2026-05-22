@@ -1,39 +1,83 @@
+import * as fs from 'fs';
 import * as ejs from 'ejs';
 import * as path from 'path';
 import * as puppeteer from 'puppeteer';
+import type { Browser } from 'puppeteer';
+
+const PUPPETEER_LAUNCH_ARGS = [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+] as const;
+
+function resolvePdfTemplatePath(fileName: string): string {
+  const file = `${fileName}.ejs`;
+  const candidates = [
+    path.join(process.cwd(), 'src', 'templates', 'pdf', file),
+    path.join(process.cwd(), 'dist', 'templates', 'pdf', file),
+    path.join(__dirname, '..', 'templates', 'pdf', file),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`PDF template not found: ${fileName}`);
+}
+
+function resolveChromiumExecutablePath(): string | undefined {
+  const fromEnv =
+    process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ||
+    process.env.CHROME_PATH?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  for (const candidate of ['/usr/bin/chromium-browser', '/usr/bin/chromium']) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
+
+async function launchBrowser(): Promise<Browser> {
+  return puppeteer.launch({
+    headless: true,
+    executablePath: resolveChromiumExecutablePath(),
+    args: [...PUPPETEER_LAUNCH_ARGS],
+  });
+}
 
 export class PdfUtil {
-  static async generatePdf(data: any, fileName: string): Promise<Buffer> {
-    const rootDir = process.cwd();
-    const filePath = path.join(
-      rootDir,
-      'src',
-      'templates',
-      'pdf',
-      `${fileName}.ejs`,
-    );
+  static async generatePdf(data: unknown, fileName: string): Promise<Buffer> {
+    const filePath = resolvePdfTemplatePath(fileName);
     const renderedContent = await ejs.renderFile(filePath, data);
 
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+    const browser = await launchBrowser();
 
-    await page.setContent(renderedContent, { waitUntil: 'load' });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(renderedContent, { waitUntil: 'load', timeout: 30_000 });
 
-    // await page.setContent(renderedContent, { waitUntil: 'domcontentloaded' });
+      const pdfData = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '40px',
+          right: '28px',
+          bottom: '32px',
+          left: '28px',
+        },
+      });
 
-    const pdfData = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '40px',
-        right: '28px',
-        bottom: '32px',
-        left: '28px',
-      },
-    });
-
-    await browser.close();
-
-    return Buffer.from(pdfData);
+      return Buffer.from(pdfData);
+    } finally {
+      await browser.close();
+    }
   }
 }

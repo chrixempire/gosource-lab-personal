@@ -10,7 +10,7 @@
         "watchAssets": true
       },
       {
-        "include": "templates/pdf/assets/**/*",
+        "include": "templates/pdf/**/*",
         "watchAssets": true
       }
     ]
