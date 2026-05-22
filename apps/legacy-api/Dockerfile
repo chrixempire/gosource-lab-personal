@@ -1,5 +1,5 @@
 # Use a Node.js base image
-FROM dhi.io/node:24.14-alpine3.23-sfw-dev AS builder
+FROM node:20-alpine
 
 # Security labels
 LABEL org.opencontainers.image.source="https://github.com/ipcafrica/gosource-api" \
@@ -25,7 +25,7 @@ RUN npm run build
 RUN rm -rf node_modules && npm ci --omit=dev
 
 # Start a new stage for a smaller final image
-FROM dhi.io/node:24.14-alpine3.23
+FROM node:20-alpine
 
 # Security labels (repeated for final image)
 LABEL org.opencontainers.image.source="https://github.com/ipcafrica/gosource-api" \
