@@ -84,22 +84,6 @@ function parseMonthKey(key: string): Date | null {
 }
 
 /** Bar chart tooltip title — includes month name where the axis only shows day or month abbrev. */
-/** Minimum inner width for horizontally scrollable trend charts on narrow viewports. */
-export function getTrendChartScrollMinWidth(
-  filterType: DashboardDateFilterType,
-  pointCount: number,
-): string | undefined {
-  if (isHourlyTrendFilter(filterType)) {
-    return '42rem';
-  }
-
-  if (isMonthDayTrendFilter(filterType)) {
-    return `${Math.max(Math.ceil(pointCount * 1.15), 18)}rem`;
-  }
-
-  return undefined;
-}
-
 export function formatTrendTooltipTitle(
   filterType: DashboardDateFilterType,
   point: DashboardTrendPoint,

@@ -10,7 +10,6 @@ import {
 import {
   type DashboardTrendMetric,
   formatTrendTooltipTitle,
-  getTrendChartScrollMinWidth,
   isHourlyTrendFilter,
   showsEveryTrendAxisLabel,
   trendMetricValue,
@@ -18,6 +17,7 @@ import {
 import type { DashboardDateFilterType, DashboardTrendPoint } from '~/types/dashboard';
 import LoadingState from '~/components/shared/LoadingState.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import { useDashboardChartCanvas } from '~/composables/useDashboardChartCanvas';
 
 const props = defineProps<{
   points: DashboardTrendPoint[];
@@ -27,9 +27,6 @@ const props = defineProps<{
 
 const isHourlyView = computed(() => isHourlyTrendFilter(props.filterType));
 const showEveryAxisLabel = computed(() => showsEveryTrendAxisLabel(props.filterType));
-const chartScrollMinWidth = computed(() =>
-  getTrendChartScrollMinWidth(props.filterType, props.points.length),
-);
 
 const metric = ref<DashboardTrendMetric>('count');
 const metricOptions = [
@@ -40,7 +37,8 @@ const metricOptions = [
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const chartContainerRef = ref<HTMLElement | null>(null);
 let chart: Chart | null = null;
-let resizeObserver: ResizeObserver | null = null;
+
+const hasChartData = computed(() => props.points.length > 0);
 
 const chartConfig = computed((): ChartConfiguration<'bar'> => {
   const labels = props.points.map((point) => point.label);
@@ -133,11 +131,15 @@ function destroyChart() {
 }
 
 function renderChart() {
-  if (!import.meta.client || !canvasRef.value || !props.points.length || props.pending) {
+  if (!import.meta.client || !canvasRef.value || !hasChartData.value || props.pending) {
     return;
   }
 
   ensureDashboardChartsRegistered();
+
+  if (chart && chart.canvas !== canvasRef.value) {
+    destroyChart();
+  }
 
   if (chart) {
     chart.data = chartConfig.value.data!;
@@ -151,79 +153,27 @@ function renderChart() {
   chart.resize();
 }
 
-function scheduleChartRender() {
-  if (!import.meta.client) {
-    return;
-  }
-
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      if (props.pending) {
-        return;
-      }
-
-      if (!props.points.length) {
-        destroyChart();
-        return;
-      }
-
-      renderChart();
-    });
-  });
-}
-
-function bindResizeObserver() {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-
-  const container = chartContainerRef.value;
-  if (!container) {
-    return;
-  }
-
-  resizeObserver = new ResizeObserver(() => {
-    if (!props.pending && props.points.length) {
-      scheduleChartRender();
-    }
-  });
-  resizeObserver.observe(container);
-}
+const { scheduleRender } = useDashboardChartCanvas({
+  pending: toRef(props, 'pending'),
+  hasData: hasChartData,
+  canvasRef,
+  chartContainerRef,
+  render: renderChart,
+  destroy: destroyChart,
+});
 
 watch(
-  () => [props.points, props.pending, metric.value, props.filterType] as const,
+  () => [props.points, metric.value, props.filterType] as const,
   () => {
-    scheduleChartRender();
+    scheduleRender();
   },
   { deep: true, flush: 'post' },
 );
-
-watch([canvasRef, chartContainerRef], ([canvas, container]) => {
-  if (container) {
-    bindResizeObserver();
-  }
-
-  if (canvas) {
-    scheduleChartRender();
-  }
-});
-
-onMounted(() => {
-  bindResizeObserver();
-  scheduleChartRender();
-});
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-  destroyChart();
-});
 </script>
 
 <template>
   <article class="flex w-full min-w-0 flex-col rounded-2xl border border-grey-50 bg-white p-4 shadow-sm">
-    <header
-      class="mb-2 flex shrink-0 flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
-    >
+    <header class="mb-2 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div class="min-w-0">
         <h3 class="text-sm font-semibold text-grey-900">Orders over time</h3>
         <p class="text-xs text-grey-300">
@@ -237,7 +187,7 @@ onBeforeUnmount(() => {
       <SegmentedControl
         v-model="metric"
         :options="[...metricOptions]"
-        class="w-full min-[1000px]:w-auto"
+        class="w-full sm:w-auto"
       />
     </header>
 
@@ -245,7 +195,7 @@ onBeforeUnmount(() => {
       <LoadingState label="Loading chart…" />
     </div>
     <div
-      v-else-if="!points.length"
+      v-else-if="!hasChartData"
       class="flex h-[300px] items-center justify-center"
     >
       <EmptyState
@@ -257,14 +207,9 @@ onBeforeUnmount(() => {
     <div
       v-else
       ref="chartContainerRef"
-      class="relative h-[300px] w-full overflow-x-auto overscroll-x-contain"
+      class="relative h-[300px] w-full min-w-0 overflow-hidden"
     >
-      <div
-        class="h-full"
-        :style="chartScrollMinWidth ? { minWidth: chartScrollMinWidth } : undefined"
-      >
-        <canvas ref="canvasRef" class="block h-full w-full" />
-      </div>
+      <canvas ref="canvasRef" class="block h-full w-full" />
     </div>
   </article>
 </template>

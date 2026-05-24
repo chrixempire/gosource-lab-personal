@@ -17,6 +17,7 @@ import {
   validateRequiredText,
 } from '~/utils/auth-validation';
 import { extractApiErrorMessage, extractApiResponseMessage } from '~/utils/api-error';
+import { customerDefaultAfterLogin, sanitizeAuthRedirectPath } from '~/lib/auth-redirect';
 
 definePageMeta({
   layout: false,
@@ -37,6 +38,8 @@ const { signup, resendOtp, verifyOtp } = useCustomerAuthService();
 const otpLength = useCustomerOtpLength();
 const hydrated = ref(false);
 const runtimeConfig = useRuntimeConfig();
+const route = useRoute();
+const { mergeGuestCartAfterLogin } = useMarketplaceCart();
 
 const step = ref(1);
 const loading = ref(false);
@@ -210,7 +213,8 @@ async function submitSetupAccount() {
     }
 
     session.value = result;
-    await navigateTo('/market');
+    await mergeGuestCartAfterLogin();
+    await navigateTo(sanitizeAuthRedirectPath(route.query.redirect, customerDefaultAfterLogin()));
   } catch (error) {
     const message = extractApiErrorMessage(error, 'Unable to complete account setup right now');
     errorMessage.value = message;

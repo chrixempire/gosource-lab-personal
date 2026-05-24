@@ -21,6 +21,21 @@ import {
   subYears,
 } from 'date-fns';
 import { BadRequestException } from '@nestjs/common';
+import {
+  getDashboardTimezone,
+  zonedEndOfDay,
+  zonedEndOfMonth,
+  zonedEndOfWeek,
+  zonedEndOfYear,
+  zonedStartOfDay,
+  zonedStartOfMonth,
+  zonedStartOfWeek,
+  zonedStartOfYear,
+  zonedSubDays,
+  zonedSubMonths,
+  zonedSubWeeks,
+  zonedSubYears,
+} from './dashboard-timezone';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const DatauriParser = require('datauri/parser');
@@ -305,6 +320,7 @@ export const getDateFilter = (
   customDateRange?: DateRange,
 ) => {
   const now = new Date();
+  const tz = getDashboardTimezone();
 
   switch (filterType) {
     case 'all_time':
@@ -313,76 +329,76 @@ export const getDateFilter = (
     case 'current_date':
       return {
         createdAt: {
-          $gte: startOfDay(now),
-          $lte: endOfDay(now),
+          $gte: zonedStartOfDay(now, tz),
+          $lte: zonedEndOfDay(now, tz),
         },
       };
 
     case 'yesterday':
-      const yesterday = subDays(now, 1);
+      const yesterday = zonedSubDays(now, 1, tz);
       return {
         createdAt: {
-          $gte: startOfDay(yesterday),
-          $lte: endOfDay(yesterday),
+          $gte: zonedStartOfDay(yesterday, tz),
+          $lte: zonedEndOfDay(yesterday, tz),
         },
       };
 
     case 'this_week':
       return {
         createdAt: {
-          $gte: startOfWeek(now, { weekStartsOn: 1 }), // Starts on Monday
-          $lte: endOfWeek(now, { weekStartsOn: 1 }),
+          $gte: zonedStartOfWeek(now, tz),
+          $lte: zonedEndOfWeek(now, tz),
         },
       };
 
     case 'last_week':
-      const lastWeek = subWeeks(now, 1);
+      const lastWeek = zonedSubWeeks(now, 1, tz);
       return {
         createdAt: {
-          $gte: startOfWeek(lastWeek, { weekStartsOn: 1 }),
-          $lte: endOfWeek(lastWeek, { weekStartsOn: 1 }),
+          $gte: zonedStartOfWeek(lastWeek, tz),
+          $lte: zonedEndOfWeek(lastWeek, tz),
         },
       };
 
     case 'this_month':
       return {
         createdAt: {
-          $gte: startOfMonth(now),
-          $lte: endOfMonth(now),
+          $gte: zonedStartOfMonth(now, tz),
+          $lte: zonedEndOfMonth(now, tz),
         },
       };
 
     case 'last_month':
-      const lastMonth = subMonths(now, 1);
+      const lastMonth = zonedSubMonths(now, 1, tz);
       return {
         createdAt: {
-          $gte: startOfMonth(lastMonth),
-          $lte: endOfMonth(lastMonth),
+          $gte: zonedStartOfMonth(lastMonth, tz),
+          $lte: zonedEndOfMonth(lastMonth, tz),
         },
       };
 
     case 'this_year':
       return {
         createdAt: {
-          $gte: startOfYear(now),
-          $lte: endOfYear(now),
+          $gte: zonedStartOfYear(now, tz),
+          $lte: zonedEndOfYear(now, tz),
         },
       };
 
     case 'last_year':
-      const lastYear = subYears(now, 1);
+      const lastYear = zonedSubYears(now, 1, tz);
       return {
         createdAt: {
-          $gte: startOfYear(lastYear),
-          $lte: endOfYear(lastYear),
+          $gte: zonedStartOfYear(lastYear, tz),
+          $lte: zonedEndOfYear(lastYear, tz),
         },
       };
 
     case 'last_7_days':
       return {
         createdAt: {
-          $gte: startOfDay(subDays(now, 7)),
-          $lte: endOfDay(now),
+          $gte: zonedStartOfDay(zonedSubDays(now, 7, tz), tz),
+          $lte: zonedEndOfDay(now, tz),
         },
       };
 
@@ -416,7 +432,7 @@ export const getDateFilter = (
           startDateTime = new Date(startDate);
           startDateTime.setHours(hours, minutes, 0, 0);
         } else {
-          startDateTime = startOfDay(startDate);
+          startDateTime = zonedStartOfDay(startDate, tz);
         }
 
         if (customDateRange.endTime) {
@@ -424,12 +440,12 @@ export const getDateFilter = (
           endDateTime = new Date(endDate);
           endDateTime.setHours(hours, minutes, 59, 999);
         } else {
-          endDateTime = endOfDay(endDate);
+          endDateTime = zonedEndOfDay(endDate, tz);
         }
       } else {
-        // Default to full day range
-        startDateTime = startOfDay(startDate);
-        endDateTime = endOfDay(endDate);
+        // Default to full day range in dashboard timezone
+        startDateTime = zonedStartOfDay(startDate, tz);
+        endDateTime = zonedEndOfDay(endDate, tz);
       }
 
       // Validate that end is after start
