@@ -476,6 +476,20 @@ export function isMarketProductInStock(p?: MarketProduct | null): boolean {
   return p?.inStock !== false;
 }
 
+/** Prefer cart/API product stock; fall back to catalog when embedded product is missing. */
+export function isCartLineInStock(line: MarketCartItem): boolean {
+  if (line.product) {
+    return line.product.inStock !== false;
+  }
+
+  const catalogProduct = getMarketProductById(line.productId);
+  if (catalogProduct) {
+    return isMarketProductInStock(catalogProduct);
+  }
+
+  return true;
+}
+
 export function defaultUnitForProduct(p: MarketProduct): string {
   return effectiveUnitChoices(p)[0] ?? 'Standard pack';
 }
@@ -528,7 +542,30 @@ export function getMarketUnitPrice(product: MarketProduct, unitName?: string): n
   return choice.discountedPriceNaira ?? choice.priceNaira;
 }
 
+function getRegisteredMarketProducts(): Record<string, MarketProduct> {
+  try {
+    return useState<Record<string, MarketProduct>>('market-product-registry', () => ({})).value;
+  } catch {
+    return {};
+  }
+}
+
+/** Keep product payloads available for guest cart when not yet in category catalog. */
+export function registerMarketProduct(product: MarketProduct) {
+  if (!product.id) {
+    return;
+  }
+
+  const registry = useState<Record<string, MarketProduct>>('market-product-registry', () => ({}));
+  registry.value = { ...registry.value, [product.id]: product };
+}
+
 export function getMarketProductById(id: string): MarketProduct | undefined {
+  const registered = getRegisteredMarketProducts()[id];
+  if (registered) {
+    return registered;
+  }
+
   for (const cat of getCatalogCategories()) {
     const product = cat.products.find((item) => item.id === id);
     if (product) {

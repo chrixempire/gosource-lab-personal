@@ -18,6 +18,17 @@ export default defineEventHandler(async (event) => {
           ? (result.data as Record<string, unknown>)
           : {};
 
+      const resume = data.resume === true;
+      const legacyOnboardingStep =
+        typeof data.onboardingStep === 'number' ? data.onboardingStep : 1;
+      const verified = data.verified === true;
+
+      const onboardingStep = resume
+        ? verified
+          ? 3
+          : 2
+        : legacyOnboardingStep + 1;
+
       return {
         message:
           typeof result.message === 'string' ? result.message : 'Registration successful',
@@ -29,10 +40,9 @@ export default defineEventHandler(async (event) => {
               : typeof data.id === 'string'
                 ? data.id
                 : undefined,
-          onboardingStep:
-            typeof data.onboardingStep === 'number' ? data.onboardingStep + 1 : 2,
+          onboardingStep,
           status: typeof data.status === 'string' ? data.status : undefined,
-          resume: false,
+          resume,
         },
       };
     }

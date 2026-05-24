@@ -7,7 +7,13 @@ import { ClipboardList, ShoppingCart, Trash2, X } from 'lucide-vue-next';
 import { useCartRequestAction } from '~/composables/useCartRequestAction';
 import { formatNaira, useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { useRequestAddItemsMode } from '~/composables/useRequestAddItemsMode';
-import { cartLineKey, getMarketProductById, getMarketUnitPrice, isMarketProductInStock } from '~/lib/marketplace-data';
+import {
+  cartLineKey,
+  getMarketProductById,
+  getMarketUnitPrice,
+  isCartLineInStock,
+  isMarketProductInStock,
+} from '~/lib/marketplace-data';
 import MarketProductQtyStrip from './MarketProductQtyStrip.vue';
 import MarketProductImage from './MarketProductImage.vue';
 
@@ -38,14 +44,8 @@ const {
   primaryActionLabel,
   bootstrapFromRoute,
 } = useRequestAddItemsMode();
-const {
-  canSubmitPrimary,
-  continueShopping,
-  hasOutOfStockProduct: cartHasOutOfStock,
-  isSubmitting,
-  primaryCtaLabel,
-  submitCartAsRequest,
-} = useCartRequestAction();
+const { canSubmitPrimary, continueShopping, isSubmitting, primaryCtaLabel, submitCartAsRequest } =
+  useCartRequestAction();
 
 type DrawerLineEntry = {
   key: string;
@@ -112,27 +112,20 @@ const requestLineEntries = computed(() =>
 );
 
 const activeEntries = computed(() =>
-  isAddingToRequest.value ? requestLineEntries.value : cartLineEntries.value.map(({ line, product }) => ({
-    key: line.lineKey,
-    productId: line.productId,
-    unit: line.unit,
-    quantity: line.quantity,
-    product,
-    lineTotalNaira: getMarketUnitPrice(product, line.unit) * line.quantity,
-    inStock: isMarketProductInStock(product),
-  })),
+  isAddingToRequest.value
+    ? requestLineEntries.value
+    : cartLineEntries.value.map(({ line, product }) => ({
+        key: line.lineKey,
+        productId: line.productId,
+        unit: line.unit,
+        quantity: line.quantity,
+        product,
+        lineTotalNaira: getMarketUnitPrice(product, line.unit) * line.quantity,
+        inStock: isCartLineInStock(line),
+      })),
 );
 
-const hasOutOfStockProduct = computed(() => {
-  if (isAddingToRequest.value) {
-    return activeEntries.value.some((entry) => !entry.inStock);
-  }
-
-  return (
-    cartHasOutOfStock.value ||
-    cartLineEntries.value.some(({ product }) => !isMarketProductInStock(product))
-  );
-});
+const hasOutOfStockProduct = computed(() => activeEntries.value.some((entry) => !entry.inStock));
 
 const footerSubtotal = computed(() =>
   isAddingToRequest.value ? requestSubtotal.value : subtotalNaira.value,
@@ -274,6 +267,12 @@ watch(
                 <p class="mt-0.5 text-xs text-grey-300">
                   {{ entry.unit }} · {{ formatNaira(entry.quantity > 0 ? entry.lineTotalNaira / entry.quantity : entry.lineTotalNaira) }} each
                 </p>
+                <p
+                  v-if="!entry.inStock"
+                  class="mt-1 text-xs text-negative-500"
+                >
+                  Out of stock — remove this item to continue.
+                </p>
 
                 <div class="mt-2 w-full max-w-[7.5rem]">
                   <Button
@@ -366,12 +365,6 @@ watch(
                 <span>{{ formatNaira(requestTotalPrice) }}</span>
               </div>
             </div>
-            <p
-              v-if="hasOutOfStockProduct"
-              class="mt-2 rounded-[12px] border border-[#fda29b] bg-negative-50 px-3 py-2 text-xs font-medium text-negative-500"
-            >
-              Remove out of stock items before finishing.
-            </p>
             <div class="mt-3 flex gap-2">
               <Button
                 size="medium"
@@ -400,12 +393,6 @@ watch(
               <span class="text-grey-300">Subtotal</span>
               <span class="text-lg font-semibold text-grey-900">{{ formatNaira(footerSubtotal) }}</span>
             </div>
-            <p
-              v-if="hasOutOfStockProduct"
-              class="mt-2 rounded-[12px] border border-[#fda29b] bg-negative-50 px-3 py-2 text-xs font-medium text-negative-500"
-            >
-              Remove out of stock items before checkout.
-            </p>
             <button
               type="button"
               class="mt-2 cursor-pointer text-xs font-semibold text-negative-500 underline-offset-2 hover:underline"

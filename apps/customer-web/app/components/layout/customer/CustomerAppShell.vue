@@ -25,9 +25,11 @@ import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.v
 import MarketSearch from '~/components/market/MarketSearch.vue';
 import { getMarketCategoryById } from '~/lib/marketplace-data';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
+import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
 const { clearAllDismissals } = useMarketBranchSetupDismissal();
+const { resetCartState } = useMarketplaceCart();
 
 const props = withDefaults(
   defineProps<{
@@ -154,6 +156,7 @@ async function confirmLogout() {
 
   logoutConfirmOpen.value = false;
   clearAllDismissals();
+  resetCartState();
   session.value = null;
   mobileNavOpen.value = false;
   await navigateTo('/auth/sign-in');

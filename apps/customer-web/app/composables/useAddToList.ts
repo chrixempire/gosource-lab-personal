@@ -1,6 +1,8 @@
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { toast } from '@gosource/ui';
+import { useCustomerSession } from '~/composables/useCustomerSession';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
+import { customerSignInLocation } from '~/lib/auth-redirect';
 import { useCustomerShoppingListService } from '~/services/shopping-list.service';
 
 export type PendingListItem = {
@@ -17,10 +19,13 @@ export function useAddToList() {
   const resumeProduct = useState<MarketProduct | null>('add-to-list-resume-product', () => null);
   const listsRefreshNonce = useState('shopping-lists-refresh-nonce', () => 0);
 
+  const { hasSession } = useCustomerSession();
+  const router = useRouter();
+  const route = useRoute();
   const {
     activeBranchId,
     ensureBranchForAction,
-    openBranchGate,
+    openBranchGateForCustomer,
     requestProductModalResume,
   } = useMarketBranchGate();
   const { addItem } = useCustomerShoppingListService();
@@ -77,6 +82,11 @@ export function useAddToList() {
       return false;
     }
 
+    if (!hasSession.value) {
+      await router.push(customerSignInLocation(route.fullPath));
+      return false;
+    }
+
     let branchId = activeBranchId.value;
     if (!branchId) {
       await ensureBranchForAction();
@@ -88,7 +98,7 @@ export function useAddToList() {
         requestProductModalResume(product);
       }
       await nextTick();
-      openBranchGate();
+      openBranchGateForCustomer();
       return false;
     }
 

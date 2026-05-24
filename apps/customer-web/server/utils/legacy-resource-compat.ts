@@ -548,9 +548,33 @@ export function normalizeLegacyMarketRecentOrdersResponse(payload: unknown): Mar
   };
 }
 
+function isPopulatedLegacyProductRef(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (!toStringValue(value._id) && !toStringValue(value.id)) {
+    return false;
+  }
+
+  return Boolean(toStringValue(value.name) || toStringValue(value.description));
+}
+
+/** Prefer live populated `product` over stale `cartProduct` snapshot (stock/pricing). */
+function resolveCartLineProductRaw(item: Record<string, unknown>): unknown {
+  const populated = item.product;
+  const snapshot = item.cartProduct;
+
+  if (isPopulatedLegacyProductRef(populated)) {
+    return populated;
+  }
+
+  return snapshot ?? populated;
+}
+
 function normalizeLegacyCartItem(raw: unknown): MarketCartItem {
   const item = asRecord(raw);
-  const productRaw = item.cartProduct ?? item.product;
+  const productRaw = resolveCartLineProductRaw(item);
   const product = normalizeLegacyMarketProduct(productRaw);
   const productId = product.id || toStringValue(item.product);
   const unit = toStringValue(item.unit) || product.unit || 'Standard pack';

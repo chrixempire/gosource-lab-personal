@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MarketProduct } from '~/lib/marketplace-data';
 import { Input } from '@gosource/ui';
 import { useDebounceFn } from '@vueuse/core';
 import { Minus, Plus, Trash2 } from 'lucide-vue-next';
@@ -13,6 +14,8 @@ const props = withDefaults(
     productId?: string;
     /** Unit label matching cart line keys (see `effectiveUnitChoices`). */
     unit?: string;
+    /** Product payload for guest cart when not in catalog cache. */
+    product?: MarketProduct;
     /** `modal`: taller strip. `cart`: compact strip for cart drawer and request lines. `detail`: grey picker on product detail / modal. */
     variant?: 'card' | 'modal' | 'cart' | 'detail';
     /** Controlled quantity (request edit, etc.). */
@@ -36,6 +39,8 @@ const emit = defineEmits<{
 const isControlled = computed(() => props.modelValue !== undefined);
 
 const { getQtyForUnit, setQuantityForUnit, increment, decrement, remove } = useMarketplaceCart();
+
+const cartOptions = computed(() => (props.product ? { product: props.product } : undefined));
 
 const qty = computed(() => {
   if (isControlled.value) {
@@ -96,7 +101,7 @@ async function commitDraft() {
     return;
   }
 
-  await setQuantityForUnit(props.productId, props.unit, parsed);
+  await setQuantityForUnit(props.productId, props.unit, parsed, cartOptions.value);
 }
 
 const debouncedCommitDraft = useDebounceFn(commitDraft, QTY_INPUT_DEBOUNCE_MS);
@@ -175,7 +180,7 @@ async function onMinusOrTrash() {
     draftQty.value = '1';
     return;
   }
-  await decrement(props.productId, props.unit);
+  await decrement(props.productId, props.unit, cartOptions.value);
 }
 
 async function onPlus() {
@@ -192,7 +197,7 @@ async function onPlus() {
     return;
   }
 
-  await increment(props.productId, props.unit);
+  await increment(props.productId, props.unit, cartOptions.value);
 }
 
 const isModal = computed(() => props.variant === 'modal');

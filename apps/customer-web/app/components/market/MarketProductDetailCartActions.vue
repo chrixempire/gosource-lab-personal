@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { Button } from '@gosource/ui';
-import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import MarketProductQtyStrip from './MarketProductQtyStrip.vue';
 
@@ -20,7 +19,6 @@ const emit = defineEmits<{
 const pickQty = ref(1);
 const addingToCart = ref(false);
 const { getQtyForUnit, setQuantityForUnit } = useMarketplaceCart();
-const { openBranchGate, requestProductModalResume } = useMarketBranchGate();
 
 function syncPickQtyFromCart() {
   const inCart = getQtyForUnit(props.product.id, props.unit);
@@ -41,20 +39,12 @@ async function onAddToCart() {
   addingToCart.value = true;
 
   try {
-    const added = await setQuantityForUnit(props.product.id, props.unit, pickQty.value);
-    if (added) {
-      if (props.closeOnSuccess) {
-        emit('close');
-      }
-      return;
-    }
-
-    requestProductModalResume(props.product);
-    if (props.closeOnSuccess) {
+    const added = await setQuantityForUnit(props.product.id, props.unit, pickQty.value, {
+      product: props.product,
+    });
+    if (added && props.closeOnSuccess) {
       emit('close');
     }
-    await nextTick();
-    openBranchGate();
   } catch {
     /* toasts handled in market service */
   } finally {

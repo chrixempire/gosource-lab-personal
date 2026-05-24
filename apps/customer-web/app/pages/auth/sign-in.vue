@@ -4,6 +4,7 @@ import { BrandLogo, Button, Input, PasswordInput, toast } from '@gosource/ui';
 import AuthCardShell from '~/components/auth/shared/AuthCardShell.vue';
 import AuthPageShell from '~/components/auth/shared/AuthPageShell.vue';
 import { validateEmail } from '~/utils/auth-validation';
+import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { sanitizeAuthRedirectPath, customerDefaultAfterLogin } from '~/lib/auth-redirect';
 import { extractApiErrorMessage, extractApiResponseMessage } from '~/utils/api-error';
 
@@ -20,6 +21,7 @@ const form = reactive({
 const loading = ref(false);
 const errorMessage = ref('');
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+const { mergeGuestCartAfterLogin } = useMarketplaceCart();
 const fieldErrors = reactive({
   email: '',
   password: '',
@@ -57,6 +59,7 @@ async function submit() {
     });
     session.value = result;
     toast.success(extractApiResponseMessage(result, 'Signed in'));
+    await mergeGuestCartAfterLogin();
     await navigateTo(sanitizeAuthRedirectPath(route.query.redirect, customerDefaultAfterLogin()));
   } catch (error) {
     const message = extractApiErrorMessage(error, 'Unable to sign in right now');

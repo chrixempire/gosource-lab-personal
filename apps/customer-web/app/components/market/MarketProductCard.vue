@@ -41,7 +41,7 @@ async function onAdd(e: MouseEvent) {
   }
 
   if (isAddingToRequest.value && !multi.value) {
-    await addOne(props.product.id, defaultUnit.value);
+    await addOne(props.product.id, defaultUnit.value, { product: props.product });
     return;
   }
 
@@ -117,6 +117,7 @@ async function onAdd(e: MouseEvent) {
           <div v-else class="min-w-[7.75rem] max-w-[11rem]">
             <MarketProductQtyStrip
               :product-id="product.id"
+              :product="product"
               :unit="defaultUnit"
               variant="card"
             />

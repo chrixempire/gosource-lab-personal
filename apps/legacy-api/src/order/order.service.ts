@@ -276,10 +276,21 @@ export class OrderService {
 
     if (order) {
       order.paymentStatus = ORDER_PAYMENT_STATUS.PAID;
-      order.save();
-    } else {
+      await order.save();
+      if (order.request) {
+        await this.requestModel.findByIdAndUpdate(order.request, {
+          paymentStatus: PaymentStatus.PAID,
+        });
+      }
+    }
+
+    if (request) {
       request.paymentStatus = PaymentStatus.PAID;
-      request.save();
+      await request.save();
+      await this.orderModel.updateMany(
+        { request: request._id },
+        { paymentStatus: ORDER_PAYMENT_STATUS.PAID },
+      );
     }
 
     // Save Reference

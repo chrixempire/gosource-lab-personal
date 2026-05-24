@@ -13,6 +13,7 @@ import CheckoutRequestItems from '~/components/checkout/CheckoutRequestItems.vue
 import CheckoutSuccessDialog from '~/components/checkout/CheckoutSuccessDialog.vue';
 import CheckoutTransferDialog from '~/components/checkout/CheckoutTransferDialog.vue';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
+import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { usePaystack } from '~/composables/usePaystack';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { formatRequestCurrency } from '~/lib/request-details';
@@ -27,6 +28,7 @@ const requestId = computed(() => String(route.params.id ?? ''));
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
 const { getRequest, approveRequest } = useCustomerRequestService();
+const { resetCartState, loadCart } = useMarketplaceCart();
 const { getWallet } = useCustomerWalletService();
 const { getOrderInvoiceUrl } = useCustomerOrderService();
 
@@ -180,6 +182,8 @@ async function processApproval(method: CheckoutPaymentMethodValue) {
       approvedRequest.value = response.data;
       approvedOrderId.value = response.orderId ?? null;
       request.value = response.data;
+      resetCartState();
+      await loadCart(true);
       successDialogOpen.value = true;
       toast.success('Payment successful!');
     }

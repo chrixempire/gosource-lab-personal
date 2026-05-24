@@ -638,6 +638,9 @@ export class RequestService {
         paymentStatus = PaymentStatus.PAID;
       } else if (requestDetails.paymentMethod === PaymentMethod.WALLET) {
         paymentStatus = PaymentStatus.PAID;
+      } else if (requestDetails.paymentMethod === PaymentMethod.PAYSTACK) {
+        // Checkout only calls approve after Paystack inline success (same as wallet).
+        paymentStatus = PaymentStatus.PAID;
       }
 
       // Create a new order associated with the approved request

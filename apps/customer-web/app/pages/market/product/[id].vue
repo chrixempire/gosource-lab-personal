@@ -2,7 +2,12 @@
 definePageMeta({ layout: 'customer-market' });
 
 import type { MarketProduct } from '~/lib/marketplace-data';
-import { effectiveUnitChoices, getMarketUnitChoice, isMarketProductInStock } from '~/lib/marketplace-data';
+import {
+  effectiveUnitChoices,
+  getMarketUnitChoice,
+  isMarketProductInStock,
+  registerMarketProduct,
+} from '~/lib/marketplace-data';
 import { Button, RadioGroup, RadioGroupItem } from '@gosource/ui';
 import { ChevronLeft, ClipboardList } from 'lucide-vue-next';
 import { useAddToList } from '~/composables/useAddToList';
@@ -81,6 +86,10 @@ watch(
     }
 
     product.value = payload.product ?? cachedProduct.value ?? null;
+
+    if (product.value) {
+      registerMarketProduct(product.value);
+    }
 
     if (!product.value && productId.value) {
       await router.replace('/market');

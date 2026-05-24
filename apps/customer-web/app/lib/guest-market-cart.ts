@@ -1,5 +1,10 @@
 import type { MarketCartItem, MarketProduct } from '~/lib/marketplace-data';
-import { cartLineKey, getMarketProductById, getMarketUnitPrice } from '~/lib/marketplace-data';
+import {
+  cartLineKey,
+  getMarketProductById,
+  getMarketUnitPrice,
+  registerMarketProduct,
+} from '~/lib/marketplace-data';
 
 export const GUEST_MARKET_CART_STORAGE_KEY = 'gosource.guest-market-cart';
 
@@ -7,6 +12,8 @@ export type GuestCartStoredLine = {
   productId: string;
   unit: string;
   quantity: number;
+  /** Snapshot so guest cart survives refresh without full catalog loaded. */
+  product?: MarketProduct;
 };
 
 export function readGuestCartFromStorage(): GuestCartStoredLine[] {
@@ -36,7 +43,11 @@ export function readGuestCartFromStorage(): GuestCartStoredLine[] {
           return null;
         }
 
-        return { productId, unit, quantity };
+        const snapshot = row.product as MarketProduct | undefined;
+        const product =
+          snapshot && String(snapshot.id ?? '').trim() === productId ? snapshot : undefined;
+
+        return { productId, unit, quantity, ...(product ? { product } : {}) };
       })
       .filter((line): line is GuestCartStoredLine => line !== null);
   } catch {
@@ -71,7 +82,11 @@ export function clearGuestCartStorage() {
 
 export function guestStoredLinesToCartItems(stored: GuestCartStoredLine[]): MarketCartItem[] {
   return stored.map((line) => {
-    const product = getMarketProductById(line.productId);
+    if (line.product) {
+      registerMarketProduct(line.product);
+    }
+
+    const product = line.product ?? getMarketProductById(line.productId);
     const lineTotalNaira = product
       ? getMarketUnitPrice(product, line.unit) * line.quantity
       : 0;
@@ -94,6 +109,7 @@ export function cartItemsToGuestStoredLines(items: MarketCartItem[]): GuestCartS
       productId: line.productId,
       unit: line.unit,
       quantity: line.quantity,
+      ...(line.product ? { product: line.product } : {}),
     }));
 }
 

@@ -1,27 +1,38 @@
 import { toast } from '@gosource/ui';
-import type { MarketCartItem, MarketCartMutationResponse } from '~/lib/marketplace-data';
+import type { MarketCartItem, MarketCartMutationResponse, MarketProduct } from '~/lib/marketplace-data';
 import {
   CART_LINE_UNIT_SEP,
   cartLineKey,
   defaultUnitForProduct,
   getMarketProductById,
   getMarketUnitPrice,
+  isCartLineInStock,
   isMarketProductInStock,
   parseCartLineKey,
+  registerMarketProduct,
 } from '~/lib/marketplace-data';
+
+export type SetCartQuantityOptions = {
+  silent?: boolean;
+  product?: MarketProduct;
+};
 import { useCustomerSession } from '~/composables/useCustomerSession';
 import { useGuestCartSync } from '~/composables/useGuestCartSync';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useRequestAddItemsMode } from '~/composables/useRequestAddItemsMode';
 import {
   cartItemsToGuestStoredLines,
+  clearGuestCartStorage,
   guestStoredLinesToCartItems,
-  getGuestCartSnapshot,
   readGuestCartFromStorage,
   writeGuestCartToStorage,
 } from '~/lib/guest-market-cart';
 import { useCustomerMarketService } from '~/services/market.service';
-import { extractApiResponseMessage } from '~/utils/api-error';
+import { extractApiErrorMessage, extractApiResponseMessage } from '~/utils/api-error';
+
+function isProductOutOfStockError(error: unknown): boolean {
+  return /out of stock/i.test(extractApiErrorMessage(error, ''));
+}
 
 export type CartLine = MarketCartItem & {
   lineKey: string;
@@ -40,11 +51,14 @@ function toastCartSuccess(response: MarketCartMutationResponse, fallback: string
 }
 
 export function useMarketplaceCart() {
+  const route = useRoute();
   const rawLines = useState<MarketCartItem[]>('marketplace-cart-lines', () => []);
   const cartTotalNaira = useState('marketplace-cart-total-naira', () => 0);
   const loading = useState('marketplace-cart-loading', () => false);
   const initializedBranchId = useState<string | null>('marketplace-cart-initialized-branch-id', () => null);
   const autoLoadStarted = useState('marketplace-cart-auto-load-started', () => false);
+  const cartLifecycleHooksRegistered = useState('marketplace-cart-lifecycle-hooks', () => false);
+  const guestCartMergeInFlight = useState('marketplace-guest-cart-merge-in-flight', () => false);
   const { hasSession, sessionResolved, whenReady } = useCustomerSession();
   const {
     activeBranchId,
@@ -54,9 +68,8 @@ export function useMarketplaceCart() {
   const { syncing, syncGuestCartToServer } = useGuestCartSync();
   const marketService = useCustomerMarketService();
   const requestAddMode = useRequestAddItemsMode();
-  const isGuestCartMode = computed(
-    () => import.meta.client && sessionResolved.value && !hasSession.value,
-  );
+  /** Anonymous browsing uses local guest cart — never branch-gated. */
+  const isGuestCartMode = computed(() => import.meta.client && !hasSession.value);
 
   const lines = computed<CartLine[]>(() =>
     rawLines.value
@@ -105,6 +118,10 @@ export function useMarketplaceCart() {
   }
 
   function persistGuestCartFromState() {
+    if (!isGuestCartMode.value) {
+      return;
+    }
+
     writeGuestCartToStorage(cartItemsToGuestStoredLines(rawLines.value));
     cartTotalNaira.value = subtotalNaira.value;
   }
@@ -135,14 +152,54 @@ export function useMarketplaceCart() {
       return;
     }
 
-    const pending = getGuestCartSnapshot(rawLines.value);
-    if (!pending.length) {
+    // Only merge a pre-login guest cart from storage — not stale in-memory server lines.
+    const pendingFromStorage = readGuestCartFromStorage();
+    if (!pendingFromStorage.length) {
       await waitForGuestCartSync();
       return;
     }
 
-    await syncGuestCartToServer();
+    await syncGuestCartToServer({ lines: pendingFromStorage });
     await waitForGuestCartSync();
+  }
+
+  function resetCartState() {
+    applyCart([], 0);
+    initializedBranchId.value = null;
+    clearGuestCartStorage();
+  }
+
+  function hasPendingGuestCart(): boolean {
+    return readGuestCartFromStorage().length > 0;
+  }
+
+  /** Merge guest local cart into the logged-in server cart, then reload from API. */
+  async function mergeGuestCartAfterLogin(): Promise<boolean> {
+    if (!import.meta.client || !hasSession.value) {
+      return false;
+    }
+
+    if (guestCartMergeInFlight.value) {
+      return true;
+    }
+
+    guestCartMergeInFlight.value = true;
+
+    try {
+      await whenReady();
+
+      const pendingFromStorage = readGuestCartFromStorage();
+      if (!pendingFromStorage.length) {
+        await loadCart(true);
+        return true;
+      }
+
+      const synced = await syncGuestCartToServer({ lines: pendingFromStorage });
+      await loadCart(true);
+      return synced;
+    } finally {
+      guestCartMergeInFlight.value = false;
+    }
   }
 
   async function initializeCart() {
@@ -156,8 +213,7 @@ export function useMarketplaceCart() {
     }
 
     if (hasSession.value) {
-      await syncGuestCartToServer();
-      await loadCart(true);
+      await mergeGuestCartAfterLogin();
     }
   }
 
@@ -179,9 +235,62 @@ export function useMarketplaceCart() {
     return activeBranchId.value;
   }
 
+  /** Move pre-branch cart lines onto the new branch so they are not lost after create-branch. */
+  async function migrateUnbranchedCartToBranch(branchId: string) {
+    if (!import.meta.client || !branchId || isGuestCartMode.value) {
+      return;
+    }
+
+    try {
+      const allResponse = await marketService.getCart('all');
+      const allItems = allResponse.data.cartItems ?? [];
+      const unbranched = allItems.filter((item) => !item.branchId);
+
+      if (!unbranched.length) {
+        return;
+      }
+
+      for (const line of unbranched) {
+        const existingOnBranch = allItems.find(
+          (item) =>
+            item.branchId === branchId &&
+            item.productId === line.productId &&
+            item.unit === line.unit,
+        );
+
+        try {
+          if (existingOnBranch && hasPersistedCartId(existingOnBranch.id)) {
+            const mergedQty = Math.min(999, existingOnBranch.quantity + line.quantity);
+            if (mergedQty !== existingOnBranch.quantity) {
+              await marketService.updateCartItemQuantity(existingOnBranch.id, mergedQty);
+            }
+          } else {
+            await marketService.addCartItem(
+              {
+                productId: line.productId,
+                branchId,
+                unit: line.unit,
+                quantity: line.quantity,
+              },
+              { quiet: true },
+            );
+          }
+
+          if (hasPersistedCartId(line.id)) {
+            await marketService.removeCartItem(line.id);
+          }
+        } catch {
+          // Best-effort per line; reload cart after loop.
+        }
+      }
+    } catch {
+      // Ignore migration errors; loadCart will still run.
+    }
+  }
+
   async function loadCart(force = false) {
     if (isGuestCartMode.value) {
-      if (force && rawLines.value.length) {
+      if (force && rawLines.value.length && initializedBranchId.value === 'guest') {
         persistGuestCartFromState();
         return;
       }
@@ -190,7 +299,11 @@ export function useMarketplaceCart() {
       return;
     }
 
-    await ensureGuestCartSyncedBeforeServerLoad();
+    if (force) {
+      await waitForGuestCartSync();
+    } else {
+      await ensureGuestCartSyncedBeforeServerLoad();
+    }
 
     if (loading.value) {
       return;
@@ -263,21 +376,30 @@ export function useMarketplaceCart() {
     productId: string,
     unit: string,
     raw: number,
-    options?: { silent?: boolean },
+    options?: SetCartQuantityOptions,
   ) {
     const next = Math.max(0, Math.min(999, Math.floor(Number.isFinite(raw) ? raw : 0)));
     const existing = findLine(productId, unit);
     const previousQty = existing?.quantity ?? 0;
 
     if (isGuestCartMode.value) {
-      const product = existing?.product ?? getMarketProductById(productId);
+      const product =
+        existing?.product ?? options?.product ?? getMarketProductById(productId);
       if (!product) {
+        if (!options?.silent) {
+          toast.error('Unable to add this product. Please refresh and try again.');
+        }
         return false;
       }
 
       if (next > 0 && !isMarketProductInStock(product)) {
+        if (!options?.silent) {
+          toast.error(`${product.name} is out of stock.`);
+        }
         return false;
       }
+
+      registerMarketProduct(product);
 
       if (next <= 0) {
         removeOptimisticLine(productId, unit);
@@ -309,7 +431,8 @@ export function useMarketplaceCart() {
       return next > 0;
     }
 
-    const branchId = await getBranchIdForCartAction();
+    // Legacy API allows cart lines without a branch until checkout (gosource-web-app parity).
+    const branchId = await getBranchIdForCartAction(false);
     const persistedCartId = hasPersistedCartId(existing?.id) ? existing.id : null;
 
     if (next <= 0) {
@@ -332,7 +455,12 @@ export function useMarketplaceCart() {
     }
 
     const product = existing?.product ?? getMarketProductById(productId);
+    if (existing && !isCartLineInStock(existing)) {
+      toast.error(`${existing.product?.name ?? 'This product'} is out of stock. Remove it from your cart to continue.`);
+      return false;
+    }
     if (product && !isMarketProductInStock(product)) {
+      toast.error(`${product.name} is out of stock.`);
       return false;
     }
     replaceOptimisticLine({
@@ -372,40 +500,48 @@ export function useMarketplaceCart() {
       return true;
     } catch (error) {
       await loadCart(true);
+      if (isProductOutOfStockError(error)) {
+        return false;
+      }
       throw error;
     }
   }
 
-  async function setQuantityForUnit(productId: string, unit: string, raw: number) {
+  async function setQuantityForUnit(
+    productId: string,
+    unit: string,
+    raw: number,
+    options?: SetCartQuantityOptions,
+  ) {
     if (requestAddMode.isAddingToRequest.value) {
       return requestAddMode.setQuantityForUnit(productId, unit, raw);
     }
 
-    return setCartQuantityForUnit(productId, unit, raw);
+    return setCartQuantityForUnit(productId, unit, raw, options);
   }
 
-  function setQuantity(productId: string, raw: number) {
-    const product = getMarketProductById(productId);
+  function setQuantity(productId: string, raw: number, options?: SetCartQuantityOptions) {
+    const product = options?.product ?? getMarketProductById(productId);
     const unit = product ? defaultUnitForProduct(product) : 'Standard pack';
-    return setQuantityForUnit(productId, unit, raw);
+    return setQuantityForUnit(productId, unit, raw, options);
   }
 
-  async function addOne(productId: string, unit?: string) {
-    const product = getMarketProductById(productId);
+  async function addOne(productId: string, unit?: string, options?: SetCartQuantityOptions) {
+    const product = options?.product ?? getMarketProductById(productId);
     const resolvedUnit = unit ?? (product ? defaultUnitForProduct(product) : 'Standard pack');
     const current = getQtyForUnit(productId, resolvedUnit);
-    return await setQuantityForUnit(productId, resolvedUnit, current + 1);
+    return await setQuantityForUnit(productId, resolvedUnit, current + 1, options);
   }
 
-  function increment(productId: string, unit?: string) {
-    return addOne(productId, unit);
+  function increment(productId: string, unit?: string, options?: SetCartQuantityOptions) {
+    return addOne(productId, unit, options);
   }
 
-  function decrement(productId: string, unit?: string) {
-    const product = getMarketProductById(productId);
+  function decrement(productId: string, unit?: string, options?: SetCartQuantityOptions) {
+    const product = options?.product ?? getMarketProductById(productId);
     const resolvedUnit = unit ?? (product ? defaultUnitForProduct(product) : 'Standard pack');
     const current = getQtyForUnit(productId, resolvedUnit);
-    return setQuantityForUnit(productId, resolvedUnit, current - 1);
+    return setQuantityForUnit(productId, resolvedUnit, current - 1, options);
   }
 
   async function removeLine(lineKey: string) {
@@ -474,6 +610,10 @@ export function useMarketplaceCart() {
         void initializeCart();
       }
     });
+  }
+
+  if (import.meta.client && !cartLifecycleHooksRegistered.value) {
+    cartLifecycleHooksRegistered.value = true;
 
     watch(activeBranchId, (branchId, previousBranchId) => {
       if (requestAddMode.isAddingToRequest.value || isGuestCartMode.value) {
@@ -482,8 +622,12 @@ export function useMarketplaceCart() {
 
       if (branchId && branchId !== previousBranchId) {
         void (async () => {
-          if (readGuestCartFromStorage().length) {
-            await syncGuestCartToServer();
+          if (hasPendingGuestCart()) {
+            await mergeGuestCartAfterLogin();
+            return;
+          }
+          if (!previousBranchId) {
+            await migrateUnbranchedCartToBranch(branchId);
           }
           await loadCart(true);
         })();
@@ -496,18 +640,41 @@ export function useMarketplaceCart() {
       }
 
       if (nextHasSession && !previousHasSession) {
-        void (async () => {
-          persistGuestCartFromState();
-          await syncGuestCartToServer();
-          await loadCart(true);
-        })();
+        void mergeGuestCartAfterLogin();
         return;
       }
 
       if (!nextHasSession && previousHasSession) {
-        loadGuestCartToState();
+        resetCartState();
       }
     });
+
+    function refreshCartForMarketRoute() {
+      if (!route.path.startsWith('/market')) {
+        return;
+      }
+
+      if (requestAddMode.isAddingToRequest.value) {
+        return;
+      }
+
+      if (isGuestCartMode.value) {
+        loadGuestCartToState();
+        return;
+      }
+
+      if (hasSession.value) {
+        if (hasPendingGuestCart()) {
+          void mergeGuestCartAfterLogin();
+          return;
+        }
+        void loadCart(true);
+      }
+    }
+
+    watch(() => route.path, refreshCartForMarketRoute);
+
+    onActivated(refreshCartForMarketRoute);
   }
 
   return {
@@ -518,7 +685,10 @@ export function useMarketplaceCart() {
     totalItemCount,
     subtotalNaira,
     initializeCart,
+    mergeGuestCartAfterLogin,
+    hasPendingGuestCart,
     loadCart,
+    resetCartState,
     flushGuestCartToStorage,
     clearCart,
     getCartQtyForUnit,
