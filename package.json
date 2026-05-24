@@ -2,6 +2,10 @@
   "name": "gosource-lab",
   "private": true,
   "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.19.0 || >=22.12.0",
+    "pnpm": "9.15.0"
+  },
   "scripts": {
     "dev": "turbo run dev --filter=!@gosource/api",
     "build": "turbo run build",
@@ -13,12 +17,23 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@oxc-minify/binding-darwin-arm64": "0.131.0",
+    "@oxc-parser/binding-darwin-arm64": "0.131.0",
+    "@oxc-transform/binding-darwin-arm64": "0.131.0",
     "eslint": "^9.35.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
+    "oxc-parser": "0.131.0",
     "prettier": "^3.5.3",
     "turbo": "^2.9.9",
     "typescript": "^5.9.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "oxc-parser": "0.131.0",
+      "oxc-minify": "0.131.0",
+      "oxc-transform": "0.131.0"
+    }
   },
   "lint-staged": {
     "*.{js,ts,mjs,cjs,json,md,yml,yaml}": [

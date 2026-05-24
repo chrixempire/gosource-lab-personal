@@ -320,7 +320,10 @@ export function useCustomerMarketService() {
         throw error;
       }
     },
-    async addCartItem(payload: { productId: string; branchId?: string; unit: string; quantity: number }) {
+    async addCartItem(
+      payload: { productId: string; branchId?: string; unit: string; quantity: number },
+      options: { quiet?: boolean } = {},
+    ) {
       try {
         return await $fetch<MarketCartMutationResponse>('/api/proxy/cart', {
           method: 'POST',
@@ -328,7 +331,9 @@ export function useCustomerMarketService() {
           credentials: 'same-origin',
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to add item to cart right now'));
+        if (!options.quiet) {
+          toast.error(extractApiErrorMessage(error, 'Unable to add item to cart right now'));
+        }
         throw error;
       }
     },

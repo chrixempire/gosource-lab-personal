@@ -105,12 +105,24 @@ export function useMarketBranchGate() {
   }
 
   async function ensureBranchForAction() {
+    if (!hasSession.value) {
+      return true;
+    }
+
     if (await resolveBranchRequirement()) {
       return true;
     }
 
     openBranchGate();
     return false;
+  }
+
+  function openBranchGateForCustomer() {
+    if (!hasSession.value) {
+      return;
+    }
+
+    openBranchGate();
   }
 
   function requestProductModalResume(product: MarketProduct) {
@@ -153,6 +165,7 @@ export function useMarketBranchGate() {
     fetchBranchesInBackground,
     resolveBranchRequirement,
     openBranchGate,
+    openBranchGateForCustomer,
     ensureBranchForAction,
     handleBranchCreated,
     requestProductModalResume,

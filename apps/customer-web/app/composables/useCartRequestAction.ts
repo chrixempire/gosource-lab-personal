@@ -1,7 +1,7 @@
 import type { CreateRequestPayload, CustomerMeResponse } from '@gosource/api-client';
 import { toast } from '@gosource/ui';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
-import { getMarketProductById, getMarketUnitPrice, isMarketProductInStock } from '~/lib/marketplace-data';
+import { getMarketProductById, getMarketUnitPrice, isCartLineInStock } from '~/lib/marketplace-data';
 import { useCustomerApiMode } from '~/composables/useCustomerApiMode';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
@@ -17,8 +17,10 @@ export function useCartRequestAction() {
   const router = useRouter();
   const session = useState<CustomerMeResponse | null>('customer-session', () => null);
   const { cartDrawerOpen } = useMarketplaceUi();
-  const { activeBranchId, ensureBranchForAction, hasSession } = useMarketBranchGate();
-  const { flushGuestCartToStorage, lines, loadCart, subtotalNaira } = useMarketplaceCart();
+  const { activeBranchId, fetchBranchesInBackground, hasSession, openBranchGateForCustomer } =
+    useMarketBranchGate();
+  const { flushGuestCartToStorage, lines, loadCart, resetCartState, subtotalNaira } =
+    useMarketplaceCart();
   const { getBranch } = useCustomerBranchService();
   const { createRequest } = useCustomerRequestService();
   const { isLegacyMode } = useCustomerApiMode();
@@ -27,12 +29,7 @@ export function useCartRequestAction() {
 
   const isBusinessOwner = computed(() => isBusinessOwnerSession(session.value));
 
-  const hasOutOfStockProduct = computed(() =>
-    lines.value.some(({ productId, unit }) => {
-      const product = getMarketProductById(productId);
-      return product ? !isMarketProductInStock(product) : false;
-    }),
-  );
+  const hasOutOfStockProduct = computed(() => lines.value.some((line) => !isCartLineInStock(line)));
 
   const primaryCtaLabel = computed(() => {
     if (!hasSession.value) {
@@ -43,7 +40,7 @@ export function useCartRequestAction() {
   });
 
   const canSubmitPrimary = computed(() => {
-    if (!lines.value.length || hasOutOfStockProduct.value || isSubmitting.value) {
+    if (!lines.value.length || hasOutOfStockProduct.value) {
       return false;
     }
 
@@ -142,28 +139,31 @@ export function useCartRequestAction() {
       return;
     }
 
-    let branchId = activeBranchId.value;
-    if (!branchId) {
-      await ensureBranchForAction();
-      branchId = activeBranchId.value;
-    }
-
-    if (!branchId) {
-      toast.error('Select a branch before sending a request.');
-      return;
-    }
-
-    const phoneNumber = await resolvePhoneNumber();
-    if (!phoneNumber) {
-      toast.error(
-        'Add a phone number in Settings → My Profile before checkout.',
-      );
-      return;
-    }
-
     isSubmitting.value = true;
 
     try {
+      let branchId = activeBranchId.value;
+      if (!branchId) {
+        await fetchBranchesInBackground(true);
+        branchId = activeBranchId.value;
+      }
+
+      if (!branchId) {
+        toast.error('Create a delivery branch before checkout.');
+        closeCartDrawer();
+        await nextTick();
+        openBranchGateForCustomer();
+        return;
+      }
+
+      const phoneNumber = await resolvePhoneNumber();
+      if (!phoneNumber) {
+        toast.error(
+          'Add a phone number in Settings → My Profile before checkout.',
+        );
+        return;
+      }
+
       const branchResponse = await getBranch(branchId);
       const branch = branchResponse.data;
       if (!branch) {
@@ -176,6 +176,7 @@ export function useCartRequestAction() {
       const response = await createRequest(payload);
       const createdRequestId = response.data?.id;
 
+      resetCartState();
       await loadCart(true);
       closeCartDrawer();
       toast.success('Request created successfully');

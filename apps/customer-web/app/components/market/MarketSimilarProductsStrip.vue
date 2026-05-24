@@ -72,7 +72,7 @@ async function onAddClick(e: MouseEvent, p: MarketProduct) {
   }
 
   if (isAddingToRequest.value && !isMulti(p)) {
-    await addOne(p.id, defaultUnit(p));
+    await addOne(p.id, defaultUnit(p), { product: p });
     return;
   }
 
@@ -172,7 +172,12 @@ watch(
                 + Add
               </Button>
               <div v-else class="w-full min-w-0 max-w-full">
-                <MarketProductQtyStrip :product-id="p.id" :unit="defaultUnit(p)" variant="card" />
+                <MarketProductQtyStrip
+                  :product-id="p.id"
+                  :product="p"
+                  :unit="defaultUnit(p)"
+                  variant="card"
+                />
               </div>
             </div>
           </div>

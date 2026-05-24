@@ -68,12 +68,49 @@ export class AuthService {
       this.employeeModel.findOne({ email }),
     ]);
 
-    if (business || employee) {
+    if (employee) {
       throw new ConflictException({
         statusCode: 409,
         message: 'Email already exists with an account, try to log in',
-        onboardingStep: business?.onboardingStep ?? employee?.onboardingStep,
+        onboardingStep: employee.onboardingStep,
       });
+    }
+
+    if (business) {
+      const sameBusinessName =
+        business.businessName?.trim().toLowerCase() ===
+        businessName?.trim().toLowerCase();
+      const setupComplete = Boolean(business.firstName && business.lastName);
+
+      if (setupComplete) {
+        throw new ConflictException({
+          statusCode: 409,
+          message: 'Email already exists with an account, try to log in',
+          onboardingStep: business.onboardingStep,
+        });
+      }
+
+      if (!sameBusinessName) {
+        throw new ConflictException({
+          statusCode: 409,
+          message:
+            'This email is already registered with a different business name. Sign in or use a different email.',
+        });
+      }
+
+      if (!business.verified) {
+        await this.resendOtp({ email });
+      }
+
+      return {
+        message: business.verified
+          ? 'Continue setting up your account'
+          : 'Verification code sent. Continue your registration',
+        data: {
+          ...business.toObject(),
+          resume: true,
+        },
+      };
     }
 
     if (businessName) {

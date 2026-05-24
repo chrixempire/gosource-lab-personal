@@ -106,7 +106,21 @@ async function submitSignup() {
     otpCode.value = '';
     toast.success(extractApiResponseMessage(result, 'Continue your registration'));
   } catch (error) {
-    errorMessage.value = extractApiErrorMessage(error, 'Unable to create your business account right now');
+    const message = extractApiErrorMessage(error, 'Unable to create your business account right now');
+
+    if (/business name already exists/i.test(message)) {
+      signupErrors.businessName = message;
+      errorMessage.value = '';
+      return;
+    }
+
+    if (/different business name/i.test(message)) {
+      signupErrors.email = message;
+      errorMessage.value = '';
+      return;
+    }
+
+    errorMessage.value = message;
   } finally {
     loading.value = false;
   }
