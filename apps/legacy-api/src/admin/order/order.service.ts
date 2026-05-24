@@ -33,6 +33,7 @@ import {
   ProductDocument,
 } from '../../product/entities/product.entity';
 import { calculateTotalPrice, getDateFilter } from '../../utils/helpers';
+import { getDashboardTimezone } from '../../utils/dashboard-timezone';
 import { parseISO } from 'date-fns';
 import { DateFilterDto } from '../product/dto/create-product.dto';
 import { DateFilterType } from '../product/enum/product.enum';
@@ -1751,6 +1752,7 @@ export class OrderService {
 
     const dateFilter = getDateFilter(filterType, customDateRange);
     const bucketFormat = getTrendDateBucketFormat(filterType);
+    const dashboardTimezone = getDashboardTimezone();
 
     const [trendRows, statusRows] = await Promise.all([
       this.orderModel.aggregate([
@@ -1761,6 +1763,7 @@ export class OrderService {
               $dateToString: {
                 format: bucketFormat,
                 date: '$createdAt',
+                timezone: dashboardTimezone,
               },
             },
             orderCount: { $sum: 1 },

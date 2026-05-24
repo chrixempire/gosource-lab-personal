@@ -10,6 +10,7 @@ import {
 import type { DashboardStatusSlice } from '~/types/dashboard';
 import LoadingState from '~/components/shared/LoadingState.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import { useDashboardChartCanvas } from '~/composables/useDashboardChartCanvas';
 
 const props = defineProps<{
   slices: DashboardStatusSlice[];
@@ -19,14 +20,18 @@ const props = defineProps<{
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const chartContainerRef = ref<HTMLElement | null>(null);
 let chart: Chart | null = null;
-let resizeObserver: ResizeObserver | null = null;
 
 const visibleSlices = computed(() => props.slices.filter((slice) => slice.count > 0));
+const hasChartData = computed(() => visibleSlices.value.length > 0);
+
+function formatPieLegendLabel(slice: DashboardStatusSlice) {
+  return `${formatDashboardPieStatusLabel(slice.status)} (${slice.percentage}%)`;
+}
 
 const chartConfig = computed((): ChartConfiguration<'doughnut'> => ({
   type: 'doughnut',
   data: {
-    labels: visibleSlices.value.map((slice) => formatDashboardPieStatusLabel(slice.status)),
+    labels: visibleSlices.value.map((slice) => formatPieLegendLabel(slice)),
     datasets: [
       {
         data: visibleSlices.value.map((slice) => slice.percentage),
@@ -61,7 +66,7 @@ const chartConfig = computed((): ChartConfiguration<'doughnut'> => ({
             }
 
             const lines = [
-              `${context.label}: ${slice.percentage}% (${slice.count} orders)`,
+              `${formatDashboardPieStatusLabel(slice.status)}: ${slice.percentage}% (${slice.count} orders)`,
             ];
 
             if (slice.status === 'other') {
@@ -82,11 +87,15 @@ function destroyChart() {
 }
 
 function renderChart() {
-  if (!import.meta.client || !canvasRef.value || !visibleSlices.value.length || props.pending) {
+  if (!import.meta.client || !canvasRef.value || !hasChartData.value || props.pending) {
     return;
   }
 
   ensureDashboardChartsRegistered();
+
+  if (chart && chart.canvas !== canvasRef.value) {
+    destroyChart();
+  }
 
   if (chart) {
     chart.data = chartConfig.value.data!;
@@ -100,72 +109,22 @@ function renderChart() {
   chart.resize();
 }
 
-function scheduleChartRender() {
-  if (!import.meta.client) {
-    return;
-  }
-
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      if (props.pending) {
-        return;
-      }
-
-      if (!visibleSlices.value.length) {
-        destroyChart();
-        return;
-      }
-
-      renderChart();
-    });
-  });
-}
-
-function bindResizeObserver() {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-
-  const container = chartContainerRef.value;
-  if (!container) {
-    return;
-  }
-
-  resizeObserver = new ResizeObserver(() => {
-    if (!props.pending && visibleSlices.value.length) {
-      scheduleChartRender();
-    }
-  });
-  resizeObserver.observe(container);
-}
+const { scheduleRender } = useDashboardChartCanvas({
+  pending: toRef(props, 'pending'),
+  hasData: hasChartData,
+  canvasRef,
+  chartContainerRef,
+  render: renderChart,
+  destroy: destroyChart,
+});
 
 watch(
-  () => [props.slices, props.pending] as const,
+  () => props.slices,
   () => {
-    scheduleChartRender();
+    scheduleRender();
   },
   { deep: true, flush: 'post' },
 );
-
-watch([canvasRef, chartContainerRef], ([canvas, container]) => {
-  if (container) {
-    bindResizeObserver();
-  }
-
-  if (canvas) {
-    scheduleChartRender();
-  }
-});
-
-onMounted(() => {
-  bindResizeObserver();
-  scheduleChartRender();
-});
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-  destroyChart();
-});
 </script>
 
 <template>
@@ -179,7 +138,7 @@ onBeforeUnmount(() => {
       <LoadingState label="Loading chart…" />
     </div>
     <div
-      v-else-if="!visibleSlices.length"
+      v-else-if="!hasChartData"
       class="flex h-[300px] items-center justify-center"
     >
       <EmptyState
@@ -188,7 +147,7 @@ onBeforeUnmount(() => {
         description="There are no orders in this period to chart."
       />
     </div>
-    <div v-else ref="chartContainerRef" class="relative h-[300px] w-full">
+    <div v-else ref="chartContainerRef" class="relative h-[300px] w-full min-w-0 overflow-hidden">
       <canvas ref="canvasRef" class="block h-full w-full" />
     </div>
   </article>

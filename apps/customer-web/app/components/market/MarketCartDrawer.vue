@@ -25,7 +25,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean];
 }>();
 
-const { clearCart, isGuestCartMode, lines, loadCart, setQuantityForUnit, subtotalNaira, removeLine } =
+const { clearCart, isGuestCartMode, lines, refreshLoggedInCart, setQuantityForUnit, subtotalNaira, removeLine, syncMarketCartEntry } =
   useMarketplaceCart();
 const {
   isAddingToRequest,
@@ -169,10 +169,11 @@ watch(
     }
 
     if (isGuestCartMode.value) {
+      syncMarketCartEntry();
       return;
     }
 
-    void loadCart(true);
+    void refreshLoggedInCart();
   },
 );
 </script>
@@ -227,7 +228,7 @@ watch(
           </div>
           <button
             type="button"
-            class="flex size-10 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 transition hover:bg-primary-50/70 hover:text-primary-500"
+            class="flex size-10 cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 transition hover:bg-primary-50/70 hover:text-primary-500"
             :aria-label="isAddingToRequest ? 'Close request items' : 'Close cart'"
             @click="close"
           >

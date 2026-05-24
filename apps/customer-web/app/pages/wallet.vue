@@ -652,6 +652,7 @@ onBeforeUnmount(() => {
     <WalletFundDialog
       v-if="businessId"
       :open="fundDialogOpen"
+      :wallet="wallet"
       :business-id="businessId"
       @update:open="fundDialogOpen = $event"
       @funded="onFunded"

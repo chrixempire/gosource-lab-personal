@@ -8,6 +8,7 @@ import MarketProductSection from '~/components/market/MarketProductSection.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useCustomerSession } from '~/composables/useCustomerSession';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
+import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { useMarketCatalog } from '~/composables/useMarketCatalog';
 import { categoriesWithProducts } from '~/lib/marketplace-data';
 import { readCachedCategoriesFromStorage } from '~/services/market.service';
@@ -19,6 +20,7 @@ definePageMeta({
 });
 
 const { hasSession } = useCustomerSession();
+const { syncMarketCartEntry } = useMarketplaceCart();
 const { categories, catalogList, hydrateFromStorage, setCategories } = useMarketCatalog();
 const { listCategories, listPromotions, listRecentOrders } = useCustomerMarketService();
 
@@ -287,11 +289,16 @@ function onPromotionExpandChange(promotionId: string, expanded: boolean) {
   expandedPromotionId.value = expanded ? promotionId : null;
 }
 
+function syncCartAfterMarketEntry() {
+  syncMarketCartEntry();
+}
+
 onMounted(() => {
   hydrateFromStorage();
   if (hasSession.value) {
     void fetchBranchesInBackground();
   }
+  syncCartAfterMarketEntry();
   refreshPromotionsInBackground();
 
   if (visibleCategories.value.length > 0) {
@@ -324,6 +331,7 @@ onMounted(() => {
 
 onActivated(() => {
   hydrateFromStorage();
+  syncCartAfterMarketEntry();
   refreshPromotionsInBackground();
   if (hasSession.value && activeBranchId.value) {
     void loadRecentOrders(activeBranchId.value);

@@ -24,6 +24,7 @@ import {
   cartItemsToGuestStoredLines,
   clearGuestCartStorage,
   guestStoredLinesToCartItems,
+  getGuestCartSnapshot,
   readGuestCartFromStorage,
   writeGuestCartToStorage,
 } from '~/lib/guest-market-cart';
@@ -59,9 +60,13 @@ export function useMarketplaceCart() {
   const autoLoadStarted = useState('marketplace-cart-auto-load-started', () => false);
   const cartLifecycleHooksRegistered = useState('marketplace-cart-lifecycle-hooks', () => false);
   const guestCartMergeInFlight = useState('marketplace-guest-cart-merge-in-flight', () => false);
+  const unbranchedCartMigrationInFlight = useState('marketplace-unbranched-cart-migration-in-flight', () => false);
+  const cartLoadInFlight = useState<Promise<void> | null>('marketplace-cart-load-in-flight', () => null);
+  const cartLoadQueuedForce = useState('marketplace-cart-load-queued-force', () => false);
   const { hasSession, sessionResolved, whenReady } = useCustomerSession();
   const {
     activeBranchId,
+    branchFetchInitialized,
     ensureBranchForAction,
     fetchBranchesInBackground,
   } = useMarketBranchGate();
@@ -110,8 +115,8 @@ export function useMarketplaceCart() {
   }
 
   function loadGuestCartToState() {
-    const stored = readGuestCartFromStorage();
-    const items = guestStoredLinesToCartItems(stored);
+    const snapshot = getGuestCartSnapshot(rawLines.value);
+    const items = guestStoredLinesToCartItems(snapshot);
     const total = items.reduce((sum, line) => sum + line.lineTotalNaira, 0);
     applyCart(items, total);
     initializedBranchId.value = 'guest';
@@ -147,6 +152,43 @@ export function useMarketplaceCart() {
     });
   }
 
+  async function waitForGuestCartMerge() {
+    if (!guestCartMergeInFlight.value) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      const stop = watch(guestCartMergeInFlight, (inFlight) => {
+        if (!inFlight) {
+          stop();
+          resolve();
+        }
+      });
+    });
+  }
+
+  async function waitForUnbranchedCartMigration() {
+    if (!unbranchedCartMigrationInFlight.value) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      const stop = watch(unbranchedCartMigrationInFlight, (inFlight) => {
+        if (!inFlight) {
+          stop();
+          resolve();
+        }
+      });
+    });
+  }
+
+  function shouldMergeGuestCartAfterLogin() {
+    return (
+      hasPendingGuestCart() ||
+      (initializedBranchId.value === 'guest' && rawLines.value.some((line) => line.quantity > 0))
+    );
+  }
+
   async function ensureGuestCartSyncedBeforeServerLoad() {
     if (!import.meta.client) {
       return;
@@ -180,6 +222,7 @@ export function useMarketplaceCart() {
     }
 
     if (guestCartMergeInFlight.value) {
+      await waitForGuestCartMerge();
       return true;
     }
 
@@ -241,6 +284,13 @@ export function useMarketplaceCart() {
       return;
     }
 
+    if (unbranchedCartMigrationInFlight.value) {
+      await waitForUnbranchedCartMigration();
+      return;
+    }
+
+    unbranchedCartMigrationInFlight.value = true;
+
     try {
       const allResponse = await marketService.getCart('all');
       const allItems = allResponse.data.cartItems ?? [];
@@ -285,6 +335,51 @@ export function useMarketplaceCart() {
       }
     } catch {
       // Ignore migration errors; loadCart will still run.
+    } finally {
+      unbranchedCartMigrationInFlight.value = false;
+    }
+  }
+
+  async function ensureUnbranchedCartMigrated(branchId?: string | null) {
+    const targetBranchId = branchId ?? activeBranchId.value;
+    if (!targetBranchId || isGuestCartMode.value) {
+      return;
+    }
+
+    await migrateUnbranchedCartToBranch(targetBranchId);
+  }
+
+  /** Reload server cart for logged-in users (guest merge first when localStorage has items). */
+  async function refreshLoggedInCart() {
+    await waitForGuestCartMerge();
+    await waitForGuestCartSync();
+    await waitForUnbranchedCartMigration();
+
+    if (!import.meta.client || isGuestCartMode.value || !hasSession.value) {
+      return;
+    }
+
+    if (shouldMergeGuestCartAfterLogin()) {
+      await mergeGuestCartAfterLogin();
+      return;
+    }
+
+    await loadCart(true);
+  }
+
+  /** Hydrate guest local cart or refresh logged-in server cart on market entry. */
+  function syncMarketCartEntry() {
+    if (!import.meta.client) {
+      return;
+    }
+
+    if (isGuestCartMode.value) {
+      loadGuestCartToState();
+      return;
+    }
+
+    if (hasSession.value) {
+      void refreshLoggedInCart();
     }
   }
 
@@ -299,31 +394,53 @@ export function useMarketplaceCart() {
       return;
     }
 
-    if (force) {
-      await waitForGuestCartSync();
-    } else {
-      await ensureGuestCartSyncedBeforeServerLoad();
+    if (cartLoadInFlight.value) {
+      cartLoadQueuedForce.value = cartLoadQueuedForce.value || force;
+      await cartLoadInFlight.value;
+      const queuedForce = cartLoadQueuedForce.value;
+      cartLoadQueuedForce.value = false;
+      if (!queuedForce) {
+        return;
+      }
+      force = true;
     }
 
-    if (loading.value) {
-      return;
-    }
+    const run = async () => {
+      if (force) {
+        await waitForGuestCartSync();
+      } else {
+        await ensureGuestCartSyncedBeforeServerLoad();
+      }
 
-    loading.value = true;
-    const branchId = await getBranchIdForCartAction(false);
-    const cartScopeId = branchId || 'all';
+      loading.value = true;
 
-    if (!force && initializedBranchId.value === cartScopeId) {
-      loading.value = false;
-      return;
-    }
+      try {
+        const branchId = await getBranchIdForCartAction(false);
+
+        if (branchId) {
+          await ensureUnbranchedCartMigrated(branchId);
+        }
+
+        const cartScopeId = branchId || 'all';
+
+        if (!force && initializedBranchId.value === cartScopeId) {
+          return;
+        }
+
+        const response = await marketService.getCart(cartScopeId);
+        applyCart(response.data.cartItems ?? [], response.data.totalPrice ?? 0);
+        initializedBranchId.value = cartScopeId;
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    cartLoadInFlight.value = run();
 
     try {
-      const response = await marketService.getCart(cartScopeId);
-      applyCart(response.data.cartItems ?? [], response.data.totalPrice ?? 0);
-      initializedBranchId.value = cartScopeId;
+      await cartLoadInFlight.value;
     } finally {
-      loading.value = false;
+      cartLoadInFlight.value = null;
     }
   }
 
@@ -621,16 +738,7 @@ export function useMarketplaceCart() {
       }
 
       if (branchId && branchId !== previousBranchId) {
-        void (async () => {
-          if (hasPendingGuestCart()) {
-            await mergeGuestCartAfterLogin();
-            return;
-          }
-          if (!previousBranchId) {
-            await migrateUnbranchedCartToBranch(branchId);
-          }
-          await loadCart(true);
-        })();
+        void refreshLoggedInCart();
       }
     });
 
@@ -640,7 +748,12 @@ export function useMarketplaceCart() {
       }
 
       if (nextHasSession && !previousHasSession) {
-        void mergeGuestCartAfterLogin();
+        if (initializedBranchId.value === 'guest') {
+          initializedBranchId.value = null;
+        }
+        void (async () => {
+          await mergeGuestCartAfterLogin();
+        })();
         return;
       }
 
@@ -648,6 +761,25 @@ export function useMarketplaceCart() {
         resetCartState();
       }
     });
+
+    // Users without a branch never get activeBranchId; reload after branch list settles.
+    watch(
+      [branchFetchInitialized, hasSession, activeBranchId] as const,
+      ([ready, signedIn, branchId]) => {
+        if (
+          !ready ||
+          !signedIn ||
+          branchId ||
+          isGuestCartMode.value ||
+          requestAddMode.isAddingToRequest.value
+        ) {
+          return;
+        }
+
+        void refreshLoggedInCart();
+      },
+      { immediate: true },
+    );
 
     function refreshCartForMarketRoute() {
       if (!route.path.startsWith('/market')) {
@@ -658,21 +790,20 @@ export function useMarketplaceCart() {
         return;
       }
 
-      if (isGuestCartMode.value) {
-        loadGuestCartToState();
-        return;
-      }
-
-      if (hasSession.value) {
-        if (hasPendingGuestCart()) {
-          void mergeGuestCartAfterLogin();
-          return;
-        }
-        void loadCart(true);
-      }
+      syncMarketCartEntry();
     }
 
-    watch(() => route.path, refreshCartForMarketRoute);
+    watch(
+      [isGuestCartMode, () => route.path] as const,
+      ([guest, path]) => {
+        if (guest && path.startsWith('/market') && !requestAddMode.isAddingToRequest.value) {
+          loadGuestCartToState();
+        }
+      },
+      { immediate: true },
+    );
+
+    watch(() => route.path, refreshCartForMarketRoute, { immediate: true });
 
     onActivated(refreshCartForMarketRoute);
   }
@@ -686,6 +817,8 @@ export function useMarketplaceCart() {
     subtotalNaira,
     initializeCart,
     mergeGuestCartAfterLogin,
+    refreshLoggedInCart,
+    syncMarketCartEntry,
     hasPendingGuestCart,
     loadCart,
     resetCartState,

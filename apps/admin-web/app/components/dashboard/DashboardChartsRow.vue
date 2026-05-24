@@ -14,6 +14,8 @@ const query = computed(() => toDashboardQueryParams(props.filter));
 const { data, pending, error } = await useFetch<unknown>('/api/dashboard/order-metrics', {
   query,
   watch: [query],
+  /** Client-only so metrics load after login cookie exists (avoids stale SSR/prefetch). */
+  server: false,
 });
 
 const metrics = computed(() => parseOrderMetrics(data.value, props.filter));
@@ -34,7 +36,7 @@ const chartKey = computed(() =>
       Unable to load chart metrics for this period.
     </p>
 
-    <div :key="chartKey" class="grid grid-cols-1 items-start gap-4 min-[1000px]:grid-cols-2">
+    <div :key="chartKey" class="flex min-w-0 flex-col gap-4">
       <DashboardOrderTrendsChart
         :points="trendPoints"
         :filter-type="filter.filterType"
