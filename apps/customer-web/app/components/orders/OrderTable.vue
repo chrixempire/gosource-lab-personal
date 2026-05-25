@@ -15,6 +15,12 @@ import {
 import OrderActionsMenu from '~/components/orders/OrderActionsMenu.vue';
 import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import type { OrderListItem } from '~/lib/order-details';
+import {
+  ORDER_LIST_PANEL_CLASS,
+  ORDER_TABLE_GRID_TEMPLATE,
+  ORDER_TABLE_SKELETON_COLUMNS,
+  ORDER_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/orders-table-layout';
 
 const props = defineProps<{
   orders: OrderListItem[];
@@ -37,32 +43,18 @@ const emit = defineEmits<{
   reorder: [order: OrderListItem];
 }>();
 
-const tableGridTemplate =
-  'minmax(0,1.6fr) minmax(0,0.75fr) minmax(0,0.7fr) minmax(0,0.85fr) minmax(0,0.85fr) 3rem';
-
-const skeletonColumns = [
-  {
-    kind: 'stack' as const,
-    avatar: true,
-    lineClass: 'w-full',
-    sublineClass: 'w-4/5',
-  },
-  { kind: 'line' as const, lineClass: 'w-20' },
-  { kind: 'line' as const, lineClass: 'w-16' },
-  { kind: 'line' as const, lineClass: 'w-24' },
-  { kind: 'line' as const, lineClass: 'h-7 w-24 rounded-full' },
-  { kind: 'line' as const, lineClass: 'h-8 w-14' },
-];
+const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)));
 </script>
 
 <template>
-  <TableShell class="flex flex-col">
-    <TableHeader>
+  <TableShell :class="[ORDER_LIST_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader :class="ORDER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
-        :style="{ gridTemplateColumns: tableGridTemplate }"
+        :style="{ gridTemplateColumns: ORDER_TABLE_GRID_TEMPLATE }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
       >
         <TableCell>Order</TableCell>
+        <TableCell>Branch</TableCell>
         <TableCell>Total</TableCell>
         <TableCell>Items</TableCell>
         <TableCell>Date</TableCell>
@@ -73,17 +65,19 @@ const skeletonColumns = [
 
     <TableSkeleton
       v-if="loading"
-      :columns="skeletonColumns"
-      :grid-template-columns="tableGridTemplate"
+      :columns="ORDER_TABLE_SKELETON_COLUMNS"
+      :grid-template-columns="ORDER_TABLE_GRID_TEMPLATE"
+      :row-count="skeletonRowCount"
+      body-class="!max-h-none !overflow-visible"
     />
 
-    <TableBody v-else>
+    <TableBody v-else class="!max-h-none !overflow-visible">
       <TableRow
         v-for="order in orders"
         :key="order.id"
         :data-testid="`order-row-${order.id}`"
         class="cursor-pointer transition-colors duration-150 hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
-        :style="{ gridTemplateColumns: tableGridTemplate }"
+        :style="{ gridTemplateColumns: ORDER_TABLE_GRID_TEMPLATE }"
         @click="emit('rowClick', order)"
       >
         <TableCell class="flex items-center gap-3">
@@ -112,6 +106,12 @@ const skeletonColumns = [
               <span v-if="order.productSubtitle"> · {{ order.productSubtitle }}</span>
             </p>
           </div>
+        </TableCell>
+
+        <TableCell>
+          <p class="truncate text-sm font-medium text-grey-900">
+            {{ order.branchName }}
+          </p>
         </TableCell>
 
         <TableCell>

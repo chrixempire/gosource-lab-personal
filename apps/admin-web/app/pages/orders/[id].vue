@@ -5,7 +5,7 @@ import AdminOrderSummary from '~/components/orders/AdminOrderSummary.vue';
 import AdminOrderTimeline from '~/components/orders/AdminOrderTimeline.vue';
 import OrderCancelDialog from '~/components/orders/OrderCancelDialog.vue';
 import OrderInvoiceDrawer from '~/components/orders/OrderInvoiceDrawer.vue';
-import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useOrderMutations } from '~/composables/useOrderMutations';
 import { unwrapLegacyPayload } from '~/lib/dashboard-api';
 import { isOrderCancellable } from '~/lib/order-constants';
@@ -167,10 +167,12 @@ useHead({
       @cancel="cancelDialogOpen = true"
     />
 
-    <EmptyState
+    <LoadErrorState
       v-if="!pending && (error || !detailsView)"
-      title="Order not found"
-      :description="error?.message ?? 'This order could not be loaded.'"
+      :error="error"
+      not-found-title="Order not found"
+      resource-label="order"
+      @retry="refresh()"
     />
 
     <template v-else>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DashboardStatCard from '~/components/dashboard/DashboardStatCard.vue';
 import DashboardStatCardSkeleton from '~/components/dashboard/DashboardStatCardSkeleton.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import {
   formatDashboardCurrency,
   formatDashboardNumber,
@@ -15,9 +16,10 @@ const props = defineProps<{
 const query = computed(() => toDashboardQueryParams(props.filter));
 
 const { data, pending, error } = await useFetch<DashboardSummaryResponse>('/api/dashboard/summary', {
-  query,
-  watch: [query],
-});
+    query,
+    watch: [query],
+  },
+);
 
 const showSkeleton = computed(() => pending.value);
 const hasOrderMetrics = computed(() => data.value?.permissions?.orders ?? Boolean(data.value));
@@ -36,13 +38,14 @@ const hasActiveCustomers = computed(
     />
   </section>
 
-  <section
+  <LoadErrorState
     v-else-if="error"
-    class="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-4 text-sm text-amber-900"
-  >
-    Unable to load dashboard summary for this period. Check your permissions or try another date
-    range.
-  </section>
+    :error="error"
+    load-failed-title="Unable to load summary"
+    resource-label="dashboard summary"
+    fallback-message="We could not load the dashboard summary for this period. Check your permissions, try another date range, or retry."
+    @retry="refresh()"
+  />
 
   <section v-else class="grid grid-cols-2 gap-4 xl:grid-cols-4">
     <DashboardStatCard

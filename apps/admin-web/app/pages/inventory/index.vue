@@ -12,6 +12,7 @@ import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useProductActionConfirm } from '~/composables/useProductActionConfirm';
 import { useProductStockDialog } from '~/composables/useProductStockDialog';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import PageHeader from '~/components/shared/PageHeader.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useProductListFilters } from '~/composables/useProductListFilters';
@@ -269,19 +270,13 @@ updateHeader({
       />
     </div>
 
-    <EmptyState
-      v-if="effectiveView === 'cards' && error && products.length === 0"
-      title="Unable to load items"
-      :description="error.message || 'Please try again.'"
-    >
-      <button
-        type="button"
-        class="text-sm font-medium text-primary-600 hover:text-primary-700"
-        @click="refresh()"
-      >
-        Retry
-      </button>
-    </EmptyState>
+    <LoadErrorState
+      v-if="error && products.length === 0"
+      :error="error"
+      load-failed-title="Unable to load items"
+      resource-label="inventory list"
+      @retry="refresh()"
+    />
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !pending && products.length === 0"

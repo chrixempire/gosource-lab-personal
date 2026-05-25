@@ -73,4 +73,24 @@ export class QueryParamsDto {
   @IsOptional()
   @ApiProperty()
   brand?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty()
+  status?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @ApiProperty()
+  amountFrom?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @ApiProperty()
+  amountTo?: number;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty()
+  search?: string;
 }

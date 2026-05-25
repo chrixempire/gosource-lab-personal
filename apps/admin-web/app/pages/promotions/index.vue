@@ -3,6 +3,7 @@ import { Button, SearchField, ViewToggle } from '@gosource/ui';
 import { useDebounce } from '@vueuse/core';
 import { Plus } from 'lucide-vue-next';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import PromotionActionDialog from '~/components/promotions/PromotionActionDialog.vue';
 import PromotionCardsGrid from '~/components/promotions/PromotionCardsGrid.vue';
 import PromotionFilterBar from '~/components/promotions/PromotionFilterBar.vue';
@@ -157,15 +158,13 @@ updateHeader({ title: 'Promotions' });
 
     <PromotionFilterBar :filters="filters" @apply="replaceFilters" @clear-all="resetFilters" />
 
-    <EmptyState
-      v-if="effectiveView === 'cards' && error && filteredRows.length === 0"
-      title="Unable to load promotions"
-      :description="error.message || 'Please try again.'"
-    >
-      <button type="button" class="text-sm font-medium text-primary-600" @click="refresh()">
-        Retry
-      </button>
-    </EmptyState>
+    <LoadErrorState
+      v-if="error && filteredRows.length === 0"
+      :error="error"
+      load-failed-title="Unable to load promotions"
+      resource-label="promotion list"
+      @retry="refresh()"
+    />
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !pending && filteredRows.length === 0"

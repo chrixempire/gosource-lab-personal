@@ -23,6 +23,15 @@ import {
 } from '../../infrastructure/mongo/schemas/request.schema';
 import type { SessionPrincipal } from '../auth/session-auth.guard';
 
+type RequestListQuery = {
+  search?: string;
+  status?: RequestStatus;
+  statuses?: RequestStatus[];
+  branchId?: string;
+  amountFrom?: number;
+  amountTo?: number;
+};
+
 type CreateRequestRecordInput = Omit<
   RequestDocument,
   '_id' | 'reference' | 'createdAt' | 'updatedAt'
@@ -86,7 +95,7 @@ export class RequestRepository {
 
   async countRequestsForPrincipal(
     principal: SessionPrincipal,
-    query: { search?: string; status?: RequestStatus; branchId?: string },
+    query: RequestListQuery,
   ) {
     const docs = await this.findRequestsForPrincipal(principal, query);
     return docs.length;
@@ -94,8 +103,15 @@ export class RequestRepository {
 
   async findRequestsForPrincipal(
     principal: SessionPrincipal,
-    query: { search?: string; status?: RequestStatus; branchId?: string },
+    query: RequestListQuery,
   ) {
+    const statusFilter =
+      query.statuses && query.statuses.length > 0
+        ? { status: { $in: query.statuses } }
+        : query.status
+          ? { status: query.status }
+          : {};
+
     const docs = await this.collection<RequestDocument & { _id: string }>(REQUEST_COLLECTION)
       .find({
         businessId: principal.businessId,
@@ -103,17 +119,27 @@ export class RequestRepository {
           ? { branchId: principal.branchId, 'initiator.accountId': principal.employeeId }
           : {}),
         ...(principal.user_type === 'customer' && query.branchId ? { branchId: query.branchId } : {}),
-        ...(query.status ? { status: query.status } : {}),
+        ...statusFilter,
       })
       .sort({ createdAt: -1 })
       .toArray();
 
-    const search = query.search?.trim().toLowerCase();
-    if (!search) {
-      return docs;
+    let filtered = docs;
+
+    if (query.amountFrom != null) {
+      filtered = filtered.filter((doc) => doc.totalPrice >= query.amountFrom!);
     }
 
-    return docs.filter((doc) => {
+    if (query.amountTo != null) {
+      filtered = filtered.filter((doc) => doc.totalPrice <= query.amountTo!);
+    }
+
+    const search = query.search?.trim().toLowerCase();
+    if (!search) {
+      return filtered;
+    }
+
+    return filtered.filter((doc) => {
       const terms = [
         doc.reference,
         doc.status,

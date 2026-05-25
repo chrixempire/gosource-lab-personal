@@ -2,6 +2,7 @@
 import { Button } from '@gosource/ui';
 import { ArrowLeft } from 'lucide-vue-next';
 import PurchaseOrderForm from '~/components/purchase-orders/PurchaseOrderForm.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { usePurchaseOrderMutations } from '~/composables/usePurchaseOrderMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -104,9 +105,15 @@ updateHeader({
       </Button>
     </div>
 
-    <p v-if="error" class="text-sm text-negative-500">Unable to load this purchase order.</p>
+    <LoadErrorState
+      v-if="!pending && error"
+      :error="error"
+      not-found-title="Purchase order not found"
+      resource-label="purchase order"
+      @retry="refresh()"
+    />
     <PurchaseOrderForm
-      v-else
+      v-else-if="!error"
       v-model="form"
       v-model:field-errors="fieldErrors"
       mode="edit"

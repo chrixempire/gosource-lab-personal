@@ -17,6 +17,7 @@ import { useAddToList } from '~/composables/useAddToList';
 import { formatNaira, useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { ClipboardList } from 'lucide-vue-next';
 import MarketProductDetailCartActions from './MarketProductDetailCartActions.vue';
+import MarketProductLineTotal from './MarketProductLineTotal.vue';
 import MarketProductImage from './MarketProductImage.vue';
 
 const props = defineProps<{
@@ -62,6 +63,17 @@ watch(unitChoices, (opts) => {
 
 const selectedLineQty = computed(() =>
   props.product ? getQtyForUnit(props.product.id, selectedUnit.value) : 0,
+);
+
+const pickQty = ref(1);
+
+watch(
+  () => [props.product?.id, selectedUnit.value, selectedLineQty.value] as const,
+  () => {
+    const inCart = selectedLineQty.value;
+    pickQty.value = Math.max(1, inCart > 0 ? inCart : 1);
+  },
+  { immediate: true },
 );
 const inStock = computed(() => isMarketProductInStock(props.product));
 
@@ -163,67 +175,82 @@ const detailText = computed(() => props.product?.longDescription ?? props.produc
               </NuxtLink>
             </div>
 
-            <section class="w-full min-w-0 space-y-1.5">
-              <h3 class="text-[12px] font-semibold uppercase tracking-[0.14em] text-grey-300">
-                Select preferred unit
-              </h3>
-              <RadioGroup v-model="selectedUnit" :name="`market-unit-${product.id}`" class="flex flex-col gap-1.5">
-                <label
-                  v-for="opt in displayUnitChoices"
-                :key="opt!.name"
-                :class="[
-                    'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-2.5 transition-colors',
-                    selectedUnit === opt!.name
-                      ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70'
-                      : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40',
-                ]"
-                >
-                  <RadioGroupItem :value="opt!.name" />
-                  <span class="min-w-0 flex-1 text-[15px] font-medium capitalize text-grey-900">
-                    {{ opt!.name }}
-                  </span>
-                  <span
+            <div class="flex w-full min-w-0 flex-col gap-3">
+              <section class="w-full min-w-0 space-y-1.5">
+                <h3 class="text-[12px] font-semibold uppercase tracking-[0.14em] text-grey-300">
+                  Select preferred unit
+                </h3>
+                <RadioGroup v-model="selectedUnit" :name="`market-unit-${product.id}`" class="flex w-full flex-col gap-1.5">
+                  <label
+                    v-for="opt in displayUnitChoices"
+                    :key="opt!.name"
                     :class="[
-                      'shrink-0 rounded-lg px-2.5 py-1 text-[13px] font-semibold text-grey-900',
-                      selectedUnit === opt!.name ? 'bg-transparent' : 'bg-grey-55',
+                      'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-2.5 transition-colors',
+                      selectedUnit === opt!.name
+                        ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70'
+                        : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40',
                     ]"
                   >
-                    <span v-if="opt!.measure">1{{ opt!.measure }} = </span>
-                    <span :class="{ 'line-through text-grey-300': opt!.discountedPriceNaira }">
-                      {{ formatNaira(opt!.priceNaira) }}
+                    <RadioGroupItem :value="opt!.name" />
+                    <span class="min-w-0 flex-1 text-[15px] font-medium capitalize text-grey-900">
+                      {{ opt!.name }}
                     </span>
-                    <span v-if="opt!.discountedPriceNaira" class="ml-1 text-red-500">
-                      {{ formatNaira(opt!.discountedPriceNaira) }}
+                    <span
+                      :class="[
+                        'shrink-0 rounded-lg px-2.5 py-1 text-[13px] font-semibold text-grey-900',
+                        selectedUnit === opt!.name ? 'bg-transparent' : 'bg-grey-55',
+                      ]"
+                    >
+                      <span v-if="opt!.measure">1{{ opt!.measure }} = </span>
+                      <span :class="{ 'line-through text-grey-300': opt!.discountedPriceNaira }">
+                        {{ formatNaira(opt!.priceNaira) }}
+                      </span>
+                      <span v-if="opt!.discountedPriceNaira" class="ml-1 text-red-500">
+                        {{ formatNaira(opt!.discountedPriceNaira) }}
+                      </span>
                     </span>
-                  </span>
-                </label>
-              </RadioGroup>
-            </section>
+                  </label>
+                </RadioGroup>
+              </section>
 
-            <div class="hidden w-full min-w-0 lg:block lg:max-w-[80%]">
-              <MarketProductDetailCartActions
-                :product="product"
-                :unit="selectedUnit"
-                :in-stock="inStock"
-                close-on-success
-                class="w-full max-w-full lg:w-3/5"
-                @close="close"
-              />
+              <template v-if="inStock">
+                <MarketProductLineTotal
+                  :product="product"
+                  :unit="selectedUnit"
+                  :quantity="pickQty"
+                />
+                <div class="hidden w-full min-w-0 lg:block">
+                  <MarketProductDetailCartActions
+                    v-model:quantity="pickQty"
+                    :product="product"
+                    :unit="selectedUnit"
+                    :in-stock="inStock"
+                    close-on-success
+                    @close="close"
+                  />
+                </div>
+              </template>
             </div>
           </div>
         </div>
       </DialogBody>
 
       <DialogFooter
-        v-if="product"
-        class="shrink-0 flex-col gap-2 border-t border-grey-50 bg-background-on-canvas !px-4 !py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:!px-6 lg:hidden"
+        v-if="product && inStock"
+        class="flex w-full shrink-0 flex-col items-stretch gap-3 border-t border-grey-50 bg-background-on-canvas !px-4 !py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:!px-6 lg:hidden"
       >
+        <MarketProductLineTotal
+          :product="product"
+          :unit="selectedUnit"
+          :quantity="pickQty"
+        />
         <MarketProductDetailCartActions
+          v-model:quantity="pickQty"
           :product="product"
           :unit="selectedUnit"
           :in-stock="inStock"
           close-on-success
-          class="mx-auto w-full max-w-md min-w-0"
+          class="w-full min-w-0"
           @close="close"
         />
       </DialogFooter>

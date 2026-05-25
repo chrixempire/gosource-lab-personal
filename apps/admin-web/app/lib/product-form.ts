@@ -42,6 +42,39 @@ export function slugifyUnitLabel(label: string) {
   return label.trim().toLowerCase().replace(/\s+/g, '-');
 }
 
+export function resolveUnitOptionLabel(
+  slug: string,
+  unitOptions: Pick<ProductUnitOption, 'slug' | 'label'>[],
+): string {
+  const trimmed = slug.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  return unitOptions.find((option) => option.slug === trimmed)?.label ?? trimmed;
+}
+
+/** Explains Q/U using the stock inventory unit (purchase unit). */
+export function buildPricingQuantityPerUnitDescription(
+  stockUnitSlug: string,
+  unitOptions: Pick<ProductUnitOption, 'slug' | 'label'>[],
+): string {
+  const stockUnit = resolveUnitOptionLabel(stockUnitSlug, unitOptions);
+
+  if (!stockUnit) {
+    return (
+      'Q/U is how many stock units make up one pricing unit. Set the unit in Stock inventory first — ' +
+      'for example, if stock is pieces and you sell by pack, enter 40 when 40 pieces make 1 pack.'
+    );
+  }
+
+  const stock = stockUnit.toLowerCase();
+  return (
+    `Q/U is how many ${stock} make up one pricing unit. ` +
+    `Example: stock is counted in ${stock} and you sell by pack — enter 40 when 40 ${stock} = 1 pack.`
+  );
+}
+
 export function createEmptyPricingRow(): ProductPricingRow {
   return { unit: '', price: '', quantityPerUnit: '' };
 }

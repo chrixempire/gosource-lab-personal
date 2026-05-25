@@ -35,6 +35,8 @@ interface Props {
   gridTemplateColumns: string;
   rowCount?: number;
   rowClass?: HTMLAttributes['class'];
+  /** Override TableBody scroll cap (e.g. `!max-h-none !overflow-visible` for page scroll). */
+  bodyClass?: HTMLAttributes['class'];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,7 +48,7 @@ const rows = computed(() => Array.from({ length: props.rowCount }, (_, index) =>
 </script>
 
 <template>
-  <TableBody class="overflow-y-auto">
+  <TableBody :class="props.bodyClass">
     <TableRow
       v-for="row in rows"
       :key="row"

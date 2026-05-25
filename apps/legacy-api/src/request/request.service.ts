@@ -1104,9 +1104,11 @@ export class RequestService {
 
     let { limit = 10 } = queryParams;
 
-    // Ensure limit has a default value and cap it at 10
-    if (!limit || limit > 10) {
+    // Default page size; allow larger lists when filtering (customer-web request filters).
+    if (!limit || limit < 1) {
       limit = 10;
+    } else if (limit > 100) {
+      limit = 100;
     }
 
     let filter: any = {};
@@ -1165,8 +1167,28 @@ export class RequestService {
 
     // Apply additional filters if provided
     if (filterBy && filterValue) {
-      filter = { ...filter, [filterBy]: filterValue };
+      if (
+        filterBy === 'status' &&
+        typeof filterValue === 'string' &&
+        filterValue.includes(',')
+      ) {
+        const statuses = filterValue
+          .split(',')
+          .map((entry) => entry.trim().toLowerCase())
+          .filter(Boolean);
+        if (statuses.length > 0) {
+          filter.status = { $in: statuses };
+        }
+      } else {
+        filter = { ...filter, [filterBy]: filterValue };
+      }
     }
+
+    const { amountFrom, amountTo, search } = queryParams;
+    const hasAmountFilter = amountFrom !== undefined || amountTo !== undefined;
+    const searchQuery = search?.trim().toLowerCase();
+    const hasSearchFilter = Boolean(searchQuery);
+    const needsFullScan = hasAmountFilter || hasSearchFilter;
 
     // Apply date range filtering if provided
     if (startDate || endDate) {
@@ -1179,12 +1201,10 @@ export class RequestService {
       }
     }
 
-    // Fetch the filtered requests from the database
-    const requests = await this.requestModel
+    // totalPrice is computed in memory (not stored on Request documents) — amount filters run after that.
+    let requestsQuery = this.requestModel
       .find(filter)
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
       .populate('initiator')
       .populate('branch')
       .populate('approver')
@@ -1193,9 +1213,13 @@ export class RequestService {
       .populate({
         path: 'products.product',
         model: 'Product',
-      })
-      .lean()
-      .exec();
+      });
+
+    if (!needsFullScan) {
+      requestsQuery = requestsQuery.skip((page - 1) * limit).limit(limit);
+    }
+
+    let requests = await requestsQuery.lean().exec();
 
     // Calculate totals for each request
     if (requests.length > 0) {
@@ -1277,10 +1301,79 @@ export class RequestService {
       }
     }
 
+    if (hasSearchFilter) {
+      requests = requests.filter((request) => {
+        const initiator = request.initiator as
+          | { email?: string; firstName?: string; lastName?: string }
+          | undefined;
+        const terms = [
+          request.reference,
+          (request.branch as { branchName?: string } | undefined)?.branchName,
+          initiator?.email,
+          initiator?.firstName ?? '',
+          initiator?.lastName ?? '',
+          ...(request.products ?? []).map(
+            (item: { product?: { name?: string }; productName?: string }) =>
+              item.product?.name ?? item.productName ?? '',
+          ),
+        ];
+        return terms
+          .join(' ')
+          .toLowerCase()
+          .includes(searchQuery!);
+      });
+    }
+
+    if (hasAmountFilter) {
+      requests = requests.filter((request) => {
+        const totalPrice = Number((request as { totalPrice?: number }).totalPrice ?? 0);
+        if (amountFrom !== undefined && totalPrice < amountFrom) {
+          return false;
+        }
+        if (amountTo !== undefined && totalPrice > amountTo) {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    const safePage = Math.max(1, page);
+
+    if (needsFullScan) {
+      const total = requests.length;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const offset = (safePage - 1) * limit;
+
+      return {
+        status: true,
+        message: 'Requests fetched successfully',
+        data: requests.slice(offset, offset + limit),
+        meta: {
+          page: safePage,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: safePage < totalPages,
+          hasPrevPage: safePage > 1,
+        },
+      };
+    }
+
+    const total = await this.requestModel.countDocuments(filter);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
     return {
       status: true,
       message: 'Requests fetched successfully',
       data: requests,
+      meta: {
+        page: safePage,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: safePage < totalPages,
+        hasPrevPage: safePage > 1,
+      },
     };
   }
 

@@ -13,6 +13,7 @@ import {
 } from '@gosource/ui';
 import DashboardProductRankCards from '~/components/dashboard/DashboardProductRankCards.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import {
   getBestSellerProductName,
@@ -76,7 +77,7 @@ const query = computed(() => ({
   limit: pageSize.value,
 }));
 
-const { data, pending, error } = await useFetch<unknown>('/api/dashboard/best-selling', {
+const { data, pending, error, refresh } = await useFetch<unknown>('/api/dashboard/best-selling', {
   query,
   watch: [query],
 });
@@ -137,17 +138,25 @@ const initialLoading = computed(() => pending.value);
             :style="{ gridTemplateColumns: tableGridTemplate }"
           >
             <TableCell class="col-span-5 h-full py-0 text-center">
-              <div class="flex h-full min-h-[15rem] items-center justify-center">
+              <LoadErrorState
+                v-if="error"
+                compact
+                :error="error"
+                load-failed-title="Unable to load products"
+                resource-label="product ranking"
+                fallback-message="Check your permissions for inventory reports, then retry."
+                @retry="refresh()"
+              />
+              <div
+                v-else
+                class="flex h-full min-h-[15rem] items-center justify-center"
+              >
                 <div class="space-y-1">
                   <p class="text-sm font-medium text-grey-800">
-                    {{ error ? 'Unable to load products' : 'No product sales' }}
+                    No product sales
                   </p>
                   <p class="text-sm text-grey-400">
-                    {{
-                      error
-                        ? 'Check your permissions for inventory reports.'
-                        : 'No product orders were recorded in this period.'
-                    }}
+                    No product orders were recorded in this period.
                   </p>
                 </div>
               </div>
@@ -203,14 +212,19 @@ const initialLoading = computed(() => pending.value);
         v-else-if="error || !rows.length"
         class="flex items-center justify-center border-t border-grey-50 p-5"
       >
+        <LoadErrorState
+          v-if="error"
+          :error="error"
+          load-failed-title="Unable to load products"
+          resource-label="product ranking"
+          fallback-message="Check your permissions for inventory reports, then retry."
+          @retry="refresh()"
+        />
         <EmptyState
+          v-else
           class="border-none bg-transparent shadow-none"
-          :title="error ? 'Unable to load products' : 'No product sales'"
-          :description="
-            error
-              ? 'Check your permissions for inventory reports.'
-              : 'No product orders were recorded in this period.'
-          "
+          title="No product sales"
+          description="No product orders were recorded in this period."
         />
       </div>
 

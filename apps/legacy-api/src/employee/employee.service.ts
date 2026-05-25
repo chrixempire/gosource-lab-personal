@@ -33,6 +33,7 @@ import {
 } from '../business/schema/business.schema';
 import { Branch, BranchDocument } from '../branch/entities/branch.entity';
 import { validateInviteCallbackUrl } from './invite-callback-url.util';
+import { assertPhoneNumberAvailable } from '../utils/phone.util';
 
 @Injectable()
 export class EmployeeService {
@@ -326,6 +327,11 @@ export class EmployeeService {
       throw new BadRequestException('Account already set up. Kindly login');
     }
 
+    await assertPhoneNumberAvailable(createEmployeeDto.phoneNumber, {
+      employeeModel: this.employeeModel,
+      businessModel: this.businessModel,
+    });
+
     createEmployeeDto.password = await this.hashPassword(
       createEmployeeDto.password,
     );
@@ -480,6 +486,13 @@ export class EmployeeService {
     }
 
     delete updateEmployeeDto.role;
+
+    if (updateEmployeeDto.phoneNumber) {
+      await assertPhoneNumberAvailable(updateEmployeeDto.phoneNumber, {
+        employeeModel: this.employeeModel,
+        businessModel: this.businessModel,
+      }, { employeeId: id });
+    }
 
     const update = await this.employeeModel.findOneAndUpdate(
       { _id: id, businessId },

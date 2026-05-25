@@ -13,6 +13,9 @@ export function createOrderApi(api: ApiClient) {
       params.set('page', String(query?.page ?? 1));
       params.set('limit', String(query?.limit ?? 10));
 
+      if (query?.branchId) {
+        params.set('branchId', query.branchId);
+      }
       if (query?.filterBy) {
         params.set('filterBy', query.filterBy);
       }
@@ -27,6 +30,12 @@ export function createOrderApi(api: ApiClient) {
       }
       if (query?.status) {
         params.set('status', query.status);
+      }
+      if (query?.amountFrom != null && !Number.isNaN(query.amountFrom)) {
+        params.set('amountFrom', String(query.amountFrom));
+      }
+      if (query?.amountTo != null && !Number.isNaN(query.amountTo)) {
+        params.set('amountTo', String(query.amountTo));
       }
 
       const search = query?.search?.trim();

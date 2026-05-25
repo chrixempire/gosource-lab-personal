@@ -8,6 +8,7 @@ import { Info, Trash2 } from 'lucide-vue-next';
 import InventorySearchableSelect from '~/components/inventory/InventorySearchableSelect.vue';
 import ProductImageDropzone from '~/components/inventory/ProductImageDropzone.vue';
 import {
+  buildPricingQuantityPerUnitDescription,
   clearResolvedProductItemFieldErrors,
   createEmptyPricingRow,
   createEmptySpecialPriceRow,
@@ -40,6 +41,10 @@ const unitSelectOptions = computed(() =>
 
 const customerSelectOptions = computed(() =>
   props.customerOptions.map((customer) => ({ value: customer.id, label: customer.label })),
+);
+
+const pricingQuantityPerUnitDescription = computed(() =>
+  buildPricingQuantityPerUnitDescription(props.form.purchaseUnit, props.unitOptions),
 );
 
 watch(
@@ -382,6 +387,12 @@ watch(
         Pricing
         <Info class="size-4 text-grey-400" />
       </h2>
+      <p
+        v-if="form.trackQuantity"
+        class="mt-2 text-sm leading-6 text-grey-600"
+      >
+        {{ pricingQuantityPerUnitDescription }}
+      </p>
       <p v-if="fieldErrors.pricing" class="mt-2 text-xs text-negative-500">{{ fieldErrors.pricing }}</p>
 
       <div class="mt-5 space-y-4">
@@ -431,7 +442,6 @@ watch(
               placeholder="0"
               @update:model-value="updateIntegerField(form, 'quantityPerUnit', row, $event)"
             />
-            <p class="mt-1 text-xs text-grey-500">Quantity per main unit</p>
             <p
               v-if="fieldErrors[`pricing.${index}.quantityPerUnit`]"
               class="mt-1 text-xs text-negative-500"
@@ -451,10 +461,6 @@ watch(
             <Trash2 class="size-4" />
           </button>
         </div>
-
-        <p v-if="form.trackQuantity" class="text-xs text-grey-500">
-          Q/U — quantity per main unit you're tracking against.
-        </p>
 
         <Button
           type="button"

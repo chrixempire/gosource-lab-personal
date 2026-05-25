@@ -31,6 +31,8 @@ import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import RequestCards, { type RequestListItem } from '~/components/requests/RequestCards.vue';
 import RequestDetailsPanel from '~/components/requests/RequestDetailsPanel.vue';
 import RequestRejectForm from '~/components/requests/RequestRejectForm.vue';
+import RequestBranchSetupBanner from '~/components/requests/RequestBranchSetupBanner.vue';
+import RequestFilterBar from '~/components/requests/RequestFilterBar.vue';
 import RequestRoleGuide from '~/components/requests/RequestRoleGuide.vue';
 import RequestTable from '~/components/requests/RequestTable.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
@@ -48,9 +50,17 @@ import {
 } from '~/lib/request-edit';
 import { useRequestEdit } from '~/composables/useRequestEdit';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
+import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
+import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useCustomerBranchService } from '~/services/branch.service';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useCustomerRequestService } from '~/services/request.service';
+import {
+  parseRequestFiltersFromQuery,
+  requestFiltersToRouteQuery,
+  requestStatusFiltersToApiParam,
+  type RequestListFilters,
+} from '~/lib/request-list-filters';
 
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
@@ -70,6 +80,8 @@ const employeeBranchId = computed(() => {
   return String(data.branchId ?? '');
 });
 
+const { hasBranch, fetchBranchesInBackground } = useMarketBranchGate();
+const { clearDismissalForSession } = useMarketBranchSetupDismissal();
 const { listBranches } = useCustomerBranchService();
 const { listRequests, getRequest, cancelRequest } = useCustomerRequestService();
 const {
@@ -96,14 +108,6 @@ const {
   setView,
 } = useCollectionRouteState('table');
 
-type RequestStatusFilter = 'all' | RequestRecord['status'];
-const requestStatusValues = new Set<RequestRecord['status']>([
-  'pending',
-  'approved',
-  'rejected',
-  'cancelled',
-]);
-
 const defaultMeta = {
   page: 1,
   limit: 10,
@@ -113,30 +117,7 @@ const defaultMeta = {
   hasPrevPage: false,
 };
 
-const statusFilter = computed<RequestStatusFilter>(() => {
-  const raw = route.query.status;
-  const value = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : undefined;
-
-  if (!value || value === 'all') {
-    return 'all';
-  }
-
-  if (requestStatusValues.has(value as RequestRecord['status'])) {
-    return value as RequestRecord['status'];
-  }
-
-  return 'all';
-});
-
-function setStatusFilter(next: RequestStatusFilter) {
-  router.replace({
-    query: {
-      ...route.query,
-      status: next === 'all' ? undefined : next,
-      page: '1',
-    },
-  });
-}
+const listFilters = computed(() => parseRequestFiltersFromQuery(route.query));
 
 const branches = ref<BranchRecord[]>([]);
 const selectedBranchId = ref(employeeBranchId.value);
@@ -187,25 +168,36 @@ watch(employeeBranchId, (next) => {
   }
 });
 
-const { data: requestsPagePayload, pending: requestsLoading } = await useAuthenticatedAsyncData(
+const { data: requestsPagePayload, pending: requestsLoading, refresh: refreshRequestsData } =
+  await useAuthenticatedAsyncData(
   'manage-requests-index',
   async () => {
-    const [branchesResponse, requestsResponse] = await Promise.all([
-      listBranches({ page: 1, limit: 100 }),
-      listRequests({
-        page: page.value,
-        limit: limit.value,
-        search: debouncedSearch.value.trim() || undefined,
-        status: statusFilter.value === 'all' ? undefined : statusFilter.value,
-        branchId:
-          !isEmployeeSession.value && selectedBranchId.value ? selectedBranchId.value : undefined,
-      }),
-    ]);
+    const branchesResponse = await listBranches({ page: 1, limit: 100 });
+    const branchRows = branchesResponse.data ?? [];
+
+    if (!isEmployeeSession.value && branchRows.length === 0) {
+      return {
+        branches: [],
+        requests: [] as RequestRecord[],
+        meta: { ...defaultMeta },
+      };
+    }
+
+    const requestsResponse = await listRequests({
+      page: page.value,
+      limit: limit.value,
+      search: debouncedSearch.value.trim() || undefined,
+      status: requestStatusFiltersToApiParam(listFilters.value.status),
+      branchId:
+        !isEmployeeSession.value && selectedBranchId.value ? selectedBranchId.value : undefined,
+      amountFrom: listFilters.value.amountMin ?? undefined,
+      amountTo: listFilters.value.amountMax ?? undefined,
+    });
 
     const rows = requestsResponse.data ?? [];
 
     return {
-      branches: branchesResponse.data ?? [],
+      branches: branchRows,
       requests: isSuperAdmin.value
         ? rows
         : rows.filter((request) => request.initiator.accountId === currentActorId.value),
@@ -213,14 +205,44 @@ const { data: requestsPagePayload, pending: requestsLoading } = await useAuthent
     };
   },
   {
-    watch: [page, limit, debouncedSearch, statusFilter, selectedBranchId],
+    watch: [
+      page,
+      limit,
+      debouncedSearch,
+      () => listFilters.value.amountMin,
+      () => listFilters.value.amountMax,
+      () => listFilters.value.status.join(','),
+      selectedBranchId,
+    ],
     default: () => ({
       branches: [] as BranchRecord[],
       requests: [] as RequestRecord[],
       meta: { ...defaultMeta },
     }),
   },
+  );
+
+const needsBranchSetup = computed(
+  () =>
+    !isEmployeeSession.value &&
+    session.value?.user_type === 'customer' &&
+    !hasBranch.value &&
+    branches.value.length === 0,
 );
+
+watch(hasBranch, (next, prev) => {
+  if (next && !prev) {
+    clearDismissalForSession();
+    void fetchBranchesInBackground(true);
+    void refreshRequestsData();
+  }
+});
+
+onMounted(() => {
+  if (!isEmployeeSession.value) {
+    void fetchBranchesInBackground();
+  }
+});
 
 const branchesLoading = computed(
   () => requestsLoading.value && (!Array.isArray(branches.value) || branches.value.length === 0),
@@ -268,17 +290,49 @@ onMounted(async () => {
   await openRequestFromQuery();
 });
 
-const requestStatusOptions = [
-  { label: 'All', value: 'all' as const },
-  { label: 'Pending', value: 'pending' as const },
-  { label: 'Approved', value: 'approved' as const },
-  { label: 'Rejected', value: 'rejected' as const },
-  { label: 'Cancelled', value: 'cancelled' as const },
-];
-
 const requestItems = computed<RequestListItem[]>(() =>
   requests.value.map(mapRequestToListItem),
 );
+
+function replaceListFilters(next: Partial<RequestListFilters>) {
+  const merged: RequestListFilters = {
+    ...listFilters.value,
+    ...next,
+  };
+
+  const filterQuery = requestFiltersToRouteQuery(merged);
+  const nextQuery = { ...route.query, ...filterQuery, page: '1' } as Record<
+    string,
+    string | string[] | undefined
+  >;
+
+  if (!filterQuery.amountFrom) {
+    delete nextQuery.amountFrom;
+  }
+  if (!filterQuery.amountTo) {
+    delete nextQuery.amountTo;
+  }
+
+  router.replace({ query: nextQuery });
+}
+
+function onApplyRequestFilters(next: Partial<RequestListFilters>) {
+  replaceListFilters(next);
+}
+
+function clearAllRequestFilters() {
+  searchValue.value = '';
+  debouncedSearch.value = '';
+  selectedBranchId.value = '';
+
+  const { amountFrom, amountTo, status, ...rest } = route.query;
+  router.replace({
+    query: {
+      ...rest,
+      page: '1',
+    },
+  });
+}
 
 async function navigateToRequestDetails(
   requestId: string,
@@ -613,7 +667,9 @@ const pageDescription = computed(() =>
 
     <RequestRoleGuide :variant="requestRoleGuideVariant" />
 
-    <div class="flex flex-col gap-6">
+    <RequestBranchSetupBanner :branch-count="branches.length" />
+
+    <div v-if="!needsBranchSetup" class="flex flex-col gap-6">
       <div class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
         <div
           v-if="!isEmployeeSession"
@@ -624,6 +680,7 @@ const pageDescription = computed(() =>
             :branches="branches"
             :loading="branchesLoading"
             :disabled="requestsLoading"
+            show-all-branches-option
           />
           <SearchField
             v-model="searchValue"
@@ -648,22 +705,13 @@ const pageDescription = computed(() =>
         />
       </div>
 
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="option in requestStatusOptions"
-          :key="option.value"
-          type="button"
-          :class="[
-            'cursor-pointer rounded-full border px-3 py-2 text-sm font-medium transition',
-            statusFilter === option.value
-              ? 'border-primary-500 bg-primary-500 text-white'
-              : 'border-border-input-default bg-white text-grey-text hover:border-primary-300',
-          ]"
-          @click="setStatusFilter(option.value)"
-        >
-          {{ option.label }}
-        </button>
-      </div>
+      <RequestFilterBar
+        :filters="listFilters"
+        :search="debouncedSearch"
+        :branch-id="selectedBranchId"
+        @apply="onApplyRequestFilters"
+        @clear-all="clearAllRequestFilters"
+      />
 
       <RequestTable
         v-if="effectiveView === 'table'"

@@ -9,6 +9,7 @@ import DiscountStatCards from '~/components/discounts/DiscountStatCards.vue';
 import DiscountTable from '~/components/discounts/DiscountTable.vue';
 import DiscountTypeDialog from '~/components/discounts/DiscountTypeDialog.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useDiscountListFilters } from '~/composables/useDiscountListFilters';
@@ -196,15 +197,13 @@ updateHeader({ title: 'Discounts' });
 
     <DiscountFilterBar :filters="filters" @apply="replaceFilters" @clear-all="resetFilters" />
 
-    <EmptyState
-      v-if="effectiveView === 'cards' && error && filteredRows.length === 0"
-      title="Unable to load discounts"
-      :description="error.message || 'Please try again.'"
-    >
-      <button type="button" class="text-sm font-medium text-primary-600" @click="refresh()">
-        Retry
-      </button>
-    </EmptyState>
+    <LoadErrorState
+      v-if="error && filteredRows.length === 0"
+      :error="error"
+      load-failed-title="Unable to load discounts"
+      resource-label="discount list"
+      @retry="refresh()"
+    />
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !pending && filteredRows.length === 0"

@@ -2,7 +2,7 @@
 import { Button } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
 import SettingsRoleForm from '~/components/settings/SettingsRoleForm.vue';
-import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useSettingsMutations } from '~/composables/useSettingsMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -107,10 +107,12 @@ async function onSubmit() {
       </Button>
     </div>
 
-    <EmptyState
+    <LoadErrorState
       v-if="!rolePending && (roleError || !role)"
-      title="Role not found"
-      :description="roleError?.message ?? 'This role could not be loaded.'"
+      :error="roleError"
+      not-found-title="Role not found"
+      resource-label="role"
+      @retry="refresh()"
     />
 
     <SettingsRoleForm

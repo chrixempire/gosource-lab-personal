@@ -8,6 +8,7 @@ import OrderStatCards from '~/components/orders/OrderStatCards.vue';
 import OrderTable from '~/components/orders/OrderTable.vue';
 import OrderVirtualCards from '~/components/orders/OrderVirtualCards.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useInfiniteOrders } from '~/composables/useInfiniteOrders';
@@ -208,19 +209,13 @@ updateHeader({
       @clear-all="resetFilters"
     />
 
-    <EmptyState
-      v-if="effectiveView === 'cards' && error && orders.length === 0"
-      title="Unable to load orders"
-      :description="error.message || 'Please try again.'"
-    >
-      <button
-        type="button"
-        class="text-sm font-medium text-primary-600 hover:text-primary-700"
-        @click="refresh()"
-      >
-        Retry
-      </button>
-    </EmptyState>
+    <LoadErrorState
+      v-if="error && orders.length === 0"
+      :error="error"
+      load-failed-title="Unable to load orders"
+      resource-label="order list"
+      @retry="refresh()"
+    />
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !loading && orders.length === 0"

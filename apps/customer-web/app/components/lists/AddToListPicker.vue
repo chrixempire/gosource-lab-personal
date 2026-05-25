@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ShoppingListRecord } from '@gosource/api-client';
+import type { BranchRecord, ShoppingListRecord } from '@gosource/api-client';
 import {
   Button,
   Dialog,
@@ -21,12 +21,15 @@ import {
 } from '@gosource/ui';
 import { useMediaQuery } from '@vueuse/core';
 import { ClipboardList, Plus } from 'lucide-vue-next';
+import BranchPickerDropdown from '~/components/branches/BranchPickerDropdown.vue';
 import { useAddToList } from '~/composables/useAddToList';
+import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import {
   extractShoppingListArray,
   useShoppingListBranchCache,
 } from '~/composables/useShoppingListBranchCache';
+import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerShoppingListService } from '~/services/shopping-list.service';
 
 const isMobile = useMediaQuery('(max-width: 600px)');
@@ -46,9 +49,20 @@ const { listListsForBranch, createList } = useCustomerShoppingListService();
 const { getCachedLists, setCachedLists } = useShoppingListBranchCache();
 
 const session = useState<{
+  user_type?: 'customer' | 'employee';
   data?: { branchId?: string | null };
 } | null>('customer-session', () => null);
 
+const { listBranches } = useCustomerBranchService();
+
+const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
+const showBranchPicker = computed(
+  () => isBusinessOwnerSession(session.value) && !isEmployeeSession.value,
+);
+
+const branches = ref<BranchRecord[]>([]);
+const branchesLoading = ref(false);
+const pickerBranchId = ref('');
 const loading = ref(false);
 const lists = ref<ShoppingListRecord[]>([]);
 const selectedListId = ref('');
@@ -60,7 +74,31 @@ const selectedList = computed(() =>
   lists.value.find((list) => list.id === selectedListId.value) ?? null,
 );
 
+async function loadBranches() {
+  if (!showBranchPicker.value) {
+    return;
+  }
+
+  branchesLoading.value = true;
+  try {
+    const response = await listBranches({ page: 1, limit: 100 });
+    branches.value = Array.isArray(response.data) ? response.data : [];
+    if (!pickerBranchId.value) {
+      pickerBranchId.value =
+        branches.value.find((branch) => branch.isHeadquarter)?.id
+        ?? branches.value[0]?.id
+        ?? '';
+    }
+  } finally {
+    branchesLoading.value = false;
+  }
+}
+
 async function resolveBranchId() {
+  if (showBranchPicker.value) {
+    return pickerBranchId.value || null;
+  }
+
   let branchId = activeBranchId.value ?? session.value?.data?.branchId ?? null;
   if (!branchId) {
     await fetchBranchesInBackground(true);
@@ -74,6 +112,12 @@ async function resolveBranchId() {
 }
 
 async function loadLists() {
+  if (showBranchPicker.value && !pickerBranchId.value) {
+    lists.value = [];
+    selectedListId.value = '';
+    return;
+  }
+
   const branchId = await resolveBranchId();
 
   if (!branchId) {
@@ -113,13 +157,22 @@ watch(pickerOpen, (open) => {
     showCreateForm.value = false;
     newListName.value = '';
     selectedListId.value = '';
-    void loadLists();
+    pickerBranchId.value = '';
+    void loadBranches().then(() => loadLists());
     return;
   }
 
   showCreateForm.value = false;
   newListName.value = '';
   selectedListId.value = '';
+  pickerBranchId.value = '';
+});
+
+watch(pickerBranchId, () => {
+  if (pickerOpen.value && showBranchPicker.value) {
+    selectedListId.value = '';
+    void loadLists();
+  }
 });
 
 watch(listsRefreshNonce, () => {
@@ -182,6 +235,14 @@ async function handleCreateListAndAdd() {
       </DrawerHeader>
 
       <DrawerBody class="relative min-h-[12rem] space-y-4 overflow-y-auto">
+        <BranchPickerDropdown
+          v-if="showBranchPicker"
+          v-model="pickerBranchId"
+          :branches="branches"
+          :loading="branchesLoading"
+          :disabled="submitting || creatingList"
+        />
+
         <div
           v-if="showCreateForm"
           class="space-y-3 rounded-[16px] border border-grey-50 p-3"
@@ -272,7 +333,7 @@ async function handleCreateListAndAdd() {
             variant="neutral"
             size="medium"
             :left-icon="Plus"
-            :disabled="submitting"
+            :disabled="submitting || (showBranchPicker && !pickerBranchId)"
             @click="showCreateForm = true"
           >
             Add list
@@ -280,7 +341,7 @@ async function handleCreateListAndAdd() {
           <Button
             variant="primary"
             size="medium"
-            :disabled="!selectedListId || !pendingItem || submitting"
+            :disabled="!selectedListId || !pendingItem || submitting || (showBranchPicker && !pickerBranchId)"
             :loading="submitting"
             @click="handleAddItem"
           >
@@ -301,6 +362,14 @@ async function handleCreateListAndAdd() {
       </DialogHeader>
 
       <DialogBody class="relative max-h-[min(52dvh,28rem)] min-h-[12rem] space-y-4 overflow-y-auto px-5 py-4">
+        <BranchPickerDropdown
+          v-if="showBranchPicker"
+          v-model="pickerBranchId"
+          :branches="branches"
+          :loading="branchesLoading"
+          :disabled="submitting || creatingList"
+        />
+
         <div v-if="showCreateForm" class="space-y-3 rounded-[16px] border border-grey-50 p-3">
           <p class="text-sm font-medium text-grey-900">New list name</p>
           <Input v-model="newListName" placeholder="e.g. Weekly restock" :disabled="creatingList || submitting" />
@@ -388,7 +457,7 @@ async function handleCreateListAndAdd() {
             variant="neutral"
             size="medium"
             :left-icon="Plus"
-            :disabled="submitting"
+            :disabled="submitting || (showBranchPicker && !pickerBranchId)"
             @click="showCreateForm = true"
           >
             Add list
@@ -396,7 +465,7 @@ async function handleCreateListAndAdd() {
           <Button
             variant="primary"
             size="medium"
-            :disabled="!selectedListId || !pendingItem || submitting"
+            :disabled="!selectedListId || !pendingItem || submitting || (showBranchPicker && !pickerBranchId)"
             :loading="submitting"
             @click="handleAddItem"
           >

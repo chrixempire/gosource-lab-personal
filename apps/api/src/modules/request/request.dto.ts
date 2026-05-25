@@ -137,12 +137,25 @@ export class ListRequestsQueryDto {
   search?: string;
 
   @IsOptional()
-  @IsIn(requestStatuses)
-  status?: RequestStatus;
+  @IsString()
+  @MaxLength(120)
+  status?: string;
 
   @IsOptional()
   @IsMongoId()
   branchId?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amountFrom?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amountTo?: number;
 }
 
 export class RejectRequestDto {

@@ -13,6 +13,7 @@ import {
 } from '@gosource/ui';
 import DashboardCustomerRankCards from '~/components/dashboard/DashboardCustomerRankCards.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { parseCustomerRankingResponse } from '~/lib/dashboard-api';
 import {
@@ -75,9 +76,10 @@ const query = computed(() => ({
 }));
 
 const { data, pending, error } = await useFetch<unknown>('/api/dashboard/customer-ranking', {
-  query,
-  watch: [query],
-});
+    query,
+    watch: [query],
+  },
+);
 
 const parsed = computed(() =>
   parseCustomerRankingResponse(data.value, page.value, pageSize.value),
@@ -202,14 +204,19 @@ const initialLoading = computed(() => pending.value);
         v-else-if="error || !rows.length"
         class="flex items-center justify-center border-t border-grey-50 p-5"
       >
+        <LoadErrorState
+          v-if="error"
+          :error="error"
+          load-failed-title="Unable to load customers"
+          resource-label="customer ranking"
+          fallback-message="Check your permissions for customer views, then retry."
+          @retry="refresh()"
+        />
         <EmptyState
+          v-else
           class="border-none bg-transparent shadow-none"
-          :title="error ? 'Unable to load customers' : 'No customer orders'"
-          :description="
-            error
-              ? 'Check your permissions for customer views.'
-              : 'No customer orders were recorded in this period.'
-          "
+          title="No customer orders"
+          description="No customer orders were recorded in this period."
         />
       </div>
 

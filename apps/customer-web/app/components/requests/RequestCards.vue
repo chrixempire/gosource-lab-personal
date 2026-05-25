@@ -57,54 +57,60 @@ const emit = defineEmits<{
         <div class="flex min-w-0 flex-1 items-start gap-3">
           <Avatar
             size="md"
+            class="shrink-0"
             :alt="request.initiatorName"
             :fallback="request.initials"
           />
           <div class="min-w-0 flex-1 space-y-1">
-            <h2 class="truncate text-base font-semibold text-grey-900">
+            <h2 class="break-words text-base font-semibold leading-snug text-grey-900">
               {{ request.reference }}
             </h2>
-            <p class="truncate text-sm text-grey-300">
-              {{ request.initiatorName }} · {{ request.branchName }}
+            <p class="break-words text-sm text-grey-900">
+              {{ request.initiatorName }}
+            </p>
+            <p class="break-words text-sm text-grey-300">
+              {{ request.branchName }}
             </p>
           </div>
         </div>
 
-        <div class="flex shrink-0 items-center gap-2">
-          <Button
-            v-if="canCheckout?.(request)"
-            variant="primary"
-            size="small"
-            class="!w-auto whitespace-nowrap"
-            @click.stop="emit('checkout', request)"
-          >
-            Checkout
-          </Button>
-          <StatusTag
-            :variant="request.statusVariant"
-            size="medium"
-            class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
-          >
-            {{ request.statusLabel }}
-          </StatusTag>
-          <RequestActionsMenu
-            :can-approve-reject="canApproveReject?.(request)"
-            :can-cancel="canCancel?.(request)"
-            :can-edit="canEdit?.(request)"
-            :can-add-more="canAddMore?.(request)"
-            :can-reopen="canReopen?.(request)"
-            :show-approve-action="!canCheckout?.(request)"
-            view-details-label="View request"
-            approve-label="Checkout"
-            @view-details="emit('viewDetails', request)"
-            @edit="emit('edit', request)"
-            @add-more="emit('addMore', request)"
-            @reopen="emit('reopen', request)"
-            @approve="emit('approve', request)"
-            @reject="emit('reject', request)"
-            @cancel="emit('cancel', request)"
-          />
-        </div>
+        <RequestActionsMenu
+          class="shrink-0"
+          :can-approve-reject="canApproveReject?.(request)"
+          :can-cancel="canCancel?.(request)"
+          :can-edit="canEdit?.(request)"
+          :can-add-more="canAddMore?.(request)"
+          :can-reopen="canReopen?.(request)"
+          :show-approve-action="!canCheckout?.(request)"
+          view-details-label="View request"
+          approve-label="Checkout"
+          @view-details="emit('viewDetails', request)"
+          @edit="emit('edit', request)"
+          @add-more="emit('addMore', request)"
+          @reopen="emit('reopen', request)"
+          @approve="emit('approve', request)"
+          @reject="emit('reject', request)"
+          @cancel="emit('cancel', request)"
+        />
+      </div>
+
+      <div class="mt-3 flex flex-wrap items-center gap-2">
+        <Button
+          v-if="canCheckout?.(request)"
+          variant="primary"
+          size="small"
+          class="!w-auto whitespace-nowrap"
+          @click.stop="emit('checkout', request)"
+        >
+          Checkout
+        </Button>
+        <StatusTag
+          :variant="request.statusVariant"
+          size="medium"
+          class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
+        >
+          {{ request.statusLabel }}
+        </StatusTag>
       </div>
 
       <div class="mt-5 grid grid-cols-2 gap-3">

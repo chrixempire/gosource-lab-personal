@@ -92,7 +92,9 @@ const mobileHeaderTitle = computed(() => {
   return pageTitle.value;
 });
 
-const showHeaderCart = computed(() => props.showMarketHeaderCart);
+const showHeaderCart = computed(
+  () => props.showMarketHeaderCart && !route.path.startsWith('/checkout'),
+);
 
 const showMarketHeaderSearch = computed(
   () => showHeaderCart.value && route.path.startsWith('/market'),

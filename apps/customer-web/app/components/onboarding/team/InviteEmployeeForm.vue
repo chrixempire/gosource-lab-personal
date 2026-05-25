@@ -40,7 +40,7 @@ const selectedBranchLabel = computed(() => {
   if (!branch) {
     return '';
   }
-  return branch.branchCode ? `${branch.branchName} (${branch.branchCode})` : branch.branchName;
+  return branch.branchName;
 });
 
 const filteredBranches = computed(() => {
@@ -153,7 +153,7 @@ function selectBranch(branchId: string) {
             @select="selectBranch(branch.id)"
           >
             <div class="flex w-full items-center justify-between gap-3">
-              <span class="min-w-0 truncate">{{ branch.branchName }}{{ branch.branchCode ? ` (${branch.branchCode})` : '' }}</span>
+              <span class="min-w-0 truncate">{{ branch.branchName }}</span>
               <Check v-if="props.branchId === branch.id" class="size-4 shrink-0 text-primary-500" />
             </div>
           </DropdownMenuItem>

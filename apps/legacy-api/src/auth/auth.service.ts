@@ -31,6 +31,7 @@ import { Branch, BranchDocument } from '../branch/entities/branch.entity';
 import { SlackService } from '../slack/slack.service';
 import { NewBusinessDto } from './dto/auth.dto';
 import { AccountType } from '../business/enum/business.enum';
+import { assertPhoneNumberAvailable } from '../utils/phone.util';
 
 @Injectable()
 export class AuthService {
@@ -334,6 +335,11 @@ export class AuthService {
     if (!business.verified) {
       throw new BadRequestException('Please verify your email to proceed');
     }
+
+    await assertPhoneNumberAvailable(data.phoneNumber, {
+      employeeModel: this.employeeModel,
+      businessModel: this.businessModel,
+    }, { businessId: business._id.toString() });
 
     const salt = await bcrypt.genSalt();
     data.password = await bcrypt.hash(data.password, salt);
