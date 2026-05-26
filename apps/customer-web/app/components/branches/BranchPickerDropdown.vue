@@ -104,21 +104,20 @@ function selectBranch(branchId: string) {
           />
         </div>
 
-        <DropdownMenuItem
-          v-if="showAllOption"
-          class="shrink-0 border-b border-grey-50"
-          @select="selectBranch(ALL_BRANCHES_VALUE)"
-        >
-          <div class="flex w-full min-w-0 items-center justify-between gap-3">
-            <span class="min-w-0 truncate">All branches</span>
-            <Check
-              v-if="modelValue === ALL_BRANCHES_VALUE"
-              class="size-4 shrink-0 text-primary-500"
-            />
-          </div>
-        </DropdownMenuItem>
-
         <div class="min-h-0 max-h-60 overflow-y-auto overscroll-contain py-1">
+          <DropdownMenuItem
+            v-if="showAllOption"
+            @select="selectBranch(ALL_BRANCHES_VALUE)"
+          >
+            <div class="flex w-full min-w-0 items-center justify-between gap-3">
+              <span class="min-w-0 truncate">All branches</span>
+              <Check
+                v-if="modelValue === ALL_BRANCHES_VALUE"
+                class="size-4 shrink-0 text-primary-500"
+              />
+            </div>
+          </DropdownMenuItem>
+
           <DropdownMenuItem
             v-for="branch in filteredBranches"
             :key="branch.id"

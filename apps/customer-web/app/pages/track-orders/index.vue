@@ -38,6 +38,7 @@ const {
   branches,
   branchesLoading,
   showAllBranchesOption,
+  setPageBranchFilter,
 } = pageBranch;
 const route = useRoute();
 const router = useRouter();
@@ -92,12 +93,6 @@ const emptyStateStatusLabel = computed(() => {
 });
 
 watch(debouncedSearch, (next, prev) => {
-  if (next !== prev && page.value !== 1) {
-    setPage(1);
-  }
-});
-
-watch(selectedBranchId, (next, prev) => {
   if (next !== prev && page.value !== 1) {
     setPage(1);
   }
@@ -241,11 +236,12 @@ useHead({
         >
           <BranchPickerDropdown
             v-if="isSuperAdmin"
-            v-model="selectedBranchId"
+            :model-value="selectedBranchId"
             :branches="branches"
             :loading="branchesLoading"
             :disabled="loading"
             :show-all-branches-option="showAllBranchesOption"
+            @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
           />
           <SearchField
             v-model="searchValue"
@@ -269,7 +265,6 @@ useHead({
       <TrackOrdersFilterBar
         :filters="listFilters"
         :search="debouncedSearch"
-        :branch-id="selectedBranchId"
         :has-default-status-only="hasDefaultStatusOnly"
         @apply="onApplyFilters"
         @clear-all="clearAllFilters"

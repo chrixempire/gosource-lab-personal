@@ -127,6 +127,7 @@ const {
   branches,
   branchesLoading: pageBranchesLoading,
   showAllBranchesOption,
+  setPageBranchFilter,
 } = pageBranch;
 const searchValue = ref('');
 const debouncedSearch = ref('');
@@ -159,12 +160,6 @@ watch(searchValue, (value) => {
 
 watch(debouncedSearch, (next, prev) => {
   if (next !== prev && page.value !== 1) {
-    setPage(1);
-  }
-});
-
-watch(selectedBranchId, (next, prev) => {
-  if (next !== prev) {
     setPage(1);
   }
 });
@@ -703,11 +698,12 @@ const pageDescription = computed(() =>
           class="flex w-full flex-col gap-3 min-[1000px]:max-w-md"
         >
           <BranchPickerDropdown
-            v-model="selectedBranchId"
+            :model-value="selectedBranchId"
             :branches="branches"
             :loading="branchesLoading"
             :disabled="requestsLoading"
             :show-all-branches-option="showAllBranchesOption"
+            @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
           />
           <SearchField
             v-model="searchValue"
@@ -736,7 +732,6 @@ const pageDescription = computed(() =>
         v-if="!showNoBranchSetup"
         :filters="listFilters"
         :search="debouncedSearch"
-        :branch-id="selectedBranchId"
         @apply="onApplyRequestFilters"
         @clear-all="clearAllRequestFilters"
       />

@@ -12,7 +12,6 @@ import {
 const props = defineProps<{
   filters: RequestListFilters;
   search: string;
-  branchId: string;
 }>();
 
 const emit = defineEmits<{
@@ -96,7 +95,6 @@ const showClearAll = computed(() =>
   hasActiveRequestFilters({
     filters: props.filters,
     search: props.search,
-    branchId: props.branchId,
   }),
 );
 </script>
@@ -112,11 +110,11 @@ const showClearAll = computed(() =>
       @clear="clearStatus"
       @update:open="(value) => value && openStatus()"
     >
-      <div class="flex max-h-56 flex-col gap-2">
+      <div class="flex max-h-56 flex-col">
         <label
           v-for="option in REQUEST_STATUS_OPTIONS"
           :key="option.value"
-          class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
+          class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
         >
           <Checkbox
             :model-value="draftStatus.includes(option.value)"

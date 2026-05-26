@@ -94,13 +94,8 @@ export function requestStatusFiltersToApiParam(
 export function hasActiveRequestFilters(input: {
   filters: RequestListFilters;
   search: string;
-  branchId: string;
 }) {
   if (input.search.trim()) {
-    return true;
-  }
-
-  if (input.branchId) {
     return true;
   }
 

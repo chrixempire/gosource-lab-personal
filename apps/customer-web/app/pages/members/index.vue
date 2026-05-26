@@ -32,16 +32,19 @@ import MemberDetailsOverlay from '~/components/members/MemberDetailsOverlay.vue'
 import MemberEditOverlay from '~/components/members/MemberEditOverlay.vue';
 import MemberResendInviteOverlay from '~/components/members/MemberResendInviteOverlay.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
-import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
+import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import {
   CUSTOMER_TABLE_BODY_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
 } from '~/lib/customer-table-layout';
+import {
+  ALL_BRANCHES_VALUE,
+  branchFilterFromQueryParam,
+} from '~/lib/branch-picker';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
-import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerEmployeeService } from '~/services/employee.service';
 
 const runWhenSessionReady = useAuthenticatedFetch();
@@ -60,8 +63,16 @@ const employeeBranchId = computed(() => {
   return 'branchId' in data && typeof data.branchId === 'string' ? data.branchId : '';
 });
 
-const { activeBranchId, ensureBranchesLoaded } = useBusinessBranchContext();
-const { listBranches } = useCustomerBranchService();
+const pageBranch = usePageBranchFilter();
+const {
+  viewBranchId: selectedBranchId,
+  apiBranchId,
+  branches,
+  branchesLoading,
+  setPageBranchFilter,
+  ensureBranchesLoaded,
+  activeBranchId,
+} = pageBranch;
 const {
   listBranchMembers,
   cancelEmployeeInvite,
@@ -80,9 +91,6 @@ const {
   setView,
 } = useCollectionRouteState('table');
 
-const branches = ref<BranchRecord[]>([]);
-const branchesLoading = ref(true);
-const selectedBranchId = ref('');
 const searchValue = ref('');
 const debouncedSearch = ref('');
 const syncSearch = useDebounceFn((value: string) => {
@@ -106,13 +114,14 @@ const meta = ref({
 
 const membersGridTemplate = computed(() =>
   isEmployeeSession.value
-    ? 'minmax(0,2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,0.85fr)'
-    : '44px minmax(0,2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,0.85fr) minmax(0,3.25rem)',
+    ? 'minmax(0,2fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,0.85fr)'
+    : '44px minmax(0,2fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,0.85fr) minmax(0,3.25rem)',
 );
 
 const membersSkeletonColumns = computed(() => [
   ...(isEmployeeSession.value ? [] : [{ kind: 'checkbox' as const }]),
   { kind: 'stack' as const, avatar: true, lineClass: 'w-full', sublineClass: 'w-4/5' },
+  { kind: 'line' as const, lineClass: 'w-full' },
   { kind: 'line' as const, lineClass: 'w-full' },
   { kind: 'line' as const, lineClass: 'w-full' },
   { kind: 'line' as const, lineClass: 'h-7 w-24 rounded-full' },
@@ -210,15 +219,38 @@ function resolveBranchId(branch: BranchRecord & { _id?: string }) {
   return '';
 }
 
-watch(
-  () => [isEmployeeSession.value, employeeBranchId.value] as const,
-  ([isEmp, branchId]) => {
-    if (isEmp && branchId) {
-      selectedBranchId.value = branchId;
-    }
-  },
-  { immediate: true },
-);
+function normalizeBranches(rows: BranchRecord[]) {
+  return rows.map((branch) => {
+    const id = resolveBranchId(branch as BranchRecord & { _id?: string });
+    return id && id !== branch.id ? { ...branch, id } : branch;
+  });
+}
+
+function resolveMembersBranchId(nextBranches: BranchRecord[]): string {
+  const branchIds = nextBranches.map((branch) => branch.id);
+
+  if (isEmployeeSession.value && employeeBranchId.value && branchIds.includes(employeeBranchId.value)) {
+    return employeeBranchId.value;
+  }
+
+  const fromRoute = branchFilterFromQueryParam(route.query.branchId);
+  if (fromRoute !== null && fromRoute !== ALL_BRANCHES_VALUE && branchIds.includes(fromRoute)) {
+    return fromRoute;
+  }
+
+  const fromView = apiBranchId.value
+    ?? (selectedBranchId.value !== ALL_BRANCHES_VALUE ? selectedBranchId.value : '');
+  if (fromView && branchIds.includes(fromView)) {
+    return fromView;
+  }
+
+  const activeId = activeBranchId.value;
+  if (activeId && branchIds.includes(activeId)) {
+    return activeId;
+  }
+
+  return nextBranches.find((branch) => branch.isHeadquarter)?.id ?? nextBranches[0]?.id ?? '';
+}
 
 async function fetchMembers() {
   await refreshMembersPayload();
@@ -237,27 +269,12 @@ const { data: membersPayload, pending: membersPayloadPending, refresh: refreshMe
   await useAuthenticatedAsyncData(
     'members-index',
     async () => {
-      const response = await runWhenSessionReady(() => listBranches({ page: 1, limit: 100 }));
-      const nextBranches = (response.data ?? []).map((branch) => {
-        const id = resolveBranchId(branch as BranchRecord & { _id?: string });
-        return id && id !== branch.id ? { ...branch, id } : branch;
-      });
-
-      const queryBranch = typeof route.query.branchId === 'string' ? route.query.branchId : '';
-      const resolvedBranchId = isEmployeeSession.value && employeeBranchId.value
-        ? employeeBranchId.value
-        : activeBranchId.value && nextBranches.some((branch) => branch.id === activeBranchId.value)
-          ? activeBranchId.value
-          : selectedBranchId.value && nextBranches.some((branch) => branch.id === selectedBranchId.value)
-            ? selectedBranchId.value
-            : queryBranch && nextBranches.some((branch) => branch.id === queryBranch)
-              ? queryBranch
-              : nextBranches.find((branch) => branch.isHeadquarter)?.id ?? nextBranches[0]?.id ?? '';
+      await ensureBranchesLoaded();
+      const nextBranches = normalizeBranches(branches.value ?? []);
+      const resolvedBranchId = resolveMembersBranchId(nextBranches);
 
       if (!resolvedBranchId) {
         return {
-          branches: nextBranches,
-          selectedBranchId: '',
           members: [] as BranchMemberRecord[],
           meta: { ...defaultMeta },
         };
@@ -272,17 +289,13 @@ const { data: membersPayload, pending: membersPayloadPending, refresh: refreshMe
       );
 
       return {
-        branches: nextBranches,
-        selectedBranchId: resolvedBranchId,
         members: Array.isArray(membersResponse.data) ? membersResponse.data : ([] as BranchMemberRecord[]),
         meta: membersResponse.meta ?? { ...defaultMeta },
       };
     },
     {
-      watch: [page, limit, debouncedSearch, selectedBranchId],
+      watch: [page, limit, debouncedSearch, apiBranchId, () => route.query.branchId],
       default: () => ({
-        branches: [] as BranchRecord[],
-        selectedBranchId: '',
         members: [] as BranchMemberRecord[],
         meta: { ...defaultMeta },
       }),
@@ -296,10 +309,6 @@ watch(
       return;
     }
 
-    branches.value = Array.isArray(payload.branches) ? payload.branches : [];
-    if (payload.selectedBranchId && payload.selectedBranchId !== selectedBranchId.value) {
-      selectedBranchId.value = payload.selectedBranchId;
-    }
     memberRows.value = Array.isArray(payload.members) ? payload.members : [];
     meta.value = payload.meta ?? { ...defaultMeta };
   },
@@ -309,7 +318,6 @@ watch(
 watch(
   membersPayloadPending,
   (pending) => {
-    branchesLoading.value = pending;
     membersLoading.value = pending;
   },
   { immediate: true },
@@ -324,28 +332,6 @@ watch(
 
 watch(debouncedSearch, () => {
   setPage(1);
-});
-
-watch(selectedBranchId, (id, previous) => {
-  if (previous && id && id !== previous) {
-    setPage(1);
-  }
-});
-
-watch(activeBranchId, (id) => {
-  if (isEmployeeSession.value || !id) {
-    return;
-  }
-
-  if (selectedBranchId.value !== id) {
-    selectedBranchId.value = id;
-  }
-});
-
-onMounted(() => {
-  if (!isEmployeeSession.value) {
-    void ensureBranchesLoaded();
-  }
 });
 
 function statusTagVariant(member: BranchMemberRecord) {
@@ -381,6 +367,7 @@ const formattedMembers = computed(() =>
       ...member,
       fullName,
       fallback,
+      branchLabel: selectedBranch.value?.branchName ?? '—',
       positionLabel: member.kind === 'invite' ? 'Pending invite' : member.position || 'Not set',
       roleLabel: member.role.charAt(0).toUpperCase() + member.role.slice(1),
       statusLabel,
@@ -578,9 +565,10 @@ function cardArticleClass(member: BranchMemberRecord) {
         <div class="w-full min-[1000px]:max-w-md space-y-3">
           <BranchPickerDropdown
             v-if="!isEmployeeSession"
-            v-model="selectedBranchId"
+            :model-value="selectedBranchId"
             :branches="branches"
             :loading="branchesLoading"
+            @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
           />
 
           <div
@@ -654,6 +642,7 @@ function cardArticleClass(member: BranchMemberRecord) {
               />
             </TableCell>
             <TableCell>Name &amp; Email</TableCell>
+            <TableCell>Branch</TableCell>
             <TableCell>Position</TableCell>
             <TableCell>Role</TableCell>
             <TableCell>Status</TableCell>
@@ -705,6 +694,12 @@ function cardArticleClass(member: BranchMemberRecord) {
                   {{ member.email }}
                 </p>
               </div>
+            </TableCell>
+
+            <TableCell>
+              <p class="truncate text-sm font-medium text-grey-900">
+                {{ member.branchLabel }}
+              </p>
             </TableCell>
 
             <TableCell>

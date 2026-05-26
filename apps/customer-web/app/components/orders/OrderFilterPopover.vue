@@ -42,11 +42,11 @@ function onClear() {
         @pointerdown.stop
         @click.stop
       >
-        <div class="max-h-[min(20rem,60vh)] overflow-y-auto p-4">
+        <div class="max-h-[min(20rem,60vh)] overflow-y-auto px-2 py-2">
           <slot />
         </div>
 
-        <div class="flex items-center justify-end gap-2 border-t border-grey-50 px-4 py-3">
+        <div class="flex items-center justify-end gap-2 border-t border-grey-50 px-2 py-2">
           <Button type="button" size="small" variant="outline" @click="onClear">
             Clear
           </Button>
