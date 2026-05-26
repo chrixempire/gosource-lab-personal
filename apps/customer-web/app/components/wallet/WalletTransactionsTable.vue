@@ -13,6 +13,11 @@ import {
   TableShell,
   TableSkeleton,
 } from '@gosource/ui';
+import {
+  CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_PANEL_CLASS,
+  CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/customer-table-layout';
 import { formatRequestCurrency, formatRequestDate } from '~/lib/request-details';
 import {
   WALLET_TRANSACTIONS_SKELETON_COLUMNS,
@@ -95,8 +100,8 @@ watch(
 </script>
 
 <template>
-  <TableShell class="flex w-full flex-col">
-    <TableHeader>
+  <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: WALLET_TRANSACTIONS_TABLE_GRID }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
@@ -123,9 +128,10 @@ watch(
       :columns="WALLET_TRANSACTIONS_SKELETON_COLUMNS"
       :grid-template-columns="WALLET_TRANSACTIONS_TABLE_GRID"
       :row-count="skeletonRowCount"
+      :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
 
-    <TableBody v-else>
+    <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
       <TableRow
         v-for="row in transactions"
         :key="row.id"

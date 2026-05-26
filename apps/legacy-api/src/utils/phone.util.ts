@@ -7,11 +7,14 @@ export function normalizePhoneNumber(value: string): string {
 
 type PhoneRow = { _id?: unknown; phoneNumber?: string | null };
 
-async function findRowWithNormalizedPhone<T extends PhoneRow>(
-  model: Model<T>,
+/** Only `find` is used — avoids Model<T> invariance (Employee vs PhoneRow). */
+type PhoneLookupModel = Pick<Model<PhoneRow>, 'find'>;
+
+async function findRowWithNormalizedPhone(
+  model: PhoneLookupModel,
   normalized: string,
   excludeId?: string,
-): Promise<T | null> {
+): Promise<PhoneRow | null> {
   if (!normalized) {
     return null;
   }
@@ -24,7 +27,7 @@ async function findRowWithNormalizedPhone<T extends PhoneRow>(
     filter._id = { $ne: excludeId };
   }
 
-  const rows = await model.find(filter).select('_id phoneNumber').lean<T[]>();
+  const rows = await model.find(filter).select('_id phoneNumber').lean<PhoneRow[]>();
 
   for (const row of rows) {
     if (normalizePhoneNumber(row.phoneNumber ?? '') === normalized) {
@@ -47,8 +50,8 @@ export type PhoneAvailabilityExclude = {
 export async function assertPhoneNumberAvailable(
   phoneNumber: string,
   deps: {
-    employeeModel: Model<PhoneRow>;
-    businessModel: Model<PhoneRow>;
+    employeeModel: PhoneLookupModel;
+    businessModel: PhoneLookupModel;
   },
   exclude?: PhoneAvailabilityExclude,
 ): Promise<void> {

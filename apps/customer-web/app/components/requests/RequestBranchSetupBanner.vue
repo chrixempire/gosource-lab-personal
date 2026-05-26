@@ -10,20 +10,22 @@ const session = useState<{
 
 const props = defineProps<{
   branchCount: number;
+  /** When false, avoid flashing the banner while branch list is still loading. */
+  branchesReady?: boolean;
 }>();
 
-const { hasBranch, openBranchGate } = useMarketBranchGate();
+const { openBranchGate } = useMarketBranchGate();
 
 const shouldShow = computed(() => {
   if (session.value?.user_type !== 'customer') {
     return false;
   }
 
-  if (hasBranch.value || props.branchCount > 0) {
+  if (!props.branchesReady) {
     return false;
   }
 
-  return session.value?.bootstrap?.hasBranch === false;
+  return props.branchCount < 1;
 });
 </script>
 
@@ -46,7 +48,12 @@ const shouldShow = computed(() => {
         </p>
 
         <div class="mt-3">
-          <Button size="small" type="button" @click="openBranchGate">
+          <Button
+            size="small"
+            type="button"
+            class="!w-auto"
+            @click="openBranchGate"
+          >
             Create branch
           </Button>
         </div>

@@ -11,6 +11,11 @@ import {
 } from '@gosource/ui';
 import ListActionsMenu from '~/components/lists/ListActionsMenu.vue';
 import ListCoverImage from '~/components/lists/ListCoverImage.vue';
+import {
+  CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_PANEL_CLASS,
+  CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/customer-table-layout';
 import type { ShoppingListListItem } from '~/lib/shopping-list';
 import { formatShoppingListCurrency, formatShoppingListDate } from '~/lib/shopping-list';
 
@@ -111,8 +116,8 @@ function toggleRowSelection(listId: string) {
 </script>
 
 <template>
-  <TableShell class="flex flex-col">
-    <TableHeader>
+  <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: tableGridTemplate }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
@@ -138,9 +143,10 @@ function toggleRowSelection(listId: string) {
       v-if="loading"
       :columns="skeletonColumnsFull"
       :grid-template-columns="tableGridTemplate"
+      :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
 
-    <TableBody v-else>
+    <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
       <TableRow
         v-for="list in lists"
         :key="list.id"
