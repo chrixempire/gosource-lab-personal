@@ -19,11 +19,7 @@ const shouldShow = computed(() => {
     return false;
   }
 
-  if (hasBranch.value || props.branchCount > 0) {
-    return false;
-  }
-
-  return session.value?.bootstrap?.hasBranch === false;
+  return props.branchCount < 1 && !hasBranch.value;
 });
 </script>
 
@@ -46,7 +42,12 @@ const shouldShow = computed(() => {
         </p>
 
         <div class="mt-3">
-          <Button size="small" type="button" @click="openBranchGate">
+          <Button
+            size="small"
+            type="button"
+            class="!w-auto"
+            @click="openBranchGate"
+          >
             Create branch
           </Button>
         </div>

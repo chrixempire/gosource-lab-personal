@@ -24,12 +24,23 @@ import CustomerSidebar from '~/components/layout/customer/CustomerSidebar.vue';
 import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.vue';
 import MarketSearch from '~/components/market/MarketSearch.vue';
 import { getMarketCategoryById } from '~/lib/marketplace-data';
+import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
 const { clearAllDismissals } = useMarketBranchSetupDismissal();
 const { resetCartState } = useMarketplaceCart();
+const { ensureBranchesLoaded, clearActiveBranchForLogout, hasSession } =
+  useBusinessBranchContext();
+
+if (import.meta.client) {
+  onMounted(() => {
+    if (hasSession.value) {
+      void ensureBranchesLoaded();
+    }
+  });
+}
 
 const props = withDefaults(
   defineProps<{
@@ -158,6 +169,7 @@ async function confirmLogout() {
 
   logoutConfirmOpen.value = false;
   clearAllDismissals();
+  clearActiveBranchForLogout();
   resetCartState();
   session.value = null;
   mobileNavOpen.value = false;

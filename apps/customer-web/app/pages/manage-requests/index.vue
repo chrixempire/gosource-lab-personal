@@ -51,6 +51,7 @@ import {
 import { useRequestEdit } from '~/composables/useRequestEdit';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
+import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useCustomerBranchService } from '~/services/branch.service';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
@@ -119,8 +120,14 @@ const defaultMeta = {
 
 const listFilters = computed(() => parseRequestFiltersFromQuery(route.query));
 
-const branches = ref<BranchRecord[]>([]);
-const selectedBranchId = ref(employeeBranchId.value);
+const pageBranch = usePageBranchFilter();
+const {
+  viewBranchId: selectedBranchId,
+  apiBranchId,
+  branches,
+  branchesLoading: pageBranchesLoading,
+  showAllBranchesOption,
+} = pageBranch;
 const searchValue = ref('');
 const debouncedSearch = ref('');
 const requests = ref<RequestRecord[]>([]);
@@ -188,8 +195,7 @@ const { data: requestsPagePayload, pending: requestsLoading, refresh: refreshReq
       limit: limit.value,
       search: debouncedSearch.value.trim() || undefined,
       status: requestStatusFiltersToApiParam(listFilters.value.status),
-      branchId:
-        !isEmployeeSession.value && selectedBranchId.value ? selectedBranchId.value : undefined,
+      branchId: !isEmployeeSession.value ? apiBranchId.value : undefined,
       amountFrom: listFilters.value.amountMin ?? undefined,
       amountTo: listFilters.value.amountMax ?? undefined,
     });
@@ -212,7 +218,7 @@ const { data: requestsPagePayload, pending: requestsLoading, refresh: refreshReq
       () => listFilters.value.amountMin,
       () => listFilters.value.amountMax,
       () => listFilters.value.status.join(','),
-      selectedBranchId,
+      apiBranchId,
     ],
     default: () => ({
       branches: [] as BranchRecord[],
@@ -245,7 +251,9 @@ onMounted(() => {
 });
 
 const branchesLoading = computed(
-  () => requestsLoading.value && (!Array.isArray(branches.value) || branches.value.length === 0),
+  () =>
+    pageBranchesLoading.value
+    || (requestsLoading.value && (!Array.isArray(branches.value) || branches.value.length === 0)),
 );
 
 watch(
@@ -255,7 +263,6 @@ watch(
       return;
     }
 
-    branches.value = Array.isArray(payload.branches) ? payload.branches : [];
     requests.value = Array.isArray(payload.requests) ? payload.requests : [];
     meta.value = payload.meta ?? { ...defaultMeta };
   },
@@ -323,7 +330,7 @@ function onApplyRequestFilters(next: Partial<RequestListFilters>) {
 function clearAllRequestFilters() {
   searchValue.value = '';
   debouncedSearch.value = '';
-  selectedBranchId.value = '';
+  pageBranch.resetViewToActiveBranch();
 
   const { amountFrom, amountTo, status, ...rest } = route.query;
   router.replace({
@@ -669,7 +676,24 @@ const pageDescription = computed(() =>
 
     <RequestBranchSetupBanner :branch-count="branches.length" />
 
-    <div v-if="!needsBranchSetup" class="flex flex-col gap-6">
+    <RequestTable
+      v-if="needsBranchSetup"
+      :requests="[]"
+      :page="1"
+      :total-pages="1"
+      :total-items="0"
+      :page-size="limit"
+      :loading="false"
+      empty-message="Create a branch to start managing order requests here."
+      :can-approve-reject="() => false"
+      :can-cancel="() => false"
+      :can-edit="() => false"
+      :can-add-more="() => false"
+      :can-reopen="() => false"
+      :can-checkout="() => false"
+    />
+
+    <div v-else class="flex flex-col gap-6">
       <div class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
         <div
           v-if="!isEmployeeSession"
@@ -680,7 +704,7 @@ const pageDescription = computed(() =>
             :branches="branches"
             :loading="branchesLoading"
             :disabled="requestsLoading"
-            show-all-branches-option
+            :show-all-branches-option="showAllBranchesOption"
           />
           <SearchField
             v-model="searchValue"

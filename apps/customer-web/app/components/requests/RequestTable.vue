@@ -37,6 +37,8 @@ const props = defineProps<{
   canAddMore?: (request: RequestListItem) => boolean;
   canReopen?: (request: RequestListItem) => boolean;
   canCheckout?: (request: RequestListItem) => boolean;
+  /** Shown when there are no rows (e.g. branch setup or filters). */
+  emptyMessage?: string;
 }>();
 
 const emit = defineEmits<{
@@ -173,9 +175,9 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
 
       <div
         v-if="requests.length === 0"
-        class="flex min-h-[220px] items-center justify-center px-6 text-sm text-grey-300"
+        class="flex min-h-[220px] items-center justify-center px-6 text-center text-sm text-grey-300"
       >
-        No requests found for the current filters.
+        {{ emptyMessage ?? 'No requests found for the current filters.' }}
       </div>
     </TableBody>
 

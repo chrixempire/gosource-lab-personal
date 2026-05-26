@@ -32,6 +32,7 @@ import MemberDetailsOverlay from '~/components/members/MemberDetailsOverlay.vue'
 import MemberEditOverlay from '~/components/members/MemberEditOverlay.vue';
 import MemberResendInviteOverlay from '~/components/members/MemberResendInviteOverlay.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
+import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
@@ -54,6 +55,7 @@ const employeeBranchId = computed(() => {
   return 'branchId' in data && typeof data.branchId === 'string' ? data.branchId : '';
 });
 
+const { activeBranchId, ensureBranchesLoaded } = useBusinessBranchContext();
 const { listBranches } = useCustomerBranchService();
 const {
   listBranchMembers,
@@ -239,11 +241,13 @@ const { data: membersPayload, pending: membersPayloadPending, refresh: refreshMe
       const queryBranch = typeof route.query.branchId === 'string' ? route.query.branchId : '';
       const resolvedBranchId = isEmployeeSession.value && employeeBranchId.value
         ? employeeBranchId.value
-        : selectedBranchId.value && nextBranches.some((branch) => branch.id === selectedBranchId.value)
-          ? selectedBranchId.value
-          : queryBranch && nextBranches.some((branch) => branch.id === queryBranch)
-            ? queryBranch
-            : nextBranches.find((branch) => branch.isHeadquarter)?.id ?? nextBranches[0]?.id ?? '';
+        : activeBranchId.value && nextBranches.some((branch) => branch.id === activeBranchId.value)
+          ? activeBranchId.value
+          : selectedBranchId.value && nextBranches.some((branch) => branch.id === selectedBranchId.value)
+            ? selectedBranchId.value
+            : queryBranch && nextBranches.some((branch) => branch.id === queryBranch)
+              ? queryBranch
+              : nextBranches.find((branch) => branch.isHeadquarter)?.id ?? nextBranches[0]?.id ?? '';
 
       if (!resolvedBranchId) {
         return {
@@ -320,6 +324,22 @@ watch(debouncedSearch, () => {
 watch(selectedBranchId, (id, previous) => {
   if (previous && id && id !== previous) {
     setPage(1);
+  }
+});
+
+watch(activeBranchId, (id) => {
+  if (isEmployeeSession.value || !id) {
+    return;
+  }
+
+  if (selectedBranchId.value !== id) {
+    selectedBranchId.value = id;
+  }
+});
+
+onMounted(() => {
+  if (!isEmployeeSession.value) {
+    void ensureBranchesLoaded();
   }
 });
 

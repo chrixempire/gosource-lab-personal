@@ -19,10 +19,12 @@ import { useListRequestAction } from '~/composables/useListRequestAction';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 
 const runWhenSessionReady = useAuthenticatedFetch();
+import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
+import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
+import { isAllBranchesFilter } from '~/lib/branch-picker';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { branchNameById, mapShoppingListToListItem } from '~/lib/shopping-list';
-import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerShoppingListService } from '~/services/shopping-list.service';
 
 const {
@@ -36,7 +38,6 @@ const {
   clearItems,
   moveItems,
 } = useCustomerShoppingListService();
-const { listBranches } = useCustomerBranchService();
 
 const route = useRoute();
 const session = useState<{
@@ -56,9 +57,14 @@ const {
 
 const loading = ref(true);
 const lists = ref<ShoppingListRecord[]>([]);
-const branches = ref<BranchRecord[]>([]);
-const selectedBranchId = ref('');
-const activeBranchId = ref('');
+const pageBranch = usePageBranchFilter();
+const {
+  viewBranchId: selectedBranchId,
+  apiBranchId,
+  branches,
+  showAllBranchesOption,
+} = pageBranch;
+const { activeBranchId: workingBranchId } = useBusinessBranchContext();
 const searchValue = ref('');
 const debouncedSearch = ref('');
 
@@ -109,11 +115,16 @@ const filteredLists = computed(() => {
 });
 
 const createDialogDefaultBranchId = computed(() => {
-  if (selectedBranchId.value) {
+  if (!isAllBranchesFilter(selectedBranchId.value)) {
     return selectedBranchId.value;
   }
 
-  return branches.value.find((branch) => branch.isHeadquarter)?.id ?? branches.value[0]?.id ?? '';
+  return (
+    workingBranchId.value
+    ?? branches.value.find((branch) => branch.isHeadquarter)?.id
+    ?? branches.value[0]?.id
+    ?? ''
+  );
 });
 
 const listsForMoveDialog = computed(() => {
@@ -170,25 +181,23 @@ const { data: listsPayload, pending: listsPending, refresh: refreshListsPayload 
   await useAuthenticatedAsyncData(
     'shopping-lists-index',
     async () => {
-      const branchResponse = await runWhenSessionReady(() => listBranches({ page: 1, limit: 100 }));
-      const branchRows = Array.isArray(branchResponse.data) ? branchResponse.data : [];
+      await pageBranch.ensureBranchesLoaded();
+      const branchRows = branches.value ?? [];
 
       const filterBranchId = isEmployeeSession.value
         ? employeeBranchId.value
-        : selectedBranchId.value;
+        : (apiBranchId.value ?? '');
 
       const listRows = await fetchListsForScope(branchRows, filterBranchId);
 
       return {
-        branches: branchRows,
         branchId: filterBranchId,
         lists: listRows,
       };
     },
     {
-      watch: [selectedBranchId, employeeBranchId],
+      watch: [apiBranchId, employeeBranchId],
       default: () => ({
-        branches: [] as BranchRecord[],
         branchId: '',
         lists: [] as ShoppingListRecord[],
       }),
@@ -202,17 +211,13 @@ watch(
       return;
     }
 
-    branches.value = Array.isArray(payload.branches) ? payload.branches : [];
-    activeBranchId.value = payload.branchId ?? '';
     lists.value = Array.isArray(payload.lists) ? payload.lists : [];
-
-    if (!isEmployeeSession.value && !selectedBranchId.value && payload.branchId) {
-      selectedBranchId.value = payload.branchId;
-    }
 
     const cacheBranchId = isEmployeeSession.value
       ? employeeBranchId.value
-      : selectedBranchId.value || branches.value[0]?.id;
+      : isAllBranchesFilter(selectedBranchId.value)
+        ? workingBranchId.value ?? branches.value[0]?.id
+        : selectedBranchId.value || workingBranchId.value;
 
     if (cacheBranchId) {
       setCachedLists(
@@ -247,7 +252,7 @@ async function refreshSelectedList(listId?: string) {
       if (index >= 0) {
         lists.value[index] = response.data;
       }
-      const branchId = response.data.branchId || activeBranchId.value;
+      const branchId = response.data.branchId || workingBranchId.value;
       if (branchId) {
         setCachedLists(branchId, lists.value);
       }
@@ -488,7 +493,7 @@ async function handleCreateRequest() {
             :branches="branches"
             :loading="loading && !branches.length"
             :disabled="loading"
-            show-all-branches-option
+            :show-all-branches-option="showAllBranchesOption"
           />
           <SearchField
             v-model="searchValue"

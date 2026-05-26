@@ -22,6 +22,7 @@ import {
   Store,
   Users,
 } from 'lucide-vue-next';
+import CustomerSidebarBranchSwitcher from './CustomerSidebarBranchSwitcher.vue';
 import CustomerUserMenu from './CustomerUserMenu.vue';
 import { customerSignInLocation } from '~/lib/auth-redirect';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
@@ -137,6 +138,11 @@ function closeMobileNav() {
           </NuxtLink>
         </SidebarMenuItem>
       </SidebarMenu>
+
+      <CustomerSidebarBranchSwitcher
+        :session="props.session"
+        @mobile-nav-close="closeMobileNav"
+      />
     </SidebarContent>
 
     <SidebarFooter class="w-full px-4 pb-0">

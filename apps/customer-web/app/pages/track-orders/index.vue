@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BranchRecord, CustomerMeResponse, OrderRecord } from '@gosource/api-client';
+import type { CustomerMeResponse, OrderRecord } from '@gosource/api-client';
 import { PaginationBar, ViewToggle } from '@gosource/ui';
 import { useDebounceFn } from '@vueuse/core';
 import BranchPickerDropdown from '~/components/branches/BranchPickerDropdown.vue';
@@ -21,8 +21,8 @@ import {
   type TrackOrderListFilters,
 } from '~/lib/track-order-filters';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import { useReorderProducts } from '~/composables/useReorderProducts';
-import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerOrderService } from '~/services/order.service';
 
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
@@ -30,10 +30,15 @@ const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
 const { reorderProducts, reordering } = useReorderProducts();
 
-const { listBranches } = useCustomerBranchService();
 const { listOrders } = useCustomerOrderService();
-const branches = ref<BranchRecord[]>([]);
-const selectedBranchId = ref('');
+const pageBranch = usePageBranchFilter();
+const {
+  viewBranchId: selectedBranchId,
+  apiBranchId,
+  branches,
+  branchesLoading,
+  showAllBranchesOption,
+} = pageBranch;
 const route = useRoute();
 const router = useRouter();
 const {
@@ -111,29 +116,12 @@ const { data: ordersPayload, pending: loading } = await useAuthenticatedAsyncDat
         amountFrom: listFilters.value.amountMin ?? undefined,
         amountTo: listFilters.value.amountMax ?? undefined,
         search: debouncedSearch.value.trim() || undefined,
-        branchId:
-          isSuperAdmin.value && selectedBranchId.value
-            ? selectedBranchId.value
-            : undefined,
+        branchId: isSuperAdmin.value ? apiBranchId.value : undefined,
       }),
     ];
 
-    if (isSuperAdmin.value) {
-      const [ordersResponse, branchesResponse] = await Promise.all([
-        requests[0],
-        listBranches({ page: 1, limit: 100 }),
-      ]);
-
-      return {
-        branches: branchesResponse.data ?? [],
-        orders: (ordersResponse.data ?? []) as OrderRecord[],
-        meta: ordersResponse.meta ?? defaultMeta,
-      };
-    }
-
     const ordersResponse = await requests[0];
     return {
-      branches: [] as BranchRecord[],
       orders: (ordersResponse.data ?? []) as OrderRecord[],
       meta: ordersResponse.meta ?? defaultMeta,
     };
@@ -146,31 +134,13 @@ const { data: ordersPayload, pending: loading } = await useAuthenticatedAsyncDat
       () => listFilters.value.amountMin,
       () => listFilters.value.amountMax,
       () => listFilters.value.status.join(','),
-      selectedBranchId,
+      apiBranchId,
     ],
     default: () => ({
-      branches: [] as BranchRecord[],
       orders: [] as OrderRecord[],
       meta: { ...defaultMeta },
     }),
   },
-);
-
-watch(
-  ordersPayload,
-  (payload) => {
-    if (!payload) {
-      return;
-    }
-    if (isSuperAdmin.value) {
-      branches.value = Array.isArray(payload.branches) ? payload.branches : [];
-    }
-  },
-  { immediate: true },
-);
-
-const branchesLoading = computed(
-  () => loading.value && isSuperAdmin.value && branches.value.length === 0,
 );
 
 const orders = computed(() =>
@@ -216,7 +186,7 @@ function onApplyFilters(next: Partial<TrackOrderListFilters>) {
 function clearAllFilters() {
   searchValue.value = '';
   debouncedSearch.value = '';
-  selectedBranchId.value = '';
+  pageBranch.resetViewToActiveBranch();
 
   const { amountFrom, amountTo, status, ...rest } = route.query;
   router.replace({
@@ -275,7 +245,7 @@ useHead({
             :branches="branches"
             :loading="branchesLoading"
             :disabled="loading"
-            show-all-branches-option
+            :show-all-branches-option="showAllBranchesOption"
           />
           <SearchField
             v-model="searchValue"
