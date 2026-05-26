@@ -8,6 +8,11 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import {
+  CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_PANEL_CLASS,
+  CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/customer-table-layout';
+import {
   WALLET_TRANSACTIONS_SKELETON_COLUMNS,
   WALLET_TRANSACTIONS_TABLE_GRID,
 } from '~/lib/wallet-transactions-table-layout';
@@ -25,8 +30,8 @@ withDefaults(
 </script>
 
 <template>
-  <TableShell class="flex w-full flex-col">
-    <TableHeader>
+  <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: WALLET_TRANSACTIONS_TABLE_GRID }"
         class="pointer-events-none opacity-60"
@@ -47,6 +52,7 @@ withDefaults(
       :columns="WALLET_TRANSACTIONS_SKELETON_COLUMNS"
       :grid-template-columns="WALLET_TRANSACTIONS_TABLE_GRID"
       :row-count="rowCount"
+      :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
 
     <TableFooter v-if="showFooter">

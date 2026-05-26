@@ -15,6 +15,7 @@ import {
 } from '@gosource/ui';
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import type { RequestListItem } from './RequestCards.vue';
+import { CUSTOMER_TABLE_BODY_CLASS } from '~/lib/customer-table-layout';
 import {
   REQUEST_LIST_PANEL_CLASS,
   REQUEST_TABLE_GRID_TEMPLATE,
@@ -37,6 +38,8 @@ const props = defineProps<{
   canAddMore?: (request: RequestListItem) => boolean;
   canReopen?: (request: RequestListItem) => boolean;
   canCheckout?: (request: RequestListItem) => boolean;
+  /** Shown when there are no rows (filters empty or branch setup required). */
+  emptyMessage?: string;
 }>();
 
 const emit = defineEmits<{
@@ -78,10 +81,10 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
       :columns="REQUEST_TABLE_SKELETON_COLUMNS"
       :grid-template-columns="REQUEST_TABLE_GRID_TEMPLATE"
       :row-count="skeletonRowCount"
-      body-class="!max-h-none !overflow-visible"
+      :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
 
-    <TableBody v-else class="!max-h-none !overflow-visible">
+    <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
       <TableRow
         v-for="request in requests"
         :key="request.id"
@@ -173,9 +176,9 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
 
       <div
         v-if="requests.length === 0"
-        class="flex min-h-[220px] items-center justify-center px-6 text-sm text-grey-300"
+        class="flex min-h-[220px] items-center justify-center px-6 text-center text-sm text-grey-300"
       >
-        No requests found for the current filters.
+        {{ emptyMessage ?? 'No requests found for the current filters.' }}
       </div>
     </TableBody>
 

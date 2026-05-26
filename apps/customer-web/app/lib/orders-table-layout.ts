@@ -1,9 +1,7 @@
-export const ORDER_LIST_PANEL_CLASS =
-  'flex w-full flex-col overflow-hidden rounded-xl border border-grey-50 bg-white shadow-[0_20px_48px_-28px_rgba(16,24,40,0.14)]';
-
-/** Matches CustomerAppShell main padding (py-4 / lg:py-6) so header sticks under the app bar. */
-export const ORDER_TABLE_STICKY_HEADER_CLASS =
-  'sticky -top-4 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)] lg:-top-6';
+export {
+  CUSTOMER_TABLE_PANEL_CLASS as ORDER_LIST_PANEL_CLASS,
+  CUSTOMER_TABLE_STICKY_HEADER_CLASS as ORDER_TABLE_STICKY_HEADER_CLASS,
+} from './customer-table-layout';
 
 export const ORDER_TABLE_GRID_TEMPLATE =
   'minmax(0,2fr) minmax(0,1.2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,1.1fr) minmax(0,1fr) 3rem';

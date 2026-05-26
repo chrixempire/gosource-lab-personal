@@ -14,6 +14,11 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import SortKiteIcon from '~/components/shared/collection/SortKiteIcon.vue';
+import {
+  CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_PANEL_CLASS,
+  CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/customer-table-layout';
 import BranchActionsMenu from './BranchActionsMenu.vue';
 import type { BranchListItem } from './BranchCards.vue';
 
@@ -137,8 +142,8 @@ function formatCurrency(amount: number) {
 </script>
 
 <template>
-  <TableShell class="flex flex-col">
-    <TableHeader>
+  <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: tableGridTemplate }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
@@ -172,9 +177,10 @@ function formatCurrency(amount: number) {
       v-if="loading"
       :columns="skeletonColumns"
       :grid-template-columns="tableGridTemplate"
+      :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
 
-    <TableBody v-else>
+    <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
         <TableRow
           v-for="branch in branches"
           :key="branch.id"
