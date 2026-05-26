@@ -175,8 +175,12 @@ watch(employeeBranchId, (next) => {
   }
 });
 
-const { data: requestsPagePayload, pending: requestsLoading, refresh: refreshRequestsData } =
-  await useAuthenticatedAsyncData(
+const {
+  data: requestsPagePayload,
+  pending: requestsLoading,
+  status: requestsFetchStatus,
+  refresh: refreshRequestsData,
+} = await useAuthenticatedAsyncData(
   'manage-requests-index',
   async () => {
     const branchesResponse = await listBranches({ page: 1, limit: 100 });
@@ -228,12 +232,8 @@ const { data: requestsPagePayload, pending: requestsLoading, refresh: refreshReq
   },
   );
 
-const needsBranchSetup = computed(
-  () =>
-    !isEmployeeSession.value &&
-    session.value?.user_type === 'customer' &&
-    !hasBranch.value &&
-    branches.value.length === 0,
+const hasFinishedInitialFetch = computed(
+  () => requestsFetchStatus.value === 'success' || requestsFetchStatus.value === 'error',
 );
 
 watch(hasBranch, (next, prev) => {
@@ -299,6 +299,28 @@ onMounted(async () => {
 
 const requestItems = computed<RequestListItem[]>(() =>
   requests.value.map(mapRequestToListItem),
+);
+
+/** Owner with zero branches after the first list fetch — show setup banner + empty table. */
+const showNoBranchSetup = computed(
+  () => isSuperAdmin.value && hasFinishedInitialFetch.value && branches.value.length === 0,
+);
+
+const showRequestTable = computed(
+  () =>
+    showNoBranchSetup.value ||
+    requestsLoading.value ||
+    effectiveView.value === 'table',
+);
+
+const tableRequests = computed(() => (showNoBranchSetup.value ? [] : requestItems.value));
+
+const tableLoading = computed(() => requestsLoading.value && !showNoBranchSetup.value);
+
+const tableEmptyMessage = computed(() =>
+  showNoBranchSetup.value
+    ? 'Create a branch to start managing order requests here.'
+    : 'No requests found for the current filters.',
 );
 
 function replaceListFilters(next: Partial<RequestListFilters>) {
@@ -674,26 +696,7 @@ const pageDescription = computed(() =>
 
     <RequestRoleGuide :variant="requestRoleGuideVariant" />
 
-    <RequestBranchSetupBanner :branch-count="branches.length" />
-
-    <RequestTable
-      v-if="needsBranchSetup"
-      :requests="[]"
-      :page="1"
-      :total-pages="1"
-      :total-items="0"
-      :page-size="limit"
-      :loading="false"
-      empty-message="Create a branch to start managing order requests here."
-      :can-approve-reject="() => false"
-      :can-cancel="() => false"
-      :can-edit="() => false"
-      :can-add-more="() => false"
-      :can-reopen="() => false"
-      :can-checkout="() => false"
-    />
-
-    <div v-else class="flex flex-col gap-6">
+    <div class="mt-4 flex flex-col gap-6">
       <div class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
         <div
           v-if="!isEmployeeSession"
@@ -730,6 +733,7 @@ const pageDescription = computed(() =>
       </div>
 
       <RequestFilterBar
+        v-if="!showNoBranchSetup"
         :filters="listFilters"
         :search="debouncedSearch"
         :branch-id="selectedBranchId"
@@ -737,16 +741,22 @@ const pageDescription = computed(() =>
         @clear-all="clearAllRequestFilters"
       />
 
+      <RequestBranchSetupBanner
+        :branch-count="branches.length"
+        :branches-ready="hasFinishedInitialFetch"
+      />
+
       <RequestTable
-        v-if="effectiveView === 'table'"
-        :requests="requestItems"
+        v-if="showRequestTable"
+        :requests="tableRequests"
         :page="meta.page"
         :total-pages="meta.totalPages"
         :total-items="meta.total"
         :page-size="meta.limit"
         :has-next-page="meta.hasNextPage"
         :has-prev-page="meta.hasPrevPage"
-        :loading="requestsLoading"
+        :loading="tableLoading"
+        :empty-message="tableEmptyMessage"
         :can-approve-reject="rowCanApproveReject"
         :can-cancel="rowCanCancel"
         :can-edit="rowCanEdit"
@@ -766,7 +776,7 @@ const pageDescription = computed(() =>
         @cancel="handleRequestCancel"
       />
 
-      <div v-else-if="!requestsLoading" class="space-y-4">
+      <div v-else-if="!showNoBranchSetup && !requestsLoading" class="space-y-4">
         <RequestCards
           v-if="requestItems.length"
           :requests="requestItems"
@@ -807,7 +817,7 @@ const pageDescription = computed(() =>
         />
       </div>
 
-      <div v-else class="flex flex-wrap gap-4">
+      <div v-else-if="!showNoBranchSetup" class="flex flex-wrap gap-4">
         <div
           v-for="index in 4"
           :key="index"

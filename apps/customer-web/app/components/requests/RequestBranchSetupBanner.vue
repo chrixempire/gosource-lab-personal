@@ -10,16 +10,22 @@ const session = useState<{
 
 const props = defineProps<{
   branchCount: number;
+  /** When false, avoid flashing the banner while branch list is still loading. */
+  branchesReady?: boolean;
 }>();
 
-const { hasBranch, openBranchGate } = useMarketBranchGate();
+const { openBranchGate } = useMarketBranchGate();
 
 const shouldShow = computed(() => {
   if (session.value?.user_type !== 'customer') {
     return false;
   }
 
-  return props.branchCount < 1 && !hasBranch.value;
+  if (!props.branchesReady) {
+    return false;
+  }
+
+  return props.branchCount < 1;
 });
 </script>
 

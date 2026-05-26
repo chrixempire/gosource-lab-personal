@@ -33,6 +33,11 @@ import MemberEditOverlay from '~/components/members/MemberEditOverlay.vue';
 import MemberResendInviteOverlay from '~/components/members/MemberResendInviteOverlay.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
+import {
+  CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_PANEL_CLASS,
+  CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/customer-table-layout';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
@@ -631,8 +636,11 @@ function cardArticleClass(member: BranchMemberRecord) {
         </div>
       </div>
 
-      <TableShell v-if="effectiveView === 'table'" class="flex flex-col">
-        <TableHeader>
+      <TableShell
+        v-if="effectiveView === 'table'"
+        :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']"
+      >
+        <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
           <TableHeadRow
             :style="{ gridTemplateColumns: membersGridTemplate }"
             :class="membersListLoading ? 'pointer-events-none opacity-60' : undefined"
@@ -660,9 +668,13 @@ function cardArticleClass(member: BranchMemberRecord) {
           :columns="membersSkeletonColumns"
           :grid-template-columns="membersGridTemplate"
           :row-count="10"
+          :body-class="CUSTOMER_TABLE_BODY_CLASS"
         />
 
-        <TableBody v-else-if="formattedMembers.length > 0">
+        <TableBody
+          v-else-if="formattedMembers.length > 0"
+          :class="CUSTOMER_TABLE_BODY_CLASS"
+        >
           <TableRow
             v-for="member in formattedMembers"
             :key="member.id"
@@ -733,7 +745,7 @@ function cardArticleClass(member: BranchMemberRecord) {
           </TableRow>
         </TableBody>
 
-        <TableBody v-else>
+        <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
           <div class="flex min-h-[240px] flex-col items-center justify-center gap-2 px-6 text-center">
             <p class="text-base font-semibold text-grey-900">
               {{

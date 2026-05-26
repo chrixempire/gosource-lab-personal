@@ -15,6 +15,7 @@ import {
 } from '@gosource/ui';
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import type { RequestListItem } from './RequestCards.vue';
+import { CUSTOMER_TABLE_BODY_CLASS } from '~/lib/customer-table-layout';
 import {
   REQUEST_LIST_PANEL_CLASS,
   REQUEST_TABLE_GRID_TEMPLATE,
@@ -37,7 +38,7 @@ const props = defineProps<{
   canAddMore?: (request: RequestListItem) => boolean;
   canReopen?: (request: RequestListItem) => boolean;
   canCheckout?: (request: RequestListItem) => boolean;
-  /** Shown when there are no rows (e.g. branch setup or filters). */
+  /** Shown when there are no rows (filters empty or branch setup required). */
   emptyMessage?: string;
 }>();
 
@@ -80,10 +81,10 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
       :columns="REQUEST_TABLE_SKELETON_COLUMNS"
       :grid-template-columns="REQUEST_TABLE_GRID_TEMPLATE"
       :row-count="skeletonRowCount"
-      body-class="!max-h-none !overflow-visible"
+      :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
 
-    <TableBody v-else class="!max-h-none !overflow-visible">
+    <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
       <TableRow
         v-for="request in requests"
         :key="request.id"
