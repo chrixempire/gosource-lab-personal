@@ -869,6 +869,7 @@ export function toLegacyRequestListQuery(query: Record<string, unknown>): Record
   const next = { ...query };
   const status = typeof next.status === 'string' ? next.status.trim() : '';
 
+  // Legacy list uses filterBy/filterValue; comma-separated status is OR ($in) in request.service.
   if (status) {
     next.filterBy = 'status';
     next.filterValue = status;
@@ -1131,15 +1132,56 @@ export function normalizeLegacyApproveRequestResponse(
   };
 }
 
+export type LegacyRequestListFilterOptions = {
+  search?: string;
+  branchId?: string;
+  status?: string;
+  amountFrom?: number;
+  amountTo?: number;
+};
+
+const REQUEST_STATUS_FILTER_SET = new Set(['pending', 'approved', 'rejected', 'cancelled']);
+
+function readLegacyRequestListMeta(
+  root: Record<string, unknown>,
+  page: number,
+  limit: number,
+): RequestListResponse['meta'] | null {
+  const meta = asRecord(root.meta);
+  const total = Number(meta.total);
+
+  if (!Number.isFinite(total) || total < 0) {
+    return null;
+  }
+
+  const safePage = Number.isFinite(Number(meta.page)) && Number(meta.page) > 0 ? Number(meta.page) : page;
+  const safeLimit =
+    Number.isFinite(Number(meta.limit)) && Number(meta.limit) > 0 ? Number(meta.limit) : limit;
+  const totalPages =
+    Number.isFinite(Number(meta.totalPages)) && Number(meta.totalPages) > 0
+      ? Number(meta.totalPages)
+      : Math.max(1, Math.ceil(total / safeLimit));
+
+  return {
+    page: safePage,
+    limit: safeLimit,
+    total,
+    totalPages,
+    hasNextPage:
+      typeof meta.hasNextPage === 'boolean' ? meta.hasNextPage : safePage < totalPages,
+    hasPrevPage: typeof meta.hasPrevPage === 'boolean' ? meta.hasPrevPage : safePage > 1,
+  };
+}
+
 export function normalizeLegacyRequestListResponse(
   payload: unknown,
   page = 1,
   limit = 10,
-  search?: string,
+  filters: LegacyRequestListFilterOptions = {},
 ): RequestListResponse {
   const root = asRecord(payload);
   let items = asArray(root.data).map((item) => mapLegacyRequestRecord(asRecord(item)));
-  const query = search?.trim().toLowerCase();
+  const query = filters.search?.trim().toLowerCase();
 
   if (query) {
     items = items.filter((request) =>
@@ -1157,21 +1199,63 @@ export function normalizeLegacyRequestListResponse(
     );
   }
 
+  const branchId = filters.branchId?.trim();
+  if (branchId) {
+    items = items.filter((request) => request.branchId === branchId);
+  }
+
+  const statusRaw = filters.status?.trim();
+  if (statusRaw) {
+    const statuses = statusRaw
+      .split(',')
+      .map((entry) => entry.trim().toLowerCase())
+      .filter((entry) => REQUEST_STATUS_FILTER_SET.has(entry));
+
+    if (statuses.length > 0) {
+      items = items.filter((request) =>
+        statuses.includes(String(request.status).toLowerCase()),
+      );
+    }
+  }
+
+  if (filters.amountFrom != null && !Number.isNaN(filters.amountFrom)) {
+    items = items.filter((request) => request.totalPrice >= filters.amountFrom!);
+  }
+
+  if (filters.amountTo != null && !Number.isNaN(filters.amountTo)) {
+    items = items.filter((request) => request.totalPrice <= filters.amountTo!);
+  }
+
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
-  const hasNextPage = items.length >= safeLimit;
+  const legacyMeta = readLegacyRequestListMeta(root, safePage, safeLimit);
+
+  if (legacyMeta) {
+    return {
+      status: true,
+      message: toStringValue(root.message) || 'Requests fetched successfully',
+      data: items,
+      meta: legacyMeta,
+    };
+  }
+
+  const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / safeLimit));
+  const normalizedPage = Math.min(safePage, totalPages);
+  const offset = (normalizedPage - 1) * safeLimit;
+  const pageItems = items.slice(offset, offset + safeLimit);
 
   return {
     status: true,
     message: toStringValue(root.message) || 'Requests fetched successfully',
-    data: items,
+    data: pageItems,
     meta: {
-      page: safePage,
+      page: normalizedPage,
       limit: safeLimit,
-      total: items.length,
-      totalPages: hasNextPage ? safePage + 1 : Math.max(safePage, 1),
-      hasNextPage,
-      hasPrevPage: safePage > 1,
+      total,
+      totalPages,
+      hasNextPage: normalizedPage < totalPages,
+      hasPrevPage: normalizedPage > 1,
     },
   };
 }

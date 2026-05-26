@@ -13,8 +13,37 @@ import {
   ListRequestsQueryDto,
   RejectRequestDto,
   UpdateRequestPaymentDto,
+  requestStatuses,
 } from './request.dto';
+import type { RequestStatus } from '../../infrastructure/mongo/schemas/request.schema';
 import { RequestRepository } from './request.repository';
+
+function parseRequestStatusFilter(raw?: string): {
+  status?: RequestStatus;
+  statuses?: RequestStatus[];
+} {
+  const value = raw?.trim();
+  if (!value) {
+    return {};
+  }
+
+  const parts = value
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry): entry is RequestStatus =>
+      (requestStatuses as readonly string[]).includes(entry),
+    );
+
+  if (parts.length === 0) {
+    return {};
+  }
+
+  if (parts.length === 1) {
+    return { status: parts[0] };
+  }
+
+  return { statuses: parts };
+}
 
 @Injectable()
 export class RequestService {
@@ -166,10 +195,14 @@ export class RequestService {
   async listRequests(query: ListRequestsQueryDto, principal: SessionPrincipal) {
     const page = Math.max(1, query.page ?? 1);
     const limit = Math.min(100, Math.max(1, query.limit ?? 10));
+    const statusFilter = parseRequestStatusFilter(query.status);
+
     const all = await this.repository.findRequestsForPrincipal(principal, {
       search: query.search,
-      status: query.status,
       branchId: query.branchId,
+      amountFrom: query.amountFrom,
+      amountTo: query.amountTo,
+      ...statusFilter,
     });
 
     const total = all.length;

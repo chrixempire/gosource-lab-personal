@@ -11,7 +11,9 @@ import { useCustomerRequestService } from '~/services/request.service';
 import { customerSignInLocation } from '~/lib/auth-redirect';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
-const MIN_REQUEST_SUBTOTAL_NAIRA = 25_000;
+import { MIN_ORDER_SUBTOTAL_NAIRA } from '~/lib/market-cart';
+
+const MIN_REQUEST_SUBTOTAL_NAIRA = MIN_ORDER_SUBTOTAL_NAIRA;
 
 export function useCartRequestAction() {
   const router = useRouter();
@@ -19,7 +21,7 @@ export function useCartRequestAction() {
   const { cartDrawerOpen } = useMarketplaceUi();
   const { activeBranchId, fetchBranchesInBackground, hasSession, openBranchGateForCustomer } =
     useMarketBranchGate();
-  const { flushGuestCartToStorage, lines, loadCart, resetCartState, subtotalNaira } =
+  const { clearCartAfterRequest, flushGuestCartToStorage, lines, subtotalNaira } =
     useMarketplaceCart();
   const { getBranch } = useCustomerBranchService();
   const { createRequest } = useCustomerRequestService();
@@ -176,27 +178,23 @@ export function useCartRequestAction() {
       const response = await createRequest(payload);
       const createdRequestId = response.data?.id;
 
-      resetCartState();
-      await loadCart(true);
       closeCartDrawer();
-      toast.success('Request created successfully');
 
       // Reference gosource-web-app: cart → POST /request → Super Admin → /checkout/:id (pay/approve).
       // Members only create the pending request; owner completes checkout separately.
       if (isBusinessOwner.value && createdRequestId) {
         await router.push(`/checkout/${createdRequestId}`);
-        return;
-      }
-
-      if (createdRequestId) {
+      } else if (createdRequestId) {
         await router.push({
           path: '/manage-requests',
           query: { open: createdRequestId },
         });
-        return;
+      } else {
+        await router.push('/manage-requests');
       }
 
-      await router.push('/manage-requests');
+      toast.success('Request created successfully');
+      void clearCartAfterRequest(branchId);
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to create request right now'));
     } finally {

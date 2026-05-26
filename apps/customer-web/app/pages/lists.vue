@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { ShoppingListRecord } from '@gosource/api-client';
+import type { BranchRecord, ShoppingListRecord } from '@gosource/api-client';
 import { Button, ViewToggle, toast } from '@gosource/ui';
 import { useDebounceFn } from '@vueuse/core';
 import { Plus } from 'lucide-vue-next';
+import BranchPickerDropdown from '~/components/branches/BranchPickerDropdown.vue';
 import CreateListDialog from '~/components/lists/CreateListDialog.vue';
 import DeleteListDialog from '~/components/lists/DeleteListDialog.vue';
 import ListDrawer from '~/components/lists/ListDrawer.vue';
@@ -19,7 +20,8 @@ import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 
 const runWhenSessionReady = useAuthenticatedFetch();
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
-import { mapShoppingListToListItem } from '~/lib/shopping-list';
+import { isBusinessOwnerSession } from '~/lib/customer-roles';
+import { branchNameById, mapShoppingListToListItem } from '~/lib/shopping-list';
 import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerShoppingListService } from '~/services/shopping-list.service';
 
@@ -54,6 +56,8 @@ const {
 
 const loading = ref(true);
 const lists = ref<ShoppingListRecord[]>([]);
+const branches = ref<BranchRecord[]>([]);
+const selectedBranchId = ref('');
 const activeBranchId = ref('');
 const searchValue = ref('');
 const debouncedSearch = ref('');
@@ -82,15 +86,43 @@ watch(searchValue, (value) => {
   syncSearch(value);
 });
 
+const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
+const employeeBranchId = computed(() => {
+  const branchId = session.value?.data?.branchId;
+  return typeof branchId === 'string' ? branchId.trim() : '';
+});
+
+const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
+const showBranchControls = computed(() => isSuperAdmin.value && !isEmployeeSession.value);
+const branchNames = computed(() => branchNameById(branches.value));
+const showBranchColumn = computed(() => showBranchControls.value);
+
 const filteredLists = computed(() => {
   const query = debouncedSearch.value.trim().toLowerCase();
-  const items = lists.value.map(mapShoppingListToListItem);
+  const items = lists.value.map((list) => mapShoppingListToListItem(list, branchNames.value));
 
   if (!query) {
     return items;
   }
 
   return items.filter((list) => list.name.toLowerCase().includes(query));
+});
+
+const createDialogDefaultBranchId = computed(() => {
+  if (selectedBranchId.value) {
+    return selectedBranchId.value;
+  }
+
+  return branches.value.find((branch) => branch.isHeadquarter)?.id ?? branches.value[0]?.id ?? '';
+});
+
+const listsForMoveDialog = computed(() => {
+  const sourceBranchId = selectedList.value?.branchId;
+  if (!sourceBranchId) {
+    return lists.value;
+  }
+
+  return lists.value.filter((list) => list.branchId === sourceBranchId);
 });
 
 function findListRecord(listId: string) {
@@ -101,46 +133,62 @@ useHead({
   title: 'Lists',
 });
 
-const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
-const employeeBranchId = computed(() => {
-  const branchId = session.value?.data?.branchId;
-  return typeof branchId === 'string' ? branchId.trim() : '';
-});
-
 async function fetchLists() {
   await refreshListsPayload();
+}
+
+async function fetchListsForScope(branchRows: BranchRecord[], filterBranchId: string) {
+  if (isEmployeeSession.value) {
+    const resolvedBranchId = employeeBranchId.value;
+    if (!resolvedBranchId) {
+      return [] as ShoppingListRecord[];
+    }
+
+    const response = await runWhenSessionReady(() => listListsForBranch(resolvedBranchId));
+    return Array.isArray(response.data) ? response.data : [];
+  }
+
+  if (!filterBranchId) {
+    if (!branchRows.length) {
+      return [] as ShoppingListRecord[];
+    }
+
+    const responses = await runWhenSessionReady(() =>
+      Promise.all(branchRows.map((branch) => listListsForBranch(branch.id))),
+    );
+
+    return responses.flatMap((response) =>
+      Array.isArray(response.data) ? response.data : [],
+    );
+  }
+
+  const response = await runWhenSessionReady(() => listListsForBranch(filterBranchId));
+  return Array.isArray(response.data) ? response.data : [];
 }
 
 const { data: listsPayload, pending: listsPending, refresh: refreshListsPayload } =
   await useAuthenticatedAsyncData(
     'shopping-lists-index',
     async () => {
-      let resolvedBranchId = employeeBranchId.value;
+      const branchResponse = await runWhenSessionReady(() => listBranches({ page: 1, limit: 100 }));
+      const branchRows = Array.isArray(branchResponse.data) ? branchResponse.data : [];
 
-      if (!resolvedBranchId) {
-        const branchResponse = await runWhenSessionReady(() => listBranches({ page: 1, limit: 100 }));
-        const branchRows = Array.isArray(branchResponse.data) ? branchResponse.data : [];
-        resolvedBranchId =
-          branchRows.find((branch) => branch.isHeadquarter)?.id
-          ?? branchRows[0]?.id
-          ?? '';
-      }
+      const filterBranchId = isEmployeeSession.value
+        ? employeeBranchId.value
+        : selectedBranchId.value;
 
-      if (!resolvedBranchId) {
-        return {
-          branchId: '',
-          lists: [] as ShoppingListRecord[],
-        };
-      }
+      const listRows = await fetchListsForScope(branchRows, filterBranchId);
 
-      const response = await runWhenSessionReady(() => listListsForBranch(resolvedBranchId));
       return {
-        branchId: resolvedBranchId,
-        lists: Array.isArray(response.data) ? response.data : ([] as ShoppingListRecord[]),
+        branches: branchRows,
+        branchId: filterBranchId,
+        lists: listRows,
       };
     },
     {
+      watch: [selectedBranchId, employeeBranchId],
       default: () => ({
+        branches: [] as BranchRecord[],
         branchId: '',
         lists: [] as ShoppingListRecord[],
       }),
@@ -154,11 +202,23 @@ watch(
       return;
     }
 
+    branches.value = Array.isArray(payload.branches) ? payload.branches : [];
     activeBranchId.value = payload.branchId ?? '';
     lists.value = Array.isArray(payload.lists) ? payload.lists : [];
 
-    if (activeBranchId.value) {
-      setCachedLists(activeBranchId.value, lists.value);
+    if (!isEmployeeSession.value && !selectedBranchId.value && payload.branchId) {
+      selectedBranchId.value = payload.branchId;
+    }
+
+    const cacheBranchId = isEmployeeSession.value
+      ? employeeBranchId.value
+      : selectedBranchId.value || branches.value[0]?.id;
+
+    if (cacheBranchId) {
+      setCachedLists(
+        cacheBranchId,
+        lists.value.filter((list) => list.branchId === cacheBranchId),
+      );
     }
   },
   { immediate: true },
@@ -238,9 +298,12 @@ async function openListDrawer(listId: string) {
   await refreshSelectedList(listId);
 }
 
-async function handleCreateOrUpdateList(payload: { name: string; description: string }) {
-  const branchId = activeBranchId.value;
-  if (!branchId) {
+async function handleCreateOrUpdateList(payload: {
+  name: string;
+  description: string;
+  branchId: string;
+}) {
+  if (!payload.branchId) {
     toast.error('Select a branch before managing lists.');
     return;
   }
@@ -248,7 +311,7 @@ async function handleCreateOrUpdateList(payload: { name: string; description: st
   formSubmitting.value = true;
   try {
     if (editingList.value) {
-      const listBranchId = editingList.value.branchId || branchId;
+      const listBranchId = editingList.value.branchId || payload.branchId;
       await updateList(editingList.value.id, {
         branchId: listBranchId,
         name: payload.name,
@@ -257,7 +320,7 @@ async function handleCreateOrUpdateList(payload: { name: string; description: st
       toast.success('List updated');
     } else {
       await createList({
-        branchId,
+        branchId: payload.branchId,
         name: payload.name,
         description: payload.description || undefined,
       });
@@ -415,12 +478,24 @@ async function handleCreateRequest() {
       <div
         class="flex w-full flex-col gap-3 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between"
       >
-        <SearchField
-          v-model="searchValue"
-          class="w-full min-[900px]:max-w-md"
-          placeholder="Search list name"
-          :disabled="loading"
-        />
+        <div
+          class="flex w-full flex-col gap-3 min-[900px]:max-w-md"
+          :class="showBranchControls ? 'min-[900px]:flex-1' : undefined"
+        >
+          <BranchPickerDropdown
+            v-if="showBranchControls"
+            v-model="selectedBranchId"
+            :branches="branches"
+            :loading="loading && !branches.length"
+            :disabled="loading"
+            show-all-branches-option
+          />
+          <SearchField
+            v-model="searchValue"
+            placeholder="Search list name"
+            :disabled="loading"
+          />
+        </div>
 
         <div
           class="flex items-center gap-2"
@@ -448,6 +523,7 @@ async function handleCreateRequest() {
         v-if="effectiveView === 'table'"
         :lists="filteredLists"
         :loading="loading"
+        :show-branch-column="showBranchColumn"
         @row-click="(list) => openListDrawer(list.id)"
         @view="(list) => openListDrawer(list.id)"
         @move="(list) => openListDrawer(list.id)"
@@ -459,6 +535,7 @@ async function handleCreateRequest() {
         v-else
         :lists="filteredLists"
         :loading="loading"
+        :show-branch-name="showBranchColumn"
         @row-click="(list) => openListDrawer(list.id)"
         @view="(list) => openListDrawer(list.id)"
         @move="(list) => openListDrawer(list.id)"
@@ -481,6 +558,10 @@ async function handleCreateRequest() {
       v-model:open="createDialogOpen"
       :list="editingList"
       :submitting="formSubmitting"
+      :show-branch-picker="showBranchControls"
+      :branches="branches"
+      :branches-loading="loading && !branches.length"
+      :default-branch-id="createDialogDefaultBranchId"
       @submit="handleCreateOrUpdateList"
     />
 
@@ -493,7 +574,7 @@ async function handleCreateRequest() {
 
     <MoveItemsDialog
       v-model:open="moveDialogOpen"
-      :lists="lists"
+      :lists="listsForMoveDialog"
       :current-list-id="selectedList?.id ?? ''"
       :selected-count="itemIdsToMove.length"
       :submitting="moveSubmitting"

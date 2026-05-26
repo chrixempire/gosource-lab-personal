@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { StatusTag } from '@gosource/ui';
 import { Info } from 'lucide-vue-next';
-import { mapLegacyProductToFormValues } from '~/lib/product-form';
+import {
+  buildPricingQuantityPerUnitDescription,
+  mapLegacyProductToFormValues,
+} from '~/lib/product-form';
 import {
   formatPurchaseUnitLabel,
   getCategoryLabel,
@@ -42,6 +45,17 @@ const purchaseUnitLabel = computed(() => {
     return props.product ? formatPurchaseUnitLabel(props.product) : '—';
   }
   return props.unitOptions.find((option) => option.slug === slug)?.label ?? slug;
+});
+
+const pricingQuantityPerUnitDescription = computed(() => {
+  if (!formValues.value?.trackQuantity) {
+    return '';
+  }
+
+  return buildPricingQuantityPerUnitDescription(
+    formValues.value.purchaseUnit,
+    props.unitOptions,
+  );
 });
 
 function unitLabelForSlug(slug: string) {
@@ -173,6 +187,12 @@ const valueClass = 'mt-1 text-sm font-semibold text-grey-900';
         Pricing
         <Info class="size-4 text-grey-400" />
       </h2>
+      <p
+        v-if="pricingQuantityPerUnitDescription"
+        class="mt-2 text-sm leading-6 text-grey-600"
+      >
+        {{ pricingQuantityPerUnitDescription }}
+      </p>
       <div class="mt-5 space-y-4">
         <div
           v-for="(row, index) in formValues.pricing"

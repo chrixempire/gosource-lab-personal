@@ -4,7 +4,7 @@ import AdminProductDetailsPanel from '~/components/inventory/AdminProductDetails
 import ProductActionConfirmDialog from '~/components/inventory/ProductActionConfirmDialog.vue';
 import ProductAddStockDialog from '~/components/inventory/ProductAddStockDialog.vue';
 import ProductRemoveStockDialog from '~/components/inventory/ProductRemoveStockDialog.vue';
-import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useProductActionConfirm } from '~/composables/useProductActionConfirm';
 import { useProductMutations } from '~/composables/useProductMutations';
 import { useProductStockDialog } from '~/composables/useProductStockDialog';
@@ -260,10 +260,12 @@ useHead({
       @deactivate="onDeactivate"
     />
 
-    <EmptyState
+    <LoadErrorState
       v-if="!pending && (error || !detailsView)"
-      title="Item not found"
-      :description="error?.message ?? 'This product could not be loaded.'"
+      :error="error"
+      not-found-title="Item not found"
+      resource-label="item"
+      @retry="refresh()"
     />
 
     <AdminProductDetailsPanel

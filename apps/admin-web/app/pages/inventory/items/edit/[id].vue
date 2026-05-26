@@ -2,7 +2,7 @@
 import { Button } from '@gosource/ui';
 import { ArrowLeft } from 'lucide-vue-next';
 import ProductItemForm from '~/components/inventory/ProductItemForm.vue';
-import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import PageHeader from '~/components/shared/PageHeader.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useProductMutations } from '~/composables/useProductMutations';
@@ -156,19 +156,13 @@ useHead({
       </div>
     </div>
 
-    <EmptyState
+    <LoadErrorState
       v-if="!pending && (error || !rawProduct)"
-      title="Item not found"
-      :description="error?.message ?? 'This product could not be loaded.'"
-    >
-      <button
-        type="button"
-        class="text-sm font-medium text-primary-600 hover:text-primary-700"
-        @click="refresh()"
-      >
-        Retry
-      </button>
-    </EmptyState>
+      :error="error"
+      not-found-title="Item not found"
+      resource-label="item"
+      @retry="refresh()"
+    />
 
     <form
       v-else

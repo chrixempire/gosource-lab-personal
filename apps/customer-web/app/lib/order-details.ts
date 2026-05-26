@@ -12,6 +12,7 @@ type OrderStatusTagVariant =
 export type OrderListItem = {
   id: string;
   reference: string;
+  branchName: string;
   productTitle: string;
   productSubtitle: string;
   imageUrl: string | null;
@@ -136,6 +137,7 @@ export function mapOrderToListItem(order: OrderRecord): OrderListItem {
   return {
     id: order.id,
     reference: order.reference,
+    branchName: order.branchName?.trim() || '—',
     productTitle,
     productSubtitle,
     imageUrl: firstProduct?.imageUrl ?? null,

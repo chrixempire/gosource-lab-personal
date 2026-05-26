@@ -17,6 +17,7 @@ import CustomerWalletFilterBar, {
   type CustomerWalletTabFilters,
 } from '~/components/customers/CustomerWalletFilterBar.vue';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { parseCustomerTransactions } from '~/lib/customer-api';
 
 const props = defineProps<{
@@ -177,17 +178,14 @@ function statusVariant(label: string) {
           v-if="error && parsed.rows.length === 0"
           :style="{ gridTemplateColumns: gridTemplate }"
         >
-          <TableCell class="col-span-5 py-10 text-center">
-            <div class="space-y-2">
-              <p class="text-sm font-medium text-grey-800">Unable to load wallet activity</p>
-              <button
-                type="button"
-                class="text-sm font-medium text-primary-700"
-                @click="refresh()"
-              >
-                Retry
-              </button>
-            </div>
+          <TableCell class="col-span-5 py-10">
+            <LoadErrorState
+              compact
+              :error="error"
+              load-failed-title="Unable to load wallet activity"
+              resource-label="wallet activity"
+              @retry="refresh()"
+            />
           </TableCell>
         </TableRow>
 

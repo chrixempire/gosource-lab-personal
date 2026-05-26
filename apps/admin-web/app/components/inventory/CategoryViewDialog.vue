@@ -3,6 +3,7 @@ import { Button } from '@gosource/ui';
 import { Pencil } from 'lucide-vue-next';
 import InventoryCategoryOverlay from '~/components/inventory/InventoryCategoryOverlay.vue';
 import { parseCategoryDetail } from '~/lib/category-api';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 
 const open = defineModel<boolean>('open', { default: false });
 
@@ -16,40 +17,58 @@ const emit = defineEmits<{
 }>();
 
 const loadPending = ref(false);
-const loadError = ref<string | null>(null);
+const loadFailure = ref<unknown>(null);
 const details = ref<ReturnType<typeof parseCategoryDetail>>(null);
+
+async function loadCategoryDetails() {
+  const categoryId = props.categoryId;
+  if (!categoryId) {
+    details.value = null;
+    loadFailure.value = { statusCode: 404 };
+    return;
+  }
+
+  loadPending.value = true;
+  loadFailure.value = null;
+
+  try {
+    const payload = await $fetch<unknown>(`/api/categories/${categoryId}`);
+    details.value = parseCategoryDetail(payload);
+    if (!details.value) {
+      loadFailure.value = { statusCode: 404 };
+    }
+  } catch (error) {
+    loadFailure.value = error;
+    details.value = null;
+  } finally {
+    loadPending.value = false;
+  }
+}
 
 watch(
   () => [open.value, props.categoryId] as const,
-  async ([isOpen, categoryId]) => {
-    if (!isOpen || !categoryId) {
+  async ([isOpen]) => {
+    if (!isOpen) {
       details.value = null;
-      loadError.value = null;
+      loadFailure.value = null;
       return;
     }
 
-    loadPending.value = true;
-    loadError.value = null;
-
-    try {
-      const payload = await $fetch<unknown>(`/api/categories/${categoryId}`);
-      details.value = parseCategoryDetail(payload);
-      if (!details.value) {
-        loadError.value = 'Category not found';
-      }
-    } catch (error) {
-      loadError.value = error instanceof Error ? error.message : 'Unable to load category';
-      details.value = null;
-    } finally {
-      loadPending.value = false;
-    }
+    await loadCategoryDetails();
   },
 );
 </script>
 
 <template>
   <InventoryCategoryOverlay v-model:open="open" title="View category">
-    <p v-if="loadError" class="text-sm text-negative-500">{{ loadError }}</p>
+    <LoadErrorState
+      v-if="loadFailure"
+      compact
+      :error="loadFailure"
+      not-found-title="Category not found"
+      resource-label="category"
+      @retry="loadCategoryDetails"
+    />
     <p v-else-if="loadPending" class="py-8 text-center text-sm text-grey-500">
       Loading category…
     </p>

@@ -25,6 +25,7 @@ import { EmailService } from '../notification/email/email.service';
 import { NewEmailInterface } from '../notification/email/email.interface';
 import { Employee } from '../employee/entities/employee.entity';
 import { Branch, BranchDocument } from '../branch/entities/branch.entity';
+import { assertPhoneNumberAvailable } from '../utils/phone.util';
 
 @Injectable()
 export class BusinessService {
@@ -240,12 +241,22 @@ export class BusinessService {
     ]);
 
     if (employee) {
+      await assertPhoneNumberAvailable(phoneNumber, {
+        employeeModel: this.employeeModel,
+        businessModel: this.businessModel,
+      }, { employeeId: employee.id });
+
       await this.employeeModel.findByIdAndUpdate(employee.id, {
         phoneNumber,
         firstName,
         lastName,
       });
     } else {
+      await assertPhoneNumberAvailable(phoneNumber, {
+        employeeModel: this.employeeModel,
+        businessModel: this.businessModel,
+      }, { businessId: business.id });
+
       await this.businessModel.findByIdAndUpdate(business.id, {
         phoneNumber,
         firstName,

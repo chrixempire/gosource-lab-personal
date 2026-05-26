@@ -412,7 +412,17 @@ export default defineEventHandler(async (event) => {
         const page = Number(query.page ?? 1);
         const limit = Number(query.limit ?? 10);
         const search = typeof query.search === 'string' ? query.search : undefined;
-        const normalized = normalizeLegacyRequestListResponse(legacyData, page, limit, search);
+        const status = typeof query.status === 'string' ? query.status : undefined;
+        const branchId = typeof query.branchId === 'string' ? query.branchId : undefined;
+        const amountFromRaw = query.amountFrom != null ? Number(query.amountFrom) : Number.NaN;
+        const amountToRaw = query.amountTo != null ? Number(query.amountTo) : Number.NaN;
+        const normalized = normalizeLegacyRequestListResponse(legacyData, page, limit, {
+          search,
+          status,
+          branchId,
+          amountFrom: Number.isFinite(amountFromRaw) ? amountFromRaw : undefined,
+          amountTo: Number.isFinite(amountToRaw) ? amountToRaw : undefined,
+        });
         return scopeRequestListForSnapshot(sessionSnapshot, normalized);
       }
 

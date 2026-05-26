@@ -12,6 +12,7 @@ import { PaymentReference } from '../paystack/schema/paymentReference.schema';
 import { BusinessCustomer } from '../business/schema/business.schema';
 import { Request, RequestDocument } from '../request/schema/request.schema';
 import { PaymentStatus } from '../request/enum/request.enum';
+import { OrderFilterUtil } from '../utils/filter';
 @Injectable()
 export class OrderService {
   constructor(
@@ -95,6 +96,9 @@ export class OrderService {
       status,
       startDate,
       endDate,
+      branchId,
+      amountFrom,
+      amountTo,
     } = queryParams;
 
     let filter: any = {};
@@ -124,8 +128,21 @@ export class OrderService {
       }
     }
 
+    const amountFromNum =
+      amountFrom != null && amountFrom !== '' ? Number(amountFrom) : undefined;
+    const amountToNum = amountTo != null && amountTo !== '' ? Number(amountTo) : undefined;
+    Object.assign(
+      filter,
+      OrderFilterUtil.buildFilterQuery({
+        amountFrom: Number.isFinite(amountFromNum) ? amountFromNum : undefined,
+        amountTo: Number.isFinite(amountToNum) ? amountToNum : undefined,
+      }),
+    );
+
     if (business.role !== 'Super Admin' && business.branchId) {
       filter.branch = new Types.ObjectId(`${business.branchId}`);
+    } else if (branchId) {
+      filter.branch = new Types.ObjectId(`${branchId}`);
     }
 
     filter.$or = [];

@@ -47,8 +47,15 @@ function hasPersistedCartId(cartId: string | undefined): cartId is string {
   return Boolean(cartId && !cartId.includes(CART_LINE_UNIT_SEP));
 }
 
+/** Reuses one toast so rapid +/- clicks do not stack multiple notifications. */
+const MARKET_CART_MUTATION_TOAST_ID = 'marketplace-cart-mutation';
+
+function toastCartMutation(message: string) {
+  toast.success(message, { id: MARKET_CART_MUTATION_TOAST_ID });
+}
+
 function toastCartSuccess(response: MarketCartMutationResponse, fallback: string) {
-  toast.success(extractApiResponseMessage(response, fallback));
+  toastCartMutation(extractApiResponseMessage(response, fallback));
 }
 
 export function useMarketplaceCart() {
@@ -535,13 +542,13 @@ export function useMarketplaceCart() {
 
       if (!options?.silent) {
         if (!existing && next > 0) {
-          toast.success('Added to cart');
+          toastCartMutation('Added to cart');
         } else if (existing && next > previousQty) {
-          toast.success('Quantity increased');
+          toastCartMutation('Quantity increased');
         } else if (existing && next < previousQty && next > 0) {
-          toast.success('Quantity decreased');
+          toastCartMutation('Quantity decreased');
         } else if (next <= 0) {
-          toast.success('Removed from cart');
+          toastCartMutation('Removed from cart');
         }
       }
 
@@ -720,6 +727,20 @@ export function useMarketplaceCart() {
     }
   }
 
+  /** Clears local cart and server cart without reloading (e.g. after request creation). */
+  async function clearCartAfterRequest(branchId: string) {
+    resetCartState();
+    if (isGuestCartMode.value) {
+      return;
+    }
+
+    try {
+      await marketService.clearCart(branchId);
+    } catch {
+      // Request already created; avoid surfacing cart cleanup failures in checkout flow.
+    }
+  }
+
   if (import.meta.client && !autoLoadStarted.value) {
     autoLoadStarted.value = true;
     onMounted(() => {
@@ -824,6 +845,7 @@ export function useMarketplaceCart() {
     resetCartState,
     flushGuestCartToStorage,
     clearCart,
+    clearCartAfterRequest,
     getCartQtyForUnit,
     getQtyForUnit,
     getTotalQtyForProduct,

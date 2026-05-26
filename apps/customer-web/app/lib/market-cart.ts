@@ -1,0 +1,1 @@
+export const MIN_ORDER_SUBTOTAL_NAIRA = 25_000;

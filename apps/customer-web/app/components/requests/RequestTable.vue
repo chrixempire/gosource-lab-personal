@@ -15,6 +15,12 @@ import {
 } from '@gosource/ui';
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import type { RequestListItem } from './RequestCards.vue';
+import {
+  REQUEST_LIST_PANEL_CLASS,
+  REQUEST_TABLE_GRID_TEMPLATE,
+  REQUEST_TABLE_SKELETON_COLUMNS,
+  REQUEST_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/requests-table-layout';
 
 const props = defineProps<{
   requests: RequestListItem[];
@@ -47,25 +53,14 @@ const emit = defineEmits<{
   cancel: [request: RequestListItem];
 }>();
 
-const tableGridTemplate =
-  'minmax(0,1.35fr) minmax(0,0.95fr) minmax(0,0.9fr) minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,0.85fr) 3rem';
-
-const skeletonColumns = [
-  { kind: 'stack' as const, avatar: true },
-  { kind: 'stack' as const, lineClass: 'w-full', sublineClass: 'w-4/5' },
-  { kind: 'line' as const, lineClass: 'w-full' },
-  { kind: 'line' as const, lineClass: 'h-7 w-24 rounded-full' },
-  { kind: 'line' as const, lineClass: 'w-20' },
-  { kind: 'line' as const, lineClass: 'h-8 w-24 rounded-[10px]' },
-  { kind: 'action' as const },
-];
+const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)));
 </script>
 
 <template>
-  <TableShell class="flex flex-col">
-    <TableHeader>
+  <TableShell :class="[REQUEST_LIST_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader :class="REQUEST_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
-        :style="{ gridTemplateColumns: tableGridTemplate }"
+        :style="{ gridTemplateColumns: REQUEST_TABLE_GRID_TEMPLATE }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
       >
         <TableCell>Request</TableCell>
@@ -80,17 +75,19 @@ const skeletonColumns = [
 
     <TableSkeleton
       v-if="loading"
-      :columns="skeletonColumns"
-      :grid-template-columns="tableGridTemplate"
+      :columns="REQUEST_TABLE_SKELETON_COLUMNS"
+      :grid-template-columns="REQUEST_TABLE_GRID_TEMPLATE"
+      :row-count="skeletonRowCount"
+      body-class="!max-h-none !overflow-visible"
     />
 
-    <TableBody v-else>
+    <TableBody v-else class="!max-h-none !overflow-visible">
       <TableRow
         v-for="request in requests"
         :key="request.id"
         :data-testid="`request-row-${request.id}`"
         class="cursor-pointer transition-colors duration-150 hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
-        :style="{ gridTemplateColumns: tableGridTemplate }"
+        :style="{ gridTemplateColumns: REQUEST_TABLE_GRID_TEMPLATE }"
         @click="emit('rowClick', request)"
       >
         <TableCell class="flex items-center gap-3">
@@ -182,7 +179,7 @@ const skeletonColumns = [
       </div>
     </TableBody>
 
-    <TableFooter>
+    <TableFooter v-if="!loading && (requests.length > 0 || totalItems > 0)">
       <PaginationBar
         :page="page"
         :total-pages="totalPages"

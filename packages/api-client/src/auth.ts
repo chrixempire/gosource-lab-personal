@@ -160,6 +160,12 @@ export function createRequestApi(api: ApiClient) {
       if (query?.branchId) {
         params.set('branchId', query.branchId);
       }
+      if (query?.amountFrom != null && !Number.isNaN(query.amountFrom)) {
+        params.set('amountFrom', String(query.amountFrom));
+      }
+      if (query?.amountTo != null && !Number.isNaN(query.amountTo)) {
+        params.set('amountTo', String(query.amountTo));
+      }
 
       return api.get<RequestListResponse>(`/request?${params.toString()}`);
     },

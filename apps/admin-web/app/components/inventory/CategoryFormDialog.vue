@@ -10,6 +10,7 @@ import {
   validateCategoryForm,
 } from '~/lib/category-form';
 import type { LegacyCategoryRow } from '~/types/inventory';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 
 const open = defineModel<boolean>('open', { default: false });
 
@@ -29,7 +30,7 @@ const fieldErrors = reactive<Record<string, string>>({});
 const existingImageUrl = ref<string | null>(null);
 const hydrated = ref(false);
 const loadPending = ref(false);
-const loadError = ref<string | null>(null);
+const loadFailure = ref<unknown>(null);
 
 const isEdit = computed(() => props.mode === 'edit');
 
@@ -49,17 +50,17 @@ function resetFormState() {
   Object.assign(form, createEmptyCategoryFormValues());
   existingImageUrl.value = null;
   hydrated.value = false;
-  loadError.value = null;
+  loadFailure.value = null;
 }
 
 async function loadCategoryForEdit() {
   if (!props.categoryId) {
-    loadError.value = 'Category not found';
+    loadFailure.value = { statusCode: 404 };
     return;
   }
 
   loadPending.value = true;
-  loadError.value = null;
+  loadFailure.value = null;
   hydrated.value = false;
 
   try {
@@ -67,7 +68,7 @@ async function loadCategoryForEdit() {
     const body = unwrapInventoryData(payload);
 
     if (!body || typeof body !== 'object' || !('_id' in body)) {
-      loadError.value = 'Category not found';
+      loadFailure.value = { statusCode: 404 };
       return;
     }
 
@@ -76,7 +77,7 @@ async function loadCategoryForEdit() {
     existingImageUrl.value = category.image ?? null;
     hydrated.value = true;
   } catch (error) {
-    loadError.value = error instanceof Error ? error.message : 'Unable to load category';
+    loadFailure.value = error;
   } finally {
     loadPending.value = false;
   }
@@ -132,7 +133,14 @@ async function onSubmit() {
 
 <template>
   <InventoryCategoryOverlay v-model:open="open" :title="dialogTitle">
-    <p v-if="loadError" class="text-sm text-negative-500">{{ loadError }}</p>
+    <LoadErrorState
+      v-if="loadFailure"
+      compact
+      :error="loadFailure"
+      not-found-title="Category not found"
+      resource-label="category"
+      @retry="loadCategoryForEdit"
+    />
     <p v-else-if="loadPending" class="py-6 text-center text-sm text-grey-500">
       Loading category…
     </p>
@@ -161,7 +169,7 @@ async function onSubmit() {
         type="button"
         size="small"
         :loading="submitting"
-        :disabled="loadPending || Boolean(loadError) || !hydrated"
+        :disabled="loadPending || Boolean(loadFailure) || !hydrated"
         @click="onSubmit"
       >
         {{ submitLabel }}

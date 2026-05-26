@@ -1,9 +1,11 @@
-import type { ShoppingListRecord } from '@gosource/api-client';
+import type { BranchRecord, ShoppingListRecord } from '@gosource/api-client';
 
 export interface ShoppingListListItem {
   id: string;
   name: string;
   description: string | null;
+  branchId: string;
+  branchName: string;
   itemCount: number;
   amount: number;
   updatedAt: string;
@@ -11,15 +13,24 @@ export interface ShoppingListListItem {
   coverImageUrl: string | null;
 }
 
+export function branchNameById(branches: BranchRecord[]): Record<string, string> {
+  return Object.fromEntries(branches.map((branch) => [branch.id, branch.branchName]));
+}
+
 export function listCoverImageUrl(list: ShoppingListRecord): string | null {
   return list.items[0]?.imageUrl ?? null;
 }
 
-export function mapShoppingListToListItem(list: ShoppingListRecord): ShoppingListListItem {
+export function mapShoppingListToListItem(
+  list: ShoppingListRecord,
+  branchNames: Record<string, string> = {},
+): ShoppingListListItem {
   return {
     id: list.id,
     name: list.name,
     description: list.description,
+    branchId: list.branchId,
+    branchName: branchNames[list.branchId] ?? '—',
     itemCount: list.itemCount,
     amount: shoppingListSubtotal(list),
     updatedAt: list.updatedAt,

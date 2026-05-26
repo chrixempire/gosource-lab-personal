@@ -16,6 +16,7 @@ import { useDebounce } from '@vueuse/core';
 import CustomerBranchFilterBar, {
   type CustomerBranchTabFilters,
 } from '~/components/customers/CustomerBranchFilterBar.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { parseCustomerBranches } from '~/lib/customer-api';
 
 const props = defineProps<{
@@ -166,13 +167,14 @@ function onPageSizeChange(next: number) {
           v-if="error && parsed.rows.length === 0"
           :style="{ gridTemplateColumns: gridTemplate }"
         >
-          <TableCell class="col-span-5 py-10 text-center">
-            <div class="space-y-2">
-              <p class="text-sm font-medium text-grey-800">Unable to load branches</p>
-              <button type="button" class="text-sm font-medium text-primary-700" @click="refresh()">
-                Retry
-              </button>
-            </div>
+          <TableCell class="col-span-5 py-10">
+            <LoadErrorState
+              compact
+              :error="error"
+              load-failed-title="Unable to load branches"
+              resource-label="branch list"
+              @retry="refresh()"
+            />
           </TableCell>
         </TableRow>
 

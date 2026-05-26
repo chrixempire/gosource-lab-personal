@@ -381,8 +381,11 @@ export interface ListRequestsQuery {
   page?: number;
   limit?: number;
   search?: string;
-  status?: RequestRecord['status'];
+  /** Single status or comma-separated list (pending,approved,…). */
+  status?: string;
   branchId?: string;
+  amountFrom?: number;
+  amountTo?: number;
 }
 
 export interface ApproveRequestPayload {
@@ -573,6 +576,10 @@ export interface ListOrdersQuery {
   limit?: number;
   /** Comma-separated order statuses for server-side tab filtering. */
   status?: string;
+  /** When set (super admin), limits orders to this branch; omit for all branches. */
+  branchId?: string;
+  amountFrom?: number;
+  amountTo?: number;
   filterBy?: string;
   filterValue?: string;
   startDate?: string;

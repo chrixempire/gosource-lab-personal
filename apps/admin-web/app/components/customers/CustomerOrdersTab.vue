@@ -18,6 +18,7 @@ import CustomerOrderHistoryFilterBar, {
 } from '~/components/customers/CustomerOrderHistoryFilterBar.vue';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { parseCustomerOrdersResponse } from '~/lib/customer-api';
 
 const props = defineProps<{
@@ -176,13 +177,14 @@ function onPageSizeChange(next: number) {
           v-if="error && parsed.rows.length === 0"
           :style="{ gridTemplateColumns: gridTemplate }"
         >
-          <TableCell class="col-span-6 py-10 text-center">
-            <div class="space-y-2">
-              <p class="text-sm font-medium text-grey-800">Unable to load order history</p>
-              <button type="button" class="text-sm font-medium text-primary-700" @click="refresh()">
-                Retry
-              </button>
-            </div>
+          <TableCell class="col-span-6 py-10">
+            <LoadErrorState
+              compact
+              :error="error"
+              load-failed-title="Unable to load order history"
+              resource-label="order history"
+              @retry="refresh()"
+            />
           </TableCell>
         </TableRow>
 

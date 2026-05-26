@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import PromotionForm from '~/components/promotions/PromotionForm.vue';
 import PromotionFormPageHeader from '~/components/promotions/PromotionFormPageHeader.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
@@ -85,14 +86,18 @@ useHead({
       @save="onSubmit"
     />
 
-    <p v-if="error" class="text-sm text-negative-500">
-      {{ error.message || 'Unable to load promotion.' }}
-    </p>
+    <LoadErrorState
+      v-if="!pending && error"
+      :error="error"
+      not-found-title="Promotion not found"
+      resource-label="promotion"
+      @retry="refresh()"
+    />
 
     <p v-else-if="pending" class="text-sm text-grey-500">Loading promotion…</p>
 
     <PromotionForm
-      v-else
+      v-else-if="!error"
       v-model="form"
       v-model:field-errors="fieldErrors"
       mode="edit"

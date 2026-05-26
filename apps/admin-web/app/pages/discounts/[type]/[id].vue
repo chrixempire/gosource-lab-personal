@@ -2,6 +2,7 @@
 import { Button } from '@gosource/ui';
 import { ArrowLeft } from 'lucide-vue-next';
 import DiscountForm from '~/components/discounts/DiscountForm.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useDiscountMutations } from '~/composables/useDiscountMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -98,9 +99,15 @@ useAdminHeader().updateHeader({ title: 'Edit discount' });
         Save changes
       </Button>
     </div>
-    <p v-if="error" class="text-sm text-negative-500">Unable to load this discount.</p>
+    <LoadErrorState
+      v-if="!pending && error"
+      :error="error"
+      not-found-title="Discount not found"
+      resource-label="discount"
+      @retry="refresh()"
+    />
     <DiscountForm
-      v-else
+      v-else-if="!error"
       v-model="form"
       v-model:field-errors="fieldErrors"
       :slug="slug"

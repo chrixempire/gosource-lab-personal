@@ -7,6 +7,7 @@ import { formatShoppingListCurrency, formatShoppingListDate } from '~/lib/shoppi
 defineProps<{
   lists: ShoppingListListItem[];
   loading?: boolean;
+  showBranchName?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -45,6 +46,9 @@ const emit = defineEmits<{
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
               <p class="truncate font-semibold text-grey-900">{{ list.name }}</p>
+              <p v-if="showBranchName" class="mt-0.5 truncate text-xs font-medium text-primary-600">
+                {{ list.branchName }}
+              </p>
               <p v-if="list.description" class="mt-0.5 line-clamp-2 text-xs text-grey-300">
                 {{ list.description }}
               </p>

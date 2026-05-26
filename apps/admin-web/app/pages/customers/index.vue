@@ -10,6 +10,7 @@ import CustomerFilterBar from '~/components/customers/CustomerFilterBar.vue';
 import CustomerStatCards from '~/components/customers/CustomerStatCards.vue';
 import CustomerTable from '~/components/customers/CustomerTable.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useCustomerListFilters } from '~/composables/useCustomerListFilters';
@@ -242,15 +243,13 @@ updateHeader({ title: 'Customers' });
 
     <CustomerFilterBar :filters="filters" @apply="replaceFilters" @clear-all="resetFilters" />
 
-    <EmptyState
-      v-if="effectiveView === 'cards' && error && rows.length === 0"
-      title="Unable to load customers"
-      :description="error.message || 'Please try again.'"
-    >
-      <button type="button" class="text-sm font-medium text-primary-600" @click="refresh()">
-        Retry
-      </button>
-    </EmptyState>
+    <LoadErrorState
+      v-if="error && rows.length === 0"
+      :error="error"
+      load-failed-title="Unable to load customers"
+      resource-label="customer list"
+      @retry="refresh()"
+    />
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !pending && rows.length === 0"

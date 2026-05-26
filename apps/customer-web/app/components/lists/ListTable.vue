@@ -17,6 +17,7 @@ import { formatShoppingListCurrency, formatShoppingListDate } from '~/lib/shoppi
 const props = defineProps<{
   lists: ShoppingListListItem[];
   loading?: boolean;
+  showBranchColumn?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -28,22 +29,38 @@ const emit = defineEmits<{
   selectionChange: [ids: string[]];
 }>();
 
-const tableGridTemplate =
-  '44px minmax(0,1.4fr) minmax(0,0.45fr) minmax(0,0.7fr) minmax(0,0.7fr) 3rem';
+const tableGridTemplate = computed(() =>
+  props.showBranchColumn
+    ? '44px minmax(0,1.2fr) minmax(0,0.9fr) minmax(0,0.45fr) minmax(0,0.7fr) minmax(0,0.7fr) 3rem'
+    : '44px minmax(0,1.4fr) minmax(0,0.45fr) minmax(0,0.7fr) minmax(0,0.7fr) 3rem',
+);
 
-const skeletonColumns = [
-  { kind: 'checkbox' as const },
-  {
-    kind: 'stack' as const,
-    avatar: true,
-    lineClass: 'w-full',
-    sublineClass: 'w-4/5',
-  },
+const skeletonColumns = computed(() => {
+  const base = [
+    { kind: 'checkbox' as const },
+    {
+      kind: 'stack' as const,
+      avatar: true,
+      lineClass: 'w-full',
+      sublineClass: 'w-4/5',
+    },
+  ] as const;
+
+  if (props.showBranchColumn) {
+    return [...base, { kind: 'line' as const, lineClass: 'w-24' }];
+  }
+
+  return [...base];
+});
+
+const skeletonTail = [
   { kind: 'line' as const, lineClass: 'w-12' },
   { kind: 'line' as const, lineClass: 'w-24' },
   { kind: 'line' as const, lineClass: 'w-24' },
   { kind: 'line' as const, lineClass: 'h-8 w-8' },
-];
+] as const;
+
+const skeletonColumnsFull = computed(() => [...skeletonColumns.value, ...skeletonTail]);
 
 const selectedIds = ref<string[]>([]);
 
@@ -109,6 +126,7 @@ function toggleRowSelection(listId: string) {
           />
         </TableCell>
         <TableCell>List name</TableCell>
+        <TableCell v-if="showBranchColumn">Branch</TableCell>
         <TableCell>Items</TableCell>
         <TableCell>Amount</TableCell>
         <TableCell>Updated</TableCell>
@@ -118,7 +136,7 @@ function toggleRowSelection(listId: string) {
 
     <TableSkeleton
       v-if="loading"
-      :columns="skeletonColumns"
+      :columns="skeletonColumnsFull"
       :grid-template-columns="tableGridTemplate"
     />
 
@@ -150,6 +168,9 @@ function toggleRowSelection(listId: string) {
               {{ list.description }}
             </p>
           </div>
+        </TableCell>
+        <TableCell v-if="showBranchColumn">
+          <p class="truncate text-sm text-grey-800">{{ list.branchName }}</p>
         </TableCell>
         <TableCell>{{ list.itemCount }}</TableCell>
         <TableCell>{{ formatShoppingListCurrency(list.amount) }}</TableCell>

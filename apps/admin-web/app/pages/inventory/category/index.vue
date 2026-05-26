@@ -9,6 +9,7 @@ import CategoryRearrangeConfirmDialog from '~/components/inventory/CategoryRearr
 import CategoryTable from '~/components/inventory/CategoryTable.vue';
 import CategoryViewDialog from '~/components/inventory/CategoryViewDialog.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useCategoryMutations } from '~/composables/useCategoryMutations';
@@ -299,19 +300,13 @@ updateHeader({
       Drag categories to change their order, then save your arrangement.
     </p>
 
-    <EmptyState
-      v-if="effectiveView === 'cards' && error && displayCategories.length === 0 && !isRearrange"
-      title="Unable to load categories"
-      :description="error.message || 'Please try again.'"
-    >
-      <button
-        type="button"
-        class="text-sm font-medium text-primary-600 hover:text-primary-700"
-        @click="refresh()"
-      >
-        Retry
-      </button>
-    </EmptyState>
+    <LoadErrorState
+      v-if="error && displayCategories.length === 0 && !isRearrange"
+      :error="error"
+      load-failed-title="Unable to load categories"
+      resource-label="category list"
+      @retry="refresh()"
+    />
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !pending && !isRearrange && displayCategories.length === 0"

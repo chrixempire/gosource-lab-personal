@@ -11,7 +11,7 @@ import CustomerDetailPanel from '~/components/customers/CustomerDetailPanel.vue'
 import CustomerOrdersTab from '~/components/customers/CustomerOrdersTab.vue';
 import CustomerWalletDetailsCard from '~/components/customers/CustomerWalletDetailsCard.vue';
 import CustomerWalletTab from '~/components/customers/CustomerWalletTab.vue';
-import EmptyState from '~/components/shared/EmptyState.vue';
+import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import LoadingState from '~/components/shared/LoadingState.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useCustomerMutations } from '~/composables/useCustomerMutations';
@@ -178,14 +178,14 @@ updateHeader({
     <div class="flex flex-col gap-4">
       <LoadingState v-if="pending && !customer" label="Loading customer…" class="w-full" />
 
-      <EmptyState
+      <LoadErrorState
         v-else-if="error && !customer"
-        title="Unable to load customer"
-        :description="error.message || 'Please try again.'"
         class="w-full"
-      >
-        <Button type="button" size="small" @click="refresh()">Retry</Button>
-      </EmptyState>
+        :error="error"
+        load-failed-title="Unable to load customer"
+        resource-label="customer"
+        @retry="refresh()"
+      />
 
       <template v-else-if="customer">
         <div class="flex items-center justify-between gap-3">

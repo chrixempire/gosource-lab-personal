@@ -14,6 +14,7 @@ import {
   isCartLineInStock,
   isMarketProductInStock,
 } from '~/lib/marketplace-data';
+import { MIN_ORDER_SUBTOTAL_NAIRA } from '~/lib/market-cart';
 import MarketProductQtyStrip from './MarketProductQtyStrip.vue';
 import MarketProductImage from './MarketProductImage.vue';
 
@@ -131,6 +132,12 @@ const footerSubtotal = computed(() =>
   isAddingToRequest.value ? requestSubtotal.value : subtotalNaira.value,
 );
 
+const showMinimumOrderInfo = computed(
+  () =>
+    !isAddingToRequest.value &&
+    footerSubtotal.value < MIN_ORDER_SUBTOTAL_NAIRA,
+);
+
 const canSubmitRequestDraft = computed(
   () =>
     isRequestReady.value &&
@@ -212,28 +219,37 @@ watch(
         :aria-label="isAddingToRequest ? 'Request items' : 'Shopping cart'"
         @click.stop
       >
-        <div class="flex items-center justify-between border-b border-grey-50 px-4 py-4">
-          <div class="min-w-0">
-            <p class="text-lg font-semibold text-grey-900">
-              {{ isAddingToRequest ? 'Request items' : 'Your cart' }}
-            </p>
-            <p class="truncate text-xs text-grey-300">
-              <template v-if="isAddingToRequest">
-                {{ requestReference }} · {{ activeEntries.length }} line{{ activeEntries.length === 1 ? '' : 's' }}
-              </template>
-              <template v-else>
-                {{ activeEntries.length }} line{{ activeEntries.length === 1 ? '' : 's' }}
-              </template>
-            </p>
+        <div class="border-b border-grey-50 px-4 py-4">
+          <div class="flex items-center justify-between">
+            <div class="min-w-0">
+              <p class="text-lg font-semibold text-grey-900">
+                {{ isAddingToRequest ? 'Request items' : 'Your cart' }}
+              </p>
+              <p class="truncate text-xs text-grey-300">
+                <template v-if="isAddingToRequest">
+                  {{ requestReference }} · {{ activeEntries.length }} line{{ activeEntries.length === 1 ? '' : 's' }}
+                </template>
+                <template v-else>
+                  {{ activeEntries.length }} line{{ activeEntries.length === 1 ? '' : 's' }}
+                </template>
+              </p>
+            </div>
+            <button
+              type="button"
+              class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 transition hover:bg-primary-50/70 hover:text-primary-500"
+              :aria-label="isAddingToRequest ? 'Close request items' : 'Close cart'"
+              @click="close"
+            >
+              <X class="size-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            class="flex size-10 cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 transition hover:bg-primary-50/70 hover:text-primary-500"
-            :aria-label="isAddingToRequest ? 'Close request items' : 'Close cart'"
-            @click="close"
+
+          <p
+            v-if="showMinimumOrderInfo"
+            class="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-medium leading-5 text-orange-900"
           >
-            <X class="size-5" />
-          </button>
+            Minimum orders should be ₦25,000
+          </p>
         </div>
 
         <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">

@@ -13,6 +13,7 @@ import { ChevronLeft, ClipboardList } from 'lucide-vue-next';
 import { useAddToList } from '~/composables/useAddToList';
 import MarketBranchSetupBanner from '~/components/market/MarketBranchSetupBanner.vue';
 import MarketProductDetailCartActions from '~/components/market/MarketProductDetailCartActions.vue';
+import MarketProductLineTotal from '~/components/market/MarketProductLineTotal.vue';
 import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import MarketSimilarProductsStrip from '~/components/market/MarketSimilarProductsStrip.vue';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
@@ -142,6 +143,17 @@ const similar = computed(() => {
 const selectedLineQty = computed(() =>
   product.value ? getQtyForUnit(product.value.id, selectedUnit.value) : 0,
 );
+
+const pickQty = ref(1);
+
+watch(
+  () => [product.value?.id, selectedUnit.value, selectedLineQty.value] as const,
+  () => {
+    const inCart = selectedLineQty.value;
+    pickQty.value = Math.max(1, inCart > 0 ? inCart : 1);
+  },
+  { immediate: true },
+);
 const inStock = computed(() => isMarketProductInStock(product.value));
 
 const displayUnitChoices = computed(() =>
@@ -247,51 +259,57 @@ async function onAddToList() {
             </p>
           </div>
 
-          <section class="w-full min-w-0 space-y-1.5 lg:max-w-[80%]">
-            <h2 class="text-[12px] font-semibold uppercase tracking-[0.14em] text-grey-300">
-              Select preferred unit
-            </h2>
-            <RadioGroup v-model="selectedUnit" :name="`market-unit-page-${product.id}`" class="flex flex-col gap-1.5">
-              <label
-                v-for="opt in displayUnitChoices"
-                :key="opt!.name"
-                :class="[
-                  'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-2.5 transition-colors',
-                  selectedUnit === opt!.name
-                    ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70'
-                    : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40',
-                ]"
-              >
-                <RadioGroupItem :value="opt!.name" />
-                <span class="min-w-0 flex-1 text-[15px] font-medium capitalize text-grey-900">
-                  {{ opt!.name }}
-                </span>
-                <span
+          <div class="flex w-full min-w-0 flex-col gap-3 lg:max-w-[80%]">
+            <section class="w-full min-w-0 space-y-1.5">
+              <h2 class="text-[12px] font-semibold uppercase tracking-[0.14em] text-grey-300">
+                Select preferred unit
+              </h2>
+              <RadioGroup v-model="selectedUnit" :name="`market-unit-page-${product.id}`" class="flex w-full flex-col gap-1.5">
+                <label
+                  v-for="opt in displayUnitChoices"
+                  :key="opt!.name"
                   :class="[
-                    'shrink-0 rounded-lg px-2.5 py-1 text-[13px] font-semibold text-grey-900',
-                    selectedUnit === opt!.name ? 'bg-transparent' : 'bg-grey-55',
+                    'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-2.5 transition-colors',
+                    selectedUnit === opt!.name
+                      ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70'
+                      : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40',
                   ]"
                 >
-                  <span v-if="opt!.measure">1{{ opt!.measure }} = </span>
-                  <span :class="{ 'line-through text-grey-300': opt!.discountedPriceNaira }">
-                    {{ formatNaira(opt!.priceNaira) }}
+                  <RadioGroupItem :value="opt!.name" />
+                  <span class="min-w-0 flex-1 text-[15px] font-medium capitalize text-grey-900">
+                    {{ opt!.name }}
                   </span>
-                  <span v-if="opt!.discountedPriceNaira" class="ml-1 text-red-500">
-                    {{ formatNaira(opt!.discountedPriceNaira) }}
+                  <span
+                    :class="[
+                      'shrink-0 rounded-lg px-2.5 py-1 text-[13px] font-semibold text-grey-900',
+                      selectedUnit === opt!.name ? 'bg-transparent' : 'bg-grey-55',
+                    ]"
+                  >
+                    <span v-if="opt!.measure">1{{ opt!.measure }} = </span>
+                    <span :class="{ 'line-through text-grey-300': opt!.discountedPriceNaira }">
+                      {{ formatNaira(opt!.priceNaira) }}
+                    </span>
+                    <span v-if="opt!.discountedPriceNaira" class="ml-1 text-red-500">
+                      {{ formatNaira(opt!.discountedPriceNaira) }}
+                    </span>
                   </span>
-                </span>
-              </label>
-            </RadioGroup>
-          </section>
+                </label>
+              </RadioGroup>
+            </section>
 
-          <div class="w-full min-w-0 lg:max-w-[80%]">
-            <MarketProductDetailCartActions
-              v-if="product"
-              :product="product"
-              :unit="selectedUnit"
-              :in-stock="inStock"
-              class="w-full max-w-full lg:w-2/5"
-            />
+            <template v-if="inStock && product">
+              <MarketProductLineTotal
+                :product="product"
+                :unit="selectedUnit"
+                :quantity="pickQty"
+              />
+              <MarketProductDetailCartActions
+                v-model:quantity="pickQty"
+                :product="product"
+                :unit="selectedUnit"
+                :in-stock="inStock"
+              />
+            </template>
           </div>
         </div>
       </div>

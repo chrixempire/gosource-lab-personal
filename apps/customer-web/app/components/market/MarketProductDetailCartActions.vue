@@ -16,7 +16,7 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const pickQty = ref(1);
+const pickQty = defineModel<number>('quantity', { default: 1 });
 const addingToCart = ref(false);
 const { getQtyForUnit, setQuantityForUnit } = useMarketplaceCart();
 
@@ -54,26 +54,28 @@ async function onAddToCart() {
 </script>
 
 <template>
-  <Button
-    v-if="!inStock"
-    size="large"
-    variant="destructive"
-    class="!h-14 w-full !rounded-full !text-[17px] !font-semibold shadow-md"
-    type="button"
-    disabled
-  >
-    Out of stock
-  </Button>
-  <div v-else class="flex w-full min-w-0 items-center gap-3">
-    <MarketProductQtyStrip v-model="pickQty" variant="detail" :disabled="addingToCart" />
+  <div class="w-full min-w-0">
     <Button
-      variant="primary"
-      class="!w-auto shrink-0 !rounded-full"
+      v-if="!inStock"
+      size="large"
+      variant="destructive"
+      class="!h-14 w-full !rounded-full !text-[17px] !font-semibold shadow-md"
       type="button"
-      :loading="addingToCart"
-      @click="onAddToCart"
+      disabled
     >
-      Add to cart
+      Out of stock
     </Button>
+    <div v-else class="flex w-full min-w-0 items-center gap-3">
+      <MarketProductQtyStrip v-model="pickQty" variant="detail" :disabled="addingToCart" />
+      <Button
+        variant="primary"
+        class="!w-auto shrink-0 !rounded-full"
+        type="button"
+        :loading="addingToCart"
+        @click="onAddToCart"
+      >
+        Add to cart
+      </Button>
+    </div>
   </div>
 </template>
