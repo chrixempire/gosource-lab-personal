@@ -47,8 +47,32 @@ export function useCustomerAnalyticsService() {
     }
   }
 
+  async function getProductAnalysis(
+    branchId: string,
+    options: { startDate: string; endDate: string; quiet?: boolean },
+  ) {
+    try {
+      return await $fetch<AnalyticsEnvelope<unknown>>(
+        `/api/proxy/analytics/product-analysis/branch/${encodeURIComponent(branchId)}`,
+        {
+          credentials: 'same-origin',
+          query: {
+            startDate: options.startDate,
+            endDate: options.endDate,
+          },
+        },
+      );
+    } catch (error) {
+      if (!options.quiet) {
+        throw error;
+      }
+      return null;
+    }
+  }
+
   return {
     getTotalProcurement,
     getTopProcuredItems,
+    getProductAnalysis,
   };
 }

@@ -20,7 +20,7 @@ const { rows, totalSpent, periodLabel, hasData, showSkeleton, loaded } =
           Procurement Insight
         </p>
         <NuxtLink
-          to="/track-orders"
+          to="/track-orders?tab=insight"
           class="inline-flex shrink-0 items-center rounded-sm text-sm font-semibold text-primary-500 underline-offset-4 transition-colors hover:text-primary-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
         >
           Full report

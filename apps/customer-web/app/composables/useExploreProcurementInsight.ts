@@ -1,14 +1,10 @@
 import {
   buildProcurementInsight,
-  buildProcurementItemsFromOrders,
-  computeMonthSpendFromOrders,
   currentMonthQueryRange,
+  fetchProcurementInsightForBranch,
   formatProcurementPeriodLabel,
-  normalizeTopProcuredItemsPayload,
-  normalizeTotalProcurementPayload,
   type ExploreProcurementInsightData,
 } from '~/lib/explore-procurement-insight';
-import { fetchBranchOrdersInRange } from '~/lib/explore-branch-orders';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 import {
   currentExploreMonthCacheKey,
@@ -28,7 +24,8 @@ const EXPLORE_REVALIDATE_COOLDOWN_MS = 15000;
 export function useExploreProcurementInsight() {
   const { activeBranchId, hasSession } = useBusinessBranchContext();
   const { listOrders } = useCustomerOrderService();
-  const { getTotalProcurement, getTopProcuredItems } = useCustomerAnalyticsService();
+  const { getTotalProcurement, getTopProcuredItems, getProductAnalysis } =
+    useCustomerAnalyticsService();
 
   const insight = useState<ExploreProcurementInsightData>(
     'explore-procurement-value',
@@ -76,49 +73,20 @@ export function useExploreProcurementInsight() {
     }
   }
 
-  async function fetchInsightFromAnalytics(
-    branchId: string,
-    periodLabel: string,
-  ): Promise<ExploreProcurementInsightData | null> {
-    const range = currentMonthQueryRange();
-    const monthly = await getTotalProcurement(branchId, { ...range, quiet: true });
-    const monthlyPayload = normalizeTotalProcurementPayload(monthly?.data);
-
-    if (monthlyPayload.items.length > 0) {
-      return buildProcurementInsight(
-        monthlyPayload.items,
-        monthlyPayload.totalSpent,
-        periodLabel,
-      );
-    }
-
-    const fallback = await getTopProcuredItems(branchId, { quiet: true });
-    const fallbackItems = normalizeTopProcuredItemsPayload(fallback?.data);
-    if (fallbackItems.length === 0) {
-      return null;
-    }
-
-    const fallbackTotal = fallbackItems.reduce((sum, row) => sum + row.totalCost, 0);
-    return buildProcurementInsight(fallbackItems, fallbackTotal, periodLabel);
-  }
-
   async function fetchInsight(branchId: string): Promise<ExploreProcurementInsightData> {
     const periodLabel = formatProcurementPeriodLabel();
     const range = currentMonthQueryRange();
+    const { items, totalSpent } = await fetchProcurementInsightForBranch(
+      { listOrders, getTotalProcurement, getTopProcuredItems, getProductAnalysis },
+      branchId,
+      range,
+    );
 
-    const { orders } = await fetchBranchOrdersInRange(listOrders, branchId, range);
-    const orderItems = buildProcurementItemsFromOrders(orders);
-
-    if (orderItems.length > 0) {
-      return buildProcurementInsight(
-        orderItems,
-        computeMonthSpendFromOrders(orders),
-        periodLabel,
-      );
+    if (items.length === 0) {
+      return { ...EMPTY_INSIGHT, periodLabel };
     }
 
-    const analyticsInsight = await fetchInsightFromAnalytics(branchId, periodLabel);
-    return analyticsInsight ?? { ...EMPTY_INSIGHT, periodLabel };
+    return buildProcurementInsight(items, totalSpent, periodLabel);
   }
 
   async function refresh(options: { force?: boolean } = {}) {

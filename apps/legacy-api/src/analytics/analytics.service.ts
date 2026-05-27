@@ -652,6 +652,71 @@ export class AnalyticsService {
     };
   }
 
+  private resolveCartLineProduct(cartItem: any): ProductDocument | null {
+    const product = cartItem?.cartProduct ?? cartItem?.product;
+    return product && typeof product === 'object' ? product : null;
+  }
+
+  private resolveCartLineProductName(cartItem: any): string | null {
+    const product = this.resolveCartLineProduct(cartItem);
+    if (!product?.name || typeof product.name !== 'string') {
+      return null;
+    }
+
+    const name = product.name.trim();
+    return name.length > 0 ? name : null;
+  }
+
+  private resolveCartLineProductDescription(cartItem: any): string {
+    const product = this.resolveCartLineProduct(cartItem);
+    if (!product?.description || typeof product.description !== 'string') {
+      return '';
+    }
+
+    return product.description.trim();
+  }
+
+  private resolveCartLineAmountSpent(order: any, cartItem: any): number {
+    if (typeof cartItem?.totalPrice === 'number' && cartItem.totalPrice > 0) {
+      return cartItem.totalPrice;
+    }
+
+    const product = this.resolveCartLineProduct(cartItem);
+    if (!product) {
+      return 0;
+    }
+
+    const quantity = Number(cartItem?.quantity ?? 0);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return 0;
+    }
+
+    if (product.version === 'v2') {
+      try {
+        const unit = JSON.parse(product.unit);
+        const price = unit[cartItem.unit];
+        if (!isNaN(price)) {
+          return price * quantity;
+        }
+      } catch {
+        // Fall back to discount price below.
+      }
+
+      return (product.discountPrice ?? 0) * quantity;
+    }
+
+    const specialPrices = Array.isArray(product.specialPrices)
+      ? product.specialPrices
+      : [];
+    const businessId = order?.business?.toString?.() ?? '';
+    const specialPrice = specialPrices.find(
+      (entry) => entry?.customerId === businessId,
+    );
+    const unitPrice = specialPrice?.price ?? product.discountPrice ?? 0;
+
+    return unitPrice * quantity;
+  }
+
   /**
    * Get product analysis
    * @param branchId
@@ -674,47 +739,60 @@ export class AnalyticsService {
         branch: branchId,
         createdAt: { $gte: start, $lte: end },
       })
-      .populate('products.product');
+      .populate({
+        path: 'products',
+        populate: {
+          path: 'product',
+          model: 'Product',
+        },
+      });
 
     if (!orders.length) {
-      throw new NotFoundException(
-        'No orders found for the specified period and branch.',
-      );
+      return {
+        status: true,
+        message: 'No product analysis for period',
+        data: [],
+      };
     }
 
     interface ProductSummary {
       totalQuantity: number;
       totalAmountSpent: number;
       lastPurchaseDate: Date | null;
+      description: string;
     }
 
     const productSummary: Record<string, ProductSummary> = {};
 
     orders.forEach((order: any) => {
-      order.products.forEach((cartItem) => {
-        let total: number = 0;
-        const product = cartItem.product;
-        const specialPrice = product.specialPrices.find(
-          (sp) => sp.customerId === order.business.toString(),
-        );
-        const price = specialPrice ? specialPrice.price : product.discountPrice;
-        const itemTotal = price * cartItem.quantity;
-        total += itemTotal;
+      order.products.forEach((cartItem: any) => {
+        const productName = this.resolveCartLineProductName(cartItem);
+        if (!productName) {
+          return;
+        }
 
-        const productName = cartItem.product.name;
-        const amountSpent = total;
+        const amountSpent = this.resolveCartLineAmountSpent(order, cartItem);
+        if (amountSpent <= 0) {
+          return;
+        }
+
         const purchaseDate = order.createdAt;
+        const description = this.resolveCartLineProductDescription(cartItem);
 
         if (!productSummary[productName]) {
           productSummary[productName] = {
             totalQuantity: 0,
             totalAmountSpent: 0,
             lastPurchaseDate: null,
+            description,
           };
         }
 
-        productSummary[productName].totalQuantity += cartItem.quantity;
+        productSummary[productName].totalQuantity += cartItem.quantity ?? 0;
         productSummary[productName].totalAmountSpent += amountSpent;
+        if (description && !productSummary[productName].description) {
+          productSummary[productName].description = description;
+        }
         if (
           !productSummary[productName].lastPurchaseDate ||
           purchaseDate > productSummary[productName].lastPurchaseDate
@@ -726,6 +804,7 @@ export class AnalyticsService {
 
     const data = Object.entries(productSummary).map(([name, summary]) => ({
       name,
+      description: summary.description,
       totalQuantity: summary.totalQuantity,
       totalAmountSpent: summary.totalAmountSpent,
       lastPurchaseDate: summary.lastPurchaseDate,

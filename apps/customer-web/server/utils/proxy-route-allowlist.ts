@@ -57,6 +57,7 @@ export const PROXY_ROUTE_RULES: ProxyRouteRule[] = [
   { methods: ['POST'], pattern: /^request\/shopping-list\/[^/]+$/ },
   { methods: ['GET'], pattern: /^analytics\/top-procured-items\/branch\/[^/]+$/ },
   { methods: ['GET'], pattern: /^analytics\/total-procurement\/branch\/[^/]+$/ },
+  { methods: ['GET'], pattern: /^analytics\/product-analysis\/branch\/[^/]+$/ },
 ];
 
 export function getProxyRouteRule(method: string, pathSegments: string[]) {

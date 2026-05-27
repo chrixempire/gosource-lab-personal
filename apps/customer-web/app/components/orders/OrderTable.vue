@@ -16,13 +16,16 @@ import OrderActionsMenu from '~/components/orders/OrderActionsMenu.vue';
 import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import type { OrderListItem } from '~/lib/order-details';
 import {
-  ORDER_LIST_PANEL_CLASS,
+  CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_PANEL_CLASS,
+  CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/customer-table-layout';
+import {
   ORDER_TABLE_GRID_TEMPLATE,
   ORDER_TABLE_SKELETON_COLUMNS,
-  ORDER_TABLE_STICKY_HEADER_CLASS,
 } from '~/lib/orders-table-layout';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     orders: OrderListItem[];
     page: number;
@@ -54,8 +57,8 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
 </script>
 
 <template>
-  <TableShell :class="[ORDER_LIST_PANEL_CLASS, 'overflow-visible']">
-    <TableHeader :class="ORDER_TABLE_STICKY_HEADER_CLASS">
+  <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: ORDER_TABLE_GRID_TEMPLATE }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
@@ -75,10 +78,10 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
       :columns="ORDER_TABLE_SKELETON_COLUMNS"
       :grid-template-columns="ORDER_TABLE_GRID_TEMPLATE"
       :row-count="skeletonRowCount"
-      body-class="!max-h-none !overflow-visible"
+      :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
 
-    <TableBody v-else class="!max-h-none !overflow-visible">
+    <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
       <TableRow
         v-for="order in orders"
         :key="order.id"

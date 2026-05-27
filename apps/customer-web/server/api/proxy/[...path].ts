@@ -330,6 +330,21 @@ export default defineEventHandler(async (event) => {
       };
     }
 
+    if (
+      isLegacyCustomerApiMode(event) &&
+      method === 'GET' &&
+      targetPathSegments[0] === 'analytics' &&
+      targetPathSegments[1] === 'product-analysis' &&
+      (response.status === 404 || response.status === 500)
+    ) {
+      setResponseStatus(event, 200);
+      return {
+        status: true,
+        message: 'No product analysis for period',
+        data: [],
+      };
+    }
+
     const payload = response._data as Record<string, unknown> | string | null;
     return forwardApiError(
       event,

@@ -36,7 +36,9 @@ deleted=0
 
 while IFS= read -r file; do
   [[ -n "$file" ]] || continue
-  [[ "$file" == apps/customer-web/* ]] || continue
+  if [[ "$file" != apps/customer-web/* && "$file" != apps/legacy-api/* ]]; then
+    continue
+  fi
 
   if [[ ! -f "$SRC/$file" ]]; then
     if [[ -e "$DST/$file" ]]; then
@@ -53,13 +55,13 @@ while IFS= read -r file; do
   copied=$((copied + 1))
 done < <(
   {
-    git diff --name-only HEAD -- apps/customer-web/
-    git diff --name-only --diff-filter=D HEAD -- apps/customer-web/
-    git ls-files --others --exclude-standard -- apps/customer-web/
+    git diff --name-only HEAD -- apps/customer-web/ apps/legacy-api/
+    git diff --name-only --diff-filter=D HEAD -- apps/customer-web/ apps/legacy-api/
+    git ls-files --others --exclude-standard -- apps/customer-web/ apps/legacy-api/
   } | sort -u
 )
 
 cd "$DST"
 echo ""
 echo "Synced $copied file(s), removed $deleted file(s)."
-echo "Review with: cd $DST && git status apps/customer-web"
+echo "Review with: cd $DST && git status apps/customer-web apps/legacy-api"
