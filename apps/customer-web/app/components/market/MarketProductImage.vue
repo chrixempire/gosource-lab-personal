@@ -4,10 +4,29 @@ const props = withDefaults(
     src?: string;
     alt?: string;
     hoverZoom?: boolean;
+    /** How the photo fills its frame (`contain` shows the full product). */
+    objectFit?: 'cover' | 'contain';
     loading?: 'lazy' | 'eager';
     logoClass?: string;
   }>(),
-  { hoverZoom: true, loading: 'lazy', logoClass: 'w-[82%] max-w-[10rem]' },
+  {
+    hoverZoom: true,
+    objectFit: 'cover',
+    loading: 'lazy',
+    logoClass: 'w-[82%] max-w-[10rem]',
+  },
+);
+
+const objectFitClass = computed(() =>
+  props.objectFit === 'contain' ? 'object-contain' : 'object-cover',
+);
+
+const hoverScaleClass = computed(() =>
+  props.hoverZoom
+    ? props.objectFit === 'contain'
+      ? 'transition-transform duration-300 ease-in-out group-hover:scale-[1.04]'
+      : 'transition-transform duration-300 ease-in-out group-hover:scale-110'
+    : '',
 );
 
 const imgRef = ref<{ $el?: HTMLImageElement } | HTMLImageElement | null>(null);
@@ -65,19 +84,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="absolute inset-0">
+  <div class="absolute inset-0 min-h-0 min-w-0">
     <template v-if="src">
       <NuxtImg
         ref="imgRef"
         :src="src"
         :alt="alt ?? ''"
         :loading="loading"
-        class="absolute inset-0 z-0 h-full w-full object-cover transition-opacity duration-200"
+        class="absolute inset-0 z-0 size-full max-w-none object-center transition-opacity duration-200"
         :class="[
+          objectFitClass,
           isLoaded && !hasError ? 'opacity-100' : 'opacity-0',
-          hoverZoom
-            ? 'transition-transform duration-300 ease-in-out group-hover:scale-110'
-            : '',
+          hoverScaleClass,
         ]"
         @load="onLoad"
         @error="onError"

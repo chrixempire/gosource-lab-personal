@@ -16,24 +16,34 @@ import OrderActionsMenu from '~/components/orders/OrderActionsMenu.vue';
 import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import type { OrderListItem } from '~/lib/order-details';
 import {
-  ORDER_LIST_PANEL_CLASS,
+  CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_PANEL_CLASS,
+  CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+} from '~/lib/customer-table-layout';
+import {
   ORDER_TABLE_GRID_TEMPLATE,
   ORDER_TABLE_SKELETON_COLUMNS,
-  ORDER_TABLE_STICKY_HEADER_CLASS,
 } from '~/lib/orders-table-layout';
 
-const props = defineProps<{
-  orders: OrderListItem[];
-  page: number;
-  totalPages: number;
-  totalItems: number;
-  pageSize: number;
-  hasNextPage?: boolean;
-  hasPrevPage?: boolean;
-  loading?: boolean;
-  reorderLoading?: boolean;
-  reorderLoadingOrderId?: string | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    orders: OrderListItem[];
+    page: number;
+    totalPages: number;
+    totalItems: number;
+    pageSize: number;
+    hasNextPage?: boolean;
+    hasPrevPage?: boolean;
+    loading?: boolean;
+    reorderLoading?: boolean;
+    reorderLoadingOrderId?: string | null;
+    emptyTitle?: string;
+    emptyDescription?: string;
+  }>(),
+  {
+    emptyTitle: 'No orders found for the current filters.',
+  },
+);
 
 const emit = defineEmits<{
   page: [page: number];
@@ -47,8 +57,8 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
 </script>
 
 <template>
-  <TableShell :class="[ORDER_LIST_PANEL_CLASS, 'overflow-visible']">
-    <TableHeader :class="ORDER_TABLE_STICKY_HEADER_CLASS">
+  <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: ORDER_TABLE_GRID_TEMPLATE }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
@@ -68,10 +78,10 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
       :columns="ORDER_TABLE_SKELETON_COLUMNS"
       :grid-template-columns="ORDER_TABLE_GRID_TEMPLATE"
       :row-count="skeletonRowCount"
-      body-class="!max-h-none !overflow-visible"
+      :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
 
-    <TableBody v-else class="!max-h-none !overflow-visible">
+    <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
       <TableRow
         v-for="order in orders"
         :key="order.id"
@@ -147,6 +157,18 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
           />
         </TableCell>
       </TableRow>
+
+      <div
+        v-if="orders.length === 0"
+        class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center"
+      >
+        <p class="text-base font-medium text-grey-900">
+          {{ emptyTitle }}
+        </p>
+        <p v-if="emptyDescription" class="mt-2 text-sm text-grey-300">
+          {{ emptyDescription }}
+        </p>
+      </div>
     </TableBody>
 
     <TableFooter v-if="!loading && orders.length > 0">

@@ -2,7 +2,7 @@
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { Input } from '@gosource/ui';
 import { useDebounceFn } from '@vueuse/core';
-import { Minus, Plus, Trash2 } from 'lucide-vue-next';
+import { Loader2, Minus, Plus, Trash2 } from 'lucide-vue-next';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 
 /** Commit typed quantity after pause in typing (avoids one API call per digit). */
@@ -17,7 +17,7 @@ const props = withDefaults(
     /** Product payload for guest cart when not in catalog cache. */
     product?: MarketProduct;
     /** `modal`: taller strip. `cart`: compact strip for cart drawer and request lines. `detail`: grey picker on product detail / modal. */
-    variant?: 'card' | 'modal' | 'cart' | 'detail';
+    variant?: 'card' | 'modal' | 'cart' | 'detail' | 'explore';
     /** Controlled quantity (request edit, etc.). */
     modelValue?: number;
     disabled?: boolean;
@@ -38,7 +38,8 @@ const emit = defineEmits<{
 
 const isControlled = computed(() => props.modelValue !== undefined);
 
-const { getQtyForUnit, setQuantityForUnit, increment, decrement, remove } = useMarketplaceCart();
+const { getQtyForUnit, setQuantityForUnit, increment, decrement, remove, getLineMutationPending } =
+  useMarketplaceCart();
 
 const cartOptions = computed(() => (props.product ? { product: props.product } : undefined));
 
@@ -203,6 +204,19 @@ async function onPlus() {
 const isModal = computed(() => props.variant === 'modal');
 const isCart = computed(() => props.variant === 'cart');
 const isDetail = computed(() => props.variant === 'detail');
+const isExplore = computed(() => props.variant === 'explore');
+
+const pendingDirection = computed(() => {
+  if (isControlled.value || !props.productId || !props.unit) {
+    return null;
+  }
+
+  return getLineMutationPending(props.productId, props.unit);
+});
+
+const plusLoading = computed(() => pendingDirection.value === 'increase');
+const minusLoading = computed(() => pendingDirection.value === 'decrease');
+const controlsBusy = computed(() => pendingDirection.value !== null);
 
 const showTrashOnMinus = computed(() => {
   if (qty.value > 1) {
@@ -217,12 +231,21 @@ const showTrashOnMinus = computed(() => {
 });
 
 const minusDisabled = computed(
-  () => props.disabled || (isControlled.value && qty.value <= 1 && !props.allowRemoveAtMin),
+  () =>
+    props.disabled ||
+    controlsBusy.value ||
+    (isControlled.value && qty.value <= 1 && !props.allowRemoveAtMin),
 );
+
+const plusDisabled = computed(() => props.disabled || controlsBusy.value);
 
 const stripShellClass = computed(() => {
   if (isDetail.value) {
     return 'h-12 min-h-12 w-[12rem] shrink-0 overflow-hidden rounded-full bg-grey-50';
+  }
+
+  if (isExplore.value) {
+    return 'h-9 min-h-9 w-full overflow-hidden rounded-full bg-button-primary p-0.5 shadow-sm';
   }
 
   if (isModal.value) {
@@ -288,14 +311,26 @@ const stripInputClass = computed(() => {
     return `${base} !h-full !rounded-md !border !border-grey-50 !bg-white !text-[16px] !text-grey-900 focus:!border-border-input-active disabled:!bg-white`;
   }
 
-  const size = isModal.value ? '!text-base' : isCart.value ? '!text-[12px]' : '!text-[14px]';
-  const height = isModal.value ? '!h-11' : isCart.value ? '!h-6' : '!h-8';
+  const size = isExplore.value
+    ? '!text-[13px]'
+    : isModal.value
+      ? '!text-base'
+      : isCart.value
+        ? '!text-[12px]'
+        : '!text-[14px]';
+  const height = isExplore.value ? '!h-7' : isModal.value ? '!h-11' : isCart.value ? '!h-6' : '!h-8';
 
   return `${base} ${height} ${size} !rounded-md !border-2 !border-white !bg-white !text-[#04550B] focus:!border-white focus:!ring-2 focus:!ring-white/80 disabled:!bg-white`;
 });
 
 const iconSizeClass = computed(() =>
-  isDetail.value || isModal.value ? 'size-5' : isCart.value ? 'size-3' : 'size-4',
+  isDetail.value || isModal.value
+    ? 'size-5'
+    : isExplore.value
+      ? 'size-3.5'
+      : isCart.value
+        ? 'size-3'
+        : 'size-4',
 );
 </script>
 
@@ -317,7 +352,8 @@ const iconSizeClass = computed(() =>
       :aria-label="showTrashOnMinus ? 'Remove item' : 'Decrease quantity'"
       @click="onMinusOrTrash"
     >
-      <Trash2 v-if="showTrashOnMinus" :class="iconSizeClass" />
+      <Loader2 v-if="minusLoading" :class="[iconSizeClass, 'animate-spin text-white']" />
+      <Trash2 v-else-if="showTrashOnMinus" :class="iconSizeClass" />
       <Minus v-else :class="iconSizeClass" />
     </button>
 
@@ -332,7 +368,7 @@ const iconSizeClass = computed(() =>
         type="text"
         inputmode="numeric"
         maxlength="3"
-        :disabled="disabled"
+        :disabled="disabled || controlsBusy"
         :class="stripInputClass"
         aria-label="Quantity"
         @update:model-value="onDraftQtyUpdate"
@@ -344,11 +380,12 @@ const iconSizeClass = computed(() =>
     <button
       type="button"
       :class="plusBtnClass"
-      :disabled="disabled"
+      :disabled="plusDisabled"
       aria-label="Increase quantity"
       @click="onPlus"
     >
-      <Plus :class="iconSizeClass" />
+      <Loader2 v-if="plusLoading" :class="[iconSizeClass, 'animate-spin text-white']" />
+      <Plus v-else :class="iconSizeClass" />
     </button>
   </div>
 </template>

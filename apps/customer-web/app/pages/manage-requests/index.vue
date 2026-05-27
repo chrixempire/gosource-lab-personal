@@ -51,6 +51,7 @@ import {
 import { useRequestEdit } from '~/composables/useRequestEdit';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
+import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useCustomerBranchService } from '~/services/branch.service';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
@@ -119,8 +120,15 @@ const defaultMeta = {
 
 const listFilters = computed(() => parseRequestFiltersFromQuery(route.query));
 
-const branches = ref<BranchRecord[]>([]);
-const selectedBranchId = ref(employeeBranchId.value);
+const pageBranch = usePageBranchFilter();
+const {
+  viewBranchId: selectedBranchId,
+  apiBranchId,
+  branches,
+  branchesLoading: pageBranchesLoading,
+  showAllBranchesOption,
+  setPageBranchFilter,
+} = pageBranch;
 const searchValue = ref('');
 const debouncedSearch = ref('');
 const requests = ref<RequestRecord[]>([]);
@@ -156,12 +164,6 @@ watch(debouncedSearch, (next, prev) => {
   }
 });
 
-watch(selectedBranchId, (next, prev) => {
-  if (next !== prev) {
-    setPage(1);
-  }
-});
-
 watch(employeeBranchId, (next) => {
   if (isEmployeeSession.value && next && selectedBranchId.value !== next) {
     selectedBranchId.value = next;
@@ -192,8 +194,7 @@ const {
       limit: limit.value,
       search: debouncedSearch.value.trim() || undefined,
       status: requestStatusFiltersToApiParam(listFilters.value.status),
-      branchId:
-        !isEmployeeSession.value && selectedBranchId.value ? selectedBranchId.value : undefined,
+      branchId: !isEmployeeSession.value ? apiBranchId.value : undefined,
       amountFrom: listFilters.value.amountMin ?? undefined,
       amountTo: listFilters.value.amountMax ?? undefined,
     });
@@ -216,7 +217,7 @@ const {
       () => listFilters.value.amountMin,
       () => listFilters.value.amountMax,
       () => listFilters.value.status.join(','),
-      selectedBranchId,
+      apiBranchId,
     ],
     default: () => ({
       branches: [] as BranchRecord[],
@@ -245,7 +246,9 @@ onMounted(() => {
 });
 
 const branchesLoading = computed(
-  () => requestsLoading.value && (!Array.isArray(branches.value) || branches.value.length === 0),
+  () =>
+    pageBranchesLoading.value
+    || (requestsLoading.value && (!Array.isArray(branches.value) || branches.value.length === 0)),
 );
 
 watch(
@@ -255,7 +258,6 @@ watch(
       return;
     }
 
-    branches.value = Array.isArray(payload.branches) ? payload.branches : [];
     requests.value = Array.isArray(payload.requests) ? payload.requests : [];
     meta.value = payload.meta ?? { ...defaultMeta };
   },
@@ -345,7 +347,7 @@ function onApplyRequestFilters(next: Partial<RequestListFilters>) {
 function clearAllRequestFilters() {
   searchValue.value = '';
   debouncedSearch.value = '';
-  selectedBranchId.value = '';
+  pageBranch.resetViewToActiveBranch();
 
   const { amountFrom, amountTo, status, ...rest } = route.query;
   router.replace({
@@ -696,11 +698,12 @@ const pageDescription = computed(() =>
           class="flex w-full flex-col gap-3 min-[1000px]:max-w-md"
         >
           <BranchPickerDropdown
-            v-model="selectedBranchId"
+            :model-value="selectedBranchId"
             :branches="branches"
             :loading="branchesLoading"
             :disabled="requestsLoading"
-            show-all-branches-option
+            :show-all-branches-option="showAllBranchesOption"
+            @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
           />
           <SearchField
             v-model="searchValue"
@@ -729,7 +732,6 @@ const pageDescription = computed(() =>
         v-if="!showNoBranchSetup"
         :filters="listFilters"
         :search="debouncedSearch"
-        :branch-id="selectedBranchId"
         @apply="onApplyRequestFilters"
         @clear-all="clearAllRequestFilters"
       />

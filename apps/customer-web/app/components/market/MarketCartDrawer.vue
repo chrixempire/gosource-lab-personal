@@ -3,7 +3,7 @@ import type { RequestProductRecord } from '@gosource/api-client';
 import type { CartLine } from '~/composables/useMarketplaceCart';
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { Button } from '@gosource/ui';
-import { ClipboardList, ShoppingCart, Trash2, X } from 'lucide-vue-next';
+import { ClipboardList, ShoppingCart, X } from 'lucide-vue-next';
 import { useCartRequestAction } from '~/composables/useCartRequestAction';
 import { formatNaira, useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { useRequestAddItemsMode } from '~/composables/useRequestAddItemsMode';
@@ -15,8 +15,7 @@ import {
   isMarketProductInStock,
 } from '~/lib/marketplace-data';
 import { MIN_ORDER_SUBTOTAL_NAIRA } from '~/lib/market-cart';
-import MarketProductQtyStrip from './MarketProductQtyStrip.vue';
-import MarketProductImage from './MarketProductImage.vue';
+import MarketCartLineItem from './MarketCartLineItem.vue';
 
 const props = defineProps<{
   open: boolean;
@@ -28,6 +27,15 @@ const emit = defineEmits<{
 
 const { clearCart, isGuestCartMode, lines, refreshLoggedInCart, setQuantityForUnit, subtotalNaira, removeLine, syncMarketCartEntry } =
   useMarketplaceCart();
+
+function sanitizeCartUnitLabel(unit: string | undefined) {
+  const trimmed = unit?.trim() ?? '';
+  if (!trimmed || /^undefined$/i.test(trimmed)) {
+    return '';
+  }
+
+  return trimmed;
+}
 const {
   isAddingToRequest,
   isRequestReady,
@@ -264,65 +272,18 @@ watch(
           </div>
 
           <ul v-else-if="activeEntries.length" class="space-y-4">
-            <li
-              v-for="entry in activeEntries"
-              :key="entry.key"
-              class="flex gap-3 rounded-[16px] border border-grey-50 bg-white p-3 shadow-sm"
-            >
-              <div class="relative size-16 shrink-0 overflow-hidden rounded-xl bg-grey-55">
-                <MarketProductImage
-                  :src="entry.product.imageUrl"
-                  :alt="entry.product.name"
-                  logo-class="w-[72%] max-w-[3rem]"
-                  :class="{ grayscale: !entry.inStock }"
-                />
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="line-clamp-2 text-sm font-semibold text-grey-900">
-                  {{ entry.product.name }}
-                </p>
-                <p class="mt-0.5 text-xs text-grey-300">
-                  {{ entry.unit }} · {{ formatNaira(entry.quantity > 0 ? entry.lineTotalNaira / entry.quantity : entry.lineTotalNaira) }} each
-                </p>
-                <p
-                  v-if="!entry.inStock"
-                  class="mt-1 text-xs text-negative-500"
-                >
-                  Out of stock — remove this item to continue.
-                </p>
-
-                <div class="mt-2 w-full max-w-[7.5rem]">
-                  <Button
-                    v-if="!entry.inStock"
-                    size="small"
-                    variant="destructive"
-                    class="!h-7 !rounded-full !px-3 !text-[12px] !font-semibold"
-                    type="button"
-                    disabled
-                  >
-                    Out of stock
-                  </Button>
-                  <MarketProductQtyStrip
-                    v-else
-                    :product-id="entry.productId"
-                    :unit="entry.unit"
-                    variant="cart"
-                  />
-                </div>
-              </div>
-              <div class="flex shrink-0 flex-col items-end gap-2 pt-0.5">
-                <p class="text-sm font-semibold text-grey-900">
-                  {{ formatNaira(entry.lineTotalNaira) }}
-                </p>
-                <button
-                  type="button"
-                  class="flex size-8 cursor-pointer items-center justify-center rounded-full text-negative-500 transition hover:bg-negative-50 hover:text-negative-600"
-                  :aria-label="isAddingToRequest ? 'Remove from request' : 'Remove line from cart'"
-                  @click="removeEntry(entry)"
-                >
-                  <Trash2 class="size-4" />
-                </button>
-              </div>
+            <li v-for="entry in activeEntries" :key="entry.key">
+              <MarketCartLineItem
+                :product="entry.product"
+                :product-id="entry.productId"
+                :unit="entry.unit"
+                :quantity="entry.quantity"
+                :line-total-naira="entry.lineTotalNaira"
+                :in-stock="entry.inStock"
+                :unit-label="sanitizeCartUnitLabel(entry.unit)"
+                :remove-label="isAddingToRequest ? 'Remove from request' : 'Remove line from cart'"
+                @remove="removeEntry(entry)"
+              />
             </li>
           </ul>
 

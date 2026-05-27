@@ -12,7 +12,6 @@ import type { OrderStatusFilter } from '~/lib/order-status';
 const props = defineProps<{
   filters: TrackOrderListFilters;
   search: string;
-  branchId: string;
   hasDefaultStatusOnly: boolean;
 }>();
 
@@ -97,7 +96,6 @@ const showClearAll = computed(() =>
   hasActiveTrackOrderFilters({
     filters: props.filters,
     search: props.search,
-    branchId: props.branchId,
     hasDefaultStatusOnly: props.hasDefaultStatusOnly,
   }),
 );
@@ -114,11 +112,11 @@ const showClearAll = computed(() =>
       @clear="clearStatus"
       @update:open="(value) => value && openStatus()"
     >
-      <div class="flex max-h-56 flex-col gap-2">
+      <div class="flex max-h-56 flex-col">
         <label
           v-for="option in TRACK_ORDER_STATUS_OPTIONS"
           :key="option.value"
-          class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
+          class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
         >
           <Checkbox
             :model-value="draftStatus.includes(option.value)"

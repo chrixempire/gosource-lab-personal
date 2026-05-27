@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BranchRecord, ShoppingListRecord } from '@gosource/api-client';
-import { Button, ViewToggle, toast } from '@gosource/ui';
+import { Button, PaginationBar, ViewToggle, toast } from '@gosource/ui';
 import { useDebounceFn } from '@vueuse/core';
 import { Plus } from 'lucide-vue-next';
 import BranchPickerDropdown from '~/components/branches/BranchPickerDropdown.vue';
@@ -19,10 +19,12 @@ import { useListRequestAction } from '~/composables/useListRequestAction';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 
 const runWhenSessionReady = useAuthenticatedFetch();
+import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
+import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
+import { isAllBranchesFilter, resolveShoppingListsFilterBranchId } from '~/lib/branch-picker';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { branchNameById, mapShoppingListToListItem } from '~/lib/shopping-list';
-import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerShoppingListService } from '~/services/shopping-list.service';
 
 const {
@@ -36,7 +38,6 @@ const {
   clearItems,
   moveItems,
 } = useCustomerShoppingListService();
-const { listBranches } = useCustomerBranchService();
 
 const route = useRoute();
 const session = useState<{
@@ -51,14 +52,24 @@ const {
   effectiveView,
   routeView,
   isCompactViewport,
+  page,
+  limit,
+  setPage,
+  setLimit,
   setView,
 } = useCollectionRouteState('table');
 
 const loading = ref(true);
 const lists = ref<ShoppingListRecord[]>([]);
-const branches = ref<BranchRecord[]>([]);
-const selectedBranchId = ref('');
-const activeBranchId = ref('');
+const pageBranch = usePageBranchFilter();
+const {
+  viewBranchId: selectedBranchId,
+  apiBranchId,
+  branches,
+  showAllBranchesOption,
+  setPageBranchFilter,
+} = pageBranch;
+const { activeBranchId: workingBranchId } = useBusinessBranchContext();
 const searchValue = ref('');
 const debouncedSearch = ref('');
 
@@ -108,12 +119,30 @@ const filteredLists = computed(() => {
   return items.filter((list) => list.name.toLowerCase().includes(query));
 });
 
+const totalItems = computed(() => filteredLists.value.length);
+const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / limit.value)));
+const pageItems = computed(() => {
+  const start = (page.value - 1) * limit.value;
+  return filteredLists.value.slice(start, start + limit.value);
+});
+
+watch(totalPages, (next) => {
+  if (page.value > next) {
+    setPage(next);
+  }
+});
+
 const createDialogDefaultBranchId = computed(() => {
-  if (selectedBranchId.value) {
+  if (!isAllBranchesFilter(selectedBranchId.value)) {
     return selectedBranchId.value;
   }
 
-  return branches.value.find((branch) => branch.isHeadquarter)?.id ?? branches.value[0]?.id ?? '';
+  return (
+    workingBranchId.value
+    ?? branches.value.find((branch) => branch.isHeadquarter)?.id
+    ?? branches.value[0]?.id
+    ?? ''
+  );
 });
 
 const listsForMoveDialog = computed(() => {
@@ -170,25 +199,26 @@ const { data: listsPayload, pending: listsPending, refresh: refreshListsPayload 
   await useAuthenticatedAsyncData(
     'shopping-lists-index',
     async () => {
-      const branchResponse = await runWhenSessionReady(() => listBranches({ page: 1, limit: 100 }));
-      const branchRows = Array.isArray(branchResponse.data) ? branchResponse.data : [];
+      const filterBranchId = resolveShoppingListsFilterBranchId(route.query, {
+        apiBranchId: apiBranchId.value,
+        activeBranchId: workingBranchId.value,
+        isEmployee: isEmployeeSession.value,
+        employeeBranchId: employeeBranchId.value,
+      });
 
-      const filterBranchId = isEmployeeSession.value
-        ? employeeBranchId.value
-        : selectedBranchId.value;
+      await pageBranch.ensureBranchesLoaded();
+      const branchRows = branches.value ?? [];
 
       const listRows = await fetchListsForScope(branchRows, filterBranchId);
 
       return {
-        branches: branchRows,
         branchId: filterBranchId,
         lists: listRows,
       };
     },
     {
-      watch: [selectedBranchId, employeeBranchId],
+      watch: [apiBranchId, employeeBranchId, () => route.query.branchId],
       default: () => ({
-        branches: [] as BranchRecord[],
         branchId: '',
         lists: [] as ShoppingListRecord[],
       }),
@@ -202,17 +232,13 @@ watch(
       return;
     }
 
-    branches.value = Array.isArray(payload.branches) ? payload.branches : [];
-    activeBranchId.value = payload.branchId ?? '';
     lists.value = Array.isArray(payload.lists) ? payload.lists : [];
-
-    if (!isEmployeeSession.value && !selectedBranchId.value && payload.branchId) {
-      selectedBranchId.value = payload.branchId;
-    }
 
     const cacheBranchId = isEmployeeSession.value
       ? employeeBranchId.value
-      : selectedBranchId.value || branches.value[0]?.id;
+      : isAllBranchesFilter(selectedBranchId.value)
+        ? workingBranchId.value ?? branches.value[0]?.id
+        : selectedBranchId.value || workingBranchId.value;
 
     if (cacheBranchId) {
       setCachedLists(
@@ -247,7 +273,7 @@ async function refreshSelectedList(listId?: string) {
       if (index >= 0) {
         lists.value[index] = response.data;
       }
-      const branchId = response.data.branchId || activeBranchId.value;
+      const branchId = response.data.branchId || workingBranchId.value;
       if (branchId) {
         setCachedLists(branchId, lists.value);
       }
@@ -484,11 +510,12 @@ async function handleCreateRequest() {
         >
           <BranchPickerDropdown
             v-if="showBranchControls"
-            v-model="selectedBranchId"
+            :model-value="selectedBranchId"
             :branches="branches"
             :loading="loading && !branches.length"
             :disabled="loading"
-            show-all-branches-option
+            :show-all-branches-option="showAllBranchesOption"
+            @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
           />
           <SearchField
             v-model="searchValue"
@@ -521,7 +548,7 @@ async function handleCreateRequest() {
 
       <ListTable
         v-if="effectiveView === 'table'"
-        :lists="filteredLists"
+        :lists="pageItems"
         :loading="loading"
         :show-branch-column="showBranchColumn"
         @row-click="(list) => openListDrawer(list.id)"
@@ -533,7 +560,7 @@ async function handleCreateRequest() {
 
       <ListCards
         v-else
-        :lists="filteredLists"
+        :lists="pageItems"
         :loading="loading"
         :show-branch-name="showBranchColumn"
         @row-click="(list) => openListDrawer(list.id)"
@@ -551,6 +578,19 @@ async function handleCreateRequest() {
         <p class="mt-2 text-sm text-grey-300">
           Create a list to save products your branch orders often.
         </p>
+      </div>
+
+      <div v-if="!loading && totalItems > 0" class="mt-2 flex justify-end">
+        <PaginationBar
+          plain
+          :page="page"
+          :total-pages="totalPages"
+          :total-items="totalItems"
+          :page-size="limit"
+          :disabled="loading"
+          @change="setPage"
+          @page-size-change="setLimit"
+        />
       </div>
     </div>
 

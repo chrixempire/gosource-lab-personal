@@ -176,9 +176,11 @@ onMounted(async () => {
   void fetchBranchesInBackground();
 });
 
-function onPickSimilar(p: MarketProduct) {
-  router.push(`/market/product/${p.id}`);
+function openSimilarProduct(product: MarketProduct) {
+  router.push(`/market/product/${product.id}`);
 }
+
+provide('marketOpenAddModal', openSimilarProduct);
 
 const listAddQuantity = computed(() => {
   const lineQty = selectedLineQty.value;
@@ -315,7 +317,7 @@ async function onAddToList() {
       </div>
 
       <div class="-mx-4 mt-8 border-t border-grey-50 px-4 pb-6 pt-6 sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6">
-        <MarketSimilarProductsStrip flush :products="similar" @pick="onPickSimilar" />
+        <MarketSimilarProductsStrip flush :products="similar" />
       </div>
     </div>
 

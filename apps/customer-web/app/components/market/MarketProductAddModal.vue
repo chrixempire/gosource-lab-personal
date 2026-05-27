@@ -1,3 +1,7 @@
+<!--
+  Legacy centered product add modal (Dialog). Kept for easy revert.
+  Market routes use MarketProductDetailSlideModal.vue instead.
+-->
 <script setup lang="ts">
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { effectiveUnitChoices, getMarketUnitChoice, isMarketProductInStock } from '~/lib/marketplace-data';
@@ -213,46 +217,74 @@ const detailText = computed(() => props.product?.longDescription ?? props.produc
                 </RadioGroup>
               </section>
 
-              <template v-if="inStock">
-                <MarketProductLineTotal
+              <MarketProductLineTotal
+                v-if="inStock"
+                :product="product"
+                :unit="selectedUnit"
+                :quantity="pickQty"
+              />
+
+              <div v-if="inStock" class="hidden w-full min-w-0 lg:block">
+                <MarketProductDetailCartActions
+                  v-model:quantity="pickQty"
                   :product="product"
                   :unit="selectedUnit"
-                  :quantity="pickQty"
+                  :in-stock="inStock"
+                  close-on-success
+                  @close="close"
                 />
-                <div class="hidden w-full min-w-0 lg:block">
-                  <MarketProductDetailCartActions
-                    v-model:quantity="pickQty"
-                    :product="product"
-                    :unit="selectedUnit"
-                    :in-stock="inStock"
-                    close-on-success
-                    @close="close"
-                  />
-                </div>
-              </template>
+              </div>
+
+              <div v-else class="hidden w-full min-w-0 lg:block">
+                <Button
+                  size="large"
+                  variant="destructive"
+                  class="!h-14 w-full !rounded-full !text-[17px] !font-semibold shadow-md"
+                  type="button"
+                  disabled
+                  tabindex="-1"
+                  aria-disabled="true"
+                >
+                  Out of stock
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </DialogBody>
 
       <DialogFooter
-        v-if="product && inStock"
+        v-if="product"
         class="flex w-full shrink-0 flex-col items-stretch gap-3 border-t border-grey-50 bg-background-on-canvas !px-4 !py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:!px-6 lg:hidden"
       >
-        <MarketProductLineTotal
-          :product="product"
-          :unit="selectedUnit"
-          :quantity="pickQty"
-        />
-        <MarketProductDetailCartActions
-          v-model:quantity="pickQty"
-          :product="product"
-          :unit="selectedUnit"
-          :in-stock="inStock"
-          close-on-success
-          class="w-full min-w-0"
-          @close="close"
-        />
+        <template v-if="inStock">
+          <MarketProductLineTotal
+            :product="product"
+            :unit="selectedUnit"
+            :quantity="pickQty"
+          />
+          <MarketProductDetailCartActions
+            v-model:quantity="pickQty"
+            :product="product"
+            :unit="selectedUnit"
+            :in-stock="inStock"
+            close-on-success
+            class="w-full min-w-0"
+            @close="close"
+          />
+        </template>
+        <Button
+          v-else
+          size="large"
+          variant="destructive"
+          class="!h-14 w-full !rounded-full !text-[17px] !font-semibold shadow-md"
+          type="button"
+          disabled
+          tabindex="-1"
+          aria-disabled="true"
+        >
+          Out of stock
+        </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

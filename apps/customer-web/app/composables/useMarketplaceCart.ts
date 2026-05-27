@@ -16,6 +16,13 @@ export type SetCartQuantityOptions = {
   silent?: boolean;
   product?: MarketProduct;
 };
+
+export type CartLineMutationDirection = 'increase' | 'decrease';
+
+type CartLineMutationPending = {
+  lineKey: string;
+  direction: CartLineMutationDirection;
+};
 import { useCustomerSession } from '~/composables/useCustomerSession';
 import { useGuestCartSync } from '~/composables/useGuestCartSync';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
@@ -63,6 +70,10 @@ export function useMarketplaceCart() {
   const rawLines = useState<MarketCartItem[]>('marketplace-cart-lines', () => []);
   const cartTotalNaira = useState('marketplace-cart-total-naira', () => 0);
   const loading = useState('marketplace-cart-loading', () => false);
+  const lineMutationPending = useState<CartLineMutationPending | null>(
+    'marketplace-cart-line-mutation-pending',
+    () => null,
+  );
   const initializedBranchId = useState<string | null>('marketplace-cart-initialized-branch-id', () => null);
   const autoLoadStarted = useState('marketplace-cart-auto-load-started', () => false);
   const cartLifecycleHooksRegistered = useState('marketplace-cart-lifecycle-hooks', () => false);
@@ -496,6 +507,34 @@ export function useMarketplaceCart() {
     return getTotalQtyForProduct(productId);
   }
 
+  function setLineMutationPending(
+    productId: string,
+    unit: string,
+    direction: CartLineMutationDirection | null,
+  ) {
+    if (!direction) {
+      lineMutationPending.value = null;
+      return;
+    }
+
+    lineMutationPending.value = {
+      lineKey: cartLineKey(productId, unit),
+      direction,
+    };
+  }
+
+  function getLineMutationPending(
+    productId: string,
+    unit: string,
+  ): CartLineMutationDirection | null {
+    const pending = lineMutationPending.value;
+    if (!pending || pending.lineKey !== cartLineKey(productId, unit)) {
+      return null;
+    }
+
+    return pending.direction;
+  }
+
   async function setCartQuantityForUnit(
     productId: string,
     unit: string,
@@ -505,8 +544,15 @@ export function useMarketplaceCart() {
     const next = Math.max(0, Math.min(999, Math.floor(Number.isFinite(raw) ? raw : 0)));
     const existing = findLine(productId, unit);
     const previousQty = existing?.quantity ?? 0;
+    const mutationDirection: CartLineMutationDirection | null =
+      next > previousQty ? 'increase' : next < previousQty ? 'decrease' : null;
 
     if (isGuestCartMode.value) {
+      if (mutationDirection) {
+        setLineMutationPending(productId, unit, mutationDirection);
+      }
+
+      try {
       const product =
         existing?.product ?? options?.product ?? getMarketProductById(productId);
       if (!product) {
@@ -553,51 +599,62 @@ export function useMarketplaceCart() {
       }
 
       return next > 0;
+      } finally {
+        if (mutationDirection) {
+          setLineMutationPending(productId, unit, null);
+        }
+      }
     }
 
     // Legacy API allows cart lines without a branch until checkout (gosource-web-app parity).
     const branchId = await getBranchIdForCartAction(false);
     const persistedCartId = hasPersistedCartId(existing?.id) ? existing.id : null;
 
-    if (next <= 0) {
-      if (existing) {
-        removeOptimisticLine(productId, unit);
-        try {
-          if (persistedCartId) {
-            const response = await marketService.removeCartItem(persistedCartId);
-            await loadCart(true);
-            toastCartSuccess(response, 'Removed from cart');
-          } else {
-            await loadCart(true);
-          }
-        } catch (error) {
-          await loadCart(true);
-          throw error;
-        }
-      }
-      return false;
+    if (mutationDirection) {
+      setLineMutationPending(productId, unit, mutationDirection);
     }
-
-    const product = existing?.product ?? getMarketProductById(productId);
-    if (existing && !isCartLineInStock(existing)) {
-      toast.error(`${existing.product?.name ?? 'This product'} is out of stock. Remove it from your cart to continue.`);
-      return false;
-    }
-    if (product && !isMarketProductInStock(product)) {
-      toast.error(`${product.name} is out of stock.`);
-      return false;
-    }
-    replaceOptimisticLine({
-      id: existing?.id ?? cartLineKey(productId, unit),
-      productId,
-      branchId: branchId || undefined,
-      unit,
-      quantity: next,
-      product,
-      lineTotalNaira: product ? getMarketUnitPrice(product, unit) * next : existing?.lineTotalNaira ?? 0,
-    });
 
     try {
+      if (next <= 0) {
+        if (existing) {
+          removeOptimisticLine(productId, unit);
+          try {
+            if (persistedCartId) {
+              const response = await marketService.removeCartItem(persistedCartId);
+              await loadCart(true);
+              toastCartSuccess(response, 'Removed from cart');
+            } else {
+              await loadCart(true);
+            }
+          } catch (error) {
+            await loadCart(true);
+            throw error;
+          }
+        }
+        return false;
+      }
+
+      const product = existing?.product ?? getMarketProductById(productId);
+      if (existing && !isCartLineInStock(existing)) {
+        toast.error(
+          `${existing.product?.name ?? 'This product'} is out of stock. Remove it from your cart to continue.`,
+        );
+        return false;
+      }
+      if (product && !isMarketProductInStock(product)) {
+        toast.error(`${product.name} is out of stock.`);
+        return false;
+      }
+      replaceOptimisticLine({
+        id: existing?.id ?? cartLineKey(productId, unit),
+        productId,
+        branchId: branchId || undefined,
+        unit,
+        quantity: next,
+        product,
+        lineTotalNaira: product ? getMarketUnitPrice(product, unit) * next : existing?.lineTotalNaira ?? 0,
+      });
+
       let response: MarketCartMutationResponse;
       if (persistedCartId) {
         response = await marketService.updateCartItemQuantity(persistedCartId, next);
@@ -628,6 +685,10 @@ export function useMarketplaceCart() {
         return false;
       }
       throw error;
+    } finally {
+      if (mutationDirection) {
+        setLineMutationPending(productId, unit, null);
+      }
     }
   }
 
@@ -850,6 +911,7 @@ export function useMarketplaceCart() {
     getQtyForUnit,
     getTotalQtyForProduct,
     getQty,
+    getLineMutationPending,
     setCartQuantityForUnit,
     setQuantityForUnit,
     setQuantity,

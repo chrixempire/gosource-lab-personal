@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
-import MarketProductCard from './MarketProductCard.vue';
+import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -188,24 +188,57 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
         class="flex touch-pan-x gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         @scroll.passive="updateProductScrollHints"
       >
-        <MarketProductCard
+        <div
           v-for="p in displayProducts"
           :key="p.id"
-          :product="p"
-        />
+          class="w-[220px] shrink-0"
+        >
+          <ExploreProductCard :product="p" />
+        </div>
       </div>
 
       <div
         v-else
-        class="grid w-full min-w-0 grid-cols-2 content-start gap-4 max-[650px]:justify-center min-[441px]:grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))]"
+        class="market-products-grid w-full min-w-0"
       >
-        <MarketProductCard
+        <ExploreProductCard
           v-for="p in displayProducts"
           :key="`grid-${p.id}`"
           :product="p"
-          narrow-full-width
         />
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.market-products-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .market-products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .market-products-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1080px) {
+  .market-products-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1240px) {
+  .market-products-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+</style>

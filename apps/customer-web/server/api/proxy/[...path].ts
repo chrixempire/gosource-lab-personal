@@ -310,6 +310,41 @@ export default defineEventHandler(async (event) => {
   setResponseStatus(event, response.status);
 
   if (response.status >= 400) {
+    if (
+      isLegacyCustomerApiMode(event) &&
+      method === 'GET' &&
+      targetPathSegments[0] === 'analytics' &&
+      targetPathSegments[1] === 'total-procurement' &&
+      (response.status === 404 || response.status === 500)
+    ) {
+      setResponseStatus(event, 200);
+      return {
+        status: true,
+        message: 'No procurements for period',
+        data: {
+          totalAmountSpent: 0,
+          procurementSummary: {},
+          percentageChanges: {},
+          previousTotalAmountSpent: 0,
+        },
+      };
+    }
+
+    if (
+      isLegacyCustomerApiMode(event) &&
+      method === 'GET' &&
+      targetPathSegments[0] === 'analytics' &&
+      targetPathSegments[1] === 'product-analysis' &&
+      (response.status === 404 || response.status === 500)
+    ) {
+      setResponseStatus(event, 200);
+      return {
+        status: true,
+        message: 'No product analysis for period',
+        data: [],
+      };
+    }
+
     const payload = response._data as Record<string, unknown> | string | null;
     return forwardApiError(
       event,

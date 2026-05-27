@@ -24,12 +24,23 @@ import CustomerSidebar from '~/components/layout/customer/CustomerSidebar.vue';
 import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.vue';
 import MarketSearch from '~/components/market/MarketSearch.vue';
 import { getMarketCategoryById } from '~/lib/marketplace-data';
+import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
 const { clearAllDismissals } = useMarketBranchSetupDismissal();
 const { resetCartState } = useMarketplaceCart();
+const { ensureBranchesLoaded, clearActiveBranchForLogout, hasSession } =
+  useBusinessBranchContext();
+
+if (import.meta.client) {
+  onMounted(() => {
+    if (hasSession.value) {
+      void ensureBranchesLoaded();
+    }
+  });
+}
 
 const props = withDefaults(
   defineProps<{
@@ -37,10 +48,16 @@ const props = withDefaults(
     showMarketHeaderCart?: boolean;
     /** Use tighter main padding on market routes. */
     marketMainPadding?: boolean;
+    /** Hide the route title in the shell header (e.g. Explore playground). */
+    hidePageTitle?: boolean;
+    /** Remove top padding on main so sticky bars sit flush under the header. */
+    flushMainTopPadding?: boolean;
   }>(),
   {
     showMarketHeaderCart: false,
     marketMainPadding: false,
+    hidePageTitle: false,
+    flushMainTopPadding: false,
   },
 );
 
@@ -96,11 +113,25 @@ const showHeaderCart = computed(
   () => props.showMarketHeaderCart && !route.path.startsWith('/checkout'),
 );
 
-const showMarketHeaderSearch = computed(
-  () => showHeaderCart.value && route.path.startsWith('/market'),
+const isMarketShellRoute = computed(
+  () => route.path === '/market' || route.path.startsWith('/market/'),
 );
 
-const useTightMainPadding = computed(() => props.marketMainPadding && route.path.startsWith('/market'));
+const showMarketHeaderSearch = computed(
+  () => showHeaderCart.value && isMarketShellRoute.value,
+);
+
+const useTightMainPadding = computed(
+  () => props.marketMainPadding && isMarketShellRoute.value,
+);
+
+const mainPaddingClass = computed(() => {
+  if (useTightMainPadding.value || props.flushMainTopPadding) {
+    return 'pb-4 pt-0 lg:pb-6';
+  }
+
+  return 'py-4 lg:py-6';
+});
 
 watch(isDesktopViewport, (isDesktop) => {
   if (isDesktop) {
@@ -158,6 +189,7 @@ async function confirmLogout() {
 
   logoutConfirmOpen.value = false;
   clearAllDismissals();
+  clearActiveBranchForLogout();
   resetCartState();
   session.value = null;
   mobileNavOpen.value = false;
@@ -206,6 +238,7 @@ async function confirmLogout() {
             :class="showMarketHeaderSearch ? '' : 'justify-between'"
           >
             <h1
+              v-if="!hidePageTitle"
               class="truncate text-[15px] font-semibold leading-tight text-grey-900 lg:text-lg"
               :class="
                 showMarketHeaderSearch
@@ -224,6 +257,8 @@ async function confirmLogout() {
               </span>
               <span v-else class="hidden lg:inline">{{ pageTitle }}</span>
             </h1>
+
+            <div v-else class="min-w-0 flex-1" aria-hidden="true" />
 
             <MarketSearch v-if="showMarketHeaderSearch" class="shrink-0 lg:min-w-0 lg:flex-1" />
 
@@ -249,7 +284,7 @@ async function confirmLogout() {
               id="customer-shell-scroll"
               :class="[
                 'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain px-4 [overflow-scrolling:touch] sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
-                useTightMainPadding ? 'pb-4 pt-0 lg:pb-6' : 'py-4 lg:py-6',
+                mainPaddingClass,
               ]"
             >
               <div class="mx-auto w-full">

@@ -100,14 +100,9 @@ export function trackOrderStatusFiltersToApiStatus(
 export function hasActiveTrackOrderFilters(input: {
   filters: TrackOrderListFilters;
   search: string;
-  branchId: string;
   hasDefaultStatusOnly: boolean;
 }) {
   if (input.search.trim()) {
-    return true;
-  }
-
-  if (input.branchId) {
     return true;
   }
 

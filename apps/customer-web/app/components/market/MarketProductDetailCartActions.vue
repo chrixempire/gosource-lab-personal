@@ -4,13 +4,18 @@ import { Button } from '@gosource/ui';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import MarketProductQtyStrip from './MarketProductQtyStrip.vue';
 
-const props = defineProps<{
-  product: MarketProduct;
-  unit: string;
-  inStock: boolean;
-  /** Close parent dialog after a successful add (product modal). */
-  closeOnSuccess?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    product: MarketProduct;
+    unit: string;
+    inStock: boolean;
+    /** Close parent dialog after a successful add (product modal). */
+    closeOnSuccess?: boolean;
+    /** Stretch the add button to fill remaining footer width (slide product modal). */
+    expandAddButton?: boolean;
+  }>(),
+  { expandAddButton: false },
+);
 
 const emit = defineEmits<{
   close: [];
@@ -65,11 +70,21 @@ async function onAddToCart() {
     >
       Out of stock
     </Button>
-    <div v-else class="flex w-full min-w-0 items-center gap-3">
-      <MarketProductQtyStrip v-model="pickQty" variant="detail" :disabled="addingToCart" />
+    <div v-else class="flex w-full min-w-0 items-center gap-2.5">
+      <MarketProductQtyStrip
+        v-model="pickQty"
+        variant="detail"
+        class="shrink-0"
+        :disabled="addingToCart"
+      />
       <Button
         variant="primary"
-        class="!w-auto shrink-0 !rounded-full"
+        :class="[
+          '!rounded-full',
+          expandAddButton
+            ? '!min-w-0 !w-full flex-1'
+            : '!w-auto shrink-0',
+        ]"
         type="button"
         :loading="addingToCart"
         @click="onAddToCart"

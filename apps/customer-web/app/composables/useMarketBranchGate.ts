@@ -1,29 +1,35 @@
-import type { BranchListResponse } from '@gosource/api-client';
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { useCustomerSession } from '~/composables/useCustomerSession';
-import { useCustomerBranchService } from '~/services/branch.service';
+import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 
 export function useMarketBranchGate() {
   const { whenReady } = useCustomerSession();
+  const ctx = useBusinessBranchContext();
+
   const session = useState<{
     user_type?: 'customer' | 'employee';
     bootstrap?: { hasBranch?: boolean };
     data?: { businessId?: string | null; branchId?: string | null };
   } | null>('customer-session', () => null);
 
-  const branches = useState<BranchListResponse['data']>('market-branch-gate-branches', () => []);
-  const branchFetchLoading = useState('market-branch-gate-loading', () => false);
-  const branchFetchInitialized = useState('market-branch-gate-initialized', () => false);
   const branchGateOpen = useState('market-branch-gate-open', () => false);
   const pendingResumeProduct = useState<MarketProduct | null>('market-branch-gate-pending-product', () => null);
 
-  const { listBranches } = useCustomerBranchService();
+  const hasSession = ctx.hasSession;
+  const isEmployeeSession = ctx.isEmployeeSession;
+  const branches = ctx.branches;
+  const branchFetchLoading = ctx.branchFetchLoading;
+  const branchFetchInitialized = ctx.branchFetchInitialized;
+  const activeBranchId = ctx.activeBranchId;
 
-  const hasSession = computed(() => Boolean(session.value?.data?.businessId));
-  const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
+  const sessionBranchId = computed(() => {
+    const id = session.value?.data?.branchId;
+    return typeof id === 'string' && id.trim() ? id.trim() : null;
+  });
+
   const hasBranch = computed(() => {
     if (isEmployeeSession.value) {
-      return Boolean(session.value?.data?.branchId);
+      return Boolean(sessionBranchId.value);
     }
 
     if (typeof session.value?.bootstrap?.hasBranch === 'boolean') {
@@ -32,64 +38,13 @@ export function useMarketBranchGate() {
 
     return Boolean(branches.value?.length);
   });
-  const activeBranchId = computed(() => {
-    if (session.value?.data?.branchId) {
-      return session.value.data.branchId;
-    }
-
-    if (isEmployeeSession.value) {
-      return null;
-    }
-
-    return branches.value?.[0]?.id ?? null;
-  });
 
   async function fetchBranchesInBackground(force = false) {
     if (import.meta.client) {
       await whenReady();
     }
 
-    if (!hasSession.value) {
-      branchFetchInitialized.value = true;
-      branches.value = [];
-      return branches.value;
-    }
-
-    if (isEmployeeSession.value) {
-      branchFetchInitialized.value = true;
-      return branches.value;
-    }
-
-    if (branchFetchLoading.value) {
-      return branches.value;
-    }
-
-    if (!force && branchFetchInitialized.value) {
-      return branches.value;
-    }
-
-    branchFetchLoading.value = true;
-
-    try {
-      const response = (await listBranches()) as BranchListResponse;
-      branches.value = response.data ?? [];
-      branchFetchInitialized.value = true;
-      if (session.value && session.value.user_type === 'customer') {
-        session.value = {
-          ...session.value,
-          bootstrap: {
-            ...(session.value.bootstrap ?? {}),
-            hasBranch: branches.value.length > 0,
-          },
-        };
-      }
-      return branches.value;
-    } catch {
-      branchFetchInitialized.value = true;
-      return branches.value;
-    } finally {
-      branchFetchLoading.value = false;
-    }
+    return ctx.ensureBranchesLoaded(force);
   }
 
   async function resolveBranchRequirement() {
@@ -133,24 +88,13 @@ export function useMarketBranchGate() {
     pendingResumeProduct.value = null;
   }
 
-  function handleBranchCreated(branch?: NonNullable<BranchListResponse['data']>[number]) {
+  function handleBranchCreated(branch?: Parameters<typeof ctx.reconcileAfterBranchCreated>[0]) {
     if (!branch) {
       return;
     }
 
-    branches.value = [branch, ...(branches.value ?? []).filter((item) => item.id !== branch.id)];
-    branchFetchInitialized.value = true;
+    ctx.reconcileAfterBranchCreated(branch);
     branchGateOpen.value = false;
-
-    if (session.value) {
-      session.value = {
-        ...session.value,
-        bootstrap: {
-          ...(session.value.bootstrap ?? {}),
-          hasBranch: true,
-        },
-      };
-    }
   }
 
   return {
