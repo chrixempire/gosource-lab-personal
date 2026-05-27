@@ -22,18 +22,25 @@ import {
   ORDER_TABLE_STICKY_HEADER_CLASS,
 } from '~/lib/orders-table-layout';
 
-const props = defineProps<{
-  orders: OrderListItem[];
-  page: number;
-  totalPages: number;
-  totalItems: number;
-  pageSize: number;
-  hasNextPage?: boolean;
-  hasPrevPage?: boolean;
-  loading?: boolean;
-  reorderLoading?: boolean;
-  reorderLoadingOrderId?: string | null;
-}>();
+withDefaults(
+  defineProps<{
+    orders: OrderListItem[];
+    page: number;
+    totalPages: number;
+    totalItems: number;
+    pageSize: number;
+    hasNextPage?: boolean;
+    hasPrevPage?: boolean;
+    loading?: boolean;
+    reorderLoading?: boolean;
+    reorderLoadingOrderId?: string | null;
+    emptyTitle?: string;
+    emptyDescription?: string;
+  }>(),
+  {
+    emptyTitle: 'No orders found for the current filters.',
+  },
+);
 
 const emit = defineEmits<{
   page: [page: number];
@@ -147,6 +154,18 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
           />
         </TableCell>
       </TableRow>
+
+      <div
+        v-if="orders.length === 0"
+        class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center"
+      >
+        <p class="text-base font-medium text-grey-900">
+          {{ emptyTitle }}
+        </p>
+        <p v-if="emptyDescription" class="mt-2 text-sm text-grey-300">
+          {{ emptyDescription }}
+        </p>
+      </div>
     </TableBody>
 
     <TableFooter v-if="!loading && orders.length > 0">

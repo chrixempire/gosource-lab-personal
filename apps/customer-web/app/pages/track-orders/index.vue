@@ -282,6 +282,8 @@ useHead({
         :loading="loading"
         :reorder-loading="reordering"
         :reorder-loading-order-id="reorderLoadingOrderId"
+        :empty-title="`No ${emptyStateStatusLabel} orders`"
+        empty-description="Orders appear here after a request is approved and paid at checkout."
         @page="setPage"
         @page-size="setLimit"
         @row-click="openOrder"

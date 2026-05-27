@@ -1,27 +1,38 @@
 <script setup lang="ts">
-import type { MarketProduct, MarketPromotion } from '~/lib/marketplace-data';
-import MarketBranchSetupBanner from '~/components/market/MarketBranchSetupBanner.vue';
-import MarketCategoryRail from '~/components/market/MarketCategoryRail.vue';
-import MarketProductAddModal from '~/components/market/MarketProductAddModal.vue';
-import MarketProductRailSection from '~/components/market/MarketProductRailSection.vue';
-import MarketProductSection from '~/components/market/MarketProductSection.vue';
+import type { MarketProduct } from '~/lib/marketplace-data';
+import ExploreCategoryFilterBar from '~/components/explore/ExploreCategoryFilterBar.vue';
+import ExploreCategorySection from '~/components/explore/ExploreCategorySection.vue';
+import ExplorePageHero from '~/components/explore/ExplorePageHero.vue';
+import ExplorePromotionsSection from '~/components/explore/ExplorePromotionsSection.vue';
+import ExploreRecentOrdersSection from '~/components/explore/ExploreRecentOrdersSection.vue';
+import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
-import { useCustomerSession } from '~/composables/useCustomerSession';
-import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
-import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
+import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
+import { useExploreScrollSpy } from '~/composables/useExploreScrollSpy';
 import { useMarketCatalog } from '~/composables/useMarketCatalog';
-import { categoriesWithProducts } from '~/lib/marketplace-data';
+import {
+  ALL_EXPLORE_CATEGORIES_ID,
+  buildExploreSections,
+  mergeExploreRouteQuery,
+  parseExploreFiltersFromRoute,
+} from '~/lib/explore-catalog-filters';
+import { categoriesWithProducts, type MarketPromotion } from '~/lib/marketplace-data';
 import { readCachedCategoriesFromStorage } from '~/services/market.service';
 import { useCustomerMarketService } from '~/services/market.service';
 
 definePageMeta({
-  layout: 'customer-market',
-  keepalive: true,
+  layout: 'customer-explore',
 });
 
-const { hasSession } = useCustomerSession();
-const { syncMarketCartEntry } = useMarketplaceCart();
-const { categories, catalogList, hydrateFromStorage, setCategories } = useMarketCatalog();
+const route = useRoute();
+const router = useRouter();
+const session = useState<{
+  data?: { firstName?: string | null };
+} | null>('customer-session', () => null);
+const { branches, activeBranchId, hasSession } = useBusinessBranchContext();
+
+const { categories, catalogList, hydrateFromStorage, setCategories } =
+  useMarketCatalog();
 const { listCategories, listPromotions, listRecentOrders } = useCustomerMarketService();
 
 if (import.meta.client) {
@@ -32,78 +43,23 @@ if (import.meta.client) {
 }
 hydrateFromStorage();
 
-const { data: marketCatalogPayload, pending: marketCatalogPending } =
-  await useAuthenticatedAsyncData(
-    'market-catalog',
-    async () => {
-      const response = await listCategories({ force: false, quiet: true });
-      return response.data ?? [];
-    },
-    {
-      default: () => catalogList(),
-    },
-  );
+const initialRouteFilters = parseExploreFiltersFromRoute(route.query);
 
-watch(
-  marketCatalogPayload,
-  (payload) => {
-    if (Array.isArray(payload) && payload.length > 0) {
-      setCategories(payload);
-    }
-  },
-  { immediate: true },
-);
-
-const visibleCategories = computed(() => categoriesWithProducts(catalogList()));
-
-const promotions = ref<MarketPromotion[]>([]);
-const recentOrderProducts = ref<MarketProduct[]>([]);
-const recentOrdersExpanded = ref(false);
-const expandedPromotionId = ref<string | null>(null);
-
-const visiblePromotions = computed(() =>
-  promotions.value.filter((promo) => promo.products.length > 0),
-);
-
-const showPromotionsBlock = computed(
-  () => visiblePromotions.value.length > 0 && !recentOrdersExpanded.value,
-);
-
-const showRecentOrdersBlock = computed(
-  () =>
-    hasSession.value &&
-    recentOrderProducts.value.length > 0 &&
-    !expandedPromotionId.value,
-);
-
-const showCategoryCatalog = computed(
-  () => !recentOrdersExpanded.value && !expandedPromotionId.value,
-);
-
-const hasPersistedCatalog = computed(() => {
-  if (catalogList().length > 0) {
-    return true;
-  }
-  if (!import.meta.client) {
-    return false;
-  }
-  return (readCachedCategoriesFromStorage({ allowStale: true }) ?? []).length > 0;
-});
-
-const isFetchingFirstCatalog = ref(false);
-
-const {
-  activeBranchId,
-  clearProductModalResume,
-  fetchBranchesInBackground,
-  hasBranch,
-  pendingResumeProduct,
-} = useMarketBranchGate();
-
-const activeCategoryId = ref('');
-const categoryRailRef = ref<InstanceType<typeof MarketCategoryRail> | null>(null);
-
+const activeCategoryId = ref(initialRouteFilters.categoryId);
+const inStockOnly = ref(initialRouteFilters.inStockOnly);
+const priceMin = ref<number | null>(initialRouteFilters.priceMin);
+const priceMax = ref<number | null>(initialRouteFilters.priceMax);
 const modalProduct = ref<MarketProduct | null>(null);
+const recentOrderProducts = ref<MarketProduct[]>([]);
+const recentOrdersPending = ref(false);
+const promotions = ref<MarketPromotion[]>([]);
+const promotionsPending = ref(false);
+
+let skipRouteSync = false;
+let pendingRouteCategoryScroll: string | null =
+  initialRouteFilters.categoryId !== ALL_EXPLORE_CATEGORIES_ID
+    ? initialRouteFilters.categoryId
+    : null;
 
 function openProductAddModal(product: MarketProduct) {
   modalProduct.value = product;
@@ -117,228 +73,230 @@ function onModalOpenChange(open: boolean) {
 
 provide('marketOpenAddModal', openProductAddModal);
 
-let scrollSpySuspendedUntil = 0;
-
-function suspendScrollSpy(ms: number) {
-  scrollSpySuspendedUntil = Date.now() + ms;
-}
-
-function updateActiveFromScroll() {
-  if (Date.now() < scrollSpySuspendedUntil) {
-    return;
-  }
-
-  const root = document.getElementById('customer-shell-scroll');
-  if (!root) {
-    return;
-  }
-
-  const rootRect = root.getBoundingClientRect();
-  const markerOffset =
-    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches ? 172 : 148;
-  const marker = rootRect.top + markerOffset;
-  let nextId = visibleCategories.value[0]?.id ?? '';
-
-  for (const cat of visibleCategories.value) {
-    const el = document.getElementById(`market-section-${cat.id}`);
-    if (!el) {
-      continue;
-    }
-    const rect = el.getBoundingClientRect();
-    if (rect.top <= marker) {
-      nextId = cat.id;
-    }
-  }
-
-  if (nextId && nextId !== activeCategoryId.value) {
-    activeCategoryId.value = nextId;
-    nextTick(() => {
-      categoryRailRef.value?.scrollActiveIntoView();
-    });
-  }
-}
-
-function onShellScroll() {
-  updateActiveFromScroll();
-}
-
-function scrollMarketSectionIntoView(id: string) {
-  const root = document.getElementById('customer-shell-scroll');
-  const el = document.getElementById(`market-section-${id}`);
-  if (!root || !el) {
-    return;
-  }
-
-  const offset =
-    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches ? 172 : 148;
-
-  const applyScroll = () => {
-    const nextTop =
-      el.getBoundingClientRect().top -
-      root.getBoundingClientRect().top +
-      root.scrollTop -
-      offset;
-    root.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
-  };
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(applyScroll);
-  });
-}
-
-function selectCategory(id: string) {
-  activeCategoryId.value = id;
-  suspendScrollSpy(900);
-  nextTick(() => {
-    scrollMarketSectionIntoView(id);
-    categoryRailRef.value?.scrollActiveIntoView();
-  });
-}
-
-let scrollListenerAttached = false;
-
-function attachScrollListener() {
-  if (scrollListenerAttached) {
-    return;
-  }
-  const root = document.getElementById('customer-shell-scroll');
-  if (!root) {
-    return;
-  }
-  root.addEventListener('scroll', onShellScroll, { passive: true });
-  scrollListenerAttached = true;
-  updateActiveFromScroll();
-}
-
-function detachScrollListener() {
-  if (!scrollListenerAttached) {
-    return;
-  }
-  const root = document.getElementById('customer-shell-scroll');
-  root?.removeEventListener('scroll', onShellScroll);
-  scrollListenerAttached = false;
-}
-
-watch(visibleCategories, (next) => {
-  if (!next.length) {
-    activeCategoryId.value = '';
-    return;
-  }
-  if (!next.some((cat) => cat.id === activeCategoryId.value)) {
-    activeCategoryId.value = next[0]!.id;
-  }
-}, { immediate: true });
+const { data: catalogPayload, pending: catalogPending } =
+  await useAuthenticatedAsyncData(
+    'market-catalog',
+    async () => {
+      const response = await listCategories({ force: false, quiet: true });
+      return response.data ?? [];
+    },
+    {
+      default: () => catalogList(),
+    },
+  );
 
 watch(
-  () => [hasBranch.value, pendingResumeProduct.value] as const,
-  ([nextHasBranch, nextPendingProduct]) => {
-    if (!nextHasBranch || !nextPendingProduct || modalProduct.value) {
-      return;
+  catalogPayload,
+  (payload) => {
+    if (Array.isArray(payload) && payload.length > 0) {
+      setCategories(payload);
     }
-
-    modalProduct.value = nextPendingProduct;
-    clearProductModalResume();
-  },
-);
-
-watch(
-  [activeBranchId, hasSession] as const,
-  ([branchId, signedIn]) => {
-    if (!signedIn) {
-      recentOrderProducts.value = [];
-      return;
-    }
-    void loadRecentOrders(branchId ?? '');
   },
   { immediate: true },
 );
 
-function refreshCatalogInBackground() {
-  void listCategories({ force: false, quiet: true })
-    .then((response) => {
-      if (response.data?.length) {
-        setCategories(response.data);
-      }
-    })
-    .catch(() => undefined);
+const visibleCategories = computed(() => categoriesWithProducts(catalogList()));
+
+const productFilters = computed(() => ({
+  inStockOnly: inStockOnly.value,
+  priceMin: priceMin.value,
+  priceMax: priceMax.value,
+}));
+
+const exploreSections = computed(() =>
+  buildExploreSections(catalogList(), productFilters.value),
+);
+
+const hasCatalog = computed(() => visibleCategories.value.length > 0);
+const showRecentOrders = computed(
+  () => recentOrdersPending.value || recentOrderProducts.value.length > 0,
+);
+const showPromotions = computed(
+  () => promotionsPending.value || promotions.value.length > 0,
+);
+
+const greetingName = computed(() => {
+  const first = session.value?.data?.firstName;
+  return typeof first === 'string' && first.trim() ? first.trim() : 'there';
+});
+
+function formatExploreBranchLabel(branchName: string) {
+  const trimmed = branchName.trim();
+  if (!trimmed) {
+    return 'Your branch';
+  }
+
+  if (/\bbranch$/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `${trimmed} branch`;
 }
 
-function refreshPromotionsInBackground() {
-  void listPromotions({ quiet: true })
-    .then((response) => {
-      promotions.value = (response.data ?? []).filter((promo) => promo.products.length > 0);
-    })
-    .catch(() => undefined);
-}
+const outletLabel = computed(() => {
+  const branch = (branches.value ?? []).find(
+    (row) => row.id === activeBranchId.value,
+  );
+  if (branch?.branchName) {
+    return formatExploreBranchLabel(branch.branchName);
+  }
+  return 'Your branch';
+});
 
-async function loadRecentOrders(branchId: string) {
-  if (!branchId) {
-    recentOrderProducts.value = [];
+function syncFiltersToRoute() {
+  if (skipRouteSync) {
     return;
   }
+
+  skipRouteSync = true;
+
+  const nextQuery = mergeExploreRouteQuery(route.query, {
+    categoryId: activeCategoryId.value,
+    inStockOnly: inStockOnly.value,
+    priceMin: priceMin.value,
+    priceMax: priceMax.value,
+  });
+
+  router.replace({ path: route.path, query: nextQuery });
+
+  nextTick(() => {
+    skipRouteSync = false;
+  });
+}
+
+function applyFiltersFromRoute() {
+  const parsed = parseExploreFiltersFromRoute(route.query);
+  activeCategoryId.value = parsed.categoryId;
+  inStockOnly.value = parsed.inStockOnly;
+  priceMin.value = parsed.priceMin;
+  priceMax.value = parsed.priceMax;
+}
+
+watch(
+  () => route.query,
+  () => {
+    if (skipRouteSync) {
+      return;
+    }
+
+    applyFiltersFromRoute();
+  },
+  { deep: true },
+);
+
+watch([activeCategoryId, inStockOnly, priceMin, priceMax], () => {
+  syncFiltersToRoute();
+});
+
+const { selectCategory, attachScrollListener, detachScrollListener } =
+  useExploreScrollSpy({
+    sections: exploreSections,
+    activeCategoryId,
+  });
+
+function onSelectCategory(categoryId: string) {
+  selectCategory(categoryId);
+}
+
+function onApplyPrice(payload: {
+  priceMin: number | null;
+  priceMax: number | null;
+}) {
+  priceMin.value = payload.priceMin;
+  priceMax.value = payload.priceMax;
+}
+
+async function loadRecentOrderProducts(branchId: string | null | undefined) {
+  if (!import.meta.client || !hasSession.value || !branchId) {
+    recentOrderProducts.value = [];
+    recentOrdersPending.value = false;
+    return;
+  }
+
+  recentOrdersPending.value = recentOrderProducts.value.length === 0;
 
   try {
     const response = await listRecentOrders(branchId, { quiet: true });
     recentOrderProducts.value = response.data ?? [];
   } catch {
     recentOrderProducts.value = [];
+  } finally {
+    recentOrdersPending.value = false;
   }
 }
 
-function onPromotionExpandChange(promotionId: string, expanded: boolean) {
-  expandedPromotionId.value = expanded ? promotionId : null;
-}
-
-function syncCartAfterMarketEntry() {
-  syncMarketCartEntry();
-}
-
-onMounted(() => {
-  hydrateFromStorage();
-  if (hasSession.value) {
-    void fetchBranchesInBackground();
-  }
-  syncCartAfterMarketEntry();
-  refreshPromotionsInBackground();
-
-  if (visibleCategories.value.length > 0) {
-    refreshCatalogInBackground();
-  } else {
-    isFetchingFirstCatalog.value = true;
-    void listCategories({ force: true, quiet: false })
-      .then((response) => {
-        if (response.data?.length) {
-          setCategories(response.data);
-        }
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        isFetchingFirstCatalog.value = false;
-        if (!activeCategoryId.value && visibleCategories.value[0]?.id) {
-          activeCategoryId.value = visibleCategories.value[0].id;
-        }
-      });
+async function loadPromotions() {
+  if (!import.meta.client || !hasSession.value) {
+    promotions.value = [];
+    promotionsPending.value = false;
+    return;
   }
 
-  if (!activeCategoryId.value && visibleCategories.value[0]?.id) {
-    activeCategoryId.value = visibleCategories.value[0].id;
+  promotionsPending.value = promotions.value.length === 0;
+
+  try {
+    const response = await listPromotions({ quiet: true });
+    promotions.value = response.data ?? [];
+  } catch {
+    promotions.value = [];
+  } finally {
+    promotionsPending.value = false;
+  }
+}
+
+function maybeScrollToRouteCategory() {
+  if (!pendingRouteCategoryScroll || !hasCatalog.value) {
+    return;
+  }
+
+  const targetId = pendingRouteCategoryScroll;
+  pendingRouteCategoryScroll = null;
+
+  if (!visibleCategories.value.some((category) => category.id === targetId)) {
+    activeCategoryId.value = ALL_EXPLORE_CATEGORIES_ID;
+    return;
   }
 
   nextTick(() => {
+    selectCategory(targetId);
+  });
+}
+
+watch(
+  visibleCategories,
+  () => {
+    maybeScrollToRouteCategory();
+  },
+  { immediate: true },
+);
+
+onMounted(() => {
+  nextTick(() => {
     attachScrollListener();
+    maybeScrollToRouteCategory();
   });
 });
 
+if (import.meta.client) {
+  watch(
+    [hasSession, activeBranchId],
+    ([sessionOk, branchId]) => {
+      if (!sessionOk || !branchId) {
+        recentOrderProducts.value = [];
+        recentOrdersPending.value = false;
+        promotions.value = [];
+        promotionsPending.value = false;
+        return;
+      }
+
+      void loadRecentOrderProducts(branchId);
+      void loadPromotions();
+    },
+    { immediate: true },
+  );
+}
+
 onActivated(() => {
-  hydrateFromStorage();
-  syncCartAfterMarketEntry();
-  refreshPromotionsInBackground();
-  if (hasSession.value && activeBranchId.value) {
-    void loadRecentOrders(activeBranchId.value);
-  }
-  if (visibleCategories.value.length > 0) {
-    refreshCatalogInBackground();
-  }
   nextTick(() => {
     attachScrollListener();
   });
@@ -350,78 +308,67 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div data-testid="market-page">
-    <div class="pb-10">
-      <MarketBranchSetupBanner />
+  <div data-testid="market-page" class="pb-28 sm:pb-32">
+    <ExplorePageHero
+      :greeting-name="greetingName"
+      :outlet-label="outletLabel"
+    />
 
-      <template v-if="visibleCategories.length">
-        <div
-          class="sticky top-0 z-30 -mx-4 border-b border-grey-50 bg-background-on-canvas px-4 pb-3 pt-2 shadow-[0_8px_24px_-12px_rgba(16,24,40,0.08)] sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6"
-        >
-          <MarketCategoryRail
-            ref="categoryRailRef"
-            :categories="visibleCategories"
-            :active-id="activeCategoryId"
-            @select="selectCategory"
-          />
-        </div>
+    <ExploreCategoryFilterBar
+      v-if="hasCatalog"
+      :categories="visibleCategories"
+      :active-category-id="activeCategoryId"
+      :in-stock-only="inStockOnly"
+      :price-min="priceMin"
+      :price-max="priceMax"
+      @select-category="onSelectCategory"
+      @update:in-stock-only="inStockOnly = $event"
+      @apply-price="onApplyPrice"
+    />
 
-        <div class="mt-6 space-y-8">
-          <template v-if="showPromotionsBlock">
-            <MarketProductRailSection
-              v-for="promo in visiblePromotions"
-              v-show="!expandedPromotionId || expandedPromotionId === promo.id"
-              :key="promo.id"
-              :title="promo.name"
-              :products="promo.products"
-              variant="promotion"
-              :icon-html="promo.icon"
-              expandable
-              :expanded="expandedPromotionId === promo.id"
-              @update:expanded="onPromotionExpandChange(promo.id, $event)"
-            />
-          </template>
-
-          <MarketProductRailSection
-            v-if="showRecentOrdersBlock"
-            title="Recently ordered items"
-            :products="recentOrderProducts"
-            expandable
-            :expanded="recentOrdersExpanded"
-            @update:expanded="recentOrdersExpanded = $event"
-          />
-
-          <template v-if="showCategoryCatalog">
-            <MarketProductSection
-              v-for="cat in visibleCategories"
-              :key="cat.id"
-              :category="cat"
-            />
-          </template>
-        </div>
-      </template>
-
-      <div
-        v-else-if="(marketCatalogPending || isFetchingFirstCatalog) && !hasPersistedCatalog"
-        class="flex flex-col items-center justify-center gap-2 py-20 text-center"
-      >
-        <p class="text-sm font-medium text-grey-900">
-          Loading market…
-        </p>
-        <p class="max-w-xs text-xs text-grey-300">
-          Fetching categories and products.
-        </p>
-      </div>
-
-      <div
-        v-else
-        class="py-16 text-center text-sm text-grey-300"
-      >
-        No categories available right now.
-      </div>
+    <div
+      v-if="catalogPending && !hasCatalog"
+      class="flex flex-col items-center justify-center gap-2 py-20 text-center"
+    >
+      <p class="text-sm font-medium text-grey-900">Loading catalog…</p>
     </div>
 
-    <MarketProductAddModal
+    <div
+      v-else-if="!hasCatalog"
+      class="py-16 text-center text-sm text-grey-300"
+    >
+      No categories available right now.
+    </div>
+
+    <div v-else id="explore-catalog-start" class="space-y-2">
+      <ExploreRecentOrdersSection
+        v-if="showRecentOrders"
+        :products="recentOrderProducts"
+        :loading="recentOrdersPending"
+        @select="openProductAddModal"
+      />
+
+      <ExplorePromotionsSection
+        v-if="showPromotions"
+        :promotions="promotions"
+        :loading="promotionsPending"
+      />
+
+      <ExploreCategorySection
+        v-for="section in exploreSections"
+        :key="section.id"
+        :section="section"
+      />
+
+      <p
+        v-if="exploreSections.length === 0"
+        class="py-16 text-center text-sm text-grey-300"
+      >
+        No products match your filters.
+      </p>
+    </div>
+
+    <MarketProductDetailSlideModal
       :open="Boolean(modalProduct)"
       :product="modalProduct"
       @update:open="onModalOpenChange"

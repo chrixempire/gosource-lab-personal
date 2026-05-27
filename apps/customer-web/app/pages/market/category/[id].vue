@@ -6,7 +6,7 @@ import { Button } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
 import MarketBranchSetupBanner from '~/components/market/MarketBranchSetupBanner.vue';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
-import MarketProductAddModal from '~/components/market/MarketProductAddModal.vue';
+import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
 import MarketProductSection from '~/components/market/MarketProductSection.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useMarketCatalog } from '~/composables/useMarketCatalog';
@@ -158,7 +158,7 @@ onMounted(async () => {
       We couldn’t find this category right now.
     </div>
 
-    <MarketProductAddModal
+    <MarketProductDetailSlideModal
       :open="Boolean(modalProduct)"
       :product="modalProduct"
       @update:open="onModalOpenChange"
