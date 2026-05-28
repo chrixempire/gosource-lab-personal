@@ -16,7 +16,8 @@ import { extractApiErrorMessage } from '~/utils/api-error';
 export const MARKET_CACHE_TTL_MS = 60 * 60 * 1000;
 
 const MARKET_STORAGE_KEYS = {
-  categories: 'gosource.market.categories',
+  /** Bumped when catalog/image shape changes so stale image URLs are not reused. */
+  categories: 'gosource.market.categories.v2',
 } as const;
 
 export function isMarketCacheFresh(fetchedAt: number | undefined): boolean {

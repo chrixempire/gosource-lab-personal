@@ -1,4 +1,4 @@
-/// <reference types="nuxt" />
+/// <reference path="./.nuxt/nuxt.node.d.ts" />
 
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -27,7 +27,11 @@ export default defineNuxtConfig({
   },
 
   image: {
-    domains: ['res.cloudinary.com'],
+    domains: [
+      'res.cloudinary.com',
+      'gosource.sfo3.digitaloceanspaces.com',
+      'gosource.sfo3.cdn.digitaloceanspaces.com',
+    ],
   },
 
   css: ['~/assets/css/main.css'],

@@ -1,4 +1,13 @@
 export { createApiClient } from './client';
+export {
+  SESSION_EXPIRED_MESSAGE,
+  SESSION_REFRESH_PATH,
+  createSessionRefreshCoordinator,
+  getFetchErrorStatus,
+  getFetchRequestPath,
+  shouldAttemptSessionRefresh,
+  wrapFetchWithSessionRetry,
+} from './session-refresh';
 export { extractApiErrorMessage, extractApiResponseMessage, normalizeApiError } from './errors';
 export {
   createAdminAuthApi,

@@ -66,13 +66,21 @@ const discountLabel = computed(() => {
     return exploreProductDiscountLabel(props.product);
   }
 
+  return null;
+});
+
+const discountPercent = computed(() => {
+  if (!props.percentageBadgeOnly) {
+    return null;
+  }
+
   if (props.product.discountPct && props.product.discountPct > 0) {
-    return `-${props.product.discountPct}%`;
+    return props.product.discountPct;
   }
 
   const promo = props.product.promotion;
   if (promo?.isPercentageDiscounted && promo.discountValue > 0) {
-    return `-${promo.discountValue}%`;
+    return promo.discountValue;
   }
 
   return null;
@@ -136,8 +144,16 @@ async function onAdd(e: MouseEvent) {
         />
 
         <span
-          v-if="discountLabel"
-          class="absolute left-2 top-2 z-10 rounded-full bg-primary-500 px-2 py-1 text-[11px] font-bold leading-none text-white shadow-[0_6px_14px_-8px_rgba(4,85,11,0.65)]"
+          v-if="discountPercent"
+          class="absolute right-2 top-2 z-10 flex size-[3.25rem] flex-col items-center justify-center rounded-full border-2 border-white bg-primary-500 text-center text-white"
+        >
+          <span class="text-sm font-bold leading-none">{{ discountPercent }}%</span>
+          <span class="mt-0.5 text-[10px] font-medium leading-none">Off</span>
+        </span>
+
+        <span
+          v-else-if="discountLabel"
+          class="absolute left-2 top-2 z-10 rounded-full bg-primary-500 px-2 py-1 text-[11px] font-bold leading-none text-white"
         >
           {{ discountLabel }}
         </span>
@@ -151,12 +167,12 @@ async function onAdd(e: MouseEvent) {
             {{ product.name }}
           </h3>
 
-          <div
+          <p
             v-if="descriptionLine"
-            class="min-h-[1rem] max-h-10 overflow-hidden text-[11px] leading-4 text-grey-300"
+            class="line-clamp-2 text-[11px] leading-4 text-grey-300"
           >
             {{ descriptionLine }}
-          </div>
+          </p>
         </div>
 
         <div class="mt-auto space-y-1">
@@ -180,7 +196,9 @@ async function onAdd(e: MouseEvent) {
       </div>
     </div>
 
-    <div class="flex justify-center px-3 pb-2.5" @click.stop>
+    <div class="w-full shrink-0 border-t border-grey-50" role="presentation" />
+
+    <div class="flex justify-center px-3 pb-2.5 pt-2.5" @click.stop>
       <Button
         v-if="!inStock"
         size="small"

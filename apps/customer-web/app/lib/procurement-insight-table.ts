@@ -1,3 +1,4 @@
+import { formatCustomerTableDateTime } from '~/lib/customer-date-display';
 import {
   normalizeProductAnalysisRows,
   type ProcuredItemRow,
@@ -35,20 +36,7 @@ export type ProcurementInsightTableRow = {
 };
 
 export function formatInsightPurchaseDate(value: string | Date | null | undefined) {
-  if (!value) {
-    return '—';
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '—';
-  }
-
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
+  return formatCustomerTableDateTime(value);
 }
 
 export function buildProcurementInsightTableRowsFromProcuredItems(
