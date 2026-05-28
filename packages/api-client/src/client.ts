@@ -28,6 +28,8 @@ export function createApiClient(options: ApiClientOptions = {}) {
     defaultHeaders,
     getDefaultHeaders,
     getAuthToken,
+    onSessionRefresh,
+    onSessionExpired,
     onAuthRefresh,
     onAuthFailure,
   } = options;
@@ -73,7 +75,14 @@ export function createApiClient(options: ApiClientOptions = {}) {
 
     let response = await executeRequest(headers);
 
-    if (response.status === 401 && usesManagedAuth && onAuthRefresh) {
+    if (response.status === 401 && onSessionRefresh) {
+      try {
+        await onSessionRefresh();
+        response = await executeRequest(headers);
+      } catch {
+        await onSessionExpired?.();
+      }
+    } else if (response.status === 401 && usesManagedAuth && onAuthRefresh) {
       try {
         const nextToken = await onAuthRefresh();
 
@@ -99,6 +108,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
       } satisfies Partial<ApiError> & { status: number });
 
       if (response.status === 401) {
+        await onSessionExpired?.();
         await onAuthFailure?.(normalizedError);
       }
 

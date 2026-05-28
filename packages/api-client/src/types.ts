@@ -3,6 +3,10 @@ export interface ApiClientOptions {
   defaultHeaders?: HeadersInit;
   getDefaultHeaders?: () => HeadersInit | undefined;
   getAuthToken?: () => string | null | undefined;
+  /** Cookie/session apps: refresh tokens server-side, then retry the request. */
+  onSessionRefresh?: () => Promise<void>;
+  /** Called when refresh fails or the request is still 401 after refresh. */
+  onSessionExpired?: () => void | Promise<void>;
   onAuthRefresh?: () => Promise<string | null | undefined>;
   onAuthFailure?: (error: ApiError) => void | Promise<void>;
 }

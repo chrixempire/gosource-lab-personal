@@ -27,8 +27,8 @@ const BAR_CLASSES = [
   'bg-grey-300',
   'bg-orange-brick',
 ] as const;
-/** Max product lines shown; remaining spend rolls into "Others". */
-export const PROCUREMENT_INSIGHT_TOP_ITEMS = 4;
+/** Max product lines shown individually; remaining spend rolls into "Others". */
+export const PROCUREMENT_INSIGHT_TOP_ITEMS = 3;
 
 export function currentMonthQueryRange() {
   const now = new Date();

@@ -1,23 +1,44 @@
 import {
+  SESSION_REFRESH_PATH,
   createApiClient,
   createBranchApi,
   createCustomerAuthApi,
   createEmployeeApi,
   createOrderApi,
   createRequestApi,
+  createSessionRefreshCoordinator,
   createShoppingListApi,
   createWalletApi,
+  wrapFetchWithSessionRetry,
 } from '@gosource/api-client';
 import type { CustomerMeResponse } from '@gosource/api-client';
-import { customerSignInLocation } from '~/lib/auth-redirect';
 
 export default defineNuxtPlugin(() => {
-  const route = useRoute();
   const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+  const { handleSessionExpired } = useSessionExpired();
   const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined;
   const proxyBaseURL = import.meta.server
     ? new URL('/api/proxy', useRequestURL().origin).toString()
     : '/api/proxy';
+
+  const originalFetch = globalThis.$fetch;
+
+  const refreshSession = import.meta.client
+    ? createSessionRefreshCoordinator(async () => {
+        const refreshed = await originalFetch<CustomerMeResponse>(SESSION_REFRESH_PATH, {
+          method: 'POST',
+          credentials: 'same-origin',
+        });
+        session.value = refreshed;
+      })
+    : async () => {};
+
+  if (import.meta.client) {
+    globalThis.$fetch = wrapFetchWithSessionRetry(originalFetch, {
+      refreshSession,
+      onSessionRefreshFailed: handleSessionExpired,
+    });
+  }
 
   const apiClient = createApiClient({
     baseURL: proxyBaseURL,
@@ -32,13 +53,8 @@ export default defineNuxtPlugin(() => {
       }
       return headers;
     },
-    onAuthFailure: async () => {
-      session.value = null;
-
-      if (import.meta.client && !route.path.startsWith('/auth')) {
-        await navigateTo(customerSignInLocation(route.fullPath));
-      }
-    },
+    onSessionRefresh: refreshSession,
+    onSessionExpired: handleSessionExpired,
   });
 
   return {

@@ -115,17 +115,77 @@ const showPromotions = computed(
   () => promotionsPending.value || promotions.value.length > 0,
 );
 
-const heroSessionReady = computed(
-  () => sessionResolved.value && branchContextReady.value,
+/**
+ * Client bootstrap flag — SSR already has session cookies resolved, so we cannot
+ * rely on `sessionResolved` for skeleton UI. Stay in loading until branch context
+ * is ready after mount (visible on full page reload).
+ */
+const heroGreetingReady = useState('market-explore-hero-greeting-ready', () => false);
+
+/** Show hero while session loads (skeleton) or for signed-in customers; hide for guests. */
+const showPersonalizedExploreHero = computed(
+  () => !sessionResolved.value || hasSession.value,
 );
 
-/** Personalized hero (greeting, order again, insight) is for signed-in customers only. */
-const showPersonalizedExploreHero = computed(
-  () => sessionResolved.value && hasSession.value,
-);
+const heroSessionLoading = computed(() => {
+  if (!sessionResolved.value) {
+    return true;
+  }
+
+  if (!hasSession.value) {
+    return false;
+  }
+
+  return !heroGreetingReady.value;
+});
+
+let heroBootstrapPromise: Promise<void> | null = null;
+
+async function bootstrapExploreHeroGreeting() {
+  const minSkeletonMs = 280;
+  const startedAt = Date.now();
+
+  await whenReady();
+
+  if (!hasSession.value) {
+    heroGreetingReady.value = true;
+    return;
+  }
+
+  await ensureBranchesLoaded();
+
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < minSkeletonMs) {
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, minSkeletonMs - elapsed);
+    });
+  }
+
+  heroGreetingReady.value = true;
+}
+
+function startExploreHeroBootstrap() {
+  if (!import.meta.client) {
+    return Promise.resolve();
+  }
+
+  if (heroBootstrapPromise) {
+    return heroBootstrapPromise;
+  }
+
+  if (heroGreetingReady.value) {
+    return Promise.resolve();
+  }
+
+  heroGreetingReady.value = false;
+  heroBootstrapPromise = bootstrapExploreHeroGreeting().finally(() => {
+    heroBootstrapPromise = null;
+  });
+  return heroBootstrapPromise;
+}
 
 const greetingName = computed(() => {
-  if (!showPersonalizedExploreHero.value || !heroSessionReady.value) {
+  if (heroSessionLoading.value) {
     return '';
   }
 
@@ -294,9 +354,14 @@ watch(
   { immediate: true },
 );
 
+watch(hasSession, (loggedIn) => {
+  if (!loggedIn) {
+    heroGreetingReady.value = false;
+  }
+});
+
 onMounted(async () => {
-  await whenReady();
-  await ensureBranchesLoaded();
+  await startExploreHeroBootstrap();
 
   if (import.meta.client) {
     try {
@@ -351,7 +416,7 @@ onUnmounted(() => {
       v-if="showPersonalizedExploreHero"
       :greeting-name="greetingName"
       :outlet-label="outletLabel"
-      :session-loading="!heroSessionReady"
+      :session-loading="heroSessionLoading"
     />
 
     <ExploreCategoryFilterBar

@@ -1,5 +1,6 @@
 import type { OrderRecord, OrderStatus } from '@gosource/api-client';
-import { formatRequestCurrency, formatRequestDate } from '~/lib/request-details';
+import { formatCustomerTableDateTime } from '~/lib/customer-date-display';
+import { formatRequestCurrency } from '~/lib/request-details';
 
 type OrderStatusTagVariant =
   | 'success'
@@ -149,7 +150,7 @@ export function mapOrderToListItem(order: OrderRecord): OrderListItem {
     statusLabel: formatStatusLabel(order.status),
     statusVariant: getOrderStatusVariant(order.status),
     paymentLabel: formatStatusLabel(order.paymentStatus),
-    createdLabel: formatRequestDate(order.createdAt),
+    createdLabel: formatCustomerTableDateTime(order.createdAt),
     initials: productTitle.slice(0, 2).toUpperCase(),
   };
 }
