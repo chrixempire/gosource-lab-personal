@@ -340,10 +340,30 @@ export class ProductService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { imageUpdates, imagesToRemove, ...cleanProductData } = productData;
 
+    const incomingCategory = cleanProductData.category;
+    let resolvedCategory: unknown = product.category;
+
+    if (typeof incomingCategory === 'string' && incomingCategory.trim()) {
+      const trimmedCategory = incomingCategory.trim();
+
+      if (Types.ObjectId.isValid(trimmedCategory)) {
+        resolvedCategory = new Types.ObjectId(trimmedCategory);
+      } else {
+        const matchedCategory = await this.categoryModel
+          .findOne({ name: trimmedCategory })
+          .select('_id')
+          .lean();
+
+        resolvedCategory = matchedCategory?._id ?? product.category;
+      }
+    } else if (incomingCategory) {
+      resolvedCategory = incomingCategory;
+    }
+
     newProductDetails = {
       ...cleanProductData,
       ...newProductDetails,
-      category: new Types.ObjectId(cleanProductData.category),
+      category: resolvedCategory,
       version: 'v2',
     };
 
@@ -662,19 +682,40 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
+    const nextUnitPrice = Number(productData.unitPrice);
+    const nextQuantity = Number(productData.quantity);
+    const nextPurchaseUnit =
+      typeof productData.unit === 'string' ? productData.unit.trim().toLowerCase() : '';
+
     // Calculate total price for new batch
-    const price = +productData.quantity * +productData.unitPrice;
+    const price = nextQuantity * nextUnitPrice;
+
+    const updatePayload: Record<string, unknown> = {
+      $inc: {
+        quantity: nextQuantity,
+        totalPrice: price,
+      },
+    };
+
+    // Keep edit form values in sync with add-stock inputs.
+    if (Number.isFinite(nextUnitPrice) && nextUnitPrice > 0) {
+      updatePayload.$set = {
+        marketPrice: nextUnitPrice,
+      };
+    }
+
+    if (nextPurchaseUnit) {
+      updatePayload.$set = {
+        ...(updatePayload.$set as Record<string, unknown> | undefined),
+        purchaseUnit: nextPurchaseUnit,
+      };
+    }
 
     // Update product atomically with incremented quantity and price
     const updatedProduct: ProductDocument =
       await this.productModel.findByIdAndUpdate(
         productId,
-        {
-          $inc: {
-            quantity: +productData.quantity,
-            totalPrice: price,
-          },
-        },
+        updatePayload,
         {
           new: true,
         },

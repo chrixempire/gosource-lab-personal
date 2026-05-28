@@ -51,7 +51,7 @@ function productUnitLabel(product: MarketProduct) {
           v-for="product in visibleProducts"
           :key="product.id"
           type="button"
-          class="group flex min-h-[72px] min-w-0 cursor-pointer items-center gap-3 rounded-[8px] border border-grey-50 bg-white p-2 text-left shadow-[0_10px_24px_-22px_rgba(16,24,40,0.28)] transition-[border-color,box-shadow] hover:border-primary-500/45 hover:shadow-[0_16px_30px_-24px_rgba(4,85,11,0.4)]"
+          class="group flex min-h-[72px] min-w-0 cursor-pointer items-center gap-3 rounded-[8px] border border-grey-50 bg-white p-2 text-left transition-[transform,border-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary-500/45"
           @click="emit('select', product)"
         >
           <span

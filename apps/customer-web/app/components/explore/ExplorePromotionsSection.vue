@@ -25,25 +25,43 @@ const visibleProducts = computed(() => {
 });
 
 const scrollerRef = ref<HTMLElement | null>(null);
+const canScrollProducts = ref(false);
 const canScrollLeft = ref(false);
 const canScrollRight = ref(false);
+
+const navButtonClass =
+  'inline-flex size-7 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-white/15 text-white shadow-sm transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/15';
 
 function updateScrollerState() {
   const scroller = scrollerRef.value;
   if (!scroller) {
+    canScrollProducts.value = false;
     canScrollLeft.value = false;
     canScrollRight.value = false;
     return;
   }
 
-  const maxLeft = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
-  canScrollLeft.value = scroller.scrollLeft > 1;
-  canScrollRight.value = scroller.scrollLeft < maxLeft - 1;
+  const { scrollLeft, scrollWidth, clientWidth } = scroller;
+  const maxScrollLeft = Math.max(0, scrollWidth - clientWidth);
+
+  canScrollProducts.value = scrollWidth > clientWidth + 2;
+  canScrollLeft.value = scrollLeft > 1;
+  canScrollRight.value = scrollLeft < maxScrollLeft - 1;
 }
 
 function scrollByDirection(direction: -1 | 1) {
+  if (direction === -1 && !canScrollLeft.value) {
+    return;
+  }
+
+  if (direction === 1 && !canScrollRight.value) {
+    return;
+  }
+
   const scroller = scrollerRef.value;
-  if (!scroller) return;
+  if (!scroller) {
+    return;
+  }
 
   const amount = Math.max(180, Math.floor(scroller.clientWidth * 0.75));
   scroller.scrollTo({
@@ -52,20 +70,76 @@ function scrollByDirection(direction: -1 | 1) {
   });
 }
 
-onMounted(() => {
+function scheduleScrollerStateUpdate() {
   nextTick(() => {
     updateScrollerState();
-    const scroller = scrollerRef.value;
-    if (!scroller) return;
-
-    scroller.addEventListener('scroll', updateScrollerState, { passive: true });
-    window.addEventListener('resize', updateScrollerState, { passive: true });
+    requestAnimationFrame(updateScrollerState);
   });
+}
+
+let resizeObserver: ResizeObserver | null = null;
+let scrollEndTimer: ReturnType<typeof setTimeout> | undefined;
+
+function onScrollerScroll() {
+  updateScrollerState();
+  if (scrollEndTimer) {
+    clearTimeout(scrollEndTimer);
+  }
+  scrollEndTimer = setTimeout(updateScrollerState, 120);
+}
+
+function attachScrollerListeners(scroller: HTMLElement) {
+  scroller.addEventListener('scroll', onScrollerScroll, { passive: true });
+  scroller.addEventListener('scrollend', onScrollerScroll, { passive: true });
+}
+
+function detachScrollerListeners(scroller: HTMLElement | null) {
+  if (!scroller) {
+    return;
+  }
+
+  scroller.removeEventListener('scroll', onScrollerScroll);
+  scroller.removeEventListener('scrollend', onScrollerScroll);
+}
+
+watch(scrollerRef, (scroller, previousScroller) => {
+  detachScrollerListeners(previousScroller);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+
+  if (!scroller) {
+    canScrollProducts.value = false;
+    canScrollLeft.value = false;
+    canScrollRight.value = false;
+    return;
+  }
+
+  attachScrollerListeners(scroller);
+  resizeObserver = new ResizeObserver(() => {
+    updateScrollerState();
+  });
+  resizeObserver.observe(scroller);
+  scheduleScrollerStateUpdate();
+});
+
+onMounted(() => {
+  scheduleScrollerStateUpdate();
+  window.addEventListener('resize', updateScrollerState, { passive: true });
+});
+
+onUnmounted(() => {
+  detachScrollerListeners(scrollerRef.value);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (scrollEndTimer) {
+    clearTimeout(scrollEndTimer);
+  }
+  window.removeEventListener('resize', updateScrollerState);
 });
 
 watch(
-  () => visibleProducts.value.length,
-  () => nextTick(updateScrollerState),
+  () => [visibleProducts.value.length, props.loading] as const,
+  () => scheduleScrollerStateUpdate(),
 );
 </script>
 
@@ -86,10 +160,10 @@ watch(
         />
       </div>
 
-      <div class="flex shrink-0 items-center gap-1.5">
+      <div v-if="canScrollProducts" class="flex shrink-0 items-center gap-1.5">
         <button
           type="button"
-          class="inline-flex size-7 items-center justify-center rounded-full border border-white/30 text-white transition disabled:cursor-not-allowed disabled:opacity-45"
+          :class="navButtonClass"
           :disabled="!canScrollLeft"
           aria-label="Scroll promotions left"
           @click="scrollByDirection(-1)"
@@ -98,7 +172,7 @@ watch(
         </button>
         <button
           type="button"
-          class="inline-flex size-7 items-center justify-center rounded-full border border-white/30 text-white transition disabled:cursor-not-allowed disabled:opacity-45"
+          :class="navButtonClass"
           :disabled="!canScrollRight"
           aria-label="Scroll promotions right"
           @click="scrollByDirection(1)"

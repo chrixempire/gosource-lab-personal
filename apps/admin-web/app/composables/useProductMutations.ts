@@ -3,6 +3,7 @@ import {
   buildProductItemFormData,
   type ProductItemFormValues,
 } from '~/lib/product-form';
+import { adminApiFetch } from '~/composables/useAdminApiFetch';
 
 export function useProductMutations() {
   const updatingProductId = ref<string | null>(null);
@@ -10,7 +11,7 @@ export function useProductMutations() {
   async function activateProduct(productId: string) {
     updatingProductId.value = productId;
     try {
-      await $fetch(`/api/products/${productId}/activate`, { method: 'PATCH' });
+      await adminApiFetch(`/api/products/${productId}/activate`, { method: 'PATCH' });
       toast.success('Product activated');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to activate product';
@@ -24,7 +25,7 @@ export function useProductMutations() {
   async function deactivateProduct(productId: string) {
     updatingProductId.value = productId;
     try {
-      await $fetch(`/api/products/${productId}/deactivate`, { method: 'PATCH' });
+      await adminApiFetch(`/api/products/${productId}/deactivate`, { method: 'PATCH' });
       toast.success('Product deactivated');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to deactivate product';
@@ -38,7 +39,7 @@ export function useProductMutations() {
   async function markProductInStock(productId: string) {
     updatingProductId.value = productId;
     try {
-      await $fetch(`/api/products/${productId}/in-stock`, { method: 'PATCH' });
+      await adminApiFetch(`/api/products/${productId}/in-stock`, { method: 'PATCH' });
       toast.success('Product marked in stock');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to mark product in stock';
@@ -52,7 +53,7 @@ export function useProductMutations() {
   async function createProduct(form: ProductItemFormValues) {
     updatingProductId.value = 'create';
     try {
-      const response = await $fetch<unknown>('/api/products', {
+      const response = await adminApiFetch<unknown>('/api/products', {
         method: 'POST',
         body: buildProductItemFormData(form),
       });
@@ -70,7 +71,7 @@ export function useProductMutations() {
   async function updateProduct(productId: string, form: ProductItemFormValues) {
     updatingProductId.value = productId;
     try {
-      await $fetch(`/api/products/${productId}`, {
+      await adminApiFetch(`/api/products/${productId}`, {
         method: 'PATCH',
         body: buildProductItemFormData(form, { isEdit: true }),
       });
@@ -87,7 +88,7 @@ export function useProductMutations() {
   async function markProductOutOfStock(productId: string) {
     updatingProductId.value = productId;
     try {
-      await $fetch(`/api/products/${productId}/out-stock`, { method: 'PATCH' });
+      await adminApiFetch(`/api/products/${productId}/out-stock`, { method: 'PATCH' });
       toast.success('Product marked out of stock');
     } catch (error) {
       const message =
@@ -105,7 +106,7 @@ export function useProductMutations() {
   ) {
     updatingProductId.value = productId;
     try {
-      await $fetch(`/api/products/${productId}/add-stock`, {
+      await adminApiFetch(`/api/products/${productId}/add-stock`, {
         method: 'PATCH',
         body,
       });
@@ -125,7 +126,7 @@ export function useProductMutations() {
   ) {
     updatingProductId.value = productId;
     try {
-      await $fetch(`/api/products/${productId}/deduct-stock`, {
+      await adminApiFetch(`/api/products/${productId}/deduct-stock`, {
         method: 'PATCH',
         body,
       });
