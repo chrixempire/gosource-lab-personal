@@ -191,13 +191,31 @@ function coerceImageUrlCandidate(value: unknown): string | undefined {
   return undefined;
 }
 
+function withImageCacheBust(url: string, image: unknown) {
+  if (!isRecord(image)) {
+    return url;
+  }
+
+  const version =
+    toStringValue(image.id) ||
+    toStringValue(image.updatedAt) ||
+    toStringValue(image.createdAt);
+
+  if (!version) {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(version)}`;
+}
+
 function firstImageUrl(value: unknown) {
   const images = Array.isArray(value) ? value : value != null ? [value] : [];
 
   for (const image of images) {
     const url = coerceImageUrlCandidate(image);
     if (url) {
-      return url;
+      return withImageCacheBust(url, image);
     }
   }
 

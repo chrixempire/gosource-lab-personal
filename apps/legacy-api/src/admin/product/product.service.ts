@@ -723,6 +723,9 @@ export class ProductService {
 
     // Return success response with updated product
     if (updatedProduct) {
+      await this.cacheManager.del('all_products_sorted');
+      await this.cacheManager.del('categories_with_products');
+
       const unitPrice = createMoney(+productData.unitPrice, 'naira').format();
 
       const description = `Add batch product - Name: ${updatedProduct.name}, Quantity: ${productData.quantity}, Unit Price: ${unitPrice}. Remaining ${updatedProduct.quantity} quantity.`;

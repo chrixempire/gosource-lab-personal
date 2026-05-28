@@ -201,6 +201,9 @@ export class CategoryService {
     );
 
     if (updateCategory) {
+      await this.cacheManager.del('only_categories');
+      await this.cacheManager.del('categories_with_products');
+
       return this.buildResponse(updateCategory);
     }
   }

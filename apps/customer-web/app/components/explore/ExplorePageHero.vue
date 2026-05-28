@@ -8,6 +8,7 @@ import { useExploreLastOrder } from '~/composables/useExploreLastOrder';
 defineProps<{
   greetingName: string;
   outletLabel: string;
+  sessionLoading?: boolean;
 }>();
 
 const { ordersLabel, walkInSavingsNaira, loading: heroStatsLoading } = useExploreHeroStats();
@@ -24,13 +25,23 @@ const savingsLabel = computed(() => formatNaira(walkInSavingsNaira.value));
   <header class="mb-5 pt-5 sm:pt-6">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div class="min-w-0">
-        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-grey-900 sm:text-[1.75rem]">
-          Good morning,
-          <span class="text-primary-600">{{ greetingName }}.</span>
-        </h1>
-        <p class="mt-2 text-sm font-medium text-grey-900">
-          {{ outletLabel }}
-        </p>
+        <div
+          v-if="sessionLoading"
+          class="space-y-2"
+          aria-busy="true"
+        >
+          <div class="h-8 w-56 max-w-full animate-pulse rounded-lg bg-grey-55" />
+          <div class="h-4 w-32 max-w-full animate-pulse rounded-md bg-grey-55" />
+        </div>
+        <template v-else>
+          <h1 class="text-2xl font-semibold leading-tight tracking-tight text-grey-900 sm:text-[1.75rem]">
+            Good morning,
+            <span class="text-primary-600">{{ greetingName }}.</span>
+          </h1>
+          <p class="mt-2 text-sm font-medium text-grey-900">
+            {{ outletLabel }}
+          </p>
+        </template>
       </div>
 
       <div class="shrink-0 text-left lg:text-right">

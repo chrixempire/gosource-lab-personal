@@ -8,6 +8,7 @@ import ExploreRecentOrdersSection from '~/components/explore/ExploreRecentOrders
 import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
+import { useCustomerSession } from '~/composables/useCustomerSession';
 import { useExploreScrollSpy } from '~/composables/useExploreScrollSpy';
 import { useMarketCatalog } from '~/composables/useMarketCatalog';
 import {
@@ -26,10 +27,9 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
-const session = useState<{
-  data?: { firstName?: string | null };
-} | null>('customer-session', () => null);
-const { branches, activeBranchId, hasSession } = useBusinessBranchContext();
+const { session, sessionResolved, hasSession, whenReady } = useCustomerSession();
+const { branches, activeBranchId, hasSession: hasBranchSession, ensureBranchesLoaded, isReady: branchContextReady } =
+  useBusinessBranchContext();
 
 const { categories, catalogList, hydrateFromStorage, setCategories } =
   useMarketCatalog();
@@ -77,7 +77,7 @@ const { data: catalogPayload, pending: catalogPending } =
   await useAuthenticatedAsyncData(
     'market-catalog',
     async () => {
-      const response = await listCategories({ force: false, quiet: true });
+      const response = await listCategories({ force: true, quiet: true });
       return response.data ?? [];
     },
     {
@@ -115,9 +115,33 @@ const showPromotions = computed(
   () => promotionsPending.value || promotions.value.length > 0,
 );
 
+const heroSessionReady = computed(
+  () => sessionResolved.value && branchContextReady.value,
+);
+
+/** Personalized hero (greeting, order again, insight) is for signed-in customers only. */
+const showPersonalizedExploreHero = computed(
+  () => sessionResolved.value && hasSession.value,
+);
+
 const greetingName = computed(() => {
-  const first = session.value?.data?.firstName;
-  return typeof first === 'string' && first.trim() ? first.trim() : 'there';
+  if (!showPersonalizedExploreHero.value || !heroSessionReady.value) {
+    return '';
+  }
+
+  const profile = session.value?.data;
+  const first =
+    typeof profile?.firstName === 'string' ? profile.firstName.trim() : '';
+  if (first) {
+    return first;
+  }
+
+  const last = typeof profile?.lastName === 'string' ? profile.lastName.trim() : '';
+  if (last) {
+    return last;
+  }
+
+  return 'there';
 });
 
 function formatExploreBranchLabel(branchName: string) {
@@ -207,7 +231,7 @@ function onApplyPrice(payload: {
 }
 
 async function loadRecentOrderProducts(branchId: string | null | undefined) {
-  if (!import.meta.client || !hasSession.value || !branchId) {
+  if (!import.meta.client || !hasBranchSession.value || !branchId) {
     recentOrderProducts.value = [];
     recentOrdersPending.value = false;
     return;
@@ -226,7 +250,7 @@ async function loadRecentOrderProducts(branchId: string | null | undefined) {
 }
 
 async function loadPromotions() {
-  if (!import.meta.client || !hasSession.value) {
+  if (!import.meta.client || !hasBranchSession.value) {
     promotions.value = [];
     promotionsPending.value = false;
     return;
@@ -270,7 +294,21 @@ watch(
   { immediate: true },
 );
 
-onMounted(() => {
+onMounted(async () => {
+  await whenReady();
+  await ensureBranchesLoaded();
+
+  if (import.meta.client) {
+    try {
+      const response = await listCategories({ force: true, quiet: true });
+      if (response.data?.length) {
+        setCategories(response.data);
+      }
+    } catch {
+      // keep hydrated catalog when refresh fails
+    }
+  }
+
   nextTick(() => {
     attachScrollListener();
     maybeScrollToRouteCategory();
@@ -279,7 +317,7 @@ onMounted(() => {
 
 if (import.meta.client) {
   watch(
-    [hasSession, activeBranchId],
+    [hasBranchSession, activeBranchId],
     ([sessionOk, branchId]) => {
       if (!sessionOk || !branchId) {
         recentOrderProducts.value = [];
@@ -310,8 +348,10 @@ onUnmounted(() => {
 <template>
   <div data-testid="market-page" class="pb-28 sm:pb-32">
     <ExplorePageHero
+      v-if="showPersonalizedExploreHero"
       :greeting-name="greetingName"
       :outlet-label="outletLabel"
+      :session-loading="!heroSessionReady"
     />
 
     <ExploreCategoryFilterBar

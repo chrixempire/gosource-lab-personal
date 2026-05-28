@@ -41,25 +41,45 @@ const endIndex = computed(() => Math.min(props.page * props.pageSize, props.tota
 const previousDisabled = computed(() => props.hasPrevPage === false || props.page <= 1);
 const nextDisabled = computed(() => props.hasNextPage === false || props.page >= props.totalPages);
 
-const MAX_VISIBLE_PAGES = 4;
+const SIBLING_COUNT = 1;
+
+function range(start: number, end: number) {
+  const pages: number[] = [];
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page);
+  }
+  return pages;
+}
 
 const pages = computed<(number | 'ellipsis')[]>(() => {
   const total = props.totalPages;
   const current = props.page;
+  const totalPageNumbers = SIBLING_COUNT * 2 + 5;
 
-  if (total <= MAX_VISIBLE_PAGES) {
-    return Array.from({ length: total }, (_, index) => index + 1);
+  if (total <= totalPageNumbers) {
+    return range(1, total);
   }
 
-  if (current <= 2) {
-    return [1, 2, 3, 'ellipsis', total];
+  const leftSibling = Math.max(current - SIBLING_COUNT, 1);
+  const rightSibling = Math.min(current + SIBLING_COUNT, total);
+  const showLeftEllipsis = leftSibling > 2;
+  const showRightEllipsis = rightSibling < total - 1;
+
+  if (!showLeftEllipsis && showRightEllipsis) {
+    const leftItemCount = 3 + SIBLING_COUNT * 2;
+    return [...range(1, leftItemCount), 'ellipsis', total];
   }
 
-  if (current >= total - 1) {
-    return [1, 'ellipsis', total - 2, total - 1, total];
+  if (showLeftEllipsis && !showRightEllipsis) {
+    const rightItemCount = 3 + SIBLING_COUNT * 2;
+    return [1, 'ellipsis', ...range(total - rightItemCount + 1, total)];
   }
 
-  return [1, 'ellipsis', current - 1, current, 'ellipsis', total];
+  if (showLeftEllipsis && showRightEllipsis) {
+    return [1, 'ellipsis', ...range(leftSibling, rightSibling), 'ellipsis', total];
+  }
+
+  return range(1, total);
 });
 
 const isCompact = computed(() => props.hidePageSize === true);
