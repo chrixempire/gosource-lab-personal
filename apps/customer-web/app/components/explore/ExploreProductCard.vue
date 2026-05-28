@@ -82,6 +82,9 @@ const unitLine = computed(() => exploreProductUnitLine(props.product));
 const brandLine = computed(
   () => props.product.brandLabel?.trim() || metaLine.value,
 );
+const descriptionLine = computed(
+  () => props.product.description?.trim() || brandLine.value,
+);
 
 function onCardClick() {
   openAddModal(props.product);
@@ -108,10 +111,10 @@ async function onAdd(e: MouseEvent) {
   <article
     data-testid="explore-product-card"
     :class="[
-      'flex h-full min-w-0 flex-col overflow-hidden rounded-[8px] border bg-white transition-[border-color,box-shadow]',
+      'flex h-full min-w-0 flex-col overflow-hidden rounded-[8px] border bg-white transition-[transform,border-color] duration-300 ease-out hover:-translate-y-1',
       inCartHighlight
-        ? 'border-2 border-primary-500 bg-primary-50/40 shadow-[0_10px_24px_-14px_rgba(4,85,11,0.42)]'
-        : 'border border-grey-50 shadow-[0_10px_26px_-20px_rgba(16,24,40,0.18)]',
+        ? 'border-2 border-primary-500 bg-primary-50/40'
+        : 'border border-grey-50',
     ]"
   >
     <div
@@ -141,7 +144,7 @@ async function onAdd(e: MouseEvent) {
       </div>
 
       <div class="flex flex-1 flex-col gap-1.5 px-3 pb-2.5 pt-2.5">
-        <div class="flex min-h-[3.45rem] flex-col gap-1">
+        <div class="flex min-h-[5rem] flex-col gap-1">
           <h3
             class="line-clamp-2 min-h-[2.2rem] text-[14px] font-medium leading-snug text-grey-900"
           >
@@ -149,10 +152,10 @@ async function onAdd(e: MouseEvent) {
           </h3>
 
           <div
-            v-if="brandLine"
-            class="line-clamp-1 min-h-[1rem] text-[11px] leading-none text-grey-300"
+            v-if="descriptionLine"
+            class="min-h-[1rem] max-h-10 overflow-hidden text-[11px] leading-4 text-grey-300"
           >
-            {{ brandLine }}
+            {{ descriptionLine }}
           </div>
         </div>
 

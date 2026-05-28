@@ -52,7 +52,9 @@ function onReview() {
 </script>
 
 <template>
-  <article class="flex h-full flex-col rounded-[24px] bg-primary-500 p-5 text-white shadow-[0_20px_48px_-24px_rgba(4,85,11,0.55)]">
+  <article
+    class="flex h-full flex-col rounded-[24px] bg-primary-500 p-5 text-white transition-transform duration-300 ease-out hover:-translate-y-1"
+  >
     <div class="flex items-center justify-between gap-3 text-[11px] font-medium uppercase tracking-[0.12em] text-white/75">
       <span class="inline-flex items-center gap-1.5">
         <span class="size-1.5 rounded-full bg-white" aria-hidden="true" />

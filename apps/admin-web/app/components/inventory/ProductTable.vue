@@ -124,6 +124,20 @@ function toggleRow(productId: string, checked: boolean | 'indeterminate') {
 
     <TableBody v-else class="!max-h-none !overflow-visible">
       <TableRow
+        v-if="products.length === 0"
+        :style="{ gridTemplateColumns: PRODUCT_TABLE_GRID_TEMPLATE }"
+      >
+        <TableCell class="col-[1/-1] py-12">
+          <div class="mx-auto flex max-w-md flex-col items-center gap-2 text-center">
+            <p class="text-base font-semibold text-grey-900">No items found</p>
+            <p class="text-sm text-grey-400">
+              Try adjusting your search or filters, or add a new item.
+            </p>
+          </div>
+        </TableCell>
+      </TableRow>
+
+      <TableRow
         v-for="product in products"
         :key="product.id"
         class="cursor-pointer transition-colors hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
