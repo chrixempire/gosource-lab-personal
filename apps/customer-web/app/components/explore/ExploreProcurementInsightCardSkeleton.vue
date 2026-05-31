@@ -4,7 +4,7 @@ import ExploreSkeletonBar from '~/components/explore/ExploreSkeletonBar.vue';
 
 <template>
   <article
-    class="h-full rounded-[24px] border border-grey-50 bg-white p-5 shadow-sm"
+    class="h-full rounded-[24px] border border-grey-50 bg-background-on-canvas p-5 shadow-sm transition-colors duration-300"
     aria-busy="true"
     aria-label="Loading procurement insight"
   >

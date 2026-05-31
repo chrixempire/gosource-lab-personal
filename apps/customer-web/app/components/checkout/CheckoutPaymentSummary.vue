@@ -19,7 +19,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
     <div class="mb-5">
       <h2 class="text-lg font-semibold text-grey-900">Pricing summary</h2>
       <p class="mt-1 text-sm text-grey-text">
@@ -29,19 +29,19 @@ const emit = defineEmits<{
 
     <div class="space-y-3 text-sm">
       <div class="flex items-center justify-between gap-3">
-        <span class="text-grey-text">Subtotal</span>
+        <span class="text-grey-900">Subtotal</span>
         <span class="font-medium text-grey-900">{{ formatCurrency(subtotal) }}</span>
       </div>
       <div class="flex items-center justify-between gap-3">
-        <span class="text-grey-text">Delivery fee</span>
+        <span class="text-grey-900">Delivery fee</span>
         <span class="font-medium text-grey-900">{{ formatCurrency(deliveryFee) }}</span>
       </div>
       <div class="flex items-center justify-between gap-3">
-        <span class="text-grey-text">Service charge</span>
+        <span class="text-grey-900">Service charge</span>
         <span class="font-medium text-grey-900">{{ formatCurrency(serviceCharge) }}</span>
       </div>
       <div v-if="discount > 0" class="flex items-center justify-between gap-3">
-        <span class="text-grey-text">Discount</span>
+        <span class="text-grey-900">Discount</span>
         <span class="font-medium text-success-700">-{{ formatCurrency(discount) }}</span>
       </div>
 

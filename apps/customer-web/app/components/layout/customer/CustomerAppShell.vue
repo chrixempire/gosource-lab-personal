@@ -201,7 +201,7 @@ async function confirmLogout() {
   <SidebarProvider v-model:open="desktopSidebarOpen">
     <div>
       <div
-        class="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,#f7fbf7_0%,#ffffff_100%)] text-grey-900 lg:h-screen lg:max-h-screen"
+        class="customer-shell-bg flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden text-grey-900 transition-[background,color] duration-300 lg:h-screen lg:max-h-screen"
       >
         <header
           class="flex h-16 max-lg:h-16 shrink-0 items-stretch border-b border-grey-50 bg-background-on-canvas lg:h-[72px]"
@@ -209,7 +209,7 @@ async function confirmLogout() {
           <div class="flex w-[52px] shrink-0 items-center justify-center border-r border-grey-50 lg:hidden">
             <button
               type="button"
-              class="inline-flex size-10 items-center justify-center rounded-xl border border-grey-50 bg-white text-grey-900"
+              class="inline-flex size-10 items-center justify-center rounded-xl border border-grey-50 bg-background-on-canvas text-grey-900 transition-colors duration-300"
               @click="mobileNavOpen = true"
             >
               <span class="sr-only">Open navigation</span>
@@ -226,7 +226,7 @@ async function confirmLogout() {
           <SidebarRail class="hidden bg-grey-50 lg:block" />
 
           <div class="hidden w-[72px] shrink-0 items-center justify-center lg:flex">
-            <SidebarTrigger class="text-grey-900 hover:bg-grey-55" />
+            <SidebarTrigger class="text-grey-900 transition-colors duration-300 hover:bg-grey-55" />
           </div>
 
           <div class="hidden items-center py-4 lg:flex">
@@ -283,7 +283,7 @@ async function confirmLogout() {
             <main
               id="customer-shell-scroll"
               :class="[
-                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain px-4 [overflow-scrolling:touch] sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
+                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain bg-background-canvas px-4 [overflow-scrolling:touch] transition-colors duration-300 sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
                 mainPaddingClass,
               ]"
             >
@@ -306,7 +306,7 @@ async function confirmLogout() {
           >
             <div
               v-if="mobileNavOpen"
-              class="fixed inset-0 z-50 bg-[rgba(16,24,40,0.3)] backdrop-blur-[2px] lg:hidden"
+              class="customer-shell-overlay fixed inset-0 z-50 backdrop-blur-[2px] lg:hidden"
               @click="mobileNavOpen = false"
             />
           </Transition>

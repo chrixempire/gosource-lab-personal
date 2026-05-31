@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
     <div class="mb-5">
       <h2 class="text-lg font-semibold text-grey-900">Delivery details</h2>
       <p class="mt-1 text-sm text-grey-text">

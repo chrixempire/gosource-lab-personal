@@ -21,7 +21,7 @@ withDefaults(
     aria-label="Loading wallet"
   >
     <section
-      class="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-primary-100 bg-primary-50 p-4"
+      class="customer-brand-panel flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-4"
     >
       <div class="min-w-0 flex-1 space-y-3">
         <WalletSkeletonBar class="h-4 w-28" />

@@ -86,7 +86,7 @@ const isCompact = computed(() => props.hidePageSize === true);
 
 const rootClass = computed(() =>
   cn(
-    'flex w-full max-w-full min-w-0 flex-col gap-2 bg-white/65 px-3 py-3 backdrop-blur-xl sm:min-h-[4.25rem] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-3 sm:px-4 sm:py-3.5',
+    'flex w-full max-w-full min-w-0 flex-col gap-2 bg-background-on-canvas/65 px-3 py-3 backdrop-blur-xl sm:min-h-[4.25rem] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-3 sm:px-4 sm:py-3.5',
     isCompact.value && 'sm:gap-x-2',
     props.plain &&
       '!rounded-none !bg-transparent !backdrop-blur-none px-2 py-2.5 sm:px-3 sm:py-3',
@@ -98,7 +98,7 @@ const rootClass = computed(() =>
 
 const navButtonClass = computed(() =>
   cn(
-    'inline-flex shrink-0 items-center justify-center rounded-md border border-grey-50 bg-white text-grey-300 transition-colors',
+    'inline-flex shrink-0 items-center justify-center rounded-md border border-grey-50 bg-background-on-canvas text-grey-300 transition-colors',
     isCompact.value ? 'size-7' : 'size-8',
   ),
 );
@@ -139,8 +139,8 @@ function pageButtonClass(pageNumber: number) {
     'inline-flex shrink-0 items-center justify-center rounded-md border font-medium transition-colors',
     isCompact.value ? 'size-7 min-w-7 px-0 text-xs' : 'size-8 min-w-8 px-0 text-sm',
     pageNumber === props.page
-      ? 'cursor-default border-orange-50 bg-orange-50 text-orange-500'
-      : 'cursor-pointer border-transparent bg-transparent text-grey-300 hover:border-orange-500 hover:text-orange-500',
+      ? 'cursor-default border-primary-500/25 bg-primary-500/12 text-primary-500'
+      : 'cursor-pointer border-transparent bg-transparent text-grey-300 hover:border-primary-500/40 hover:bg-primary-500/8 hover:text-primary-500',
   );
 }
 </script>
@@ -172,8 +172,8 @@ function pageButtonClass(pageNumber: number) {
             :key="option"
             :class="
               cn(
-                'justify-center border border-transparent text-sm font-medium transition-colors data-[highlighted]:border-transparent data-[highlighted]:bg-orange-50 data-[highlighted]:text-orange-500',
-                option === pageSize && 'border-transparent bg-orange-50 text-orange-500',
+                'justify-center border border-transparent text-sm font-medium transition-colors data-[highlighted]:border-transparent data-[highlighted]:bg-primary-500/12 data-[highlighted]:text-primary-500',
+                option === pageSize && 'border-transparent bg-primary-500/12 text-primary-500',
               )
             "
             @select="!disabled && emit('pageSizeChange', option)"
@@ -194,7 +194,7 @@ function pageButtonClass(pageNumber: number) {
               navButtonClass,
               previousDisabled
                 ? 'cursor-not-allowed opacity-45'
-                : 'cursor-pointer hover:border-orange-500 hover:text-orange-500',
+                : 'cursor-pointer hover:border-primary-500/40 hover:bg-primary-500/8 hover:text-primary-500',
             )
           "
           @click="goTo(page - 1)"
@@ -222,7 +222,7 @@ function pageButtonClass(pageNumber: number) {
               navButtonClass,
               nextDisabled
                 ? 'cursor-not-allowed opacity-45'
-                : 'cursor-pointer hover:border-orange-500 hover:text-orange-500',
+                : 'cursor-pointer hover:border-primary-500/40 hover:bg-primary-500/8 hover:text-primary-500',
             )
           "
           @click="goTo(page + 1)"

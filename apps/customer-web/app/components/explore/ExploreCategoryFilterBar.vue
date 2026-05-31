@@ -37,7 +37,7 @@ const priceActive = computed(
 );
 
 const activePillClass =
-  "bg-primary-500 text-white shadow-[0_4px_14px_-6px_rgba(4,85,11,0.45)]";
+  "bg-primary-500 text-white shadow-[0_4px_14px_-6px_rgba(4,85,11,0.45)] dark:bg-primary-500/22 dark:text-[#86efac] dark:shadow-none dark:ring-1 dark:ring-primary-500/35";
 const inactiveChipClass = "text-grey-800 hover:bg-grey-55";
 
 function syncPriceDraft() {
@@ -245,7 +245,7 @@ watch(
       <button
         v-if="canScrollCategories"
         type="button"
-        class="flex size-9 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
+        class="customer-control-btn flex size-9 shrink-0 items-center justify-center shadow-sm"
         :disabled="!canScrollLeft"
         aria-label="Scroll categories left"
         @click="scrollByDirection(-1)"
@@ -301,8 +301,8 @@ watch(
             class="shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-sm font-medium transition"
             :class="
               inStockOnly
-                ? 'border-primary-500 bg-primary-500 text-white shadow-[0_4px_14px_-6px_rgba(4,85,11,0.45)]'
-                : 'border-grey-50 bg-white text-grey-800 hover:border-primary-300 hover:bg-grey-55'
+                ? activePillClass + ' border-primary-500'
+                : 'border-grey-50 bg-background-on-canvas text-grey-800 hover:border-primary-300 hover:bg-grey-55'
             "
             :aria-pressed="inStockOnly"
             @click="toggleInStock"
@@ -319,7 +319,7 @@ watch(
             @update:open="(value) => value && openPrice()"
           >
             <div class="grid gap-3">
-              <label class="grid gap-1.5 text-sm text-grey-700">
+              <label class="grid gap-1.5 text-sm text-grey-text">
                 <span class="font-medium">Minimum</span>
                 <Input
                   :model-value="draftPriceMin"
@@ -328,7 +328,7 @@ watch(
                   @update:model-value="onDraftPriceMinInput"
                 />
               </label>
-              <label class="grid gap-1.5 text-sm text-grey-700">
+              <label class="grid gap-1.5 text-sm text-grey-text">
                 <span class="font-medium">Maximum</span>
                 <Input
                   :model-value="draftPriceMax"
@@ -345,7 +345,7 @@ watch(
       <button
         v-if="canScrollCategories"
         type="button"
-        class="flex size-9 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
+        class="customer-control-btn flex size-9 shrink-0 items-center justify-center shadow-sm"
         :disabled="!canScrollRight"
         aria-label="Scroll categories right"
         @click="scrollByDirection(1)"

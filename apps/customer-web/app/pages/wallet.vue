@@ -485,10 +485,10 @@ onBeforeUnmount(() => {
 
   <div v-else data-testid="wallet-page" class="flex w-full flex-col gap-6">
     <section
-      class="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-primary-100 bg-primary-50 p-4"
+      class="customer-brand-panel flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-4"
     >
       <div>
-        <p class="text-sm text-grey-300">Available balance</p>
+        <p class="text-sm text-grey-text">Available balance</p>
         <p class="text-3xl font-semibold text-grey-900">
           {{ formatRequestCurrency(wallet.balance) }}
         </p>
@@ -570,8 +570,8 @@ onBeforeUnmount(() => {
             :class="[
               'cursor-pointer rounded-full border px-3 py-2 text-sm font-medium transition',
               transactionTab === option.value
-                ? 'border-primary-500 bg-primary-500 text-white'
-                : 'border-border-input-default bg-white text-grey-text hover:border-primary-300',
+                ? 'border-primary-500 bg-primary-500 text-white dark:shadow-none'
+                : 'border-border-input-default bg-background-on-canvas text-grey-text hover:border-primary-300',
             ]"
             @click="setTransactionTypeFilter(option.value)"
           >

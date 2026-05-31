@@ -322,7 +322,7 @@ watch(transferDialogOpen, (isOpen) => {
               :class="
                 selectedMethod === 'paystack'
                   ? 'border-primary-500 bg-primary-50'
-                  : 'border-grey-50 bg-white hover:border-primary-200 hover:bg-primary-50/40'
+                  : 'border-grey-50 bg-background-on-canvas hover:border-primary-200 hover:bg-primary-50/40'
               "
             >
               <div
@@ -349,7 +349,7 @@ watch(transferDialogOpen, (isOpen) => {
               :class="[
                 selectedMethod === 'transfer'
                   ? 'border-primary-500 bg-primary-50'
-                  : 'border-grey-50 bg-white hover:border-primary-200 hover:bg-primary-50/40',
+                  : 'border-grey-50 bg-background-on-canvas hover:border-primary-200 hover:bg-primary-50/40',
                 transferAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
               ]"
             >

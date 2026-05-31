@@ -152,7 +152,7 @@ async function onAddToCart() {
             <li
               v-for="line in visibleLines"
               :key="line.key"
-              class="flex gap-3 rounded-[16px] border border-grey-50 bg-white p-3 shadow-sm"
+              class="flex gap-3 rounded-[16px] border border-grey-50 bg-background-on-canvas p-3 shadow-sm transition-colors duration-300"
             >
               <div
                 class="relative aspect-square w-[4.5rem] shrink-0 overflow-hidden rounded-[14px] bg-grey-55"

@@ -55,7 +55,7 @@ function isDisabled(method: (typeof methods)[number]) {
 </script>
 
 <template>
-  <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
     <div class="mb-5">
       <h2 class="text-lg font-semibold text-grey-900">Payment method</h2>
       <p class="mt-1 text-sm text-grey-text">
@@ -76,7 +76,7 @@ function isDisabled(method: (typeof methods)[number]) {
         :class="[
           modelValue === method.value
             ? 'border-primary-500 bg-primary-50'
-            : 'border-grey-50 bg-white hover:border-primary-200 hover:bg-primary-50/40',
+            : 'border-grey-50 bg-background-on-canvas hover:border-primary-200 hover:bg-primary-50/40',
           isDisabled(method) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
         ]"
       >

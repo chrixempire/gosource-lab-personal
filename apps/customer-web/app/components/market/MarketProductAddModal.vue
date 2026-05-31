@@ -179,7 +179,7 @@ const detailText = computed(() => props.product?.longDescription ?? props.produc
               </NuxtLink>
             </div>
 
-            <div class="flex w-full min-w-0 flex-col gap-3">
+            <div class="flex w-full min-w-0 flex-col">
               <section class="w-full min-w-0 space-y-1.5">
                 <h3 class="text-[12px] font-semibold uppercase tracking-[0.14em] text-grey-300">
                   Select preferred unit
@@ -191,8 +191,8 @@ const detailText = computed(() => props.product?.longDescription ?? props.produc
                     :class="[
                       'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-2.5 transition-colors',
                       selectedUnit === opt!.name
-                        ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70'
-                        : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40',
+                        ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70 dark:border-primary-500/45 dark:bg-primary-500/12 dark:hover:bg-primary-500/12'
+                        : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/8',
                     ]"
                   >
                     <RadioGroupItem :value="opt!.name" />
@@ -217,25 +217,26 @@ const detailText = computed(() => props.product?.longDescription ?? props.produc
                 </RadioGroup>
               </section>
 
-              <MarketProductLineTotal
-                v-if="inStock"
-                :product="product"
-                :unit="selectedUnit"
-                :quantity="pickQty"
-              />
-
-              <div v-if="inStock" class="hidden w-full min-w-0 lg:block">
-                <MarketProductDetailCartActions
-                  v-model:quantity="pickQty"
+              <div v-if="inStock" class="mt-2 flex flex-col gap-3">
+                <MarketProductLineTotal
                   :product="product"
                   :unit="selectedUnit"
-                  :in-stock="inStock"
-                  close-on-success
-                  @close="close"
+                  :quantity="pickQty"
                 />
+
+                <div class="hidden w-full min-w-0 lg:block">
+                  <MarketProductDetailCartActions
+                    v-model:quantity="pickQty"
+                    :product="product"
+                    :unit="selectedUnit"
+                    :in-stock="inStock"
+                    close-on-success
+                    @close="close"
+                  />
+                </div>
               </div>
 
-              <div v-else class="hidden w-full min-w-0 lg:block">
+              <div v-else class="mt-2 hidden w-full min-w-0 lg:block">
                 <Button
                   size="large"
                   variant="destructive"

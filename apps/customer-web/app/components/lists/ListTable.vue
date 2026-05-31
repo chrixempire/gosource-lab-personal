@@ -13,6 +13,7 @@ import ListActionsMenu from '~/components/lists/ListActionsMenu.vue';
 import ListCoverImage from '~/components/lists/ListCoverImage.vue';
 import {
   CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_DATA_ROW_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
 } from '~/lib/customer-table-layout';
@@ -150,7 +151,7 @@ function toggleRowSelection(listId: string) {
       <TableRow
         v-for="list in lists"
         :key="list.id"
-        class="cursor-pointer transition-colors duration-150 hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
+        :class="CUSTOMER_TABLE_DATA_ROW_CLASS"
         :style="{ gridTemplateColumns: tableGridTemplate }"
         @click="emit('rowClick', list)"
       >

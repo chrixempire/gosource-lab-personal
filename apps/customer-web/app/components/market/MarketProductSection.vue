@@ -85,7 +85,7 @@ watch(
     <div class="mb-4 flex flex-col gap-3 min-[720px]:flex-row min-[720px]:items-end min-[720px]:justify-between">
       <div class="flex min-w-0 items-start gap-3">
         <div
-          class="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-grey-50 bg-white shadow-sm"
+          class="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-grey-50 bg-background-on-canvas shadow-sm transition-colors duration-300"
           aria-hidden="true"
         >
           <MarketProductImage
@@ -137,7 +137,7 @@ watch(
         <div v-if="canScrollProducts" class="flex gap-1">
           <button
             type="button"
-            class="flex size-9 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
+            class="customer-control-btn flex size-9 shadow-sm"
             :disabled="!canScrollLeft"
             aria-label="Scroll products left"
             @click="scrollProducts(-260)"
@@ -146,7 +146,7 @@ watch(
           </button>
           <button
             type="button"
-            class="flex size-9 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
+            class="customer-control-btn flex size-9 shadow-sm"
             :disabled="!canScrollRight"
             aria-label="Scroll products right"
             @click="scrollProducts(260)"

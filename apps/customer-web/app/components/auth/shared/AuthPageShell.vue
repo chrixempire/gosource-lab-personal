@@ -1,5 +1,13 @@
+<script setup lang="ts">
+import CustomerThemeToggle from '~/components/layout/customer/CustomerThemeToggle.vue';
+</script>
+
 <template>
-  <section class="relative min-h-screen bg-[linear-gradient(180deg,#f7fbf7_0%,#ffffff_100%)] px-5 py-6 pb-14 sm:px-6">
+  <section class="customer-shell-bg relative min-h-screen px-5 py-6 pb-14 text-grey-900 transition-[background,color] duration-300 sm:px-6">
+    <div class="absolute right-5 top-6 z-20 sm:right-6">
+      <CustomerThemeToggle compact />
+    </div>
+
     <div class="mx-auto flex items-start">
       <NuxtLink to="/" aria-label="GoSource home">
         <slot name="logo" />
@@ -11,7 +19,7 @@
     </div>
 
     <div
-      class="fixed inset-x-0 bottom-0 z-10 flex items-center justify-center gap-2 border-t border-grey-50 bg-grey-55/95 py-2 backdrop-blur-sm"
+      class="fixed inset-x-0 bottom-0 z-10 flex items-center justify-center gap-2 border-t border-grey-50 bg-background-on-canvas/95 py-2 backdrop-blur-sm transition-colors duration-300"
     >
       <NuxtLink
         to="/market"

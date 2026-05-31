@@ -28,7 +28,7 @@ const emit = defineEmits<{
       <div class="flex items-center gap-3">
         <button
           type="button"
-          class="inline-flex size-10 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 lg:hidden"
+          class="inline-flex size-10 items-center justify-center rounded-full border border-grey-50 bg-background-on-canvas text-grey-900 lg:hidden"
           @click="emit('toggleMobileNav')"
         >
           <Menu class="size-5" />

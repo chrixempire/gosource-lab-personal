@@ -26,7 +26,7 @@ const categoryDescription = computed(() => {
   >
     <header class="mb-6 flex items-start gap-3.5">
       <div
-        class="relative size-14 shrink-0 overflow-hidden rounded-xl border border-grey-50/80 bg-[#FFF0EB] shadow-sm"
+        class="relative size-14 shrink-0 overflow-hidden rounded-xl border border-grey-50/80 customer-category-icon-bg shadow-sm transition-colors duration-300"
       >
         <MarketProductImage
           v-if="section.imageUrl"

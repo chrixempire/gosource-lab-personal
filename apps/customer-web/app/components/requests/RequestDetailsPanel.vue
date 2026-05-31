@@ -72,14 +72,14 @@ const emit = defineEmits<{
       />
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div class="rounded-[20px] border border-grey-50 bg-white p-5 lg:col-span-3">
+        <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5 lg:col-span-3">
           <div class="h-5 w-36 animate-pulse rounded bg-grey-50" />
           <div class="mt-3 h-px w-full bg-grey-50" />
           <div class="mt-4 space-y-2">
             <div v-for="index in 7" :key="index" class="h-10 animate-pulse rounded bg-grey-55" />
           </div>
         </div>
-        <div class="rounded-[20px] border border-grey-50 bg-white p-5 lg:col-span-2">
+        <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5 lg:col-span-2">
           <div class="h-5 w-32 animate-pulse rounded bg-grey-50" />
           <div class="mt-3 h-px w-full bg-grey-50" />
           <div class="mt-4 space-y-2">
@@ -90,7 +90,7 @@ const emit = defineEmits<{
     </template>
 
     <template v-else>
-      <div class="rounded-[20px] border border-grey-50 bg-white p-5">
+      <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5">
         <div class="animate-pulse">
           <div class="mb-5 min-w-0">
             <div class="h-3 w-24 rounded bg-grey-50" />
@@ -101,7 +101,7 @@ const emit = defineEmits<{
       </div>
     </template>
 
-    <div :class="props.pageLayout ? undefined : 'rounded-[18px] border border-grey-50 bg-white p-4'">
+    <div :class="props.pageLayout ? undefined : 'rounded-[18px] border border-grey-50 bg-background-on-canvas p-4'">
       <div
         v-if="!props.pageLayout"
         class="mb-3 h-3 w-20 animate-pulse rounded-full bg-grey-100"
@@ -114,7 +114,7 @@ const emit = defineEmits<{
       />
     </div>
 
-    <div class="animate-pulse rounded-[16px] border border-primary-100/50 bg-primary-50/70 p-4">
+    <div class="customer-pricing-summary animate-pulse rounded-[16px] p-4">
       <div class="mb-3 h-3 w-16 rounded-full bg-grey-100" />
       <div class="space-y-2">
         <div
@@ -156,7 +156,7 @@ const emit = defineEmits<{
       </p>
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <section class="rounded-[20px] border border-grey-50 bg-white p-5 lg:col-span-3">
+        <section class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5 lg:col-span-3">
           <h2 class="text-base font-semibold text-grey-900">
             Initiator details
           </h2>
@@ -196,7 +196,7 @@ const emit = defineEmits<{
           </dl>
         </section>
 
-        <section class="rounded-[20px] border border-grey-50 bg-white p-5 lg:col-span-2">
+        <section class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5 lg:col-span-2">
           <h2 class="text-base font-semibold text-grey-900">
             Approver details
           </h2>
@@ -213,7 +213,7 @@ const emit = defineEmits<{
     </template>
 
     <template v-else>
-      <div class="rounded-[20px] border border-grey-50 bg-white p-5">
+      <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5">
         <div class="min-w-0">
           <div class="min-w-0">
             <p class="text-xs font-semibold uppercase tracking-[0.14em] text-grey-300">
@@ -230,7 +230,7 @@ const emit = defineEmits<{
       </div>
 
       <div class="grid gap-3 min-[480px]:grid-cols-2">
-        <div class="rounded-[16px] border border-grey-50 bg-white p-4">
+        <div class="rounded-[16px] border border-grey-50 bg-background-on-canvas p-4">
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
             Initiator
           </p>
@@ -242,7 +242,7 @@ const emit = defineEmits<{
           </p>
         </div>
 
-        <div class="rounded-[16px] border border-grey-50 bg-white p-4">
+        <div class="rounded-[16px] border border-grey-50 bg-background-on-canvas p-4">
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
             Phone
           </p>
@@ -251,7 +251,7 @@ const emit = defineEmits<{
           </p>
         </div>
 
-        <div class="rounded-[16px] border border-grey-50 bg-white p-4">
+        <div class="rounded-[16px] border border-grey-50 bg-background-on-canvas p-4">
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
             Payment method & status
           </p>
@@ -272,7 +272,7 @@ const emit = defineEmits<{
           </div>
         </div>
 
-        <div class="rounded-[16px] border border-grey-50 bg-white p-4">
+        <div class="rounded-[16px] border border-grey-50 bg-background-on-canvas p-4">
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
             Created
           </p>
@@ -282,7 +282,7 @@ const emit = defineEmits<{
         </div>
       </div>
 
-      <div class="rounded-[18px] border border-grey-50 bg-white p-4">
+      <div class="rounded-[18px] border border-grey-50 bg-background-on-canvas p-4">
         <p class="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
           Delivery address
         </p>
@@ -298,7 +298,7 @@ const emit = defineEmits<{
       </div>
     </template>
 
-    <div :class="props.pageLayout ? undefined : 'rounded-[18px] border border-grey-50 bg-white p-4'">
+    <div :class="props.pageLayout ? undefined : 'rounded-[18px] border border-grey-50 bg-background-on-canvas p-4'">
       <p
         class="mb-3 text-sm font-semibold text-grey-900"
         :class="props.pageLayout ? undefined : 'text-xs uppercase tracking-[0.12em] text-grey-300'"
@@ -317,28 +317,28 @@ const emit = defineEmits<{
       />
     </div>
 
-    <div class="rounded-[16px] border border-primary-100/50 bg-primary-50/70 p-4">
-      <p class="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
+    <div class="customer-pricing-summary rounded-[16px] p-4">
+      <p class="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-grey-900">
         Totals
       </p>
-      <div class="space-y-2 text-sm text-grey-text">
-        <div class="flex items-center justify-between">
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center justify-between text-grey-900">
           <span>Subtotal</span>
           <span>{{ formatCurrency(view.subtotal) }}</span>
         </div>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between text-grey-900">
           <span>Delivery fee</span>
           <span>{{ formatCurrency(view.deliveryFee) }}</span>
         </div>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between text-grey-900">
           <span>Service charge</span>
           <span>{{ formatCurrency(view.serviceCharge) }}</span>
         </div>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between text-grey-900">
           <span>Discount</span>
           <span>{{ formatCurrency(view.discount) }}</span>
         </div>
-        <div class="flex items-center justify-between border-t border-primary-100/60 pt-2 text-base font-semibold text-grey-900">
+        <div class="flex items-center justify-between border-t border-grey-50 pt-2 text-base font-semibold text-grey-900 dark:border-grey-50/80">
           <span>Total</span>
           <span>{{ formatCurrency(view.totalPrice) }}</span>
         </div>

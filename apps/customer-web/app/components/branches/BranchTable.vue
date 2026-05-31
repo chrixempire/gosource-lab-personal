@@ -16,6 +16,7 @@ import {
 import SortKiteIcon from '~/components/shared/collection/SortKiteIcon.vue';
 import {
   CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_DATA_ROW_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
 } from '~/lib/customer-table-layout';
@@ -184,7 +185,7 @@ function formatCurrency(amount: number) {
         <TableRow
           v-for="branch in branches"
           :key="branch.id"
-          class="cursor-pointer transition-colors duration-150 hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
+          :class="CUSTOMER_TABLE_DATA_ROW_CLASS"
           :style="{ gridTemplateColumns: tableGridTemplate }"
           @click="emit('rowClick', branch)"
         >

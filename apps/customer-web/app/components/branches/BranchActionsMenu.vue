@@ -21,7 +21,7 @@ defineEmits<{
   <div v-if="!hidden" class="shrink-0" @click.stop>
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
-        <Button size="icon" variant="ghost" class="!size-9 !rounded-full !border !border-grey-50 !bg-white !p-0">
+        <Button size="icon" variant="ghost" class="!size-9 !rounded-full !border !border-grey-50 !bg-background-on-canvas !p-0">
           <Ellipsis class="size-4" />
         </Button>
       </DropdownMenuTrigger>

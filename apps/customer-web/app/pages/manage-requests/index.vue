@@ -794,7 +794,7 @@ const pageDescription = computed(() =>
 
         <div
           v-else
-          class="rounded-[24px] border border-dashed border-grey-50 bg-white px-6 py-12 text-center text-sm text-grey-300"
+          class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center text-sm text-grey-300"
         >
           No requests found for the current filters.
         </div>
@@ -816,7 +816,7 @@ const pageDescription = computed(() =>
         <div
           v-for="index in 4"
           :key="index"
-          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-3 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] sm:p-5"
+          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-3 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] sm:p-5"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="flex min-w-0 flex-1 items-start gap-3">
@@ -856,7 +856,7 @@ const pageDescription = computed(() =>
       @update:open="!$event && closeDetails()"
     >
       <DrawerContent class="max-h-[92vh] overflow-hidden">
-        <DrawerHeader class="items-center gap-3 border-b border-grey-50 bg-white">
+        <DrawerHeader class="items-center gap-3 border-b border-grey-50 bg-background-on-canvas">
           <DrawerTitle class="min-w-0 flex-1 text-xl font-semibold text-grey-900">
             Request details
           </DrawerTitle>
@@ -896,7 +896,7 @@ const pageDescription = computed(() =>
           />
           <DrawerClose class="shrink-0" />
         </DrawerHeader>
-        <DrawerBody class="bg-white">
+        <DrawerBody class="bg-background-on-canvas">
           <RequestDetailsPanel
             :view="requestDetailsView"
             :loading="showRequestDetailsSkeleton"
@@ -917,7 +917,7 @@ const pageDescription = computed(() =>
       @update:open="!$event && closeDetails()"
     >
       <DialogContent class="max-h-[90vh] max-w-3xl overflow-hidden p-0">
-        <DialogHeader class="items-center gap-3 border-b border-grey-50 bg-white px-6 py-5">
+        <DialogHeader class="items-center gap-3 border-b border-grey-50 bg-background-on-canvas px-6 py-5">
           <DialogTitle class="min-w-0 flex-1 text-[24px] font-semibold text-grey-900">
             Request details
           </DialogTitle>
@@ -957,7 +957,7 @@ const pageDescription = computed(() =>
           />
           <DialogClose class="shrink-0" />
         </DialogHeader>
-        <DialogBody class="max-h-[70vh] overflow-y-auto bg-white px-6 py-5">
+        <DialogBody class="max-h-[70vh] overflow-y-auto bg-background-on-canvas px-6 py-5">
           <RequestDetailsPanel
             :view="requestDetailsView"
             :loading="showRequestDetailsSkeleton"

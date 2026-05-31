@@ -302,7 +302,7 @@ watch(requestId, () => {
 
     <div v-if="loading" class="flex flex-col gap-6">
       <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
-        <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+        <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
           <div class="h-6 w-40 animate-pulse rounded bg-grey-50" />
           <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
           <div class="mt-5 grid gap-3">
@@ -317,7 +317,7 @@ watch(requestId, () => {
           </div>
         </section>
 
-        <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+        <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
           <div class="h-6 w-36 animate-pulse rounded bg-grey-50" />
           <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
           <div class="mt-5 space-y-3">
@@ -331,14 +331,14 @@ watch(requestId, () => {
         </section>
       </div>
 
-      <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
         <div class="h-6 w-36 animate-pulse rounded bg-grey-50" />
         <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
         <div class="mt-5 h-32 animate-pulse rounded-[18px] bg-grey-55" />
       </section>
 
       <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
-        <section class="min-w-0 rounded-[24px] border border-grey-50 bg-white p-5">
+        <section class="min-w-0 rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
           <div class="h-6 w-40 animate-pulse rounded bg-grey-50" />
           <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
           <div class="mt-5 grid gap-4 min-[560px]:grid-cols-2">
@@ -389,7 +389,7 @@ watch(requestId, () => {
 
     <div
       v-else
-      class="rounded-[24px] border border-grey-50 bg-white px-6 py-14 text-center text-sm text-grey-300"
+      class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-6 py-14 text-center text-sm text-grey-300"
     >
       Request not found.
     </div>

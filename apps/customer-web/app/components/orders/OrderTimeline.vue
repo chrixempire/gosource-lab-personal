@@ -21,7 +21,7 @@ function formatTimelineTitle(title: string) {
 </script>
 
 <template>
-  <section class="rounded-[20px] border border-grey-50 bg-white p-5">
+  <section class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5">
     <h2 class="text-base font-semibold text-grey-900">Order timeline</h2>
 
     <div v-if="loading" class="mt-5 space-y-4" aria-busy="true" aria-label="Loading timeline">

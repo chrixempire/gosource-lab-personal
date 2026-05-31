@@ -509,7 +509,7 @@ useHead({
 
         <div
           v-if="!insightBranchId"
-          class="rounded-[24px] border border-dashed border-grey-50 bg-white px-6 py-12 text-center"
+          class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
         >
           <p class="text-base font-medium text-grey-900">
             Select a branch
@@ -543,7 +543,7 @@ useHead({
 
             <div
               v-else
-              class="rounded-[24px] border border-dashed border-grey-50 bg-white px-6 py-12 text-center"
+              class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
             >
               <p class="text-base font-medium text-grey-900">
                 No procurement data
@@ -574,7 +574,7 @@ useHead({
             <div
               v-for="index in 3"
               :key="`insight-card-skeleton-${index}`"
-              class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-5"
+              class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-5"
             >
               <div class="space-y-2">
                 <div class="h-5 w-3/4 animate-pulse rounded bg-grey-55" />
@@ -671,7 +671,7 @@ useHead({
 
           <div
             v-else
-            class="rounded-[24px] border border-dashed border-grey-50 bg-white px-6 py-12 text-center"
+            class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
           >
             <p class="text-base font-medium text-grey-900">
               No {{ emptyStateStatusLabel }} orders
@@ -698,7 +698,7 @@ useHead({
           <div
             v-for="index in 3"
             :key="`order-card-skeleton-${index}`"
-            class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-5"
+            class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-5"
           >
             <div class="flex items-start gap-3">
               <div class="size-10 shrink-0 animate-pulse rounded-lg bg-grey-55" />

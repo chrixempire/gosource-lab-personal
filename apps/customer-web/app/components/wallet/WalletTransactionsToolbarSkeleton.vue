@@ -12,7 +12,7 @@ import WalletSkeletonBar from '~/components/wallet/WalletSkeletonBar.vue';
       </div>
 
       <div
-        class="flex h-9 items-center gap-1 rounded-full border border-grey-50 bg-white p-1"
+        class="flex h-9 items-center gap-1 rounded-full border border-grey-50 bg-background-on-canvas p-1"
       >
         <WalletSkeletonBar class="h-7 w-[3.75rem] rounded-full" />
         <WalletSkeletonBar class="h-7 w-[3.25rem] rounded-full" />

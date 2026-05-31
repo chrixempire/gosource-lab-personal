@@ -54,7 +54,7 @@ defineExpose({ focus, clear });
       placeholder="Search.."
       aria-label="Search categories and products"
       :class="[
-        '!h-10 !rounded-xl !border-grey-50 !bg-grey-55 !pl-10 text-sm shadow-none focus:!border-primary-500 focus:!bg-white',
+        '!h-10 !rounded-xl !border-grey-50 !bg-grey-55 !pl-10 text-sm shadow-none transition-colors duration-300 focus:!border-primary-500 focus:!bg-background-on-canvas',
         props.showActionButton ? '!pr-9' : '!pr-4',
       ]"
       @focus="emit('focus')"

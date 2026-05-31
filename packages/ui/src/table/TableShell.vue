@@ -13,7 +13,7 @@ const props = defineProps<Props>();
   <section
     :class="
       cn(
-        'overflow-hidden rounded-xl border border-grey-50 bg-white shadow-[0_20px_48px_-28px_rgba(16,24,40,0.14)]',
+        'overflow-hidden rounded-xl border border-grey-50 bg-background-on-canvas shadow-[0_20px_48px_-28px_rgba(16,24,40,0.14)]',
         props.class,
       )
     "

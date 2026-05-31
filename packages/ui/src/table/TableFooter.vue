@@ -13,7 +13,7 @@ const props = defineProps<Props>();
   <div
     :class="
       cn(
-        'overflow-hidden rounded-b-xl border-t border-grey-50 bg-[#FAFBFC]',
+        'overflow-hidden rounded-b-xl border-t border-grey-50 bg-grey-55',
         props.class,
       )
     "

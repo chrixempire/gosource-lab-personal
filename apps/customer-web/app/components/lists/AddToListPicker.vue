@@ -283,7 +283,7 @@ async function handleCreateListAndAdd() {
                 'flex cursor-pointer items-center justify-between gap-3 rounded-[12px] border px-4 py-3 transition-colors',
                 selectedListId === list.id
                   ? 'border-primary-500 bg-primary-50/60'
-                  : 'border-grey-50 bg-white hover:border-primary-300 hover:bg-primary-50/30',
+                  : 'border-grey-50 bg-background-on-canvas hover:border-primary-300 hover:bg-primary-50/30',
                 submitting ? 'pointer-events-none opacity-60' : '',
               ]"
             >
@@ -407,7 +407,7 @@ async function handleCreateListAndAdd() {
                 'flex cursor-pointer items-center justify-between gap-3 rounded-[12px] border px-4 py-3 transition-colors',
                 selectedListId === list.id
                   ? 'border-primary-500 bg-primary-50/60'
-                  : 'border-grey-50 bg-white hover:border-primary-300 hover:bg-primary-50/30',
+                  : 'border-grey-50 bg-background-on-canvas hover:border-primary-300 hover:bg-primary-50/30',
                 submitting ? 'pointer-events-none opacity-60' : '',
               ]"
             >

@@ -11,6 +11,7 @@ import {
 } from '@gosource/ui';
 import { Trash2 } from 'lucide-vue-next';
 import MemberConfirmOverlay from '~/components/members/MemberConfirmOverlay.vue';
+import { CUSTOMER_TABLE_STRIPED_ROW_CLASS } from '~/lib/customer-table-layout';
 import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import MarketProductQtyStrip from '~/components/market/MarketProductQtyStrip.vue';
 
@@ -30,13 +31,13 @@ const props = withDefaults(defineProps<{
 const tableShellClass = computed(() =>
   props.embedded
     ? 'flex flex-col overflow-hidden'
-    : 'flex flex-col overflow-hidden rounded-[18px] border border-grey-50 bg-white',
+    : 'flex flex-col overflow-hidden rounded-[18px] border border-grey-50 bg-background-on-canvas',
 );
 
 const mobileLineClass = computed(() =>
   props.embedded
     ? 'border-b border-grey-50 py-4 last:border-b-0'
-    : 'rounded-[18px] border border-grey-50 bg-white p-4',
+    : 'rounded-[18px] border border-grey-50 bg-background-on-canvas p-4',
 );
 
 const emit = defineEmits<{
@@ -162,7 +163,7 @@ const removeConfirmMessage = computed(() => {
             v-for="(product, index) in products"
             :key="lineKey(product, index)"
             :style="{ gridTemplateColumns: tableGridTemplate }"
-            class="even:bg-[#FAFBFC]"
+            :class="CUSTOMER_TABLE_STRIPED_ROW_CLASS"
           >
             <TableCell>
               <p class="text-sm font-medium text-grey-900">
@@ -394,7 +395,7 @@ const removeConfirmMessage = computed(() => {
 
     <div
       v-else
-      class="rounded-[18px] border border-grey-50 bg-white px-6 py-12 text-center text-sm text-grey-300 md:hidden"
+      class="rounded-[18px] border border-grey-50 bg-background-on-canvas px-6 py-12 text-center text-sm text-grey-300 md:hidden"
     >
       No products have been added to this request yet.
     </div>

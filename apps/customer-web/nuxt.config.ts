@@ -36,6 +36,19 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  app: {
+    head: {
+      script: [
+        {
+          key: 'customer-theme-bootstrap',
+          innerHTML: `(function(){try{var k='gosource.customer.theme';var s=localStorage.getItem(k);var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;if(d){e.classList.add('dark');e.style.colorScheme='dark';}else{e.classList.remove('dark');e.style.colorScheme='light';}}catch(e){}})();`,
+          type: 'text/javascript',
+          tagPriority: 'critical' as const,
+        },
+      ],
+    },
+  },
+
   runtimeConfig: {
     customerApiMode: 'legacy',
     legacyApiBaseUrl: 'http://127.0.0.1:8000',

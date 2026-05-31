@@ -96,7 +96,7 @@ onUnmounted(() => {
     <button
       v-if="canScroll"
       type="button"
-      class="flex size-9 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
+      class="customer-control-btn flex size-9 shrink-0 shadow-sm"
       :disabled="!canScrollLeft"
       aria-label="Scroll categories left"
       @click="scrollBy(-220)"
@@ -121,10 +121,10 @@ onUnmounted(() => {
       >
         <span
           :class="[
-            'relative flex size-[52px] items-center justify-center overflow-hidden rounded-full border-2 bg-white transition',
+            'relative flex size-[52px] items-center justify-center overflow-hidden rounded-full border-2 bg-background-on-canvas transition-colors duration-300',
             activeId === cat.id
               ? 'border-primary-500 !bg-primary-50/70 shadow-[0_6px_16px_-8px_rgba(4,85,11,0.35)]'
-              : 'border-transparent bg-white shadow-[0_4px_12px_-6px_rgba(16,24,40,0.18)] group-hover:border-primary-500/35 group-hover:bg-primary-50/70',
+              : 'border-transparent bg-background-on-canvas shadow-[var(--customer-card-shadow)] group-hover:border-primary-500/35 group-hover:bg-primary-50/70',
           ]"
         >
           <MarketProductImage
@@ -161,7 +161,7 @@ onUnmounted(() => {
     <button
       v-if="canScroll"
       type="button"
-      class="flex size-9 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
+      class="customer-control-btn flex size-9 shrink-0 shadow-sm"
       :disabled="!canScrollRight"
       aria-label="Scroll categories right"
       @click="scrollBy(220)"

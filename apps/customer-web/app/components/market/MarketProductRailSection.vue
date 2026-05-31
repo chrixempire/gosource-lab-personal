@@ -103,13 +103,13 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
   <section
     v-if="displayProducts.length"
     :class="[
-      isPromotion ? 'overflow-hidden rounded-[20px] border-2 border-primary-500' : '',
+      isPromotion ? 'overflow-hidden rounded-[20px] border-2 border-primary-500 dark:border-primary-500/30' : '',
     ]"
   >
     <div
       :class="[
         'flex flex-col gap-3 min-[720px]:flex-row min-[720px]:items-center min-[720px]:justify-between',
-        isPromotion ? 'bg-primary-500 px-4 py-4' : 'mb-4',
+        isPromotion ? 'customer-brand-hero px-4 py-4' : 'mb-4',
       ]"
     >
       <div class="flex min-w-0 items-center gap-2">
@@ -155,7 +155,7 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
               'flex size-9 items-center justify-center rounded-full border shadow-sm transition disabled:cursor-not-allowed disabled:opacity-30',
               isPromotion
                 ? 'border-white/30 bg-white/15 text-white hover:bg-white/25 disabled:hover:bg-white/15'
-                : 'border-grey-50 bg-white text-grey-900 hover:bg-primary-50/70 hover:text-primary-500 disabled:hover:bg-white disabled:hover:text-grey-900',
+                : 'customer-control-btn flex size-9 shadow-sm',
             ]"
             :disabled="!canScrollLeft"
             aria-label="Scroll products left"
@@ -169,7 +169,7 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
               'flex size-9 items-center justify-center rounded-full border shadow-sm transition disabled:cursor-not-allowed disabled:opacity-30',
               isPromotion
                 ? 'border-white/30 bg-white/15 text-white hover:bg-white/25 disabled:hover:bg-white/15'
-                : 'border-grey-50 bg-white text-grey-900 hover:bg-primary-50/70 hover:text-primary-500 disabled:hover:bg-white disabled:hover:text-grey-900',
+                : 'customer-control-btn flex size-9 shadow-sm',
             ]"
             :disabled="!canScrollRight"
             aria-label="Scroll products right"

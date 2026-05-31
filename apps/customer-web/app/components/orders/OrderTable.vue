@@ -17,6 +17,7 @@ import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import type { OrderListItem } from '~/lib/order-details';
 import {
   CUSTOMER_TABLE_BODY_CLASS,
+  CUSTOMER_TABLE_DATA_ROW_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
 } from '~/lib/customer-table-layout';
@@ -86,7 +87,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
         v-for="order in orders"
         :key="order.id"
         :data-testid="`order-row-${order.id}`"
-        class="cursor-pointer transition-colors duration-150 hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
+        :class="CUSTOMER_TABLE_DATA_ROW_CLASS"
         :style="{ gridTemplateColumns: ORDER_TABLE_GRID_TEMPLATE }"
         @click="emit('rowClick', order)"
       >

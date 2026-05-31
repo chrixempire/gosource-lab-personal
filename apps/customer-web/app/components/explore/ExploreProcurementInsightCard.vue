@@ -12,7 +12,7 @@ const { rows, totalSpent, periodLabel, hasData, showSkeleton, loaded } =
 
   <article
     v-else-if="hasData"
-    class="flex h-full flex-col rounded-[24px] border border-grey-50 bg-white p-5 transition-transform duration-300 ease-out hover:-translate-y-1"
+    class="flex h-full flex-col rounded-[24px] border border-grey-50 bg-background-on-canvas p-5 transition-[transform,background-color,border-color] duration-300 ease-out hover:-translate-y-1"
   >
     <div class="space-y-1">
       <div class="flex items-start justify-between gap-3">

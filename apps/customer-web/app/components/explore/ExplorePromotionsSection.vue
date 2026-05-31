@@ -146,9 +146,9 @@ watch(
 <template>
   <section
     v-if="loading || visibleProducts.length > 0"
-    class="mb-8 mt-6 overflow-hidden rounded-[16px] border border-primary-500/35 bg-white"
+    class="mb-8 mt-6 overflow-hidden rounded-[16px] border border-primary-500/35 bg-background-on-canvas transition-colors duration-300"
   >
-    <header class="flex items-center justify-between gap-3 bg-primary-500 px-4 py-3 sm:px-5">
+    <header class="customer-brand-hero flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
       <div class="flex min-w-0 items-center gap-2">
         <h2 class="truncate text-base font-semibold text-white sm:text-lg">
           Deals combo for you

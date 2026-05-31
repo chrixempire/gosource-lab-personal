@@ -21,7 +21,7 @@ const {
     <div class="flex items-start justify-between gap-3">
       <div class="flex min-w-0 items-start gap-3">
         <div
-          class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-primary-600 shadow-sm"
+          class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-background-on-canvas text-primary-600 shadow-sm transition-colors duration-300"
         >
           <ClipboardList class="size-5" />
         </div>
@@ -70,7 +70,7 @@ const {
 
       <button
         type="button"
-        class="flex size-8 shrink-0 items-center justify-center rounded-full text-grey-300 transition hover:bg-white/70 hover:text-grey-900"
+        class="flex size-8 shrink-0 items-center justify-center rounded-full text-grey-300 transition hover:bg-background-on-canvas/70 hover:text-grey-900"
         aria-label="Back to request"
         @click="cancelAddingToRequest"
       >

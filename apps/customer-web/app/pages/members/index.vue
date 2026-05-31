@@ -540,7 +540,7 @@ function openRefreshInviteLink(member: BranchMemberRecord) {
 }
 
 const cardArticleBaseClass =
-  'max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-[background-color,box-shadow,border-color] duration-150';
+  'max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-[background-color,box-shadow,border-color] duration-150';
 
 function cardArticleClass(member: BranchMemberRecord) {
   if (member.kind === 'member') {
@@ -848,7 +848,7 @@ function cardArticleClass(member: BranchMemberRecord) {
 
         <div
           v-else
-          class="rounded-[24px] border border-grey-50 bg-white px-6 py-14 text-center"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-6 py-14 text-center"
         >
           <p class="text-base font-semibold text-grey-900">
             {{
@@ -888,7 +888,7 @@ function cardArticleClass(member: BranchMemberRecord) {
         <div
           v-for="index in 4"
           :key="index"
-          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
+          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="flex min-w-0 flex-1 items-start gap-3">

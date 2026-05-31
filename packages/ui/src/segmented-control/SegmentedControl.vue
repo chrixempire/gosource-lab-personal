@@ -37,7 +37,7 @@ const segmentCount = computed(() => Math.max(props.options.length, 1));
     role="tablist"
     :class="
       cn(
-        'relative inline-grid rounded-full border border-grey-50 bg-white p-1',
+        'relative inline-grid rounded-full border border-grey-50 bg-background-on-canvas p-1 transition-colors duration-300',
         props.class,
       )
     "

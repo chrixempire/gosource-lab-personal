@@ -16,7 +16,7 @@ const attrs = useAttrs();
     <svg
       viewBox="0 0 128 24"
       xmlns="http://www.w3.org/2000/svg"
-      class="block h-full w-full"
+      class="block h-full w-full dark:[&_path:nth-child(-n+2)]:fill-[#22c55e] dark:[&_path:nth-child(n+3)]:fill-[#f8fafc]"
       aria-hidden="true"
     >
       <path d="M13.357 1.87392C16.0439 1.87392 18.4766 3.46534 19.5501 5.93251L21.267 5.18231C19.8953 2.034 16.7878 0 13.357 0C9.05985 0 5.3842 3.20481 4.80664 7.45801L6.66487 7.70912C7.11687 4.38189 9.99524 1.87392 13.357 1.87392Z" fill="#19B820"/>

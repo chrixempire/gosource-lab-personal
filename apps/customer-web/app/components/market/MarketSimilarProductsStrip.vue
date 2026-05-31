@@ -54,7 +54,7 @@ watch(
       <div v-if="canScrollProducts" class="flex gap-1">
         <button
           type="button"
-          class="flex size-9 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
+          class="customer-control-btn flex size-9 shadow-sm"
           :disabled="!canScrollLeft"
           aria-label="Scroll similar products left"
           @click="scrollBy(-220)"
@@ -63,7 +63,7 @@ watch(
         </button>
         <button
           type="button"
-          class="flex size-9 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
+          class="customer-control-btn flex size-9 shadow-sm"
           :disabled="!canScrollRight"
           aria-label="Scroll similar products right"
           @click="scrollBy(220)"

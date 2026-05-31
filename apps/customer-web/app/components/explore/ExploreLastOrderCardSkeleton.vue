@@ -4,7 +4,7 @@ import ExploreSkeletonBar from '~/components/explore/ExploreSkeletonBar.vue';
 
 <template>
   <article
-    class="flex h-full flex-col rounded-[24px] bg-primary-500/90 p-5 shadow-[0_20px_48px_-24px_rgba(4,85,11,0.55)]"
+    class="customer-brand-hero flex h-full flex-col rounded-[24px] p-5 shadow-[0_20px_48px_-24px_rgba(4,85,11,0.55)] dark:shadow-[0_20px_48px_-24px_rgba(0,0,0,0.45)]"
     aria-busy="true"
     aria-label="Loading order again"
   >

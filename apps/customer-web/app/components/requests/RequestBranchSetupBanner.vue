@@ -35,7 +35,7 @@ const shouldShow = computed(() => {
     class="mb-5 mt-3 rounded-[18px] border border-warning-100 bg-[rgba(247,144,9,0.08)] px-3.5 py-3.5 text-grey-text sm:px-4 sm:py-4"
   >
     <div class="flex min-w-0 items-start gap-3">
-      <div class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-warning-700 shadow-sm">
+      <div class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-background-on-canvas text-warning-700 shadow-sm">
         <Building2 class="size-5" />
       </div>
 

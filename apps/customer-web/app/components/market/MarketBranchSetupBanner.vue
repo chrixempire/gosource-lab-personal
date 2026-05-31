@@ -36,11 +36,11 @@ function dismissBanner() {
 <template>
   <div
     v-if="shouldShow"
-    class="mb-5 mt-3 rounded-[18px] border border-warning-100 bg-[rgba(247,144,9,0.08)] px-3.5 py-3.5 text-grey-text sm:px-4 sm:py-4"
+    class="customer-warning-banner mb-5 mt-3 rounded-[18px] border border-warning-100 px-3.5 py-3.5 text-grey-text transition-colors duration-300 sm:px-4 sm:py-4"
   >
     <div class="flex items-start justify-between gap-3">
       <div class="flex min-w-0 items-start gap-3">
-        <div class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-warning-700 shadow-sm">
+        <div class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-background-on-canvas text-warning-700 shadow-sm transition-colors duration-300">
           <Building2 class="size-5" />
         </div>
 
@@ -65,7 +65,7 @@ function dismissBanner() {
 
       <button
         type="button"
-        class="flex size-8 shrink-0 items-center justify-center rounded-full text-grey-300 transition hover:bg-white/70 hover:text-grey-900"
+        class="flex size-8 shrink-0 items-center justify-center rounded-full text-grey-300 transition hover:bg-background-on-canvas/70 hover:text-grey-900"
         aria-label="Dismiss branch setup notice"
         @click="dismissBanner"
       >

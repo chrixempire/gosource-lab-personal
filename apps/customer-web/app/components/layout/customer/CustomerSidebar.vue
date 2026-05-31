@@ -23,6 +23,7 @@ import {
   Users,
 } from 'lucide-vue-next';
 import CustomerSidebarBranchSwitcher from './CustomerSidebarBranchSwitcher.vue';
+import CustomerThemeToggle from './CustomerThemeToggle.vue';
 import CustomerUserMenu from './CustomerUserMenu.vue';
 import { customerSignInLocation } from '~/lib/auth-redirect';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
@@ -122,7 +123,7 @@ function closeMobileNav() {
 </script>
 
 <template>
-  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-white text-grey-900">
+  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-background-on-canvas text-grey-900 transition-colors duration-300">
     <SidebarContent class="min-h-0 px-4 py-5">
       <SidebarMenu>
         <SidebarMenuItem v-for="item in visibleNavItems" :key="item.label">
@@ -146,6 +147,10 @@ function closeMobileNav() {
     </SidebarContent>
 
     <SidebarFooter class="w-full px-4 pb-0">
+      <div class="border-t border-grey-50 pb-3 pt-3">
+        <CustomerThemeToggle />
+      </div>
+
       <template v-if="isGuest">
         <div class="flex w-full flex-col gap-3 border-t border-grey-50 pb-4 pt-4">
           <NuxtLink to="/auth/register" class="block w-full no-underline" @click="closeMobileNav">
@@ -166,7 +171,7 @@ function closeMobileNav() {
           <SidebarMenuItem>
             <button
               type="button"
-              class="flex w-full cursor-pointer items-center gap-3 rounded-[16px] px-4 py-2.5 text-left text-sm font-medium text-grey-text transition-colors hover:bg-primary-50/70 hover:text-primary-500"
+              class="customer-sidebar-nav-hover flex w-full cursor-pointer items-center gap-3 rounded-[16px] px-4 py-2.5 text-left text-sm font-medium text-grey-text"
               @click="settingsOpen = !settingsOpen"
             >
               <ShieldCheck class="size-[18px]" />

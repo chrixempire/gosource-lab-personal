@@ -74,7 +74,7 @@ onMounted(() => {
 
     <section
       v-if="loading"
-      class="rounded-[24px] border border-grey-50 bg-white p-6"
+      class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
       aria-busy="true"
     >
       <div class="space-y-5">
@@ -88,7 +88,7 @@ onMounted(() => {
 
     <section
       v-else
-      class="rounded-[24px] border border-grey-50 bg-white p-6"
+      class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
     >
       <div class="space-y-5">
         <label v-if="isOwner" class="block space-y-2">

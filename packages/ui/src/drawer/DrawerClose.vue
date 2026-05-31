@@ -12,7 +12,7 @@ const forwarded = useForwardProps(props);
     v-bind="forwarded"
     :class="
       cn(
-        'inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 transition-colors hover:bg-grey-55',
+        'inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-background-on-canvas text-grey-900 transition-colors hover:bg-grey-55',
         props.class,
       )
     "

@@ -572,7 +572,7 @@ async function handleCreateRequest() {
 
       <div
         v-if="!loading && !filteredLists.length"
-        class="rounded-[16px] border border-dashed border-grey-50 bg-white px-6 py-12 text-center"
+        class="rounded-[16px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
       >
         <p class="text-base font-medium text-grey-900">No lists yet</p>
         <p class="mt-2 text-sm text-grey-300">

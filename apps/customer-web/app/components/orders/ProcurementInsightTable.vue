@@ -15,6 +15,7 @@ import {
   CUSTOMER_TABLE_BODY_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+  CUSTOMER_TABLE_STRIPED_ROW_CLASS,
 } from '~/lib/customer-table-layout';
 import type { ProcurementInsightTableRow } from '~/lib/procurement-insight-table';
 import {
@@ -80,7 +81,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
         v-for="row in rows"
         :key="row.id"
         :style="{ gridTemplateColumns: PROCUREMENT_INSIGHT_TABLE_GRID_TEMPLATE }"
-        class="items-center even:bg-[#FAFBFC]"
+        :class="CUSTOMER_TABLE_STRIPED_ROW_CLASS"
       >
         <TableCell>
           <div class="min-w-0">

@@ -119,10 +119,10 @@ async function onAdd(e: MouseEvent) {
   <article
     data-testid="explore-product-card"
     :class="[
-      'flex h-full min-w-0 flex-col overflow-hidden rounded-[8px] border bg-white transition-[transform,border-color] duration-300 ease-out hover:-translate-y-1',
+      'flex h-full min-w-0 flex-col overflow-hidden rounded-[8px] border bg-background-on-canvas transition-[transform,border-color,background-color] duration-300 ease-out hover:-translate-y-1',
       inCartHighlight
-        ? 'border-2 border-primary-500 bg-primary-50/40'
-        : 'border border-grey-50',
+        ? 'border-2 border-primary-500 bg-primary-50/40 dark:border-primary-500/50 dark:bg-primary-500/12'
+        : 'border border-grey-50 hover:border-primary-500/35 dark:hover:border-primary-500/25',
     ]"
   >
     <div
@@ -145,7 +145,7 @@ async function onAdd(e: MouseEvent) {
 
         <span
           v-if="discountPercent"
-          class="absolute right-2 top-2 z-10 flex size-[3.25rem] flex-col items-center justify-center rounded-full border-2 border-white bg-primary-500 text-center text-white"
+          class="customer-image-discount-badge absolute right-2 top-2 z-10 flex size-[3.25rem] flex-col items-center justify-center rounded-full text-center"
         >
           <span class="text-sm font-bold leading-none">{{ discountPercent }}%</span>
           <span class="mt-0.5 text-[10px] font-medium leading-none">Off</span>
@@ -153,7 +153,7 @@ async function onAdd(e: MouseEvent) {
 
         <span
           v-else-if="discountLabel"
-          class="absolute left-2 top-2 z-10 rounded-full bg-primary-500 px-2 py-1 text-[11px] font-bold leading-none text-white"
+          class="customer-image-discount-pill absolute left-2 top-2 z-10 rounded-full px-2 py-1 text-[11px] font-bold leading-none"
         >
           {{ discountLabel }}
         </span>
@@ -213,7 +213,7 @@ async function onAdd(e: MouseEvent) {
       <Button
         v-else-if="showAddButton"
         size="small"
-        class="!h-9 !max-w-full !rounded-full !px-3 !text-sm !font-semibold shadow-[0_8px_18px_-10px_rgba(4,85,11,0.58)]"
+        class="!h-9 !max-w-full !rounded-full !px-3 !text-sm !font-semibold shadow-[0_8px_18px_-10px_rgba(4,85,11,0.58)] dark:shadow-none"
         type="button"
         @click="onAdd"
       >
