@@ -38,7 +38,6 @@ async function onAddAll() {
       quantity: line.quantity,
       productName: line.productName,
     })),
-    { navigateToMarket: false, openDrawer: true },
   );
 
   if (result.ok) {

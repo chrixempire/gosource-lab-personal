@@ -477,8 +477,7 @@ useHead({
           class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
         >
           <div
-            class="flex w-full flex-col gap-3 min-[1000px]:max-w-md"
-            :class="isSuperAdmin ? 'min-[1000px]:flex-1' : undefined"
+            class="flex w-full flex-col gap-3 min-[720px]:flex-row min-[720px]:flex-nowrap min-[720px]:items-end"
           >
             <BranchPickerDropdown
               v-if="isSuperAdmin"
@@ -487,10 +486,12 @@ useHead({
               :loading="branchesLoading"
               :disabled="insightLoading"
               :show-all-branches-option="showAllBranchesOption"
+              class="w-full max-w-[13rem] shrink-0"
               @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
             />
             <ProcurementInsightDateFilter
               :model-value="insightDateFilter"
+              class="w-full min-[720px]:w-fit min-[720px]:shrink-0"
               @update:model-value="onInsightDateFilterChange"
             />
           </div>

@@ -1,4 +1,5 @@
 export const CUSTOMER_THEME_STORAGE_KEY = 'gosource.customer.theme';
+export const CUSTOMER_THEME_SWITCHING_CLASS = 'customer-theme-switching';
 
 export type CustomerThemePreference = 'light' | 'dark';
 export type CustomerResolvedTheme = CustomerThemePreference;
@@ -39,8 +40,17 @@ export function applyCustomerThemeToDocument(theme: CustomerResolvedTheme) {
   }
 
   const root = document.documentElement;
+  root.classList.add(CUSTOMER_THEME_SWITCHING_CLASS);
   root.classList.toggle('dark', theme === 'dark');
   root.style.colorScheme = theme;
+
+  // Snap all surfaces at once — layout shells use transition-colors which otherwise
+  // animate sidebar, header, and main on different timings when .dark toggles.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      root.classList.remove(CUSTOMER_THEME_SWITCHING_CLASS);
+    });
+  });
 }
 
 export function persistCustomerThemePreference(theme: CustomerThemePreference) {

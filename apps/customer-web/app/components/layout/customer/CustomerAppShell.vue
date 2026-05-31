@@ -69,6 +69,7 @@ const session = useState<CustomerMeResponse | null>('customer-session', () => nu
 
 const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/market', title: 'Market' },
+  { match: '/business-insight', title: 'Business insight' },
   { match: '/track-orders', title: 'Orders' },
   { match: '/wallet', title: 'Wallet' },
   { match: '/manage-requests', title: 'Request' },
@@ -201,7 +202,7 @@ async function confirmLogout() {
   <SidebarProvider v-model:open="desktopSidebarOpen">
     <div>
       <div
-        class="customer-shell-bg flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden text-grey-900 transition-[background,color] duration-300 lg:h-screen lg:max-h-screen"
+        class="customer-shell-bg flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden text-grey-900 lg:h-screen lg:max-h-screen"
       >
         <header
           class="flex h-16 max-lg:h-16 shrink-0 items-stretch border-b border-grey-50 bg-background-on-canvas lg:h-[72px]"
@@ -283,7 +284,7 @@ async function confirmLogout() {
             <main
               id="customer-shell-scroll"
               :class="[
-                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain bg-background-canvas px-4 [overflow-scrolling:touch] transition-colors duration-300 sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
+                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain bg-background-canvas px-4 [overflow-scrolling:touch] sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
                 mainPaddingClass,
               ]"
             >

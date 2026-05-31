@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import ExploreLastOrderCard from '~/components/explore/ExploreLastOrderCard.vue';
-import ExploreLastOrderCardSkeleton from '~/components/explore/ExploreLastOrderCardSkeleton.vue';
+import ExploreMarketBannerCarousel from '~/components/explore/ExploreMarketBannerCarousel.vue';
 import ExplorePageHeroGreetingSkeleton from '~/components/explore/ExplorePageHeroGreetingSkeleton.vue';
-import ExploreProcurementInsightCard from '~/components/explore/ExploreProcurementInsightCard.vue';
 import { formatNaira } from '~/composables/useMarketplaceCart';
 import { useExploreHeroStats } from '~/composables/useExploreHeroStats';
-import { useExploreLastOrder } from '~/composables/useExploreLastOrder';
 defineProps<{
   greetingName: string;
   outletLabel: string;
@@ -56,26 +53,8 @@ const savingsLabel = computed(() => formatNaira(walkInSavingsNaira.value));
       </div>
     </div>
 
-    <div class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-stretch">
-      <div class="min-w-0 w-full lg:w-[37.5%] lg:max-w-[37.5%]">
-        <ExploreLastOrderCard v-if="lastOrder" :order="lastOrder" />
-        <ExploreLastOrderCardSkeleton v-else-if="lastOrderSkeleton" />
-        <article
-          v-else-if="lastOrderLoaded"
-          class="flex h-full flex-col rounded-[24px] border border-dashed border-grey-100 bg-grey-55/50 p-5"
-        >
-          <p class="text-base font-semibold text-grey-900">
-            No recent orders yet
-          </p>
-          <p class="mt-1 text-sm text-grey-300">
-            Your last basket will appear here after your branch places an order.
-          </p>
-        </article>
-      </div>
-
-      <div class="min-w-0 w-full lg:w-[37.5%] lg:max-w-[37.5%]">
-        <ExploreProcurementInsightCard />
-      </div>
+    <div class="mt-6 w-full">
+      <ExploreMarketBannerCarousel />
     </div>
   </header>
 </template>

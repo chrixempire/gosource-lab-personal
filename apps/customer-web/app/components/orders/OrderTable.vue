@@ -23,7 +23,9 @@ import {
 } from '~/lib/customer-table-layout';
 import {
   ORDER_TABLE_GRID_TEMPLATE,
+  ORDER_TABLE_GRID_TEMPLATE_NO_ACTIONS,
   ORDER_TABLE_SKELETON_COLUMNS,
+  ORDER_TABLE_SKELETON_COLUMNS_NO_ACTIONS,
 } from '~/lib/orders-table-layout';
 
 const props = withDefaults(
@@ -40,10 +42,23 @@ const props = withDefaults(
     reorderLoadingOrderId?: string | null;
     emptyTitle?: string;
     emptyDescription?: string;
+    periodLabel?: string;
+    hideActions?: boolean;
+    hidePagination?: boolean;
   }>(),
   {
     emptyTitle: 'No orders found for the current filters.',
+    hideActions: false,
+    hidePagination: false,
   },
+);
+
+const tableGridTemplate = computed(() =>
+  props.hideActions ? ORDER_TABLE_GRID_TEMPLATE_NO_ACTIONS : ORDER_TABLE_GRID_TEMPLATE,
+);
+
+const skeletonColumns = computed(() =>
+  props.hideActions ? ORDER_TABLE_SKELETON_COLUMNS_NO_ACTIONS : ORDER_TABLE_SKELETON_COLUMNS,
 );
 
 const emit = defineEmits<{
@@ -61,7 +76,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
   <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
     <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
-        :style="{ gridTemplateColumns: ORDER_TABLE_GRID_TEMPLATE }"
+        :style="{ gridTemplateColumns: tableGridTemplate }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
       >
         <TableCell>Order</TableCell>
@@ -70,14 +85,14 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
         <TableCell>Items</TableCell>
         <TableCell>Date</TableCell>
         <TableCell>Status</TableCell>
-        <TableCell class="sr-only">Actions</TableCell>
+        <TableCell v-if="!hideActions" class="sr-only">Actions</TableCell>
       </TableHeadRow>
     </TableHeader>
 
     <TableSkeleton
       v-if="loading"
-      :columns="ORDER_TABLE_SKELETON_COLUMNS"
-      :grid-template-columns="ORDER_TABLE_GRID_TEMPLATE"
+      :columns="skeletonColumns"
+      :grid-template-columns="tableGridTemplate"
       :row-count="skeletonRowCount"
       :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
@@ -88,7 +103,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
         :key="order.id"
         :data-testid="`order-row-${order.id}`"
         :class="CUSTOMER_TABLE_DATA_ROW_CLASS"
-        :style="{ gridTemplateColumns: ORDER_TABLE_GRID_TEMPLATE }"
+        :style="{ gridTemplateColumns: tableGridTemplate }"
         @click="emit('rowClick', order)"
       >
         <TableCell class="flex items-center gap-3">
@@ -149,7 +164,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
           </StatusTag>
         </TableCell>
 
-        <TableCell class="flex items-center justify-end">
+        <TableCell v-if="!hideActions" class="flex items-center justify-end" @click.stop>
           <OrderActionsMenu
             :reorder-loading="reorderLoading"
             :is-reordering="reorderLoadingOrderId === order.id"
@@ -169,10 +184,13 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
         <p v-if="emptyDescription" class="mt-2 text-sm text-grey-300">
           {{ emptyDescription }}
         </p>
+        <p v-if="periodLabel" class="mt-1 text-xs text-grey-300">
+          Period: {{ periodLabel }}
+        </p>
       </div>
     </TableBody>
 
-    <TableFooter v-if="!loading && orders.length > 0">
+    <TableFooter v-if="!hidePagination && !loading && orders.length > 0">
       <PaginationBar
         :page="page"
         :total-pages="totalPages"

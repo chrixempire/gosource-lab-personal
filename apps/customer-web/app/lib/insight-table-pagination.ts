@@ -1,5 +1,6 @@
-export const INSIGHT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+export const INSIGHT_PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100] as const;
 export const DEFAULT_INSIGHT_PAGE_SIZE = 10;
+export const BUSINESS_INSIGHT_DEFAULT_PAGE_SIZE = 5;
 
 export type InsightPaginationMeta = {
   page: number;
@@ -20,16 +21,18 @@ function readQueryString(
 
 export function parseInsightPaginationFromQuery(
   query: Record<string, string | string[] | undefined | null>,
+  options: { defaultLimit?: number } = {},
 ) {
+  const defaultLimit = options.defaultLimit ?? DEFAULT_INSIGHT_PAGE_SIZE;
   const parsedPage = Number(readQueryString(query, 'insightPage') ?? '1');
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
-  const parsedLimit = Number(readQueryString(query, 'insightLimit') ?? String(DEFAULT_INSIGHT_PAGE_SIZE));
+  const parsedLimit = Number(readQueryString(query, 'insightLimit') ?? String(defaultLimit));
   const limit = INSIGHT_PAGE_SIZE_OPTIONS.includes(
     parsedLimit as (typeof INSIGHT_PAGE_SIZE_OPTIONS)[number],
   )
     ? parsedLimit
-    : DEFAULT_INSIGHT_PAGE_SIZE;
+    : defaultLimit;
 
   return { page, limit };
 }

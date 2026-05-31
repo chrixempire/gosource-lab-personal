@@ -1,4 +1,5 @@
 import type { OrderProductRecord } from '@gosource/api-client';
+import { extractApiErrorMessage } from '@gosource/api-client';
 import { toast } from '@gosource/ui';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
@@ -144,8 +145,10 @@ export function useReorderProducts() {
       }
 
       return { ok: true, added, skipped };
-    } catch {
-      toast.error('Unable to add order items to cart right now.');
+    } catch (error) {
+      toast.error(
+        extractApiErrorMessage(error, 'Unable to add order items to cart right now.'),
+      );
       return { ok: false, added, skipped };
     } finally {
       reordering.value = false;

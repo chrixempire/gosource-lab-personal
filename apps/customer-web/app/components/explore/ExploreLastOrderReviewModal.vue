@@ -35,6 +35,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean];
 }>();
 
+const route = useRoute();
 const { setQuantityForUnit, loadCart } = useMarketplaceCart();
 const { cartDrawerOpen } = useMarketplaceUi();
 const { ensureBranchForAction } = useMarketBranchGate();
@@ -114,6 +115,12 @@ async function onAddToCart() {
     );
     void refreshExploreLastOrder({ force: true });
     void refreshExploreProcurement({ force: true });
+
+    if (!route.path.startsWith('/market')) {
+      await navigateTo('/market');
+      await nextTick();
+    }
+
     cartDrawerOpen.value = true;
     close();
   } finally {

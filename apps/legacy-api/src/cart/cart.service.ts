@@ -81,9 +81,10 @@ export class CartService {
       await this.getOwnedBranch(branchId, businessId.toString());
     }
 
-    const cartQuery: any = {
+    const cartQuery: Record<string, unknown> = {
       product: productId,
       business: businessId,
+      unit: cartDetails.unit,
     };
 
     if (branchId) {
@@ -92,9 +93,9 @@ export class CartService {
 
     const cartItem: CartDocument = await this.cartModel.findOne(cartQuery);
 
-    if (cartItem && cartItem.unit === cartDetails.unit) {
+    if (cartItem) {
       cartItem.quantity += cartDetails.quantity;
-      cartItem.save();
+      await cartItem.save();
 
       return {
         status: true,
@@ -103,7 +104,7 @@ export class CartService {
       };
     }
 
-    const newCartDetails: any = {
+    const newCartDetails: Record<string, unknown> = {
       business: businessId,
       product: productId,
       cartProduct: product,
@@ -115,11 +116,24 @@ export class CartService {
       newCartDetails.branch = branchId;
     }
 
-    const newCartItem: CartDocument =
-      await this.cartModel.create(newCartDetails);
+    try {
+      const newCartItem: CartDocument =
+        await this.cartModel.create(newCartDetails);
 
-    if (newCartItem) {
-      return this.buildResponse(newCartItem, 'Cart created successfully');
+      if (newCartItem) {
+        return this.buildResponse(newCartItem, 'Cart created successfully');
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error ?? '');
+
+      if (message.includes('space quota') || message.includes('WriteConflict')) {
+        throw new BadRequestException(
+          'Cart could not be updated because database storage is full. Free up space or contact support.',
+        );
+      }
+
+      throw error;
     }
   }
 

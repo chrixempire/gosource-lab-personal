@@ -42,6 +42,15 @@
   --customer-product-total-shadow: 0 6px 24px -8px rgba(251, 191, 36, 0.22);
 }
 
+/* Theme toggle: disable color transitions so shell + content swap together. */
+html.customer-theme-switching,
+html.customer-theme-switching *,
+html.customer-theme-switching *::before,
+html.customer-theme-switching *::after {
+  transition: none !important;
+  animation-duration: 0s !important;
+}
+
 @layer utilities {
   .customer-shell-bg {
     background: var(--customer-shell-gradient);

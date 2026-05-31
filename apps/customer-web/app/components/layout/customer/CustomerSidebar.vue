@@ -13,6 +13,7 @@ import {
   ClipboardList,
   CreditCard,
   ChevronDown,
+  BarChart3,
   LayoutGrid,
   Layers3,
   MessageCircleQuestion,
@@ -98,6 +99,7 @@ function onLeave(element: Element) {
 
 const navItems: NavLeaf[] = [
   { label: 'Market', icon: LayoutGrid, path: '/market' },
+  { label: 'Business insight', icon: BarChart3, path: '/business-insight' },
   { label: 'Orders', icon: ShoppingBag, path: '/track-orders' },
   { label: 'Wallet', icon: CreditCard, path: '/wallet' },
   { label: 'Request', icon: ClipboardList, path: '/manage-requests' },
@@ -123,7 +125,7 @@ function closeMobileNav() {
 </script>
 
 <template>
-  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-background-on-canvas text-grey-900 transition-colors duration-300">
+  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-background-on-canvas text-grey-900">
     <SidebarContent class="min-h-0 px-4 py-5">
       <SidebarMenu>
         <SidebarMenuItem v-for="item in visibleNavItems" :key="item.label">

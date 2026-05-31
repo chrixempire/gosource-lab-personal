@@ -6,17 +6,9 @@ import {
 } from '~/services/explore-cache.service';
 import { useCustomerOrderService } from '~/services/order.service';
 
+import { pickLatestOrderWithProducts } from '~/lib/explore-last-order';
+
 const EXPLORE_REVALIDATE_COOLDOWN_MS = 15000;
-
-function pickLatestOrderWithProducts(orders: OrderRecord[]): OrderRecord | null {
-  const candidates = orders.filter((order) => (order.products?.length ?? 0) > 0);
-
-  return (
-    candidates.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )[0] ?? null
-  );
-}
 
 export function useExploreLastOrder() {
   const { activeBranchId, hasSession } = useBusinessBranchContext();

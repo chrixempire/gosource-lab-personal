@@ -6,6 +6,9 @@ export {
 export const ORDER_TABLE_GRID_TEMPLATE =
   'minmax(0,2fr) minmax(0,1.2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,1.1fr) minmax(0,1fr) 3rem';
 
+export const ORDER_TABLE_GRID_TEMPLATE_NO_ACTIONS =
+  'minmax(0,2fr) minmax(0,1.2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,1.1fr) minmax(0,1fr)';
+
 export const ORDER_TABLE_SKELETON_COLUMNS = [
   {
     kind: 'stack' as const,
@@ -20,3 +23,5 @@ export const ORDER_TABLE_SKELETON_COLUMNS = [
   { kind: 'line' as const, lineClass: 'h-7 w-24 rounded-full' },
   { kind: 'line' as const, lineClass: 'h-8 w-14' },
 ];
+
+export const ORDER_TABLE_SKELETON_COLUMNS_NO_ACTIONS = ORDER_TABLE_SKELETON_COLUMNS.slice(0, -1);

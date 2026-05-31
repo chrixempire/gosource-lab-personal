@@ -20,7 +20,9 @@ import {
 import type { ProcurementInsightTableRow } from '~/lib/procurement-insight-table';
 import {
   PROCUREMENT_INSIGHT_TABLE_GRID_TEMPLATE,
+  PROCUREMENT_INSIGHT_TABLE_GRID_TEMPLATE_WITH_BRANCH,
   PROCUREMENT_INSIGHT_TABLE_SKELETON_COLUMNS,
+  PROCUREMENT_INSIGHT_TABLE_SKELETON_COLUMNS_WITH_BRANCH,
 } from '~/lib/orders-insight-table-layout';
 
 const props = withDefaults(
@@ -36,13 +38,28 @@ const props = withDefaults(
     periodLabel?: string;
     emptyTitle?: string;
     emptyDescription?: string;
+    /** All-branches view: show which branch drove the most spend per product. */
+    showBranchColumn?: boolean;
   }>(),
   {
     periodLabel: 'This month',
     emptyTitle: 'No procurement data',
     emptyDescription:
       'Products you order will appear here once orders are placed in the selected period.',
+    showBranchColumn: false,
   },
+);
+
+const tableGridTemplate = computed(() =>
+  props.showBranchColumn
+    ? PROCUREMENT_INSIGHT_TABLE_GRID_TEMPLATE_WITH_BRANCH
+    : PROCUREMENT_INSIGHT_TABLE_GRID_TEMPLATE,
+);
+
+const skeletonColumns = computed(() =>
+  props.showBranchColumn
+    ? PROCUREMENT_INSIGHT_TABLE_SKELETON_COLUMNS_WITH_BRANCH
+    : PROCUREMENT_INSIGHT_TABLE_SKELETON_COLUMNS,
 );
 
 const emit = defineEmits<{
@@ -57,10 +74,11 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
   <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
     <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
-        :style="{ gridTemplateColumns: PROCUREMENT_INSIGHT_TABLE_GRID_TEMPLATE }"
+        :style="{ gridTemplateColumns: tableGridTemplate }"
         :class="loading ? 'pointer-events-none opacity-60' : undefined"
       >
         <TableCell>Product</TableCell>
+        <TableCell v-if="showBranchColumn">Branch</TableCell>
         <TableCell>Qty</TableCell>
         <TableCell>Spend</TableCell>
         <TableCell>Breakdown</TableCell>
@@ -70,8 +88,8 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
 
     <TableSkeleton
       v-if="loading"
-      :columns="PROCUREMENT_INSIGHT_TABLE_SKELETON_COLUMNS"
-      :grid-template-columns="PROCUREMENT_INSIGHT_TABLE_GRID_TEMPLATE"
+      :columns="skeletonColumns"
+      :grid-template-columns="tableGridTemplate"
       :row-count="skeletonRowCount"
       :body-class="CUSTOMER_TABLE_BODY_CLASS"
     />
@@ -80,7 +98,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
       <TableRow
         v-for="row in rows"
         :key="row.id"
-        :style="{ gridTemplateColumns: PROCUREMENT_INSIGHT_TABLE_GRID_TEMPLATE }"
+        :style="{ gridTemplateColumns: tableGridTemplate }"
         :class="CUSTOMER_TABLE_STRIPED_ROW_CLASS"
       >
         <TableCell>
@@ -88,10 +106,15 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
             <p class="truncate text-sm font-medium text-grey-900">
               {{ row.name }}
             </p>
-            <p class="mt-0.5 truncate text-xs text-grey-300">
+            <p v-if="row.description" class="mt-0.5 truncate text-xs text-grey-300">
               {{ row.description }}
             </p>
           </div>
+        </TableCell>
+        <TableCell v-if="showBranchColumn">
+          <span class="block truncate text-sm text-grey-900">
+            {{ row.branchName ?? '—' }}
+          </span>
         </TableCell>
         <TableCell>
           <span class="text-sm tabular-nums text-grey-900">{{ row.quantity }}</span>
