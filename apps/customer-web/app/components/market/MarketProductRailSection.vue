@@ -2,14 +2,13 @@
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
+import ExploreProductResponsiveGrid from '~/components/explore/ExploreProductResponsiveGrid.vue';
 
 const props = withDefaults(
   defineProps<{
     title: string;
     products: MarketProduct[];
-    /** Green bordered promo block (reference market promotions). */
     variant?: 'default' | 'promotion';
-    /** Optional HTML icon from legacy promotion payload. */
     iconHtml?: string;
     expandable?: boolean;
     expanded?: boolean;
@@ -103,13 +102,13 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
   <section
     v-if="displayProducts.length"
     :class="[
-      isPromotion ? 'overflow-hidden rounded-[20px] border-2 border-primary-500' : '',
+      isPromotion ? 'overflow-hidden rounded-[20px] border-2 border-primary-500 dark:border-primary-500/30' : '',
     ]"
   >
     <div
       :class="[
         'flex flex-col gap-3 min-[720px]:flex-row min-[720px]:items-center min-[720px]:justify-between',
-        isPromotion ? 'bg-primary-500 px-4 py-4' : 'mb-4',
+        isPromotion ? 'customer-brand-hero px-4 py-4' : 'mb-4',
       ]"
     >
       <div class="flex min-w-0 items-center gap-2">
@@ -148,14 +147,14 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
           <span v-if="!expanded" aria-hidden="true" class="inline">&nbsp;›</span>
         </button>
 
-        <div v-if="showScrollButtons" class="flex gap-1">
+        <div v-if="showScrollButtons" class="hidden gap-1 min-[900px]:flex">
           <button
             type="button"
             :class="[
               'flex size-9 items-center justify-center rounded-full border shadow-sm transition disabled:cursor-not-allowed disabled:opacity-30',
               isPromotion
                 ? 'border-white/30 bg-white/15 text-white hover:bg-white/25 disabled:hover:bg-white/15'
-                : 'border-grey-50 bg-white text-grey-900 hover:bg-primary-50/70 hover:text-primary-500 disabled:hover:bg-white disabled:hover:text-grey-900',
+                : 'customer-control-btn flex size-9 shadow-sm',
             ]"
             :disabled="!canScrollLeft"
             aria-label="Scroll products left"
@@ -169,7 +168,7 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
               'flex size-9 items-center justify-center rounded-full border shadow-sm transition disabled:cursor-not-allowed disabled:opacity-30',
               isPromotion
                 ? 'border-white/30 bg-white/15 text-white hover:bg-white/25 disabled:hover:bg-white/15'
-                : 'border-grey-50 bg-white text-grey-900 hover:bg-primary-50/70 hover:text-primary-500 disabled:hover:bg-white disabled:hover:text-grey-900',
+                : 'customer-control-btn flex size-9 shadow-sm',
             ]"
             :disabled="!canScrollRight"
             aria-label="Scroll products right"
@@ -182,10 +181,16 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
     </div>
 
     <div :class="isPromotion ? 'px-4 pb-4' : ''">
+      <ExploreProductResponsiveGrid
+        v-if="!showGrid"
+        :products="displayProducts"
+        class="min-[900px]:hidden"
+      />
+
       <div
         v-if="!showGrid"
         ref="rail"
-        class="flex touch-pan-x gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        class="hidden touch-pan-x gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] min-[900px]:flex [&::-webkit-scrollbar]:hidden"
         @scroll.passive="updateProductScrollHints"
       >
         <div
@@ -197,48 +202,11 @@ const showHeaderActions = computed(() => props.expandable || showScrollButtons.v
         </div>
       </div>
 
-      <div
+      <ExploreProductResponsiveGrid
         v-else
-        class="market-products-grid w-full min-w-0"
-      >
-        <ExploreProductCard
-          v-for="p in displayProducts"
-          :key="`grid-${p.id}`"
-          :product="p"
-        />
-      </div>
+        :products="displayProducts"
+        key-prefix="grid-"
+      />
     </div>
   </section>
 </template>
-
-<style scoped>
-.market-products-grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .market-products-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 900px) {
-  .market-products-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1080px) {
-  .market-products-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1240px) {
-  .market-products-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-</style>

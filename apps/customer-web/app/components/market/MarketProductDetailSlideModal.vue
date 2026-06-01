@@ -157,7 +157,7 @@ onUnmounted(() => {
     >
       <div
         v-if="open && product"
-        class="fixed inset-0 z-[85] bg-[rgba(16,24,40,0.42)] backdrop-blur-[2px]"
+        class="fixed inset-0 z-[85] customer-modal-overlay backdrop-blur-[2px]"
         aria-hidden="true"
         @click="close"
       />
@@ -174,7 +174,7 @@ onUnmounted(() => {
       <aside
         v-if="open && product"
         data-testid="market-product-detail-slide-modal"
-        class="fixed right-3 top-[5%] z-[90] flex h-[90dvh] w-[calc(100%-1.5rem)] max-w-[420px] flex-col overflow-hidden rounded-[24px] border border-grey-50 bg-white shadow-[0_28px_72px_-20px_rgba(16,24,40,0.38)] sm:right-4 sm:w-[min(100%-2rem,420px)]"
+        class="fixed right-3 top-[5%] z-[90] flex h-[90dvh] w-[calc(100%-1.5rem)] max-w-[420px] flex-col overflow-hidden rounded-[24px] border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300 sm:right-4 sm:w-[min(100%-2rem,420px)]"
         role="dialog"
         aria-modal="true"
         :aria-label="modalTitle"
@@ -188,7 +188,7 @@ onUnmounted(() => {
           </h2>
           <button
             type="button"
-            class="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 transition hover:bg-grey-55"
+            class="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-background-on-canvas text-grey-900 transition hover:bg-grey-55"
             aria-label="Close product details"
             @click="close"
           >
@@ -217,7 +217,7 @@ onUnmounted(() => {
                 v-if="inStock"
                 variant="neutral"
                 size="small"
-                class="!absolute !right-2.5 !top-2.5 !z-10 !h-9 !w-auto !rounded-full !border-grey-50 !bg-white/95 !px-3.5 !text-sm !font-semibold !shadow-[0_8px_20px_-10px_rgba(16,24,40,0.35)] backdrop-blur-sm"
+                class="!absolute !right-2.5 !top-2.5 !z-10 !h-9 !w-auto !rounded-full !border-grey-50 !bg-background-on-canvas/95 !px-3.5 !text-sm !font-semibold !shadow-[var(--customer-card-shadow)] backdrop-blur-sm"
                 type="button"
                 :left-icon="ClipboardList"
                 @click="onAddToList"
@@ -226,21 +226,21 @@ onUnmounted(() => {
               </Button>
             </div>
 
-            <div class="p-2.5">
+            <div class="px-2.5 pb-8 pt-2.5">
             <section class="space-y-2">
               <h3 class="text-[11px] font-semibold uppercase tracking-[0.14em] text-grey-300">
                 Product details
               </h3>
-              <p class="text-[15px] leading-6 text-grey-text">
+              <p class="line-clamp-3 text-[15px] leading-6 text-grey-text">
                 {{ detailText }}
-                <NuxtLink
-                  :to="`/market/product/${product.id}`"
-                  class="inline font-semibold text-primary-500 underline-offset-2 hover:underline"
-                  @click="close"
-                >
-                  &nbsp;View full page
-                </NuxtLink>
               </p>
+              <NuxtLink
+                :to="`/market/product/${product.id}`"
+                class="inline-block text-sm font-semibold text-primary-500 underline-offset-2 hover:underline"
+                @click="close"
+              >
+                View full page
+              </NuxtLink>
             </section>
 
             <section class="mt-5 space-y-2.5">
@@ -259,8 +259,8 @@ onUnmounted(() => {
                   :class="[
                     'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-3 transition-colors',
                     selectedUnit === opt!.name
-                      ? 'border-primary-500 bg-primary-50/80'
-                      : 'border-grey-50 bg-white hover:border-primary-300/60 hover:bg-primary-50/30',
+                      ? 'border-primary-500 bg-primary-50/80 dark:border-primary-500/45 dark:bg-primary-500/12'
+                      : 'border-grey-50 bg-background-on-canvas hover:border-primary-300/60 hover:bg-primary-50/30 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/8',
                   ]"
                 >
                   <RadioGroupItem :value="opt!.name" />
@@ -297,7 +297,7 @@ onUnmounted(() => {
 
           <div
             v-if="inStock"
-            class="shrink-0 bg-white px-2.5 pb-1 pt-2.5"
+            class="shrink-0 bg-background-on-canvas px-3 pb-2 pt-0 transition-colors duration-300"
           >
             <MarketProductLineTotal
               :product="product"
@@ -307,7 +307,7 @@ onUnmounted(() => {
           </div>
 
           <footer
-            class="shrink-0 border-t border-grey-50 bg-white p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]"
+            class="shrink-0 border-t border-grey-50 bg-background-on-canvas p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] transition-colors duration-300"
           >
             <template v-if="inStock">
               <MarketProductDetailCartActions

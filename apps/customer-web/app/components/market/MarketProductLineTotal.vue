@@ -19,10 +19,12 @@ const lineTotalNaira = computed(() => {
 
 <template>
   <div
-    class="box-border flex w-full min-w-full max-w-none shrink-0 items-center justify-between gap-3 self-stretch rounded-[12px] border border-warning-100 bg-[rgba(247,144,9,0.08)] px-3 py-2.5 text-[15px]"
+    class="customer-product-total box-border flex w-full min-w-full max-w-none shrink-0 items-center justify-between gap-4 self-stretch rounded-[14px] px-4 py-3.5"
   >
-    <span class="font-medium text-grey-900">Total price</span>
-    <span class="shrink-0 font-semibold text-warning-700">
+    <span class="customer-product-total-label text-[13px] font-semibold uppercase tracking-[0.12em]">
+      Total price
+    </span>
+    <span class="customer-product-total-price shrink-0 text-[18px] font-bold leading-none tabular-nums">
       {{ formatNaira(lineTotalNaira) }}
     </span>
   </div>

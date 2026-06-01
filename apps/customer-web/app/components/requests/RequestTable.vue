@@ -15,7 +15,7 @@ import {
 } from '@gosource/ui';
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import type { RequestListItem } from './RequestCards.vue';
-import { CUSTOMER_TABLE_BODY_CLASS } from '~/lib/customer-table-layout';
+import { CUSTOMER_TABLE_BODY_CLASS, CUSTOMER_TABLE_DATA_ROW_CLASS } from '~/lib/customer-table-layout';
 import {
   REQUEST_LIST_PANEL_CLASS,
   REQUEST_TABLE_GRID_TEMPLATE,
@@ -89,7 +89,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
         v-for="request in requests"
         :key="request.id"
         :data-testid="`request-row-${request.id}`"
-        class="cursor-pointer transition-colors duration-150 hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
+        :class="CUSTOMER_TABLE_DATA_ROW_CLASS"
         :style="{ gridTemplateColumns: REQUEST_TABLE_GRID_TEMPLATE }"
         @click="emit('rowClick', request)"
       >

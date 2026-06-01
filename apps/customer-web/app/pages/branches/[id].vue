@@ -300,7 +300,7 @@ const formattedMembers = computed(() =>
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-6">
+  <div class="flex w-full flex-col gap-2">
     <div class="flex items-center justify-between">
       <Button
         variant="neutral"
@@ -347,20 +347,20 @@ const formattedMembers = computed(() =>
       </DropdownMenu>
     </div>
 
-    <div v-if="loading" class="flex flex-col gap-6">
+    <div v-if="loading" class="flex flex-col gap-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div
           v-for="index in 3"
           :key="index"
-          class="rounded-[24px] border border-grey-50 bg-white px-5 py-5"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-5 py-5"
         >
           <div class="h-3 w-24 animate-pulse rounded bg-grey-50" />
           <div class="mt-4 h-8 w-40 animate-pulse rounded bg-grey-50" />
         </div>
       </div>
 
-      <section class="rounded-[24px] border border-grey-50 bg-white p-5">
-        <div class="flex flex-col gap-4">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+        <div class="flex flex-col gap-2">
           <div>
             <div class="h-7 w-48 max-w-full animate-pulse rounded bg-grey-50" />
             <div class="mt-2 h-4 w-[min(100%,20rem)] animate-pulse rounded bg-grey-50" />
@@ -380,15 +380,15 @@ const formattedMembers = computed(() =>
         </div>
       </section>
 
-      <section class="flex flex-col gap-4">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <section class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div class="h-7 w-40 max-w-full animate-pulse rounded bg-grey-50" />
             <div class="mt-2 h-4 w-64 max-w-full animate-pulse rounded bg-grey-50" />
           </div>
         </div>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="h-10 w-full max-w-md animate-pulse rounded-[10px] bg-grey-50" />
           <div class="h-9 w-36 shrink-0 animate-pulse rounded-[10px] bg-grey-50" />
         </div>
@@ -427,12 +427,12 @@ const formattedMembers = computed(() =>
       </section>
     </div>
 
-    <div v-else-if="branch" class="flex flex-col gap-6">
+    <div v-else-if="branch" class="flex flex-col gap-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div
           v-for="card in summaryCards"
           :key="card.label"
-          class="rounded-[24px] border border-grey-50 bg-white px-5 py-5"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-5 py-5"
         >
           <p class="text-xs font-semibold uppercase tracking-[0.08em] text-grey-300">
             {{ card.label }}
@@ -443,8 +443,8 @@ const formattedMembers = computed(() =>
         </div>
       </div>
 
-      <section class="rounded-[24px] border border-grey-50 bg-white p-5">
-        <div class="flex flex-col gap-4">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+        <div class="flex flex-col gap-2">
           <div>
             <div class="flex items-center gap-3">
               <h2 class="text-xl font-semibold text-grey-900">
@@ -511,8 +511,8 @@ const formattedMembers = computed(() =>
         </div>
       </section>
 
-      <section class="flex flex-col gap-4">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <section class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 class="text-xl font-semibold text-grey-900">Members</h2>
             <p class="mt-1 text-sm text-grey-text">
@@ -521,7 +521,7 @@ const formattedMembers = computed(() =>
           </div>
         </div>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="w-full sm:max-w-md">
             <SearchField
               v-model="membersSearchValue"
@@ -541,12 +541,12 @@ const formattedMembers = computed(() =>
           </Button>
         </div>
 
-        <div v-if="isCompactViewport" class="space-y-4">
+        <div v-if="isCompactViewport" class="space-y-2">
           <div v-if="membersLoading" class="grid gap-4">
             <div
               v-for="index in 4"
               :key="index"
-              class="rounded-[24px] border border-grey-50 bg-white p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
+              class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
             >
               <div class="flex items-start gap-3">
                 <div class="size-10 shrink-0 animate-pulse rounded-full bg-grey-55" />
@@ -574,7 +574,7 @@ const formattedMembers = computed(() =>
             <article
               v-for="member in formattedMembers"
               :key="member.id"
-              class="rounded-[24px] border border-grey-50 bg-white p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
+              class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
             >
               <div class="flex items-start gap-3">
                 <Avatar size="md" :fallback="member.fallback" />
@@ -618,7 +618,7 @@ const formattedMembers = computed(() =>
 
           <div
             v-else
-            class="rounded-[24px] border border-grey-50 bg-white px-6 py-14 text-center"
+            class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-6 py-14 text-center"
           >
             <p class="text-base font-semibold text-grey-900">
               {{ membersSearchActive ? 'No members match your search' : 'No members in this branch yet' }}
@@ -740,7 +740,7 @@ const formattedMembers = computed(() =>
 
     <div
       v-else
-      class="rounded-[24px] border border-grey-50 bg-white px-6 py-14 text-center text-sm text-grey-300"
+      class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-6 py-14 text-center text-sm text-grey-300"
     >
       Branch not found.
     </div>

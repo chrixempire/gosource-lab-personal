@@ -1,42 +1,15 @@
 <script setup lang="ts">
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import ExploreMobileProductTripleGrid from '~/components/explore/ExploreMobileProductTripleGrid.vue';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
 
-const props = defineProps<{
+defineProps<{
   products: MarketProduct[];
-  /** Omit top border when parent provides separation */
   flush?: boolean;
 }>();
 
-const rail = ref<HTMLElement | null>(null);
-const canScrollProducts = ref(false);
-const canScrollLeft = ref(false);
-const canScrollRight = ref(false);
-
-function updateHints() {
-  const el = rail.value;
-  if (!el) {
-    return;
-  }
-  const { scrollLeft, scrollWidth, clientWidth } = el;
-  canScrollProducts.value = scrollWidth > clientWidth + 2;
-  canScrollLeft.value = scrollLeft > 4;
-  canScrollRight.value = scrollLeft + clientWidth < scrollWidth - 4;
-}
-
-function scrollBy(delta: number) {
-  rail.value?.scrollBy({ left: delta, behavior: 'smooth' });
-}
-
-onMounted(() => {
-  nextTick(updateHints);
-});
-
-watch(
-  () => props.products.length,
-  () => nextTick(updateHints),
-);
+const mobileGridRef = ref<InstanceType<typeof ExploreMobileProductTripleGrid> | null>(null);
 </script>
 
 <template>
@@ -44,47 +17,74 @@ watch(
     v-if="products.length"
     :class="[
       'space-y-3 pt-4',
-      props.flush ? '' : 'border-t border-grey-50',
+      flush ? '' : 'border-t border-grey-50',
     ]"
   >
-    <div class="flex items-center justify-between gap-3">
-      <h3 class="text-base font-semibold text-grey-900">
+    <header class="flex items-center justify-between gap-2">
+      <h3 class="min-w-0 truncate text-base font-semibold text-grey-900">
         Similar products
       </h3>
-      <div v-if="canScrollProducts" class="flex gap-1">
+
+      <div v-if="mobileGridRef?.canScroll" class="flex shrink-0 gap-1 min-[900px]:hidden">
         <button
           type="button"
-          class="flex size-9 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
-          :disabled="!canScrollLeft"
+          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+          :disabled="!mobileGridRef?.canScrollLeft"
           aria-label="Scroll similar products left"
-          @click="scrollBy(-220)"
+          @click="mobileGridRef?.scrollByDirection(-1)"
         >
-          <ChevronLeft class="size-5" />
+          <ChevronLeft class="size-5" aria-hidden="true" />
         </button>
         <button
           type="button"
-          class="flex size-9 items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 shadow-sm transition hover:bg-primary-50/70 hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-grey-900"
-          :disabled="!canScrollRight"
+          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+          :disabled="!mobileGridRef?.canScrollRight"
           aria-label="Scroll similar products right"
-          @click="scrollBy(220)"
+          @click="mobileGridRef?.scrollByDirection(1)"
         >
-          <ChevronRight class="size-5" />
+          <ChevronRight class="size-5" aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </header>
 
-    <div
-      ref="rail"
-      class="flex touch-pan-x gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      @scroll.passive="updateHints"
-    >
-      <div
+    <ExploreMobileProductTripleGrid
+      ref="mobileGridRef"
+      :products="products"
+      class="min-[900px]:hidden"
+    />
+
+    <div class="explore-products-grid">
+      <ExploreProductCard
         v-for="product in products"
         :key="product.id"
-        class="w-[220px] shrink-0"
-      >
-        <ExploreProductCard :product="product" />
-      </div>
+        :product="product"
+      />
     </div>
   </div>
 </template>
+
+<style scoped>
+.explore-products-grid {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .explore-products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1080px) {
+  .explore-products-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1240px) {
+  .explore-products-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+</style>

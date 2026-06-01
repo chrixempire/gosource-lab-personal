@@ -264,7 +264,7 @@ const stripLayoutClass = computed(() => (isDetail.value ? 'items-stretch' : 'ite
 const minusBtnClass = computed(() => {
   if (isDetail.value) {
     return [
-      'flex min-h-0 min-w-0 basis-[35%] flex-shrink-0 flex-grow-0 items-center justify-center rounded-l-full rounded-r-none text-grey-700 transition-colors disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-[#d0d5dd]',
+      'flex min-h-0 min-w-0 basis-[35%] flex-shrink-0 flex-grow-0 items-center justify-center rounded-l-full rounded-r-none text-grey-700 transition-colors disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-background-active',
       minusDisabled.value ? 'opacity-50' : '',
     ];
   }
@@ -281,7 +281,7 @@ const minusBtnClass = computed(() => {
 const plusBtnClass = computed(() => {
   if (isDetail.value) {
     return [
-      'flex min-h-0 min-w-0 basis-[35%] flex-shrink-0 flex-grow-0 items-center justify-center rounded-r-full rounded-l-none text-grey-700 transition-colors disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-[#d0d5dd]',
+      'flex min-h-0 min-w-0 basis-[35%] flex-shrink-0 flex-grow-0 items-center justify-center rounded-r-full rounded-l-none text-grey-700 transition-colors disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-background-active',
       props.disabled ? 'opacity-50' : '',
     ];
   }
@@ -308,7 +308,7 @@ const stripInputClass = computed(() => {
     '!min-h-0 !w-full !px-1 !py-0 !text-center !font-semibold !tabular-nums !shadow-none disabled:!opacity-100';
 
   if (isDetail.value) {
-    return `${base} !h-full !rounded-md !border !border-grey-50 !bg-white !text-[16px] !text-grey-900 focus:!border-border-input-active disabled:!bg-white`;
+    return `${base} !h-full !rounded-md !border !border-grey-50 !bg-background-on-canvas !text-[16px] !text-grey-900 focus:!border-border-input-active disabled:!bg-background-on-canvas`;
   }
 
   const size = isExplore.value

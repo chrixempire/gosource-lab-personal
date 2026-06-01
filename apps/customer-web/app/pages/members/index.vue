@@ -540,7 +540,7 @@ function openRefreshInviteLink(member: BranchMemberRecord) {
 }
 
 const cardArticleBaseClass =
-  'max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-[background-color,box-shadow,border-color] duration-150';
+  'max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-[background-color,box-shadow,border-color] duration-150';
 
 function cardArticleClass(member: BranchMemberRecord) {
   if (member.kind === 'member') {
@@ -552,17 +552,8 @@ function cardArticleClass(member: BranchMemberRecord) {
 
 <template>
   <div class="flex flex-col gap-2">
-    <p class="max-w-3xl text-base leading-7 text-grey-text">
-      {{
-        isEmployeeSession
-          ? 'Members assigned to your branch.'
-          : 'Invite and manage the members assigned to each branch.'
-      }}
-    </p>
-
-    <div class="flex flex-col gap-6">
-      <div class="flex flex-col gap-4 min-[1000px]:flex-row min-[1000px]:items-end min-[1000px]:justify-between">
-        <div class="w-full min-[1000px]:max-w-md space-y-3">
+      <div class="flex flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-end min-[1000px]:justify-between">
+        <div class="w-full min-[1000px]:max-w-md space-y-2">
           <BranchPickerDropdown
             v-if="!isEmployeeSession"
             :model-value="selectedBranchId"
@@ -571,27 +562,23 @@ function cardArticleClass(member: BranchMemberRecord) {
             @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
           />
 
-          <div
-            v-else
-            class="rounded-[12px] border border-grey-50 bg-grey-55/50 px-4 py-3"
-          >
-            <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-grey-300">
-              Branch
-            </p>
-            <p class="mt-1 truncate text-sm font-semibold text-grey-900">
-              <template v-if="branchesLoading">
-                …
-              </template>
-              <template v-else-if="selectedBranch">
-                {{ selectedBranch.branchName }}
-                <span v-if="selectedBranch.branchCode" class="font-normal text-grey-300">
-                  · {{ selectedBranch.branchCode }}
-                </span>
-              </template>
-              <template v-else>
-                {{ employeeBranchId ? 'Your branch' : '—' }}
-              </template>
-            </p>
+          <div v-else class="w-full min-[720px]:w-fit">
+            <Button
+              variant="primary"
+              size="small"
+              class="!w-fit max-w-full shrink-0 whitespace-nowrap"
+              disabled
+            >
+              <span class="min-w-0 truncate">
+                <template v-if="branchesLoading">…</template>
+                <template v-else-if="selectedBranch">
+                  {{ selectedBranch.branchName }}{{ selectedBranch.isHeadquarter ? ' (Headquarter)' : '' }}
+                </template>
+                <template v-else>
+                  {{ employeeBranchId ? 'Your branch' : '—' }}
+                </template>
+              </span>
+            </Button>
           </div>
 
           <SearchField
@@ -778,7 +765,7 @@ function cardArticleClass(member: BranchMemberRecord) {
         </TableFooter>
       </TableShell>
 
-      <div v-else-if="!membersListLoading" class="space-y-4">
+      <div v-else-if="!membersListLoading" class="space-y-2">
         <div v-if="formattedMembers.length > 0" class="flex flex-wrap gap-4">
           <article
             v-for="member in formattedMembers"
@@ -848,7 +835,7 @@ function cardArticleClass(member: BranchMemberRecord) {
 
         <div
           v-else
-          class="rounded-[24px] border border-grey-50 bg-white px-6 py-14 text-center"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-6 py-14 text-center"
         >
           <p class="text-base font-semibold text-grey-900">
             {{
@@ -888,7 +875,7 @@ function cardArticleClass(member: BranchMemberRecord) {
         <div
           v-for="index in 4"
           :key="index"
-          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
+          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="flex min-w-0 flex-1 items-start gap-3">
@@ -919,7 +906,6 @@ function cardArticleClass(member: BranchMemberRecord) {
           </div>
         </div>
       </div>
-    </div>
 
     <BranchInviteMemberOverlay
       v-model:open="inviteOpen"

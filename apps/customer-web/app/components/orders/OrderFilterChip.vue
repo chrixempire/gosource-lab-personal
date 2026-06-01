@@ -23,8 +23,8 @@ const showBadge = computed(
         '!inline-flex !h-9 !w-auto shrink-0 rounded-full border px-3.5 text-sm font-medium !shadow-none',
         'hover:!translate-y-0 active:!translate-y-0',
         active
-          ? 'border-primary-500 !bg-primary-50 !text-primary-600 hover:!border-primary-500 hover:!bg-primary-50 hover:!text-primary-600 [&_svg]:!text-primary-600'
-          : 'border-border-input-default !bg-white !text-grey-800 hover:!border-primary-300 hover:!bg-white hover:!text-grey-800 [&_svg]:!text-grey-500',
+          ? 'border-primary-500 !bg-primary-50 !text-primary-800 hover:!border-primary-500 hover:!bg-primary-50 hover:!text-primary-800 [&_svg]:!text-primary-800'
+          : 'border-grey-50 !bg-background-on-canvas !text-grey-900 hover:!border-primary-300 hover:!bg-grey-55 hover:!text-grey-900 [&_svg]:!text-grey-400',
       )
     "
   >

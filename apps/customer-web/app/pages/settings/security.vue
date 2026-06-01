@@ -165,8 +165,8 @@ async function confirmEmailChange() {
 </script>
 
 <template>
-  <div class="flex w-full max-w-2xl flex-col gap-8">
-    <section class="rounded-[24px] border border-grey-50 bg-white p-6">
+  <div class="flex w-full max-w-2xl flex-col gap-2">
+    <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6">
       <div class="space-y-1">
         <h2 class="text-base font-semibold text-grey-900">Change your password</h2>
         <p class="text-sm text-grey-300">
@@ -242,7 +242,7 @@ async function confirmEmailChange() {
       </form>
     </section>
 
-    <section class="rounded-[24px] border border-grey-50 bg-white p-6">
+    <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6">
       <div class="space-y-1">
         <h2 class="text-base font-semibold text-grey-900">Change your email</h2>
         <p class="text-sm text-grey-300">

@@ -578,7 +578,12 @@ export default defineEventHandler(async (event) => {
       }
 
       if (method === 'POST') {
-        return normalizeLegacyCartMutationResponse(legacyData, 'Cart created successfully');
+        try {
+          return normalizeLegacyCartMutationResponse(legacyData, 'Cart created successfully');
+        } catch (normalizeError) {
+          console.error('[proxy] Failed to normalize legacy cart mutation response', normalizeError);
+          return legacyData;
+        }
       }
 
       if (method === 'PATCH') {

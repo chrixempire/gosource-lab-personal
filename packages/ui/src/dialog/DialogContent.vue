@@ -27,7 +27,7 @@ const forwarded = useForwardPropsEmits(props, emits);
     <DialogOverlay
       :class="
         cn(
-          'fixed inset-0 z-50 bg-[rgba(16,24,40,0.52)] backdrop-blur-[2px]',
+          'fixed inset-0 z-50 bg-overlay-scrim backdrop-blur-[2px]',
           props.overlayClass,
         )
       "

@@ -41,7 +41,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   rowCount: 10,
-  rowClass: 'min-h-16 py-2.5 bg-white',
+  rowClass: 'min-h-16 py-2.5 bg-background-on-canvas',
 });
 
 const rows = computed(() => Array.from({ length: props.rowCount }, (_, index) => index));

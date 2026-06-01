@@ -205,7 +205,7 @@ watch(
     >
       <div
         v-if="open"
-        class="fixed inset-0 z-[85] bg-[rgba(16,24,40,0.35)] backdrop-blur-[1px]"
+        class="fixed inset-0 z-[85] customer-modal-overlay backdrop-blur-[1px]"
         aria-hidden="true"
         @click="close"
       />
@@ -221,7 +221,7 @@ watch(
     >
       <aside
         v-if="open"
-        class="fixed inset-y-0 right-0 z-[90] flex w-full max-w-md flex-col border-l border-grey-50 bg-background-on-canvas shadow-[-24px_0_64px_-24px_rgba(16,24,40,0.28)]"
+        class="fixed inset-y-0 right-0 z-[90] flex w-full max-w-md flex-col border-l border-grey-50 bg-background-on-canvas shadow-[var(--customer-drawer-shadow)] transition-colors duration-300"
         role="dialog"
         aria-modal="true"
         :aria-label="isAddingToRequest ? 'Request items' : 'Shopping cart'"
@@ -244,7 +244,7 @@ watch(
             </div>
             <button
               type="button"
-              class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white text-grey-900 transition hover:bg-primary-50/70 hover:text-primary-500"
+              class="customer-control-btn flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full"
               :aria-label="isAddingToRequest ? 'Close request items' : 'Close cart'"
               @click="close"
             >
@@ -310,7 +310,7 @@ watch(
 
         <div
           v-if="activeEntries.length || isAddingToRequest"
-          class="border-t border-grey-50 bg-white/90 px-4 py-4 backdrop-blur"
+          class="border-t border-grey-50 bg-background-on-canvas/90 px-4 py-4 backdrop-blur transition-colors duration-300"
         >
           <template v-if="isAddingToRequest">
             <div class="space-y-2 text-sm text-grey-text">
@@ -346,8 +346,8 @@ watch(
             <div class="mt-3 flex gap-2">
               <Button
                 size="medium"
-                variant="secondary"
-                class="min-w-0 flex-1"
+                variant="outline"
+                class="customer-muted-action-btn min-w-0 flex-1"
                 type="button"
                 @click="continueShoppingAction"
               >
@@ -381,8 +381,8 @@ watch(
             <div class="mt-3 flex gap-[8px]">
               <Button
                 size="medium"
-                variant="secondary"
-                class="min-w-0 flex-1"
+                variant="outline"
+                class="customer-muted-action-btn min-w-0 flex-1"
                 type="button"
                 @click="continueShopping"
               >

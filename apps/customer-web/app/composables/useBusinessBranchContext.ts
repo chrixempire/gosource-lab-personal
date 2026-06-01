@@ -78,7 +78,6 @@ export function useBusinessBranchContext() {
   async function ensureBranchesLoaded(force = false) {
     if (!hasSession.value) {
       branches.value = [];
-      branchFetchInitialized.value = true;
       activeBranchId.value = null;
       return branches.value;
     }
@@ -186,6 +185,18 @@ export function useBusinessBranchContext() {
     activeBranchId.value = null;
     branchFetchInitialized.value = false;
     branchFetchLoading.value = false;
+  }
+
+  if (import.meta.client) {
+    watch(
+      hasSession,
+      (ready) => {
+        if (ready) {
+          void ensureBranchesLoaded();
+        }
+      },
+      { immediate: true },
+    );
   }
 
   return {

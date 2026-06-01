@@ -35,6 +35,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean];
 }>();
 
+const route = useRoute();
 const { setQuantityForUnit, loadCart } = useMarketplaceCart();
 const { cartDrawerOpen } = useMarketplaceUi();
 const { ensureBranchForAction } = useMarketBranchGate();
@@ -114,6 +115,12 @@ async function onAddToCart() {
     );
     void refreshExploreLastOrder({ force: true });
     void refreshExploreProcurement({ force: true });
+
+    if (!route.path.startsWith('/market')) {
+      await navigateTo('/market');
+      await nextTick();
+    }
+
     cartDrawerOpen.value = true;
     close();
   } finally {
@@ -152,7 +159,7 @@ async function onAddToCart() {
             <li
               v-for="line in visibleLines"
               :key="line.key"
-              class="flex gap-3 rounded-[16px] border border-grey-50 bg-white p-3 shadow-sm"
+              class="flex gap-3 rounded-[16px] border border-grey-50 bg-background-on-canvas p-3 shadow-sm transition-colors duration-300"
             >
               <div
                 class="relative aspect-square w-[4.5rem] shrink-0 overflow-hidden rounded-[14px] bg-grey-55"

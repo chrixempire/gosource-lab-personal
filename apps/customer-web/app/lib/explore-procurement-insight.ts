@@ -7,6 +7,8 @@ export type ProcuredItemRow = {
   quantity: number;
   description: string;
   lastPurchaseDate: string | Date | null;
+  /** Branch with the highest spend for this product (all-branches views). */
+  branchName?: string;
 };
 
 export type SpendingBreakdownRow = {
@@ -54,6 +56,20 @@ function parseOrderTimestamp(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/** Best-effort subtitle for order lines (API order products have no description field). */
+function descriptionFromOrderLine(line: OrderRecord['products'][number]) {
+  const unit = line.unit?.trim();
+  return unit || '';
+}
+
+function mergeDescription(existing: string, next: string) {
+  if (existing.trim()) {
+    return existing;
+  }
+
+  return next.trim();
+}
+
 export function buildProcurementItemsFromOrders(orders: OrderRecord[]): ProcuredItemRow[] {
   const totals = new Map<
     string,
@@ -94,7 +110,7 @@ export function buildProcurementItemsFromOrders(orders: OrderRecord[]): Procured
       totals.set(name, {
         totalCost: existing.totalCost + amount,
         quantity: existing.quantity + (Number.isFinite(lineQty) ? lineQty : 0),
-        description: existing.description,
+        description: mergeDescription(existing.description, descriptionFromOrderLine(line)),
         lastPurchaseDate:
           purchaseDate &&
           (!existing.lastPurchaseDate || purchaseDate > existing.lastPurchaseDate)
@@ -111,6 +127,182 @@ export function buildProcurementItemsFromOrders(orders: OrderRecord[]): Procured
     description: row.description,
     lastPurchaseDate: row.lastPurchaseDate,
   }));
+}
+
+/** Aggregates products across orders; attributes each line to the top-spend branch. */
+export function buildProcurementItemsFromOrdersWithBranch(
+  orders: OrderRecord[],
+): ProcuredItemRow[] {
+  const totals = new Map<
+    string,
+    {
+      totalCost: number;
+      quantity: number;
+      description: string;
+      lastPurchaseDate: Date | null;
+      branchSpend: Map<string, number>;
+      branchLabels: Map<string, string>;
+    }
+  >();
+
+  for (const order of orders) {
+    const purchaseDate = parseOrderTimestamp(order.createdAt);
+    const branchKey = order.branchId?.trim() || order.branchName?.trim() || 'unknown';
+    const branchLabel = order.branchName?.trim() || 'Unknown branch';
+
+    for (const line of order.products ?? []) {
+      const name = line.productName?.trim();
+      if (!name) {
+        continue;
+      }
+
+      const amount =
+        line.totalPrice > 0
+          ? line.totalPrice
+          : Math.max(0, line.unitPrice) * Math.max(0, line.quantity);
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        continue;
+      }
+
+      const lineQty = Math.max(0, Number(line.quantity ?? 0));
+      const existing = totals.get(name) ?? {
+        totalCost: 0,
+        quantity: 0,
+        description: '',
+        lastPurchaseDate: null,
+        branchSpend: new Map<string, number>(),
+        branchLabels: new Map<string, string>(),
+      };
+
+      existing.branchLabels.set(branchKey, branchLabel);
+      existing.branchSpend.set(
+        branchKey,
+        (existing.branchSpend.get(branchKey) ?? 0) + amount,
+      );
+
+      totals.set(name, {
+        totalCost: existing.totalCost + amount,
+        quantity: existing.quantity + (Number.isFinite(lineQty) ? lineQty : 0),
+        description: mergeDescription(existing.description, descriptionFromOrderLine(line)),
+        lastPurchaseDate:
+          purchaseDate &&
+          (!existing.lastPurchaseDate || purchaseDate > existing.lastPurchaseDate)
+            ? purchaseDate
+            : existing.lastPurchaseDate,
+        branchSpend: existing.branchSpend,
+        branchLabels: existing.branchLabels,
+      });
+    }
+  }
+
+  return [...totals.entries()].map(([name, row]) => {
+    let topBranchKey = '';
+    let topBranchSpend = 0;
+
+    for (const [branchKey, spend] of row.branchSpend.entries()) {
+      if (spend > topBranchSpend) {
+        topBranchSpend = spend;
+        topBranchKey = branchKey;
+      }
+    }
+
+    return {
+      name,
+      totalCost: row.totalCost,
+      quantity: row.quantity,
+      description: row.description,
+      lastPurchaseDate: row.lastPurchaseDate,
+      branchName: row.branchLabels.get(topBranchKey) ?? '—',
+    };
+  });
+}
+
+function parseProcuredItemDate(value: string | Date | null | undefined) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** Merges per-branch procurement rows for all-branches views (same sources as single-branch insight). */
+export function mergeProcurementItemsAcrossBranches(
+  entries: Array<{ branchId: string; branchName: string; items: ProcuredItemRow[] }>,
+): ProcuredItemRow[] {
+  const totals = new Map<
+    string,
+    {
+      totalCost: number;
+      quantity: number;
+      description: string;
+      lastPurchaseDate: Date | null;
+      branchSpend: Map<string, { spend: number; label: string }>;
+    }
+  >();
+
+  for (const { branchId, branchName, items } of entries) {
+    const branchKey = branchId.trim() || branchName.trim() || 'unknown';
+    const branchLabel = branchName.trim() || 'Unknown branch';
+
+    for (const item of items) {
+      const name = item.name.trim();
+      if (!name) {
+        continue;
+      }
+
+      const existing = totals.get(name) ?? {
+        totalCost: 0,
+        quantity: 0,
+        description: '',
+        lastPurchaseDate: null,
+        branchSpend: new Map<string, { spend: number; label: string }>(),
+      };
+
+      const branchEntry = existing.branchSpend.get(branchKey) ?? { spend: 0, label: branchLabel };
+      branchEntry.spend += item.totalCost;
+      existing.branchSpend.set(branchKey, branchEntry);
+
+      const itemDate = parseProcuredItemDate(item.lastPurchaseDate);
+
+      totals.set(name, {
+        totalCost: existing.totalCost + item.totalCost,
+        quantity: existing.quantity + item.quantity,
+        description: mergeDescription(existing.description, item.description),
+        lastPurchaseDate:
+          itemDate && (!existing.lastPurchaseDate || itemDate > existing.lastPurchaseDate)
+            ? itemDate
+            : existing.lastPurchaseDate,
+        branchSpend: existing.branchSpend,
+      });
+    }
+  }
+
+  return [...totals.entries()].map(([name, row]) => {
+    let topBranchLabel = '—';
+    let topSpend = 0;
+
+    for (const { spend, label } of row.branchSpend.values()) {
+      if (spend > topSpend) {
+        topSpend = spend;
+        topBranchLabel = label;
+      }
+    }
+
+    return {
+      name,
+      totalCost: row.totalCost,
+      quantity: row.quantity,
+      description: row.description,
+      lastPurchaseDate: row.lastPurchaseDate,
+      branchName: topBranchLabel,
+    };
+  });
 }
 
 export function sumProcuredItemSpend(items: ProcuredItemRow[]) {

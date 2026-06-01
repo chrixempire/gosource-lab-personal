@@ -38,7 +38,6 @@ async function onAddAll() {
       quantity: line.quantity,
       productName: line.productName,
     })),
-    { navigateToMarket: false, openDrawer: true },
   );
 
   if (result.ok) {
@@ -53,7 +52,7 @@ function onReview() {
 
 <template>
   <article
-    class="flex h-full flex-col rounded-[24px] bg-primary-500 p-5 text-white transition-transform duration-300 ease-out hover:-translate-y-1"
+    class="customer-brand-hero flex h-full flex-col rounded-[24px] p-5 transition-transform duration-300 ease-out hover:-translate-y-1"
   >
     <div class="flex items-center justify-between gap-3 text-[11px] font-medium uppercase tracking-[0.12em] text-white/75">
       <span class="inline-flex items-center gap-1.5">
@@ -77,7 +76,7 @@ function onReview() {
             :style="{ zIndex: avatarLines.length - index }"
           >
             <div
-              class="relative size-11 overflow-hidden rounded-[12px] border-2 border-primary-500 shadow-sm"
+              class="relative size-11 overflow-hidden rounded-[12px] border-2 border-white/20 shadow-sm dark:border-primary-500/30"
               :style="{ backgroundColor: orderLineAvatarColor(index).bg }"
             >
               <MarketProductImage
@@ -112,7 +111,7 @@ function onReview() {
       <Button
         type="button"
         size="small"
-        class="!h-10 !min-w-0 !w-full !rounded-full !bg-white !px-3 !text-sm !font-semibold !text-grey-900 hover:!bg-white/95"
+        class="customer-on-light-surface !h-10 !min-w-0 !w-full !rounded-full !bg-white !px-3 !text-sm !font-semibold hover:!bg-white/95"
         :left-icon="Plus"
         :loading="reordering"
         @click="onAddAll"

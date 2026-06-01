@@ -112,7 +112,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex w-full max-w-2xl flex-col gap-6">
+  <div class="flex w-full max-w-2xl flex-col gap-2">
     <div>
       <p class="text-sm text-grey-300">
         Update your name and phone number. Your phone is required for checkout and order updates.
@@ -121,7 +121,7 @@ onMounted(() => {
 
     <section
       v-if="loading"
-      class="rounded-[24px] border border-grey-50 bg-white p-6"
+      class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
       aria-busy="true"
     >
       <div class="space-y-5">
@@ -136,7 +136,7 @@ onMounted(() => {
 
     <form
       v-else
-      class="rounded-[24px] border border-grey-50 bg-white p-6"
+      class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
       @submit.prevent="onSubmit"
     >
       <div class="space-y-5">

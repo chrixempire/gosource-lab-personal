@@ -21,7 +21,7 @@ const cardArticleInteractiveClass =
   'cursor-pointer hover:border-primary-100 hover:bg-primary-50/50 hover:shadow-[0_22px_48px_-28px_rgba(16,24,40,0.2)] active:bg-primary-50/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500/35';
 
 const cardArticleClass =
-  'max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-[background-color,box-shadow,border-color] duration-150';
+  'max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-[background-color,box-shadow,border-color] duration-150';
 </script>
 
 <template>
@@ -53,7 +53,7 @@ const cardArticleClass =
 
   <div
     v-else-if="!transactions.length"
-    class="rounded-[24px] border border-grey-50 bg-white px-6 py-14 text-center"
+    class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-6 py-14 text-center"
   >
     <p class="text-base font-semibold text-grey-900">No transactions found</p>
     <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-grey-300">

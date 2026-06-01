@@ -6,7 +6,7 @@ defineProps<{
 
 <template>
   <div
-    class="rounded-[16px] border border-grey-50 bg-white px-4 py-3 text-sm text-grey-text"
+    class="rounded-[16px] border border-grey-50 bg-background-on-canvas px-4 py-3 text-sm text-grey-text"
   >
     <p class="font-semibold text-grey-900">
       {{ variant === 'super_admin' ? 'Super Admin' : 'Member' }} — request list

@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import type { MarketPromotion } from '~/lib/marketplace-data';
+import { useMediaQuery } from '@vueuse/core';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
+import {
+  EXPLORE_MOBILE_PRODUCT_CARD_GAP_PX,
+  EXPLORE_MOBILE_PRODUCT_CARD_WIDTH_PX,
+  exploreMobileTripleScrollMediaQuery,
+} from '~/lib/explore-product-layout';
 
 const props = defineProps<{
   promotions: MarketPromotion[];
@@ -24,13 +30,12 @@ const visibleProducts = computed(() => {
   return [...deduped.values()].slice(0, 20);
 });
 
+const isNarrowMobile = useMediaQuery(exploreMobileTripleScrollMediaQuery);
+
 const scrollerRef = ref<HTMLElement | null>(null);
 const canScrollProducts = ref(false);
 const canScrollLeft = ref(false);
 const canScrollRight = ref(false);
-
-const navButtonClass =
-  'inline-flex size-7 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-white/15 text-white shadow-sm transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/15';
 
 function updateScrollerState() {
   const scroller = scrollerRef.value;
@@ -63,7 +68,9 @@ function scrollByDirection(direction: -1 | 1) {
     return;
   }
 
-  const amount = Math.max(180, Math.floor(scroller.clientWidth * 0.75));
+  const amount = isNarrowMobile.value
+    ? EXPLORE_MOBILE_PRODUCT_CARD_WIDTH_PX + EXPLORE_MOBILE_PRODUCT_CARD_GAP_PX
+    : Math.max(180, Math.floor(scroller.clientWidth * 0.75));
   scroller.scrollTo({
     left: scroller.scrollLeft + direction * amount,
     behavior: 'smooth',
@@ -146,65 +153,98 @@ watch(
 <template>
   <section
     v-if="loading || visibleProducts.length > 0"
-    class="mb-8 mt-6 overflow-hidden rounded-[16px] border border-primary-500/35 bg-white"
+    class="m-0"
   >
-    <header class="flex items-center justify-between gap-3 bg-primary-500 px-4 py-3 sm:px-5">
-      <div class="flex min-w-0 items-center gap-2">
-        <h2 class="truncate text-base font-semibold text-white sm:text-lg">
+    <header
+      class="mb-3 flex items-center justify-between gap-2 px-1 sm:px-0"
+    >
+      <div class="flex min-w-0 items-center gap-1.5">
+        <h2 class="truncate text-base font-semibold text-grey-900 sm:text-lg">
           Deals combo for you
         </h2>
         <span
           v-if="headerIconHtml"
-          class="inline-flex size-4 shrink-0 items-center justify-center text-white"
+          class="inline-flex size-4 shrink-0 items-center justify-center text-primary-500 [&_svg]:size-4"
           v-html="headerIconHtml"
         />
       </div>
 
-      <div v-if="canScrollProducts" class="flex shrink-0 items-center gap-1.5">
+      <div v-if="canScrollProducts" class="flex shrink-0 gap-1">
         <button
           type="button"
-          :class="navButtonClass"
+          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
           :disabled="!canScrollLeft"
           aria-label="Scroll promotions left"
           @click="scrollByDirection(-1)"
         >
-          <ChevronLeft class="size-4" />
+          <ChevronLeft class="size-5" aria-hidden="true" />
         </button>
         <button
           type="button"
-          :class="navButtonClass"
+          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
           :disabled="!canScrollRight"
           aria-label="Scroll promotions right"
           @click="scrollByDirection(1)"
         >
-          <ChevronRight class="size-4" />
+          <ChevronRight class="size-5" aria-hidden="true" />
         </button>
       </div>
     </header>
 
     <div
       v-if="loading && visibleProducts.length === 0"
-      class="mt-3 flex gap-4 overflow-x-auto px-4 pb-4 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-5 [&::-webkit-scrollbar]:hidden"
+      class="explore-promotions-scroller"
     >
       <div
         v-for="index in 5"
         :key="index"
-        class="h-[270px] w-[220px] shrink-0 animate-pulse rounded-[8px] border border-grey-50 bg-grey-55"
+        class="explore-promotions-card-slot h-[270px] animate-pulse rounded-[8px] border border-grey-50 bg-grey-55"
       />
     </div>
 
     <div
       v-else
       ref="scrollerRef"
-      class="mt-3 flex gap-4 overflow-x-auto px-4 pb-4 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-5 [&::-webkit-scrollbar]:hidden"
+      class="explore-promotions-scroller"
     >
       <div
         v-for="product in visibleProducts"
         :key="product.id"
-        class="w-[220px] shrink-0 text-left"
+        class="explore-promotions-card-slot text-left"
       >
         <ExploreProductCard :product="product" percentage-badge-only />
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.explore-promotions-scroller {
+  display: flex;
+  touch-action: pan-x;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.explore-promotions-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.explore-promotions-card-slot {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .explore-promotions-scroller {
+    gap: 0.75rem;
+  }
+
+  .explore-promotions-card-slot {
+    width: 11.375rem;
+  }
+}
+</style>

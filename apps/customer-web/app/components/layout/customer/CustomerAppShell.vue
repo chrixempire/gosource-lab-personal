@@ -17,10 +17,14 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  TooltipProvider,
   toast,
 } from '@gosource/ui';
 import { Menu } from 'lucide-vue-next';
+import CustomerPageTitleInfo from '~/components/layout/customer/CustomerPageTitleInfo.vue';
 import CustomerSidebar from '~/components/layout/customer/CustomerSidebar.vue';
+import CustomerThemeToggle from '~/components/layout/customer/CustomerThemeToggle.vue';
+import { resolveCustomerPageDescription } from '~/lib/customer-page-descriptions';
 import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.vue';
 import MarketSearch from '~/components/market/MarketSearch.vue';
 import { getMarketCategoryById } from '~/lib/marketplace-data';
@@ -69,6 +73,7 @@ const session = useState<CustomerMeResponse | null>('customer-session', () => nu
 
 const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/market', title: 'Market' },
+  { match: '/business-insight', title: 'Business insight' },
   { match: '/track-orders', title: 'Orders' },
   { match: '/wallet', title: 'Wallet' },
   { match: '/manage-requests', title: 'Request' },
@@ -87,8 +92,13 @@ const pageTitle = computed(() => {
   return matchedPage?.title ?? 'GoSource';
 });
 
+const pageDescription = computed(() =>
+  resolveCustomerPageDescription(route.path, session.value),
+);
+
 const isMarketCategoryPage = computed(() => /^\/market\/category\/[^/]+$/.test(route.path));
 const isMarketProductPage = computed(() => /^\/market\/product\/[^/]+$/.test(route.path));
+const isMarketRecentOrdersPage = computed(() => route.path === '/market/recent-orders');
 
 const marketCategoryHeaderTitle = computed(() => {
   const id = route.params.id;
@@ -105,6 +115,9 @@ const mobileHeaderTitle = computed(() => {
   }
   if (isMarketProductPage.value) {
     return 'Product';
+  }
+  if (isMarketRecentOrdersPage.value) {
+    return 'Recently ordered';
   }
   return pageTitle.value;
 });
@@ -199,17 +212,18 @@ async function confirmLogout() {
 
 <template>
   <SidebarProvider v-model:open="desktopSidebarOpen">
+    <TooltipProvider :delay-duration="200">
     <div>
       <div
-        class="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,#f7fbf7_0%,#ffffff_100%)] text-grey-900 lg:h-screen lg:max-h-screen"
+        class="customer-shell-bg flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden text-grey-900 lg:h-screen lg:max-h-screen"
       >
         <header
-          class="flex h-16 max-lg:h-16 shrink-0 items-stretch border-b border-grey-50 bg-background-on-canvas lg:h-[72px]"
+          class="relative z-50 flex h-16 max-lg:h-16 shrink-0 items-stretch border-b border-grey-50 bg-background-on-canvas lg:h-[72px]"
         >
           <div class="flex w-[52px] shrink-0 items-center justify-center border-r border-grey-50 lg:hidden">
             <button
               type="button"
-              class="inline-flex size-10 items-center justify-center rounded-xl border border-grey-50 bg-white text-grey-900"
+              class="inline-flex size-10 items-center justify-center rounded-xl border border-grey-50 bg-background-on-canvas text-grey-900 transition-colors duration-300"
               @click="mobileNavOpen = true"
             >
               <span class="sr-only">Open navigation</span>
@@ -218,15 +232,15 @@ async function confirmLogout() {
           </div>
 
           <div
-            class="flex min-w-0 max-w-[38%] shrink-0 items-center px-2.5 sm:max-w-[46%] sm:px-4 lg:w-[270px] lg:max-w-none lg:px-6"
+            class="hidden min-w-0 shrink-0 items-center lg:flex lg:w-[270px] lg:px-6"
           >
-            <BrandLogo class="h-5 w-auto max-w-[6.25rem] sm:h-6 sm:max-w-[7.25rem] lg:h-auto lg:w-[128px] lg:max-w-none" />
+            <BrandLogo class="h-auto w-[128px] max-w-none" />
           </div>
 
           <SidebarRail class="hidden bg-grey-50 lg:block" />
 
           <div class="hidden w-[72px] shrink-0 items-center justify-center lg:flex">
-            <SidebarTrigger class="text-grey-900 hover:bg-grey-55" />
+            <SidebarTrigger class="text-grey-900 transition-colors duration-300 hover:bg-grey-55" />
           </div>
 
           <div class="hidden items-center py-4 lg:flex">
@@ -237,32 +251,49 @@ async function confirmLogout() {
             class="flex min-w-0 flex-1 items-center gap-2 px-2.5 sm:gap-3 sm:px-4 lg:gap-4 lg:px-6"
             :class="showMarketHeaderSearch ? '' : 'justify-between'"
           >
-            <h1
+            <div
               v-if="!hidePageTitle"
-              class="truncate text-[15px] font-semibold leading-tight text-grey-900 lg:text-lg"
+              class="flex min-w-0 items-center gap-0.5"
               :class="
                 showMarketHeaderSearch
-                  ? 'min-w-0 flex-1 lg:max-w-[9rem] lg:shrink-0 lg:flex-none'
-                  : 'min-w-0 flex-1'
+                  ? 'flex-1 lg:max-w-[min(100%,12rem)] lg:shrink-0 lg:flex-none'
+                  : 'flex-1'
               "
             >
-              <span class="lg:hidden">{{ mobileHeaderTitle }}</span>
-              <span
-                v-if="isMarketCategoryPage && marketCategoryHeaderTitle"
-                class="hidden lg:contents"
+              <h1
+                class="min-w-0 truncate text-[15px] font-semibold leading-tight text-grey-900 lg:text-lg"
               >
-                <span>Market</span>
-                <span class="mx-1 font-normal">/</span>
-                <span class="text-grey-300">{{ marketCategoryHeaderTitle }}</span>
-              </span>
-              <span v-else class="hidden lg:inline">{{ pageTitle }}</span>
-            </h1>
+                <span class="lg:hidden">{{ mobileHeaderTitle }}</span>
+                <span
+                  v-if="isMarketCategoryPage && marketCategoryHeaderTitle"
+                  class="hidden lg:contents"
+                >
+                  <span>Market</span>
+                  <span class="mx-1 font-normal">/</span>
+                  <span class="text-grey-300">{{ marketCategoryHeaderTitle }}</span>
+                </span>
+                <span v-else-if="isMarketRecentOrdersPage" class="hidden lg:contents">
+                  <span>Market</span>
+                  <span class="mx-1 font-normal">/</span>
+                  <span class="text-grey-300">Recently ordered</span>
+                </span>
+                <span v-else class="hidden lg:inline">{{ pageTitle }}</span>
+              </h1>
+              <CustomerPageTitleInfo
+                v-if="pageDescription"
+                :description="pageDescription"
+                class="shrink-0"
+              />
+            </div>
 
             <div v-else class="min-w-0 flex-1" aria-hidden="true" />
 
             <MarketSearch v-if="showMarketHeaderSearch" class="shrink-0 lg:min-w-0 lg:flex-1" />
 
-            <MarketHeaderCartButton v-if="showHeaderCart" class="shrink-0" />
+            <div class="ml-auto flex shrink-0 items-center gap-2">
+              <CustomerThemeToggle />
+              <MarketHeaderCartButton v-if="showHeaderCart" />
+            </div>
           </div>
         </header>
 
@@ -283,7 +314,7 @@ async function confirmLogout() {
             <main
               id="customer-shell-scroll"
               :class="[
-                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain px-4 [overflow-scrolling:touch] sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
+                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain bg-background-canvas px-4 [overflow-scrolling:touch] sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
                 mainPaddingClass,
               ]"
             >
@@ -306,7 +337,7 @@ async function confirmLogout() {
           >
             <div
               v-if="mobileNavOpen"
-              class="fixed inset-0 z-50 bg-[rgba(16,24,40,0.3)] backdrop-blur-[2px] lg:hidden"
+              class="customer-shell-overlay fixed inset-0 z-[100] backdrop-blur-[2px] lg:hidden"
               @click="mobileNavOpen = false"
             />
           </Transition>
@@ -321,7 +352,7 @@ async function confirmLogout() {
           >
             <aside
               v-if="mobileNavOpen"
-              class="fixed inset-y-0 left-0 z-[60] w-[min(84vw,20rem)] border-r border-grey-50 bg-background-on-canvas shadow-[24px_0_64px_-24px_rgba(16,24,40,0.32)] lg:hidden"
+              class="fixed inset-y-0 left-0 z-[110] w-[min(84vw,20rem)] border-r border-grey-50 bg-background-on-canvas shadow-[24px_0_64px_-24px_rgba(16,24,40,0.32)] lg:hidden"
             >
               <CustomerSidebar
                 :session="session"
@@ -366,5 +397,6 @@ async function confirmLogout() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   </SidebarProvider>
 </template>

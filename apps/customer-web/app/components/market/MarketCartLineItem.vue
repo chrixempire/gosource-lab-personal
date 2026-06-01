@@ -37,7 +37,7 @@ const unitPriceLabel = computed(() =>
 
 <template>
   <article
-    class="flex gap-3 rounded-[16px] border border-grey-50 bg-white p-3 shadow-[0_6px_18px_-14px_rgba(16,24,40,0.08)]"
+    class="customer-surface-card flex gap-3 rounded-[16px] p-3"
   >
     <div class="relative aspect-square w-[5.5rem] shrink-0 overflow-hidden rounded-[14px] bg-grey-55">
       <MarketProductImage

@@ -1,68 +1,59 @@
 <script setup lang="ts">
-import type { ExploreCategorySection } from "~/lib/explore-catalog-filters";
-import { exploreCategoryInitial } from "~/lib/explore-catalog-filters";
-import ExploreProductCard from "~/components/explore/ExploreProductCard.vue";
-import MarketProductImage from "~/components/market/MarketProductImage.vue";
+import type { ExploreCategorySection } from '~/lib/explore-catalog-filters';
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import ExploreMobileProductTripleGrid from '~/components/explore/ExploreMobileProductTripleGrid.vue';
+import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
 
 const props = defineProps<{
   section: ExploreCategorySection;
 }>();
 
-const categoryDescription = computed(() => {
-  const description = props.section.sectionDescription?.trim();
-  if (description) {
-    return description;
-  }
-
-  return props.section.sectionTitle?.trim() || "";
-});
+const mobileGridRef = ref<InstanceType<typeof ExploreMobileProductTripleGrid> | null>(null);
 </script>
 
 <template>
   <section
     :id="`explore-section-${section.id}`"
     :data-category-id="section.id"
-    class="scroll-mt-[4rem] border-b border-grey-50/80 pb-12 pt-4 last:border-b-0"
+    class="scroll-mt-[4rem] border-b border-grey-50/80 pb-0 pt-0 last:border-b-0"
   >
-    <header class="mb-6 flex items-start gap-3.5">
-      <div
-        class="relative size-14 shrink-0 overflow-hidden rounded-xl border border-grey-50/80 bg-[#FFF0EB] shadow-sm"
-      >
-        <MarketProductImage
-          v-if="section.imageUrl"
-          :src="section.imageUrl"
-          :alt="section.title"
-          :hover-zoom="false"
-          logo-class="h-9 w-9"
-        />
-        <span
-          v-else
-          class="flex size-full items-center justify-center text-lg font-bold text-[#E85D4C]"
-          aria-hidden="true"
-        >
-          {{ exploreCategoryInitial(section.title) }}
-        </span>
-      </div>
+    <header class="mb-3 flex items-center justify-between gap-2">
+      <h2 class="min-w-0 truncate text-base font-semibold text-grey-900 sm:text-lg min-[900px]:text-xl">
+        {{ section.title }}
+      </h2>
 
-      <div class="min-w-0 flex-1 pt-0.5">
-        <h2
-          class="text-[1.05rem] font-medium tracking-tight text-grey-900 sm:text-[1.16rem]"
+      <div v-if="mobileGridRef?.canScroll" class="flex shrink-0 gap-1 min-[900px]:hidden">
+        <button
+          type="button"
+          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+          :disabled="!mobileGridRef?.canScrollLeft"
+          :aria-label="`Scroll ${section.title} left`"
+          @click="mobileGridRef?.scrollByDirection(-1)"
         >
-          {{ section.title }}
-        </h2>
-        <p
-          v-if="categoryDescription"
-          class="mt-1 text-sm leading-relaxed text-grey-300"
+          <ChevronLeft class="size-5" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+          :disabled="!mobileGridRef?.canScrollRight"
+          :aria-label="`Scroll ${section.title} right`"
+          @click="mobileGridRef?.scrollByDirection(1)"
         >
-          {{ categoryDescription }}
-        </p>
+          <ChevronRight class="size-5" aria-hidden="true" />
+        </button>
       </div>
     </header>
+
+    <ExploreMobileProductTripleGrid
+      ref="mobileGridRef"
+      :products="section.products"
+      class="min-[900px]:hidden"
+    />
 
     <div class="explore-products-grid">
       <ExploreProductCard
         v-for="product in section.products"
-        :key="product.id"
+        :key="`desktop-${product.id}`"
         :product="product"
       />
     </div>
@@ -71,20 +62,14 @@ const categoryDescription = computed(() => {
 
 <style scoped>
 .explore-products-grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .explore-products-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  display: none;
 }
 
 @media (min-width: 900px) {
   .explore-products-grid {
+    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
   }
 }
 

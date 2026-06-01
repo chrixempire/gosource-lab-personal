@@ -483,12 +483,12 @@ onBeforeUnmount(() => {
 
   <div v-else-if="!wallet" class="min-h-[240px] w-full" />
 
-  <div v-else data-testid="wallet-page" class="flex w-full flex-col gap-6">
+  <div v-else data-testid="wallet-page" class="flex w-full flex-col gap-2">
     <section
-      class="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-primary-100 bg-primary-50 p-4"
+      class="customer-brand-panel flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-4"
     >
       <div>
-        <p class="text-sm text-grey-300">Available balance</p>
+        <p class="text-sm text-grey-text">Available balance</p>
         <p class="text-3xl font-semibold text-grey-900">
           {{ formatRequestCurrency(wallet.balance) }}
         </p>
@@ -499,7 +499,7 @@ onBeforeUnmount(() => {
     </section>
 
     <section class="w-full rounded-[24px] border border-grey-50 bg-grey-55 p-6">
-      <div class="flex w-full flex-col gap-6">
+      <div class="flex w-full flex-col gap-2">
         <p class="text-sm text-grey-300">
           Fund your wallet with your virtual account number
         </p>
@@ -554,12 +554,12 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <div class="flex w-full flex-col gap-4">
+    <div class="flex w-full flex-col gap-2">
       <WalletTransactionsToolbarSkeleton v-if="transactionsLoading" />
 
       <div
         v-else
-        class="flex w-full flex-col gap-4"
+        class="flex w-full flex-col gap-2"
       >
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap gap-2">
@@ -570,8 +570,8 @@ onBeforeUnmount(() => {
             :class="[
               'cursor-pointer rounded-full border px-3 py-2 text-sm font-medium transition',
               transactionTab === option.value
-                ? 'border-primary-500 bg-primary-500 text-white'
-                : 'border-border-input-default bg-white text-grey-text hover:border-primary-300',
+                ? 'border-primary-500 bg-primary-500 text-white dark:shadow-none'
+                : 'border-border-input-default bg-background-on-canvas text-grey-text hover:border-primary-300',
             ]"
             @click="setTransactionTypeFilter(option.value)"
           >
@@ -587,7 +587,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
+          class="flex w-full flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
         >
           <div class="w-full min-[1000px]:max-w-[300px]">
             <SearchField
@@ -627,7 +627,7 @@ onBeforeUnmount(() => {
         @row-click="openTransactionDetails"
       />
 
-      <div v-else class="space-y-4">
+      <div v-else class="space-y-2">
         <WalletTransactionCards
           :transactions="filteredTransactions"
           :loading="transactionsLoading"

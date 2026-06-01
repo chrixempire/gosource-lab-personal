@@ -201,7 +201,7 @@ async function onAddToList() {
     <div v-if="product" class="pb-10 pt-2">
       <MarketBranchSetupBanner />
 
-      <div class="mb-6">
+      <div class="mb-2">
         <Button
           variant="neutral"
           size="small"
@@ -213,10 +213,12 @@ async function onAddToList() {
         </Button>
       </div>
 
-      <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
-        <div class="mx-auto shrink-0 rounded-[22px] border-2 border-transparent p-1 lg:mx-0 lg:w-[min(38%,360px)]">
+      <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:gap-2">
+        <div
+          class="mx-auto w-full max-w-[320px] shrink-0 rounded-[22px] border-2 border-transparent p-1 lg:mx-0 lg:w-[min(38%,360px)] lg:max-w-[360px]"
+        >
           <div
-            class="group relative aspect-square w-full max-w-[320px] overflow-hidden rounded-[18px] bg-grey-55 lg:max-w-none"
+            class="group relative aspect-square w-full overflow-hidden rounded-[18px] bg-grey-55"
           >
             <MarketProductImage
               :src="product.imageUrl"
@@ -227,7 +229,7 @@ async function onAddToList() {
           </div>
         </div>
 
-        <div class="flex min-w-0 flex-1 flex-col gap-5">
+        <div class="flex min-w-0 flex-1 flex-col gap-2">
           <header class="space-y-1">
             <h1 class="text-2xl font-semibold text-grey-900 sm:text-3xl">
               {{ product.name }}
@@ -261,7 +263,7 @@ async function onAddToList() {
             </p>
           </div>
 
-          <div class="flex w-full min-w-0 flex-col gap-3 lg:max-w-[80%]">
+          <div class="flex w-full min-w-0 flex-col lg:max-w-[80%]">
             <section class="w-full min-w-0 space-y-1.5">
               <h2 class="text-[12px] font-semibold uppercase tracking-[0.14em] text-grey-300">
                 Select preferred unit
@@ -273,8 +275,8 @@ async function onAddToList() {
                   :class="[
                     'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-2.5 transition-colors',
                     selectedUnit === opt!.name
-                      ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70'
-                      : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40',
+                      ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70 dark:border-primary-500/45 dark:bg-primary-500/12 dark:hover:bg-primary-500/12'
+                      : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/8',
                   ]"
                 >
                   <RadioGroupItem :value="opt!.name" />
@@ -300,17 +302,19 @@ async function onAddToList() {
             </section>
 
             <template v-if="inStock && product">
-              <MarketProductLineTotal
-                :product="product"
-                :unit="selectedUnit"
-                :quantity="pickQty"
-              />
-              <MarketProductDetailCartActions
-                v-model:quantity="pickQty"
-                :product="product"
-                :unit="selectedUnit"
-                :in-stock="inStock"
-              />
+              <div class="mt-4 flex flex-col gap-2">
+                <MarketProductLineTotal
+                  :product="product"
+                  :unit="selectedUnit"
+                  :quantity="pickQty"
+                />
+                <MarketProductDetailCartActions
+                  v-model:quantity="pickQty"
+                  :product="product"
+                  :unit="selectedUnit"
+                  :in-stock="inStock"
+                />
+              </div>
             </template>
           </div>
         </div>

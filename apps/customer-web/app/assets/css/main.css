@@ -1,3 +1,4 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import '@gosource/shared/styles/main.css';
+@import './customer-theme.css';

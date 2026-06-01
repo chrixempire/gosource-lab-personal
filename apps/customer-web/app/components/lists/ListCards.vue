@@ -32,7 +32,7 @@ const emit = defineEmits<{
     <article
       v-for="list in lists"
       :key="list.id"
-      class="cursor-pointer rounded-[16px] border border-grey-50 bg-white p-4 shadow-sm transition-colors hover:border-primary-200 hover:bg-primary-50/30"
+      class="cursor-pointer rounded-[16px] border border-grey-50 bg-background-on-canvas p-4 shadow-sm transition-colors hover:border-primary-200 hover:bg-primary-50/30"
       @click="emit('rowClick', list)"
     >
       <div class="flex items-start gap-3">

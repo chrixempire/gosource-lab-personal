@@ -77,9 +77,8 @@ function requestLogout() {
       :class="
         props.sidebar
           ? cn(
-              'flex w-full cursor-pointer items-center gap-3 rounded-xl bg-background-on-canvas p-2 text-left transition-colors',
-              'hover:bg-primary-50/70',
-              open && 'bg-primary-50/70',
+              'customer-sidebar-nav-hover flex w-full cursor-pointer items-center gap-3 rounded-xl bg-background-on-canvas p-2 text-left',
+              open && 'bg-primary-50/70 dark:bg-white/8',
             )
           : cn(
               'flex items-center gap-2 rounded-full border border-grey-50 bg-background-on-canvas p-1.5 shadow-[0_10px_24px_-18px_rgba(16,24,40,0.35)]',
@@ -139,13 +138,13 @@ function requestLogout() {
 
       <div class="space-y-1 px-1 py-1">
         <DropdownMenuItem
-          class="gap-2.5 rounded-lg px-3 py-3 text-sm font-medium text-grey-900 hover:bg-primary-50/70 data-highlighted:bg-primary-50/70 data-highlighted:text-grey-900 focus:bg-primary-50/70 focus:text-grey-900"
+          class="gap-2.5 rounded-lg px-3 py-3 text-sm font-medium text-grey-900 hover:bg-primary-50/70 data-highlighted:bg-primary-50/70 data-highlighted:text-grey-900 focus:bg-primary-50/70 focus:text-grey-900 dark:hover:bg-white/8 dark:data-highlighted:bg-white/8 dark:focus:bg-white/8"
         >
           <Info class="size-4" />
           About
         </DropdownMenuItem>
         <DropdownMenuItem
-          class="gap-2.5 rounded-lg px-3 py-3 text-sm font-medium text-grey-900 hover:bg-primary-50/70 data-highlighted:bg-primary-50/70 data-highlighted:text-grey-900 focus:bg-primary-50/70 focus:text-grey-900"
+          class="gap-2.5 rounded-lg px-3 py-3 text-sm font-medium text-grey-900 hover:bg-primary-50/70 data-highlighted:bg-primary-50/70 data-highlighted:text-grey-900 focus:bg-primary-50/70 focus:text-grey-900 dark:hover:bg-white/8 dark:data-highlighted:bg-white/8 dark:focus:bg-white/8"
         >
           <CircleHelp class="size-4" />
           FAQ

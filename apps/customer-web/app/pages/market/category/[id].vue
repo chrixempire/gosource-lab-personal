@@ -124,7 +124,7 @@ onMounted(async () => {
     <div v-if="category" class="pb-10 pt-2">
       <MarketBranchSetupBanner />
 
-      <div class="mb-6">
+      <div class="mb-2">
         <Button
           variant="neutral"
           size="small"

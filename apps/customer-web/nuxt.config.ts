@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import { defineNuxtConfig } from 'nuxt/config';
 import { gosourceIconCollections } from '@gosource/icons';
+import { CUSTOMER_THEME_BOOTSTRAP_SCRIPT } from './app/lib/customer-theme';
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -35,6 +36,19 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/main.css'],
+
+  app: {
+    head: {
+      script: [
+        {
+          key: 'customer-theme-bootstrap',
+          innerHTML: CUSTOMER_THEME_BOOTSTRAP_SCRIPT,
+          type: 'text/javascript',
+          tagPriority: 'critical' as const,
+        },
+      ],
+    },
+  },
 
   runtimeConfig: {
     customerApiMode: 'legacy',

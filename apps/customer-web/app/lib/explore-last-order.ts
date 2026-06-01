@@ -24,6 +24,16 @@ export type ExploreLastOrderDraftLine = {
   product?: MarketProduct;
 };
 
+export function pickLatestOrderWithProducts(orders: OrderRecord[]): OrderRecord | null {
+  const candidates = orders.filter((order) => (order.products?.length ?? 0) > 0);
+
+  return (
+    candidates.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )[0] ?? null
+  );
+}
+
 export function orderLineAvatarInitial(name: string) {
   const trimmed = name.trim();
   return trimmed ? trimmed.charAt(0).toUpperCase() : '?';

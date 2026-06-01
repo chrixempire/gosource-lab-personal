@@ -195,7 +195,7 @@ useEventListener(window, 'keydown', onGlobalSearchShortcut, { capture: true });
   <div :class="['shrink-0 lg:mx-auto lg:min-w-0 lg:w-full lg:max-w-[600px] lg:flex-1', props.class]">
     <button
       type="button"
-      class="inline-flex size-10 cursor-pointer items-center justify-center rounded-xl border border-grey-50 bg-white text-grey-900 lg:hidden"
+      class="customer-control-btn inline-flex size-10 cursor-pointer items-center justify-center rounded-xl lg:hidden"
       aria-label="Search market"
       @click="openMobileSearch"
     >
@@ -219,7 +219,7 @@ useEventListener(window, 'keydown', onGlobalSearchShortcut, { capture: true });
           v-if="showDesktopDropdown"
           align="start"
           :side-offset="8"
-          class="z-[80] max-h-96 w-[var(--reka-popover-trigger-width)] overflow-y-auto overscroll-contain rounded-xl border border-grey-50 bg-white p-2 shadow-[0_16px_40px_-12px_rgba(16,24,40,0.18)]"
+          class="z-[80] max-h-96 w-[var(--reka-popover-trigger-width)] overflow-y-auto overscroll-contain rounded-xl border border-grey-50 bg-background-on-canvas p-2 shadow-[var(--customer-elevated-shadow)] transition-colors duration-300"
           @open-auto-focus.prevent
           @close-auto-focus.prevent
           @focus-outside="onFocusOutside"
@@ -240,12 +240,12 @@ useEventListener(window, 'keydown', onGlobalSearchShortcut, { capture: true });
       <DialogContent
         data-market-search-modal
         overlay-class="lg:hidden"
-        class="fixed inset-0 left-0 top-0 z-[90] flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border-0 bg-white shadow-none lg:hidden"
+        class="fixed inset-0 left-0 top-0 z-[90] flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border-0 bg-background-on-canvas shadow-none transition-colors duration-300 lg:hidden"
         @open-auto-focus.prevent
         @close-auto-focus.prevent
       >
         <div
-          class="shrink-0 border-b border-grey-50 bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
+          class="shrink-0 border-b border-grey-50 bg-background-on-canvas px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] transition-colors duration-300"
         >
           <div class="flex items-center gap-3">
             <DialogClose aria-label="Close search" />
@@ -261,7 +261,7 @@ useEventListener(window, 'keydown', onGlobalSearchShortcut, { capture: true });
           </div>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white p-2">
+        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background-canvas p-2 transition-colors duration-300">
           <MarketSearchResults
             v-if="showMobileResults"
             :results="results"

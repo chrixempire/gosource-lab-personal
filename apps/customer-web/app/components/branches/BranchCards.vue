@@ -49,7 +49,7 @@ function formatCurrency(amount: number) {
     <article
       v-for="branch in branches"
       :key="branch.id"
-      class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] cursor-pointer rounded-[24px] border border-grey-50 bg-white p-3 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-colors duration-150 hover:bg-primary-50/30 sm:p-5"
+      class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] cursor-pointer rounded-[24px] border border-grey-50 bg-background-on-canvas p-3 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-colors duration-150 hover:bg-primary-50/30 sm:p-5"
       @click="emit('click', branch)"
     >
       <div class="flex items-start justify-between gap-3">

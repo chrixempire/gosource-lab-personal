@@ -70,9 +70,37 @@ export function useCustomerAnalyticsService() {
     }
   }
 
+  async function getBranchPerformance(options: { quiet?: boolean } = {}) {
+    try {
+      return await $fetch<AnalyticsEnvelope<unknown>>('/api/proxy/analytics/branch-performance', {
+        credentials: 'same-origin',
+      });
+    } catch (error) {
+      if (!options.quiet) {
+        throw error;
+      }
+      return null;
+    }
+  }
+
+  async function getTotalPerDayForWeek(options: { quiet?: boolean } = {}) {
+    try {
+      return await $fetch<AnalyticsEnvelope<unknown>>('/api/proxy/analytics/get-total-per-day', {
+        credentials: 'same-origin',
+      });
+    } catch (error) {
+      if (!options.quiet) {
+        throw error;
+      }
+      return null;
+    }
+  }
+
   return {
     getTotalProcurement,
     getTopProcuredItems,
     getProductAnalysis,
+    getBranchPerformance,
+    getTotalPerDayForWeek,
   };
 }

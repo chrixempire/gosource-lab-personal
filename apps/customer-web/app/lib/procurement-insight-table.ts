@@ -33,6 +33,7 @@ export type ProcurementInsightTableRow = {
   barClass: string;
   lastPurchaseLabel: string;
   lastPurchaseIso: string | null;
+  branchName?: string;
 };
 
 export function formatInsightPurchaseDate(value: string | Date | null | undefined) {
@@ -69,18 +70,19 @@ export function buildProcurementInsightTableRowsFromProcuredItems(
         : purchaseDate
           ? String(purchaseDate)
           : null;
-    const description = row.description?.trim();
+    const description = row.description?.trim() ?? '';
 
     return {
       id: `${row.name}-${index}`,
       name: row.name,
-      description: description || '—',
+      description,
       quantity: row.quantity,
       totalSpent: row.totalCost,
       percent,
       barClass: barClassByPercent.get(percent) ?? INSIGHT_BAR_CLASSES[0]!,
       lastPurchaseLabel: formatInsightPurchaseDate(purchaseDate),
       lastPurchaseIso: purchaseIso,
+      branchName: row.branchName,
     };
   });
 }
@@ -118,7 +120,7 @@ export function buildProcurementInsightTableRows(
     return {
       id: `${row.name}-${index}`,
       name: row.name!,
-      description: row.description?.trim() || '—',
+      description: row.description?.trim() ?? '',
       quantity: Math.max(0, row.totalQuantity ?? 0),
       totalSpent,
       percent,

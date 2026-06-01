@@ -2,6 +2,7 @@
 import type { Component } from 'vue';
 import type { CustomerMeResponse } from '@gosource/api-client';
 import {
+  BrandLogo,
   Button,
   SidebarContent,
   SidebarFooter,
@@ -13,10 +14,12 @@ import {
   ClipboardList,
   CreditCard,
   ChevronDown,
+  BarChart3,
   LayoutGrid,
   Layers3,
   MessageCircleQuestion,
   NotebookPen,
+  Settings,
   ShieldCheck,
   ShoppingBag,
   Store,
@@ -97,6 +100,7 @@ function onLeave(element: Element) {
 
 const navItems: NavLeaf[] = [
   { label: 'Market', icon: LayoutGrid, path: '/market' },
+  { label: 'Business insight', icon: BarChart3, path: '/business-insight' },
   { label: 'Orders', icon: ShoppingBag, path: '/track-orders' },
   { label: 'Wallet', icon: CreditCard, path: '/wallet' },
   { label: 'Request', icon: ClipboardList, path: '/manage-requests' },
@@ -122,8 +126,18 @@ function closeMobileNav() {
 </script>
 
 <template>
-  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-white text-grey-900">
-    <SidebarContent class="min-h-0 px-4 py-5">
+  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-background-on-canvas text-grey-900">
+    <div class="shrink-0 border-b border-grey-50 px-4 pb-4 pt-5 lg:hidden">
+      <NuxtLink
+        to="/market"
+        class="inline-flex no-underline"
+        @click="closeMobileNav"
+      >
+        <BrandLogo class="h-6 w-auto max-w-[7.25rem]" />
+      </NuxtLink>
+    </div>
+
+    <SidebarContent class="min-h-0 px-4 py-4 lg:py-5">
       <SidebarMenu>
         <SidebarMenuItem v-for="item in visibleNavItems" :key="item.label">
           <NuxtLink :to="item.path" class="block w-full min-w-0 no-underline" @click="closeMobileNav">
@@ -137,12 +151,12 @@ function closeMobileNav() {
             </SidebarMenuButton>
           </NuxtLink>
         </SidebarMenuItem>
-      </SidebarMenu>
 
-      <CustomerSidebarBranchSwitcher
-        :session="props.session"
-        @mobile-nav-close="closeMobileNav"
-      />
+        <CustomerSidebarBranchSwitcher
+          :session="props.session"
+          @mobile-nav-close="closeMobileNav"
+        />
+      </SidebarMenu>
     </SidebarContent>
 
     <SidebarFooter class="w-full px-4 pb-0">
@@ -166,10 +180,10 @@ function closeMobileNav() {
           <SidebarMenuItem>
             <button
               type="button"
-              class="flex w-full cursor-pointer items-center gap-3 rounded-[16px] px-4 py-2.5 text-left text-sm font-medium text-grey-text transition-colors hover:bg-primary-50/70 hover:text-primary-500"
+              class="customer-sidebar-nav-hover flex w-full cursor-pointer items-center gap-3 rounded-[16px] px-4 py-2.5 text-left text-sm font-medium text-grey-text"
               @click="settingsOpen = !settingsOpen"
             >
-              <ShieldCheck class="size-[18px]" />
+              <Settings class="size-[18px]" />
               <span class="flex-1">Settings</span>
               <ChevronDown
                 class="size-4 transition-transform"

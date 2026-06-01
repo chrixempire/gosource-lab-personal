@@ -14,7 +14,7 @@ const activeIndex = computed(() => (props.modelValue === 'cards' ? 0 : 1));
 </script>
 
 <template>
-  <div class="relative inline-grid h-10 min-w-[152px] grid-cols-2 rounded-[12px] border border-grey-50 bg-white p-1 shadow-[0_12px_32px_-24px_rgba(16,24,40,0.22)]">
+  <div class="relative inline-grid h-10 min-w-[152px] grid-cols-2 rounded-[12px] border border-grey-50 bg-background-on-canvas p-1 shadow-[0_12px_32px_-24px_rgba(16,24,40,0.22)] transition-colors duration-300">
     <span
       aria-hidden="true"
       class="absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-[8px] bg-primary-500 shadow-[0_10px_24px_-18px_rgba(4,85,11,0.9)] transition-transform duration-250 ease-out"

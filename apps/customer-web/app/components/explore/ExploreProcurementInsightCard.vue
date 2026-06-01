@@ -12,7 +12,7 @@ const { rows, totalSpent, periodLabel, hasData, showSkeleton, loaded } =
 
   <article
     v-else-if="hasData"
-    class="flex h-full flex-col rounded-[24px] border border-grey-50 bg-white p-5 transition-transform duration-300 ease-out hover:-translate-y-1"
+    class="flex h-full flex-col rounded-[24px] border border-grey-50 bg-background-on-canvas p-5 transition-[transform,background-color,border-color] duration-300 ease-out hover:-translate-y-1"
   >
     <div class="space-y-1">
       <div class="flex items-start justify-between gap-3">
@@ -20,7 +20,7 @@ const { rows, totalSpent, periodLabel, hasData, showSkeleton, loaded } =
           Procurement Insight
         </p>
         <NuxtLink
-          to="/track-orders?tab=insight"
+          to="/business-insight"
           class="inline-flex shrink-0 items-center rounded-sm text-sm font-semibold text-primary-500 underline-offset-4 transition-colors hover:text-primary-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
         >
           Full report

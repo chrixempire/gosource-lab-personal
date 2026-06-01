@@ -27,7 +27,7 @@ const emit = defineEmits<{
         <Button
           size="icon"
           variant="ghost"
-          class="!size-9 !rounded-full !border !border-grey-50 !bg-white !p-0"
+          class="!size-9 !rounded-full !border !border-grey-50 !bg-background-on-canvas !p-0"
           :disabled="disabled"
           aria-label="List actions"
         >

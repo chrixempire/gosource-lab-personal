@@ -500,7 +500,7 @@ function openRelatedRequest(item: RequestListItem) {
 </script>
 
 <template>
-  <div data-testid="request-detail-page" class="flex w-full flex-col gap-6">
+  <div data-testid="request-detail-page" class="flex w-full flex-col gap-2">
     <div class="flex items-center justify-between gap-3">
       <Button
         variant="neutral"
@@ -563,21 +563,21 @@ function openRelatedRequest(item: RequestListItem) {
       </div>
     </div>
 
-    <div v-if="loading || !payloadReadyForRoute" class="flex flex-col gap-6">
+    <div v-if="loading || !payloadReadyForRoute" class="flex flex-col gap-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div
           v-for="index in 3"
           :key="index"
-          class="rounded-[24px] border border-grey-50 bg-white px-5 py-5"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-5 py-5"
         >
           <div class="h-3 w-24 animate-pulse rounded bg-grey-50" />
           <div class="mt-4 h-8 w-40 animate-pulse rounded bg-grey-50" />
         </div>
       </div>
-      <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
         <RequestDetailsPanel :view="null" loading :format-currency="formatRequestCurrency" />
       </section>
-      <section class="rounded-[24px] border border-grey-50 bg-white p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
         <RequestBranchRequestsSection
           branch-name=""
           :requests="[]"
@@ -587,12 +587,12 @@ function openRelatedRequest(item: RequestListItem) {
       </section>
     </div>
 
-    <div v-else-if="request" class="flex flex-col gap-6">
+    <div v-else-if="request" class="flex flex-col gap-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div
           v-for="card in summaryCards"
           :key="card.label"
-          class="rounded-[24px] border border-grey-50 bg-white px-5 py-5"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-5 py-5"
         >
           <p class="text-xs font-semibold uppercase tracking-[0.08em] text-grey-300">
             {{ card.label }}
@@ -603,8 +603,8 @@ function openRelatedRequest(item: RequestListItem) {
         </div>
       </div>
 
-      <section class="rounded-[24px] border border-grey-50 bg-white p-5">
-        <div class="flex flex-col gap-4">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+        <div class="flex flex-col gap-2">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 class="text-xl font-semibold text-grey-900">
@@ -678,7 +678,7 @@ function openRelatedRequest(item: RequestListItem) {
 
     <div
       v-else
-      class="rounded-[24px] border border-grey-50 bg-white px-6 py-14 text-center text-sm text-grey-300"
+      class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-6 py-14 text-center text-sm text-grey-300"
     >
       Request not found.
     </div>

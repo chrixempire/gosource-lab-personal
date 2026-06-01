@@ -676,26 +676,16 @@ async function handleRequestCancel(request: RequestListItem) {
   handleCancel();
 }
 
-const pageDescription = computed(() =>
-  isSuperAdmin.value
-    ? 'Approve and manage all order requests across your business branches.'
-    : 'View and manage order requests you created for your branch.',
-);
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
-    <p class="max-w-3xl text-base leading-7 text-grey-text">
-      {{ pageDescription }}
-    </p>
-
     <RequestRoleGuide :variant="requestRoleGuideVariant" />
 
-    <div class="mt-4 flex flex-col gap-6">
-      <div class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
+    <div class="flex w-full flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
         <div
           v-if="!isEmployeeSession"
-          class="flex w-full flex-col gap-3 min-[1000px]:max-w-md"
+          class="flex w-full flex-col gap-2 min-[1000px]:max-w-md"
         >
           <BranchPickerDropdown
             :model-value="selectedBranchId"
@@ -771,7 +761,7 @@ const pageDescription = computed(() =>
         @cancel="handleRequestCancel"
       />
 
-      <div v-else-if="!showNoBranchSetup && !requestsLoading" class="space-y-4">
+      <div v-else-if="!showNoBranchSetup && !requestsLoading" class="space-y-2">
         <RequestCards
           v-if="requestItems.length"
           :requests="requestItems"
@@ -794,7 +784,7 @@ const pageDescription = computed(() =>
 
         <div
           v-else
-          class="rounded-[24px] border border-dashed border-grey-50 bg-white px-6 py-12 text-center text-sm text-grey-300"
+          class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center text-sm text-grey-300"
         >
           No requests found for the current filters.
         </div>
@@ -816,7 +806,7 @@ const pageDescription = computed(() =>
         <div
           v-for="index in 4"
           :key="index"
-          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-white p-3 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] sm:p-5"
+          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-3 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] sm:p-5"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="flex min-w-0 flex-1 items-start gap-3">
@@ -848,15 +838,13 @@ const pageDescription = computed(() =>
         </div>
       </div>
 
-    </div>
-
     <Drawer
       v-if="!isSuperAdmin"
       :open="detailsOpen && isCompactViewport"
       @update:open="!$event && closeDetails()"
     >
       <DrawerContent class="max-h-[92vh] overflow-hidden">
-        <DrawerHeader class="items-center gap-3 border-b border-grey-50 bg-white">
+        <DrawerHeader class="items-center gap-3 border-b border-grey-50 bg-background-on-canvas">
           <DrawerTitle class="min-w-0 flex-1 text-xl font-semibold text-grey-900">
             Request details
           </DrawerTitle>
@@ -896,7 +884,7 @@ const pageDescription = computed(() =>
           />
           <DrawerClose class="shrink-0" />
         </DrawerHeader>
-        <DrawerBody class="bg-white">
+        <DrawerBody class="bg-background-on-canvas">
           <RequestDetailsPanel
             :view="requestDetailsView"
             :loading="showRequestDetailsSkeleton"
@@ -917,7 +905,7 @@ const pageDescription = computed(() =>
       @update:open="!$event && closeDetails()"
     >
       <DialogContent class="max-h-[90vh] max-w-3xl overflow-hidden p-0">
-        <DialogHeader class="items-center gap-3 border-b border-grey-50 bg-white px-6 py-5">
+        <DialogHeader class="items-center gap-3 border-b border-grey-50 bg-background-on-canvas px-6 py-5">
           <DialogTitle class="min-w-0 flex-1 text-[24px] font-semibold text-grey-900">
             Request details
           </DialogTitle>
@@ -957,7 +945,7 @@ const pageDescription = computed(() =>
           />
           <DialogClose class="shrink-0" />
         </DialogHeader>
-        <DialogBody class="max-h-[70vh] overflow-y-auto bg-white px-6 py-5">
+        <DialogBody class="max-h-[70vh] overflow-y-auto bg-background-on-canvas px-6 py-5">
           <RequestDetailsPanel
             :view="requestDetailsView"
             :loading="showRequestDetailsSkeleton"
