@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import type { MarketPromotion } from '~/lib/marketplace-data';
+import { useMediaQuery } from '@vueuse/core';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
+import {
+  EXPLORE_MOBILE_PRODUCT_CARD_GAP_PX,
+  EXPLORE_MOBILE_PRODUCT_CARD_WIDTH_PX,
+  exploreMobileTripleScrollMediaQuery,
+} from '~/lib/explore-product-layout';
 
 const props = defineProps<{
   promotions: MarketPromotion[];
@@ -23,6 +29,8 @@ const visibleProducts = computed(() => {
   }
   return [...deduped.values()].slice(0, 20);
 });
+
+const isNarrowMobile = useMediaQuery(exploreMobileTripleScrollMediaQuery);
 
 const scrollerRef = ref<HTMLElement | null>(null);
 const canScrollProducts = ref(false);
@@ -60,7 +68,9 @@ function scrollByDirection(direction: -1 | 1) {
     return;
   }
 
-  const amount = Math.max(180, Math.floor(scroller.clientWidth * 0.75));
+  const amount = isNarrowMobile.value
+    ? EXPLORE_MOBILE_PRODUCT_CARD_WIDTH_PX + EXPLORE_MOBILE_PRODUCT_CARD_GAP_PX
+    : Math.max(180, Math.floor(scroller.clientWidth * 0.75));
   scroller.scrollTo({
     left: scroller.scrollLeft + direction * amount,
     behavior: 'smooth',
@@ -183,27 +193,58 @@ watch(
 
     <div
       v-if="loading && visibleProducts.length === 0"
-      class="flex touch-pan-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
+      class="explore-promotions-scroller"
     >
       <div
         v-for="index in 5"
         :key="index"
-        class="h-[270px] w-[220px] shrink-0 animate-pulse rounded-[8px] border border-grey-50 bg-grey-55"
+        class="explore-promotions-card-slot h-[270px] animate-pulse rounded-[8px] border border-grey-50 bg-grey-55"
       />
     </div>
 
     <div
       v-else
       ref="scrollerRef"
-      class="flex touch-pan-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
+      class="explore-promotions-scroller"
     >
       <div
         v-for="product in visibleProducts"
         :key="product.id"
-        class="w-[220px] shrink-0 text-left"
+        class="explore-promotions-card-slot text-left"
       >
         <ExploreProductCard :product="product" percentage-badge-only />
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.explore-promotions-scroller {
+  display: flex;
+  touch-action: pan-x;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.explore-promotions-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.explore-promotions-card-slot {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .explore-promotions-scroller {
+    gap: 0.75rem;
+  }
+
+  .explore-promotions-card-slot {
+    width: 11.375rem;
+  }
+}
+</style>

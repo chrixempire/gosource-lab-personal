@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { MarketCategory } from '~/lib/marketplace-data';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import ExploreMobileProductTripleGrid from '~/components/explore/ExploreMobileProductTripleGrid.vue';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
-import ExploreProductResponsiveGrid from '~/components/explore/ExploreProductResponsiveGrid.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -116,7 +116,7 @@ watch(
       </div>
     </div>
 
-    <ExploreProductResponsiveGrid
+    <ExploreMobileProductTripleGrid
       v-if="isRail"
       :products="category.products"
       class="min-[900px]:hidden"
@@ -137,9 +137,47 @@ watch(
       </div>
     </div>
 
-    <ExploreProductResponsiveGrid
-      v-else
+    <ExploreMobileProductTripleGrid
+      v-if="!isRail"
       :products="category.products"
+      class="min-[900px]:hidden"
     />
+
+    <div
+      v-if="!isRail"
+      class="explore-products-grid"
+    >
+      <ExploreProductCard
+        v-for="product in category.products"
+        :key="`desktop-${product.id}`"
+        :product="product"
+      />
+    </div>
   </section>
 </template>
+
+<style scoped>
+.explore-products-grid {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .explore-products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1080px) {
+  .explore-products-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1240px) {
+  .explore-products-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+</style>

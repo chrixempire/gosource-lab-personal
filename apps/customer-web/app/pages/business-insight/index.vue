@@ -8,6 +8,7 @@ import BusinessInsightSpendTrendChart from '~/components/business-insight/Busine
 import ExploreLastOrderCard from '~/components/explore/ExploreLastOrderCard.vue';
 import ExploreLastOrderCardSkeleton from '~/components/explore/ExploreLastOrderCardSkeleton.vue';
 import OrderTable from '~/components/orders/OrderTable.vue';
+import { Button } from '@gosource/ui';
 import ProcurementInsightDateFilter from '~/components/orders/ProcurementInsightDateFilter.vue';
 import ProcurementInsightTable from '~/components/orders/ProcurementInsightTable.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
@@ -79,6 +80,15 @@ const viewingAllBranches = computed(() => isAllBranchesFilter(apiBranchId.value 
 
 /** Single branch for hero cards when “All branches” is selected. */
 const resolvedHeroBranchId = computed(() => apiBranchId.value || activeBranchId.value || undefined);
+
+const readOnlyBranchLabel = computed(() => {
+  const branch = branches.value.find((entry) => entry.id === resolvedHeroBranchId.value);
+  if (!branch) {
+    return 'Branch';
+  }
+
+  return `${branch.branchName}${branch.isHeadquarter ? ' (Headquarter)' : ''}`;
+});
 
 const {
   lastOrder,
@@ -296,14 +306,16 @@ useHead({ title: 'Business insight' });
         class="w-full min-[720px]:w-fit min-[720px]:shrink-0"
         @update:model-value="onBranchFilterChange"
       />
-      <label v-else class="block w-full min-[720px]:w-fit min-[720px]:shrink-0 space-y-2">
-        <span class="text-[13px] font-semibold text-grey-text">Branch</span>
-        <p class="truncate text-[14px] font-medium text-grey-900">
-          {{
-            branches.find((entry) => entry.id === resolvedHeroBranchId)?.branchName ?? 'Branch'
-          }}
-        </p>
-      </label>
+      <div v-else class="w-full min-[720px]:w-fit min-[720px]:shrink-0">
+        <Button
+          variant="primary"
+          size="small"
+          class="!w-fit max-w-full shrink-0 whitespace-nowrap"
+          disabled
+        >
+          <span class="min-w-0 truncate">{{ readOnlyBranchLabel }}</span>
+        </Button>
+      </div>
       <ProcurementInsightDateFilter
         :model-value="insightDateFilter"
         class="w-full min-[720px]:w-fit min-[720px]:shrink-0"

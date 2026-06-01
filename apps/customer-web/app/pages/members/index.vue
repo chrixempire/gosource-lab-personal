@@ -562,27 +562,23 @@ function cardArticleClass(member: BranchMemberRecord) {
             @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
           />
 
-          <div
-            v-else
-            class="rounded-[12px] border border-grey-50 bg-grey-55/50 px-4 py-3"
-          >
-            <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-grey-300">
-              Branch
-            </p>
-            <p class="mt-1 truncate text-sm font-semibold text-grey-900">
-              <template v-if="branchesLoading">
-                …
-              </template>
-              <template v-else-if="selectedBranch">
-                {{ selectedBranch.branchName }}
-                <span v-if="selectedBranch.branchCode" class="font-normal text-grey-300">
-                  · {{ selectedBranch.branchCode }}
-                </span>
-              </template>
-              <template v-else>
-                {{ employeeBranchId ? 'Your branch' : '—' }}
-              </template>
-            </p>
+          <div v-else class="w-full min-[720px]:w-fit">
+            <Button
+              variant="primary"
+              size="small"
+              class="!w-fit max-w-full shrink-0 whitespace-nowrap"
+              disabled
+            >
+              <span class="min-w-0 truncate">
+                <template v-if="branchesLoading">…</template>
+                <template v-else-if="selectedBranch">
+                  {{ selectedBranch.branchName }}{{ selectedBranch.isHeadquarter ? ' (Headquarter)' : '' }}
+                </template>
+                <template v-else>
+                  {{ employeeBranchId ? 'Your branch' : '—' }}
+                </template>
+              </span>
+            </Button>
           </div>
 
           <SearchField

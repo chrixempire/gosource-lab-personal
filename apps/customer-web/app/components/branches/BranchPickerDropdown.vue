@@ -19,11 +19,12 @@ const props = withDefaults(
     disabled?: boolean;
     loading?: boolean;
     showAllBranchesOption?: boolean;
+    /** When true, only the green filter control is shown (default for page toolbars). */
     hideLabel?: boolean;
   }>(),
   {
     showAllBranchesOption: false,
-    hideLabel: false,
+    hideLabel: true,
   },
 );
 
@@ -77,7 +78,7 @@ function isSelected(branchId: string) {
 </script>
 
 <template>
-  <label :class="['block', hideLabel ? '' : 'space-y-2']">
+  <div :class="hideLabel ? undefined : 'block space-y-2'">
     <span
       v-if="!hideLabel"
       class="text-[13px] font-semibold text-grey-text"
@@ -152,5 +153,5 @@ function isSelected(branchId: string) {
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  </label>
+  </div>
 </template>
