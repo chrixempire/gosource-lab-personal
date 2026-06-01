@@ -460,11 +460,6 @@ useHead({
 
 <template>
   <div class="flex flex-col gap-2">
-    <p class="max-w-3xl text-base leading-7 text-grey-text">
-      View procurement insight and track fulfillment for orders placed after checkout.
-    </p>
-
-    <div class="mt-4 flex flex-col gap-6">
       <SegmentedControl
         class="w-full max-w-xs"
         :model-value="activeTab"
@@ -472,12 +467,12 @@ useHead({
         @update:model-value="(value) => setActiveTab(value as TrackOrdersTab)"
       />
 
-      <div v-show="activeTab === 'insight'" class="flex flex-col gap-6">
+      <div v-show="activeTab === 'insight'" class="flex flex-col gap-2">
         <div
-          class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
+          class="flex w-full flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
         >
           <div
-            class="flex w-full flex-col gap-3 min-[720px]:flex-row min-[720px]:flex-nowrap min-[720px]:items-end"
+            class="flex w-full flex-col gap-2 min-[720px]:flex-row min-[720px]:flex-nowrap min-[720px]:items-end"
           >
             <BranchPickerDropdown
               v-if="isSuperAdmin"
@@ -486,7 +481,7 @@ useHead({
               :loading="branchesLoading"
               :disabled="insightLoading"
               :show-all-branches-option="showAllBranchesOption"
-              class="w-full max-w-[13rem] shrink-0"
+              class="w-full min-[720px]:w-fit min-[720px]:shrink-0"
               @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
             />
             <ProcurementInsightDateFilter
@@ -536,7 +531,7 @@ useHead({
             @page-size="setInsightLimit"
           />
 
-          <div v-else-if="!insightLoading" class="space-y-4">
+          <div v-else-if="!insightLoading" class="space-y-2">
             <ProcurementInsightCards
               v-if="paginatedInsightRows.length"
               :rows="paginatedInsightRows"
@@ -594,12 +589,12 @@ useHead({
         </template>
       </div>
 
-      <div v-show="activeTab === 'orders'" class="flex flex-col gap-6">
+      <div v-show="activeTab === 'orders'" class="flex flex-col gap-2">
         <div
-          class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
+          class="flex w-full flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
         >
           <div
-            class="flex w-full flex-col gap-3 min-[1000px]:max-w-md"
+            class="flex w-full flex-col gap-2 min-[1000px]:max-w-md"
             :class="isSuperAdmin ? 'min-[1000px]:flex-1' : undefined"
           >
             <BranchPickerDropdown
@@ -659,7 +654,7 @@ useHead({
           @reorder="(order) => handleReorder(order.id)"
         />
 
-        <div v-else-if="!ordersLoading" class="space-y-4">
+        <div v-else-if="!ordersLoading" class="space-y-2">
           <OrderCards
             v-if="orderItems.length"
             :orders="orderItems"
@@ -718,6 +713,5 @@ useHead({
           </div>
         </div>
       </div>
-    </div>
   </div>
 </template>

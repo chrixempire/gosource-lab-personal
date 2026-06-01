@@ -247,11 +247,6 @@ function handleBranchDeleted(branchId: string) {
 
 <template>
   <div class="flex flex-col gap-2">
-    <p class="max-w-3xl text-base leading-7 text-grey-text">
-      Create and manage your company’s branches
-    </p>
-
-    <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
         <div class="w-full min-[1000px]:max-w-md">
           <SearchField
@@ -309,7 +304,7 @@ function handleBranchDeleted(branchId: string) {
         @delete="handleDeleteBranch"
       />
 
-      <div v-else-if="!loading" class="space-y-4">
+      <div v-else-if="!loading" class="space-y-2">
         <BranchCards
           :branches="sortedBranches"
           :can-manage="!isEmployeeSession"
@@ -371,7 +366,6 @@ function handleBranchDeleted(branchId: string) {
           </div>
         </div>
       </div>
-    </div>
 
     <BranchCreateOverlay
       v-if="!isEmployeeSession"

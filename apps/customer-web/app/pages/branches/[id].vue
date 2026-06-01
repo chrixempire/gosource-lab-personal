@@ -300,7 +300,7 @@ const formattedMembers = computed(() =>
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-6">
+  <div class="flex w-full flex-col gap-2">
     <div class="flex items-center justify-between">
       <Button
         variant="neutral"
@@ -347,7 +347,7 @@ const formattedMembers = computed(() =>
       </DropdownMenu>
     </div>
 
-    <div v-if="loading" class="flex flex-col gap-6">
+    <div v-if="loading" class="flex flex-col gap-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div
           v-for="index in 3"
@@ -360,7 +360,7 @@ const formattedMembers = computed(() =>
       </div>
 
       <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
           <div>
             <div class="h-7 w-48 max-w-full animate-pulse rounded bg-grey-50" />
             <div class="mt-2 h-4 w-[min(100%,20rem)] animate-pulse rounded bg-grey-50" />
@@ -380,15 +380,15 @@ const formattedMembers = computed(() =>
         </div>
       </section>
 
-      <section class="flex flex-col gap-4">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <section class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div class="h-7 w-40 max-w-full animate-pulse rounded bg-grey-50" />
             <div class="mt-2 h-4 w-64 max-w-full animate-pulse rounded bg-grey-50" />
           </div>
         </div>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="h-10 w-full max-w-md animate-pulse rounded-[10px] bg-grey-50" />
           <div class="h-9 w-36 shrink-0 animate-pulse rounded-[10px] bg-grey-50" />
         </div>
@@ -427,7 +427,7 @@ const formattedMembers = computed(() =>
       </section>
     </div>
 
-    <div v-else-if="branch" class="flex flex-col gap-6">
+    <div v-else-if="branch" class="flex flex-col gap-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div
           v-for="card in summaryCards"
@@ -444,7 +444,7 @@ const formattedMembers = computed(() =>
       </div>
 
       <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
           <div>
             <div class="flex items-center gap-3">
               <h2 class="text-xl font-semibold text-grey-900">
@@ -511,8 +511,8 @@ const formattedMembers = computed(() =>
         </div>
       </section>
 
-      <section class="flex flex-col gap-4">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <section class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 class="text-xl font-semibold text-grey-900">Members</h2>
             <p class="mt-1 text-sm text-grey-text">
@@ -521,7 +521,7 @@ const formattedMembers = computed(() =>
           </div>
         </div>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="w-full sm:max-w-md">
             <SearchField
               v-model="membersSearchValue"
@@ -541,7 +541,7 @@ const formattedMembers = computed(() =>
           </Button>
         </div>
 
-        <div v-if="isCompactViewport" class="space-y-4">
+        <div v-if="isCompactViewport" class="space-y-2">
           <div v-if="membersLoading" class="grid gap-4">
             <div
               v-for="index in 4"

@@ -21,17 +21,19 @@ export function readStoredCustomerThemePreference(): CustomerThemePreference | n
   }
 }
 
+/** Dark mode from 7:00 p.m. until before 7:00 a.m. (local time). */
+function resolveScheduleTheme(): CustomerThemePreference {
+  const hour = new Date().getHours();
+  return hour >= 19 || hour < 7 ? 'dark' : 'light';
+}
+
 export function resolveCustomerThemePreference(): CustomerThemePreference {
   const stored = readStoredCustomerThemePreference();
   if (stored) {
     return stored;
   }
 
-  if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-
-  return 'light';
+  return resolveScheduleTheme();
 }
 
 export function applyCustomerThemeToDocument(theme: CustomerResolvedTheme) {
@@ -62,4 +64,4 @@ export function persistCustomerThemePreference(theme: CustomerThemePreference) {
 }
 
 /** Inline bootstrap for nuxt head — must stay in sync with resolveCustomerThemePreference. */
-export const CUSTOMER_THEME_BOOTSTRAP_SCRIPT = `(function(){try{var k=${JSON.stringify(CUSTOMER_THEME_STORAGE_KEY)};var s=localStorage.getItem(k);var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;if(d){e.classList.add('dark');e.style.colorScheme='dark';}else{e.classList.remove('dark');e.style.colorScheme='light';}}catch(e){}})();`;
+export const CUSTOMER_THEME_BOOTSTRAP_SCRIPT = `(function(){try{var k=${JSON.stringify(CUSTOMER_THEME_STORAGE_KEY)};var s=localStorage.getItem(k);var h=new Date().getHours();var scheduleDark=h>=19||h<7;var d=s==='dark'||(s!=='light'&&scheduleDark);var e=document.documentElement;if(d){e.classList.add('dark');e.style.colorScheme='dark';}else{e.classList.remove('dark');e.style.colorScheme='light';}}catch(e){}})();`;

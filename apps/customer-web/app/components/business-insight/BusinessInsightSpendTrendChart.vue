@@ -34,7 +34,9 @@ const chartContainerRef = ref<HTMLElement | null>(null);
 let chart: Chart | null = null;
 
 const isHourlyView = computed(() => isHourlySpendTrendFilter(props.filterType));
+const isMonthDayView = computed(() => isMonthDaySpendTrendFilter(props.filterType));
 const showEveryAxisLabel = computed(() => showsEverySpendTrendAxisLabel(props.filterType));
+const chartWidth = ref(0);
 const hasData = computed(() => spendTrendHasActivity(props.points));
 const hasAxis = computed(() => props.points.length > 0);
 const showChart = computed(() => !props.pending && hasAxis.value);
@@ -55,6 +57,57 @@ const trendSubtitle = computed(() => {
   return 'Spend for the selected period';
 });
 
+function syncChartWidth() {
+  chartWidth.value = chartContainerRef.value?.clientWidth ?? 0;
+}
+
+function spendTrendXTicksLimit(pointCount: number, width: number) {
+  if (isHourlyView.value) {
+    if (width < 400) {
+      return 6;
+    }
+    if (width < 640) {
+      return 12;
+    }
+    return 24;
+  }
+
+  if (isMonthDayView.value) {
+    if (width < 360) {
+      return 5;
+    }
+    if (width < 520) {
+      return 8;
+    }
+    if (width < 768) {
+      return 12;
+    }
+    if (width < 1024) {
+      return 16;
+    }
+    return pointCount;
+  }
+
+  return pointCount > 20 ? 10 : 12;
+}
+
+function buildXTicks(theme: ReturnType<typeof readCustomerChartTheme>) {
+  const width = chartWidth.value;
+  const pointCount = props.points.length;
+  const maxTicks = spendTrendXTicksLimit(pointCount, width);
+  const showAllTicks =
+    showEveryAxisLabel.value && (!isHourlyView.value || width >= 640);
+
+  return {
+    color: theme.text,
+    maxRotation: isHourlyView.value ? 55 : 0,
+    minRotation: isHourlyView.value ? 55 : 0,
+    autoSkip: !showAllTicks && maxTicks < pointCount,
+    maxTicksLimit: showAllTicks ? pointCount : maxTicks,
+    font: { size: isHourlyView.value ? 8 : width < 400 ? 9 : 10 },
+  };
+}
+
 function buildConfig(): ChartConfiguration<'line'> {
   const theme = readCustomerChartTheme();
 
@@ -70,8 +123,10 @@ function buildConfig(): ChartConfiguration<'line'> {
           backgroundColor: theme.primarySoft,
           fill: true,
           tension: 0.35,
-          pointRadius: 4,
+          pointRadius:
+            isMonthDayView.value && chartWidth.value > 0 && chartWidth.value < 520 ? 2 : 4,
           pointHoverRadius: 6,
+          pointHitRadius: 8,
           pointBackgroundColor: theme.primary,
           pointBorderColor: theme.surface,
           pointBorderWidth: 2,
@@ -120,18 +175,7 @@ function buildConfig(): ChartConfiguration<'line'> {
       scales: {
         x: {
           grid: { display: false },
-          ticks: {
-            color: theme.text,
-            maxRotation: isHourlyView.value ? 55 : 0,
-            minRotation: isHourlyView.value ? 55 : 0,
-            autoSkip: !showEveryAxisLabel.value,
-            maxTicksLimit: showEveryAxisLabel.value
-              ? props.points.length
-              : props.points.length > 20
-                ? 10
-                : 12,
-            font: { size: isHourlyView.value ? 8 : showEveryAxisLabel.value ? 9 : 10 },
-          },
+          ticks: buildXTicks(theme),
         },
         y: {
           beginAtZero: true,
@@ -158,6 +202,7 @@ function renderChart() {
     return;
   }
 
+  syncChartWidth();
   ensureCustomerChartsRegistered();
   destroyChart();
   chart = new Chart(canvasRef.value, buildConfig());
@@ -168,8 +213,15 @@ function resizeChart() {
     return;
   }
 
+  const previousWidth = chartWidth.value;
+  syncChartWidth();
+
   if (chart) {
     chart.resize();
+    if (Math.abs(chartWidth.value - previousWidth) > 24) {
+      chart.options.scales!.x!.ticks = buildXTicks(readCustomerChartTheme());
+      chart.update('none');
+    }
     return;
   }
 
@@ -187,12 +239,13 @@ const { scheduleRender } = useCustomerChartCanvas({
 });
 
 watch(
-  () => [props.points, props.filterType, resolved.value] as const,
+  () => [props.points, props.filterType, resolved.value, chartWidth.value] as const,
   () => {
     scheduleRender();
   },
   { deep: true },
 );
+
 </script>
 
 <template>

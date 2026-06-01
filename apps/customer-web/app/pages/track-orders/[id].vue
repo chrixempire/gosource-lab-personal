@@ -138,7 +138,7 @@ async function handleReorder() {
 </script>
 
 <template>
-  <div data-testid="order-detail-page" class="flex flex-col gap-6">
+  <div data-testid="order-detail-page" class="flex flex-col gap-2">
     <OrderDetailPageHeader
       :view="detailsView"
       :loading="loading"

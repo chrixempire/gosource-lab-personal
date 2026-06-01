@@ -201,7 +201,7 @@ async function onAddToList() {
     <div v-if="product" class="pb-10 pt-2">
       <MarketBranchSetupBanner />
 
-      <div class="mb-6">
+      <div class="mb-2">
         <Button
           variant="neutral"
           size="small"
@@ -213,10 +213,12 @@ async function onAddToList() {
         </Button>
       </div>
 
-      <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
-        <div class="mx-auto shrink-0 rounded-[22px] border-2 border-transparent p-1 lg:mx-0 lg:w-[min(38%,360px)]">
+      <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:gap-2">
+        <div
+          class="mx-auto w-full max-w-[320px] shrink-0 rounded-[22px] border-2 border-transparent p-1 lg:mx-0 lg:w-[min(38%,360px)] lg:max-w-[360px]"
+        >
           <div
-            class="group relative aspect-square w-full max-w-[320px] overflow-hidden rounded-[18px] bg-grey-55 lg:max-w-none"
+            class="group relative aspect-square w-full overflow-hidden rounded-[18px] bg-grey-55"
           >
             <MarketProductImage
               :src="product.imageUrl"
@@ -227,7 +229,7 @@ async function onAddToList() {
           </div>
         </div>
 
-        <div class="flex min-w-0 flex-1 flex-col gap-5">
+        <div class="flex min-w-0 flex-1 flex-col gap-2">
           <header class="space-y-1">
             <h1 class="text-2xl font-semibold text-grey-900 sm:text-3xl">
               {{ product.name }}
@@ -300,7 +302,7 @@ async function onAddToList() {
             </section>
 
             <template v-if="inStock && product">
-              <div class="mt-8 flex flex-col gap-3">
+              <div class="mt-4 flex flex-col gap-2">
                 <MarketProductLineTotal
                   :product="product"
                   :unit="selectedUnit"

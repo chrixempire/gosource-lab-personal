@@ -278,7 +278,7 @@ watch(requestId, () => {
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-6">
+  <div class="flex w-full flex-col gap-2">
     <div class="flex items-center justify-between gap-3">
       <Button
         variant="neutral"
@@ -300,8 +300,8 @@ watch(requestId, () => {
       </StatusTag>
     </div>
 
-    <div v-if="loading" class="flex flex-col gap-6">
-      <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
+    <div v-if="loading" class="flex flex-col gap-2">
+      <div class="grid gap-2 xl:grid-cols-2 xl:items-start">
         <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
           <div class="h-6 w-40 animate-pulse rounded bg-grey-50" />
           <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
@@ -320,7 +320,7 @@ watch(requestId, () => {
         <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
           <div class="h-6 w-36 animate-pulse rounded bg-grey-50" />
           <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
-          <div class="mt-5 space-y-3">
+          <div class="mt-2 space-y-2">
             <div
               v-for="index in 4"
               :key="`summary-${index}`"
@@ -337,7 +337,7 @@ watch(requestId, () => {
         <div class="mt-5 h-32 animate-pulse rounded-[18px] bg-grey-55" />
       </section>
 
-      <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
+      <div class="grid gap-2 xl:grid-cols-2 xl:items-start">
         <section class="min-w-0 rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
           <div class="h-6 w-40 animate-pulse rounded bg-grey-50" />
           <div class="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-grey-50" />
@@ -355,8 +355,8 @@ watch(requestId, () => {
       </div>
     </div>
 
-    <div v-else-if="request" class="flex flex-col gap-6">
-      <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
+    <div v-else-if="request" class="flex flex-col gap-2">
+      <div class="grid gap-2 xl:grid-cols-2 xl:items-start">
         <CheckoutPaymentMethod
           v-model="selectedMethod"
           :order-total="computedTotal"
@@ -382,7 +382,7 @@ watch(requestId, () => {
         :format-currency="formatRequestCurrency"
       />
 
-      <div class="grid gap-6 xl:grid-cols-2 xl:items-start">
+      <div class="grid gap-2 xl:grid-cols-2 xl:items-start">
         <CheckoutDeliveryDetails class="min-w-0" :request="request" />
       </div>
     </div>

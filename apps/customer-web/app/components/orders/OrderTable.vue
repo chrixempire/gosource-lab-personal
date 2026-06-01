@@ -13,6 +13,7 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import OrderActionsMenu from '~/components/orders/OrderActionsMenu.vue';
+import OrderCards from '~/components/orders/OrderCards.vue';
 import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import type { OrderListItem } from '~/lib/order-details';
 import {
@@ -70,10 +71,65 @@ const emit = defineEmits<{
 }>();
 
 const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)));
+
+const showEmpty = computed(() => !props.loading && props.orders.length === 0);
+const showPagination = computed(
+  () => !props.hidePagination && !props.loading && props.orders.length > 0,
+);
 </script>
 
 <template>
-  <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
+  <div>
+    <div class="space-y-3 lg:hidden">
+      <div v-if="loading" class="space-y-3">
+        <div
+          v-for="index in Math.min(pageSize, 5)"
+          :key="index"
+          class="h-[280px] animate-pulse rounded-[16px] border border-grey-50 bg-grey-55"
+        />
+      </div>
+
+      <OrderCards
+        v-else-if="orders.length > 0"
+        :orders="orders"
+        :hide-actions="hideActions"
+        :reorder-loading="reorderLoading"
+        :reorder-loading-order-id="reorderLoadingOrderId"
+        @click="emit('rowClick', $event)"
+        @view-details="emit('viewDetails', $event)"
+        @reorder="emit('reorder', $event)"
+      />
+
+      <div
+        v-if="showEmpty"
+        class="flex min-h-[220px] flex-col items-center justify-center rounded-[16px] border border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
+      >
+        <p class="text-base font-medium text-grey-900">
+          {{ emptyTitle }}
+        </p>
+        <p v-if="emptyDescription" class="mt-2 text-sm text-grey-300">
+          {{ emptyDescription }}
+        </p>
+        <p v-if="periodLabel" class="mt-1 text-xs text-grey-300">
+          Period: {{ periodLabel }}
+        </p>
+      </div>
+
+      <PaginationBar
+        v-if="showPagination"
+        plain
+        :page="page"
+        :total-pages="totalPages"
+        :total-items="totalItems"
+        :page-size="pageSize"
+        :has-next-page="hasNextPage"
+        :has-prev-page="hasPrevPage"
+        @change="emit('page', $event)"
+        @page-size-change="emit('pageSize', $event)"
+      />
+    </div>
+
+    <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'hidden overflow-visible lg:block']">
     <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: tableGridTemplate }"
@@ -175,7 +231,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
       </TableRow>
 
       <div
-        v-if="orders.length === 0"
+        v-if="showEmpty"
         class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center"
       >
         <p class="text-base font-medium text-grey-900">
@@ -190,7 +246,7 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
       </div>
     </TableBody>
 
-    <TableFooter v-if="!hidePagination && !loading && orders.length > 0">
+    <TableFooter v-if="showPagination">
       <PaginationBar
         :page="page"
         :total-pages="totalPages"
@@ -203,4 +259,5 @@ const skeletonRowCount = computed(() => Math.max(1, Math.min(props.pageSize, 15)
       />
     </TableFooter>
   </TableShell>
+  </div>
 </template>

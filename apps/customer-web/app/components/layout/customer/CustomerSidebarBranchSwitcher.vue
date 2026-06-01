@@ -6,6 +6,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Input,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from '@gosource/ui';
 import { Check, ChevronDown, Store } from 'lucide-vue-next';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
@@ -81,22 +83,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="showSwitcher" class="mt-2 border-t border-grey-50 pt-3">
-    <p class="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-grey-400">
+  <SidebarMenuItem v-if="showSwitcher" class="mt-1">
+    <p class="mb-0.5 px-3 text-sm font-medium text-grey-300">
       Active branch
     </p>
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
-        <button
+        <SidebarMenuButton
+          as="button"
           type="button"
-          class="flex h-10 w-full items-center justify-between gap-2 rounded-[12px] border border-grey-50 bg-grey-55/80 px-3 text-left text-sm font-medium text-grey-900 transition hover:bg-grey-55"
+          class="rounded-[16px]"
         >
-          <span class="flex min-w-0 items-center gap-2">
-            <Store class="size-4 shrink-0 text-grey-400" aria-hidden="true" />
-            <span class="min-w-0 truncate">{{ triggerLabel }}</span>
-          </span>
-          <ChevronDown class="size-4 shrink-0 text-grey-300" aria-hidden="true" />
-        </button>
+          <Store class="size-[18px]" aria-hidden="true" />
+          <span class="min-w-0 flex-1 truncate">{{ triggerLabel }}</span>
+          <ChevronDown class="size-4 shrink-0 opacity-70" aria-hidden="true" />
+        </SidebarMenuButton>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
@@ -136,8 +137,5 @@ onMounted(() => {
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
-    <p class="mt-2 px-1 text-xs leading-5 text-grey-400">
-      Cart and checkout use this branch. List pages can filter separately.
-    </p>
-  </div>
+  </SidebarMenuItem>
 </template>

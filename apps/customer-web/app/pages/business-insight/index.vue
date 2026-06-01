@@ -282,13 +282,9 @@ useHead({ title: 'Business insight' });
 </script>
 
 <template>
-  <div class="flex flex-col gap-8 pb-10">
-    <p class="max-w-2xl text-sm leading-6 text-grey-text">
-      View spending, procurement breakdown, and recent orders for your branches.
-    </p>
-
+  <div class="flex flex-col gap-2 pb-10">
     <section
-      class="flex flex-col gap-4 min-[720px]:flex-row min-[720px]:flex-nowrap min-[720px]:items-end"
+      class="flex flex-col gap-2 min-[720px]:flex-row min-[720px]:flex-nowrap min-[720px]:items-end"
     >
       <BranchPickerDropdown
         v-if="isSuperAdmin"
@@ -297,10 +293,10 @@ useHead({ title: 'Business insight' });
         :loading="branchesLoading"
         :disabled="analyticsPending || productTablePending"
         :show-all-branches-option="showAllBranchesOption"
-        class="w-full max-w-[13rem] shrink-0"
+        class="w-full min-[720px]:w-fit min-[720px]:shrink-0"
         @update:model-value="onBranchFilterChange"
       />
-      <label v-else class="block w-full max-w-[13rem] shrink-0 space-y-2">
+      <label v-else class="block w-full min-[720px]:w-fit min-[720px]:shrink-0 space-y-2">
         <span class="text-[13px] font-semibold text-grey-text">Branch</span>
         <p class="truncate text-[14px] font-medium text-grey-900">
           {{
@@ -315,7 +311,7 @@ useHead({ title: 'Business insight' });
       />
     </section>
 
-    <section class="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
+    <section class="grid grid-cols-1 items-stretch gap-2 lg:grid-cols-2">
       <div class="flex min-w-0 flex-col">
         <ExploreLastOrderCard
           v-if="!heroPending && lastOrder"
@@ -351,7 +347,7 @@ useHead({ title: 'Business insight' });
       :pending="analyticsPending"
     />
 
-    <div class="flex w-full flex-col gap-4">
+    <div class="flex w-full flex-col gap-2">
       <BusinessInsightBranchSpendChart
         v-if="showBranchChart"
         :rows="branchSpendChartRows"
@@ -364,7 +360,7 @@ useHead({ title: 'Business insight' });
       />
     </div>
 
-    <section class="space-y-3">
+    <section class="space-y-2">
       <div class="flex items-center justify-between gap-3">
         <h2 class="text-lg font-semibold text-grey-900">Spend by product</h2>
         <p class="text-sm text-grey-300">{{ productRows.length }} products</p>
@@ -403,7 +399,7 @@ useHead({ title: 'Business insight' });
       />
     </section>
 
-    <section class="space-y-3">
+    <section class="space-y-2">
       <div class="flex items-center justify-between gap-3">
         <h2 class="text-lg font-semibold text-grey-900">Recent orders</h2>
         <NuxtLink

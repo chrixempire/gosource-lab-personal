@@ -552,17 +552,8 @@ function cardArticleClass(member: BranchMemberRecord) {
 
 <template>
   <div class="flex flex-col gap-2">
-    <p class="max-w-3xl text-base leading-7 text-grey-text">
-      {{
-        isEmployeeSession
-          ? 'Members assigned to your branch.'
-          : 'Invite and manage the members assigned to each branch.'
-      }}
-    </p>
-
-    <div class="flex flex-col gap-6">
-      <div class="flex flex-col gap-4 min-[1000px]:flex-row min-[1000px]:items-end min-[1000px]:justify-between">
-        <div class="w-full min-[1000px]:max-w-md space-y-3">
+      <div class="flex flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-end min-[1000px]:justify-between">
+        <div class="w-full min-[1000px]:max-w-md space-y-2">
           <BranchPickerDropdown
             v-if="!isEmployeeSession"
             :model-value="selectedBranchId"
@@ -778,7 +769,7 @@ function cardArticleClass(member: BranchMemberRecord) {
         </TableFooter>
       </TableShell>
 
-      <div v-else-if="!membersListLoading" class="space-y-4">
+      <div v-else-if="!membersListLoading" class="space-y-2">
         <div v-if="formattedMembers.length > 0" class="flex flex-wrap gap-4">
           <article
             v-for="member in formattedMembers"
@@ -919,7 +910,6 @@ function cardArticleClass(member: BranchMemberRecord) {
           </div>
         </div>
       </div>
-    </div>
 
     <BranchInviteMemberOverlay
       v-model:open="inviteOpen"

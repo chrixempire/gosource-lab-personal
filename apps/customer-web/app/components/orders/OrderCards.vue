@@ -4,11 +4,17 @@ import MarketProductImage from '~/components/market/MarketProductImage.vue';
 import OrderActionsMenu from '~/components/orders/OrderActionsMenu.vue';
 import type { OrderListItem } from '~/lib/order-details';
 
-defineProps<{
-  orders: OrderListItem[];
-  reorderLoading?: boolean;
-  reorderLoadingOrderId?: string | null;
-}>();
+withDefaults(
+  defineProps<{
+    orders: OrderListItem[];
+    reorderLoading?: boolean;
+    reorderLoadingOrderId?: string | null;
+    hideActions?: boolean;
+  }>(),
+  {
+    hideActions: false,
+  },
+);
 
 const emit = defineEmits<{
   click: [order: OrderListItem];
@@ -18,11 +24,11 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex flex-wrap gap-4">
+  <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:gap-4">
     <article
       v-for="order in orders"
       :key="order.id"
-      class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] cursor-pointer rounded-[24px] border border-grey-50 bg-background-on-canvas p-3 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-colors duration-150 hover:bg-primary-50/30 sm:p-5"
+      class="w-full min-w-0 cursor-pointer rounded-[16px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_12px_32px_-24px_rgba(16,24,40,0.14)] transition-colors duration-150 hover:bg-primary-50/30 lg:max-w-[500px] lg:flex-[1_1_320px] lg:rounded-[24px] lg:p-5"
       @click="emit('click', order)"
     >
       <div class="flex items-start justify-between gap-3">
@@ -57,6 +63,7 @@ const emit = defineEmits<{
         </div>
 
         <OrderActionsMenu
+          v-if="!hideActions"
           class="shrink-0"
           :reorder-loading="reorderLoading"
           :is-reordering="reorderLoadingOrderId === order.id"

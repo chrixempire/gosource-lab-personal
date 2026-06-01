@@ -6,6 +6,10 @@ import {
   type CustomerThemePreference,
   type CustomerResolvedTheme,
 } from '~/lib/customer-theme';
+import {
+  getCustomerScheduleTheme,
+  getMsUntilNextScheduleThemeFlip,
+} from '~/lib/customer-time-of-day';
 
 export function useCustomerTheme() {
   const preference = useState<CustomerThemePreference>(
@@ -15,16 +19,54 @@ export function useCustomerTheme() {
   const resolved = useState<CustomerResolvedTheme>('customer-theme-resolved', () => 'light');
   const ready = useState('customer-theme-ready', () => false);
 
+  let scheduleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function clearScheduleTimer() {
+    if (scheduleTimer) {
+      clearTimeout(scheduleTimer);
+      scheduleTimer = undefined;
+    }
+  }
+
+  function applyScheduledThemeIfAllowed() {
+    if (!import.meta.client) {
+      return;
+    }
+
+    if (readStoredCustomerThemePreference()) {
+      return;
+    }
+
+    const next = getCustomerScheduleTheme();
+    resolved.value = next;
+    applyCustomerThemeToDocument(next);
+  }
+
+  function scheduleNextThemeFlip() {
+    clearScheduleTimer();
+
+    if (!import.meta.client || readStoredCustomerThemePreference()) {
+      return;
+    }
+
+    scheduleTimer = setTimeout(() => {
+      applyScheduledThemeIfAllowed();
+      scheduleNextThemeFlip();
+    }, getMsUntilNextScheduleThemeFlip());
+  }
+
   function syncFromDocument() {
     if (!import.meta.client) {
       return;
     }
 
+    const stored = readStoredCustomerThemePreference();
     const next = resolveCustomerThemePreference();
-    preference.value = readStoredCustomerThemePreference() ?? next;
+    preference.value = stored ?? next;
     resolved.value = next;
     applyCustomerThemeToDocument(next);
     ready.value = true;
+    scheduleNextThemeFlip();
   }
 
   function setTheme(next: CustomerThemePreference) {
@@ -36,6 +78,7 @@ export function useCustomerTheme() {
     resolved.value = next;
     persistCustomerThemePreference(next);
     applyCustomerThemeToDocument(next);
+    scheduleNextThemeFlip();
   }
 
   function toggleTheme() {
@@ -46,18 +89,10 @@ export function useCustomerTheme() {
 
   onMounted(() => {
     syncFromDocument();
+  });
 
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const onSystemChange = () => {
-      if (!readStoredCustomerThemePreference()) {
-        const next = media.matches ? 'dark' : 'light';
-        resolved.value = next;
-        applyCustomerThemeToDocument(next);
-      }
-    };
-
-    media.addEventListener('change', onSystemChange);
-    onUnmounted(() => media.removeEventListener('change', onSystemChange));
+  onUnmounted(() => {
+    clearScheduleTimer();
   });
 
   return {

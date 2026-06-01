@@ -676,26 +676,16 @@ async function handleRequestCancel(request: RequestListItem) {
   handleCancel();
 }
 
-const pageDescription = computed(() =>
-  isSuperAdmin.value
-    ? 'Approve and manage all order requests across your business branches.'
-    : 'View and manage order requests you created for your branch.',
-);
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
-    <p class="max-w-3xl text-base leading-7 text-grey-text">
-      {{ pageDescription }}
-    </p>
-
     <RequestRoleGuide :variant="requestRoleGuideVariant" />
 
-    <div class="mt-4 flex flex-col gap-6">
-      <div class="flex w-full flex-col gap-3 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
+    <div class="flex w-full flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
         <div
           v-if="!isEmployeeSession"
-          class="flex w-full flex-col gap-3 min-[1000px]:max-w-md"
+          class="flex w-full flex-col gap-2 min-[1000px]:max-w-md"
         >
           <BranchPickerDropdown
             :model-value="selectedBranchId"
@@ -771,7 +761,7 @@ const pageDescription = computed(() =>
         @cancel="handleRequestCancel"
       />
 
-      <div v-else-if="!showNoBranchSetup && !requestsLoading" class="space-y-4">
+      <div v-else-if="!showNoBranchSetup && !requestsLoading" class="space-y-2">
         <RequestCards
           v-if="requestItems.length"
           :requests="requestItems"
@@ -847,8 +837,6 @@ const pageDescription = computed(() =>
           </div>
         </div>
       </div>
-
-    </div>
 
     <Drawer
       v-if="!isSuperAdmin"

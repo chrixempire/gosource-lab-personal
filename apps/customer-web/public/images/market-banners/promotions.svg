@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="250" viewBox="0 0 1200 250" fill="none" role="img" aria-label="Promotions">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E293B"/>
+      <stop offset="0.45" stop-color="#334155"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="800" y1="0" x2="1100" y2="250" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F79009" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#F79009" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="250" fill="url(#bg)"/>
+  <rect width="1200" height="250" fill="url(#accent)"/>
+  <circle cx="1000" cy="125" r="88" fill="#F79009" fill-opacity="0.15"/>
+  <text x="1000" y="118" text-anchor="middle" fill="#FDB022" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="44" font-weight="800">%</text>
+  <text x="1000" y="158" text-anchor="middle" fill="#FFEDD5" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="16" font-weight="600">OFF</text>
+  <text x="64" y="108" fill="#FFFFFF" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="40" font-weight="700">Promotions</text>
+  <text x="64" y="148" fill="#CBD5E1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="20" font-weight="500">Save on the products you buy every week</text>
+  <rect x="64" y="172" width="156" height="36" rx="18" fill="#F79009"/>
+  <text x="88" y="196" fill="#FFFFFF" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="15" font-weight="700">Shop deals</text>
+</svg>

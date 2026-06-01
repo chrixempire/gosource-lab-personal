@@ -5,6 +5,7 @@ import OrderFilterPopover from "~/components/orders/OrderFilterPopover.vue";
 import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import {
   ALL_EXPLORE_CATEGORIES_ID,
+  EXPLORE_CATEGORY_FILTER_STICKY_CLASS,
   exploreCategoryDotColor,
 } from "~/lib/explore-catalog-filters";
 import {
@@ -37,8 +38,9 @@ const priceActive = computed(
 );
 
 const activePillClass =
-  "bg-primary-500 text-white shadow-[0_4px_14px_-6px_rgba(4,85,11,0.45)] dark:bg-primary-500/22 dark:text-[#86efac] dark:shadow-none dark:ring-1 dark:ring-primary-500/35";
-const inactiveChipClass = "text-grey-800 hover:bg-grey-55";
+  "bg-primary-500 text-white shadow-[0_4px_14px_-6px_rgba(15,92,24,0.45)] dark:bg-primary-500/22 dark:text-[#86efac] dark:shadow-none dark:ring-1 dark:ring-primary-500/35";
+const inactiveChipClass =
+  "text-grey-300 customer-sidebar-nav-hover";
 
 function syncPriceDraft() {
   draftPriceMin.value =
@@ -236,7 +238,7 @@ watch(
 <template>
   <div
     data-testid="explore-category-filter-bar"
-    class="sticky top-0 z-30 -mx-4 border-b border-grey-50 bg-background-on-canvas px-4 py-2.5 shadow-[0_8px_24px_-12px_rgba(16,24,40,0.08)] sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6"
+    :class="EXPLORE_CATEGORY_FILTER_STICKY_CLASS"
   >
     <div
       class="flex w-full min-w-0 items-center"
@@ -245,7 +247,7 @@ watch(
       <button
         v-if="canScrollCategories"
         type="button"
-        class="customer-control-btn flex size-9 shrink-0 items-center justify-center shadow-sm"
+        class="customer-control-btn flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full shadow-sm"
         :disabled="!canScrollLeft"
         aria-label="Scroll categories left"
         @click="scrollByDirection(-1)"
@@ -255,7 +257,7 @@ watch(
 
       <div
         ref="scrollerRef"
-        class="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] lg:gap-4 [&::-webkit-scrollbar]:hidden"
+        class="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] lg:gap-4 [&::-webkit-scrollbar]:hidden"
       >
         <div class="flex shrink-0 items-center gap-2">
           <button
@@ -295,14 +297,14 @@ watch(
 
         <div class="h-8 w-px shrink-0 bg-grey-100" aria-hidden="true" />
 
-        <div class="flex shrink-0 items-center gap-2 pr-1">
+        <div class="flex shrink-0 items-center gap-2">
           <button
             type="button"
             class="shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-sm font-medium transition"
             :class="
               inStockOnly
                 ? activePillClass + ' border-primary-500'
-                : 'border-grey-50 bg-background-on-canvas text-grey-800 hover:border-primary-300 hover:bg-grey-55'
+                : 'border-grey-50 bg-background-on-canvas text-grey-300 customer-sidebar-nav-hover hover:border-primary-300'
             "
             :aria-pressed="inStockOnly"
             @click="toggleInStock"
@@ -345,7 +347,7 @@ watch(
       <button
         v-if="canScrollCategories"
         type="button"
-        class="customer-control-btn flex size-9 shrink-0 items-center justify-center shadow-sm"
+        class="customer-control-btn flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full shadow-sm"
         :disabled="!canScrollRight"
         aria-label="Scroll categories right"
         @click="scrollByDirection(1)"

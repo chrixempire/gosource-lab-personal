@@ -96,7 +96,7 @@ onUnmounted(() => {
     <button
       v-if="canScroll"
       type="button"
-      class="customer-control-btn flex size-9 shrink-0 shadow-sm"
+      class="customer-control-btn flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full shadow-sm"
       :disabled="!canScrollLeft"
       aria-label="Scroll categories left"
       @click="scrollBy(-220)"
@@ -161,7 +161,7 @@ onUnmounted(() => {
     <button
       v-if="canScroll"
       type="button"
-      class="customer-control-btn flex size-9 shrink-0 shadow-sm"
+      class="customer-control-btn flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full shadow-sm"
       :disabled="!canScrollRight"
       aria-label="Scroll categories right"
       @click="scrollBy(220)"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BranchRecord } from '@gosource/api-client';
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -9,19 +10,20 @@ import {
 } from '@gosource/ui';
 import { Check, ChevronDown } from 'lucide-vue-next';
 import { ALL_BRANCHES_VALUE } from '~/lib/branch-picker';
+import { insightFilterMenuItemClass } from '~/lib/insight-date-filter';
 
 const props = withDefaults(
   defineProps<{
     modelValue: string;
     branches: BranchRecord[];
     disabled?: boolean;
-    /** While branches are being fetched for the first time or refresh. */
     loading?: boolean;
-    /** Owner list pages: first option loads data for every branch. */
     showAllBranchesOption?: boolean;
+    hideLabel?: boolean;
   }>(),
   {
     showAllBranchesOption: false,
+    hideLabel: false,
   },
 );
 
@@ -60,85 +62,95 @@ const filteredBranches = computed(() => {
   return props.branches.filter((b) => b.branchName.toLowerCase().includes(query));
 });
 
+const triggerDisabled = computed(
+  () => props.disabled || props.loading || (!props.branches.length && !showAllOption.value),
+);
+
 function selectBranch(branchId: string) {
   emit('update:modelValue', branchId);
   search.value = '';
 }
+
+function isSelected(branchId: string) {
+  return props.modelValue === branchId;
+}
 </script>
 
 <template>
-  <label class="block space-y-2">
-    <span class="text-[13px] font-semibold text-grey-text">Branch</span>
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        as-child
-        :disabled="disabled || loading || (!branches.length && !showAllOption)"
-      >
-        <button
-          type="button"
-          :class="[
-            'flex h-10 w-full items-center justify-between rounded-[10px] bg-grey-55 px-4 py-2.5 text-left text-[14px] shadow-none outline-none transition disabled:cursor-not-allowed disabled:border-grey-50 disabled:bg-grey-50 disabled:text-grey-300 disabled:opacity-100',
-            selectedBranch ||
-            (showAllOption && modelValue === ALL_BRANCHES_VALUE) ||
-            !branches.length
-              ? 'text-grey-900'
-              : 'text-grey-400',
-            'border border-border-input-default focus:border-border-input-active focus:ring-4 focus:ring-primary-500/12',
-          ]"
-        >
-          <span class="min-w-0 truncate">{{ triggerLabel }}</span>
-          <ChevronDown class="size-4 shrink-0 text-grey-300" />
-        </button>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent
-        class="flex max-h-[min(18rem,70vh)] w-[var(--reka-dropdown-menu-trigger-width)] flex-col overflow-hidden p-0"
-      >
-        <div class="shrink-0 border-b border-grey-50 px-2 pb-2 pt-1">
-          <Input
-            :model-value="search"
-            placeholder="Search branch"
-            class="h-9 bg-background-on-canvas"
-            @update:model-value="search = $event"
-            @keydown.stop
-          />
-        </div>
-
-        <div class="min-h-0 max-h-60 overflow-y-auto overscroll-contain py-1">
-          <DropdownMenuItem
-            v-if="showAllOption"
-            @select="selectBranch(ALL_BRANCHES_VALUE)"
+  <label :class="['block', hideLabel ? '' : 'space-y-2']">
+    <span
+      v-if="!hideLabel"
+      class="text-[13px] font-semibold text-grey-text"
+    >
+      Branch
+    </span>
+    <div class="w-full min-[720px]:w-fit">
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button
+            variant="primary"
+            size="small"
+            class="!w-fit max-w-full shrink-0 whitespace-nowrap"
+            :right-icon="ChevronDown"
+            :disabled="triggerDisabled"
           >
-            <div class="flex w-full min-w-0 items-center justify-between gap-3">
+            <span class="min-w-0 truncate">{{ triggerLabel }}</span>
+          </Button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent
+          align="start"
+          class="flex max-h-[min(18rem,70vh)] min-w-[12rem] w-[var(--reka-dropdown-menu-trigger-width)] flex-col overflow-hidden p-0"
+        >
+          <div class="shrink-0 border-b border-grey-50 px-2 pb-2 pt-1">
+            <Input
+              :model-value="search"
+              placeholder="Search branch"
+              class="h-9 bg-background-on-canvas"
+              @update:model-value="search = $event"
+              @keydown.stop
+            />
+          </div>
+
+          <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">
+            <DropdownMenuItem
+              v-if="showAllOption"
+              :class="insightFilterMenuItemClass(isSelected(ALL_BRANCHES_VALUE))"
+              @select="selectBranch(ALL_BRANCHES_VALUE)"
+            >
               <span class="min-w-0 truncate">All branches</span>
               <Check
-                v-if="modelValue === ALL_BRANCHES_VALUE"
                 class="size-4 shrink-0 text-primary-500"
+                :class="isSelected(ALL_BRANCHES_VALUE) ? 'opacity-100' : 'opacity-0'"
+                aria-hidden="true"
               />
-            </div>
-          </DropdownMenuItem>
+            </DropdownMenuItem>
 
-          <DropdownMenuItem
-            v-for="branch in filteredBranches"
-            :key="branch.id"
-            @select="selectBranch(branch.id)"
-          >
-            <div class="flex w-full min-w-0 items-center justify-between gap-3">
+            <DropdownMenuItem
+              v-for="branch in filteredBranches"
+              :key="branch.id"
+              :class="insightFilterMenuItemClass(isSelected(branch.id))"
+              @select="selectBranch(branch.id)"
+            >
               <span class="min-w-0 truncate">
                 {{ branch.branchName }}{{ branch.isHeadquarter ? ' (Headquarter)' : '' }}
               </span>
-              <Check v-if="modelValue === branch.id" class="size-4 shrink-0 text-primary-500" />
-            </div>
-          </DropdownMenuItem>
+              <Check
+                class="size-4 shrink-0 text-primary-500"
+                :class="isSelected(branch.id) ? 'opacity-100' : 'opacity-0'"
+                aria-hidden="true"
+              />
+            </DropdownMenuItem>
 
-          <div
-            v-if="filteredBranches.length === 0"
-            class="px-3 py-2 text-[13px] text-grey-300"
-          >
-            No branch matches "{{ search }}"
+            <div
+              v-if="filteredBranches.length === 0"
+              class="px-3 py-2 text-[13px] text-grey-300"
+            >
+              No branch matches "{{ search }}"
+            </div>
           </div>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   </label>
 </template>

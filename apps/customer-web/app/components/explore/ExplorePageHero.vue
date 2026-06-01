@@ -1,59 +1,32 @@
 <script setup lang="ts">
+import { useNow } from '@vueuse/core';
 import ExploreMarketBannerCarousel from '~/components/explore/ExploreMarketBannerCarousel.vue';
 import ExplorePageHeroGreetingSkeleton from '~/components/explore/ExplorePageHeroGreetingSkeleton.vue';
-import { formatNaira } from '~/composables/useMarketplaceCart';
-import { useExploreHeroStats } from '~/composables/useExploreHeroStats';
+import { getCustomerTimeGreeting } from '~/lib/customer-time-of-day';
+
 defineProps<{
   greetingName: string;
-  outletLabel: string;
   sessionLoading?: boolean;
 }>();
 
-const { ordersLabel, walkInSavingsNaira, loading: heroStatsLoading } = useExploreHeroStats();
-const {
-  lastOrder,
-  loaded: lastOrderLoaded,
-  showSkeleton: lastOrderSkeleton,
-} = useExploreLastOrder();
-
-const savingsLabel = computed(() => formatNaira(walkInSavingsNaira.value));
+const now = useNow({ interval: 60_000 });
+const timeGreeting = computed(() => getCustomerTimeGreeting(now.value));
 </script>
 
 <template>
-  <header class="mb-5 pt-5 sm:pt-6">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div class="min-h-[4.25rem] min-w-0">
-        <ExplorePageHeroGreetingSkeleton v-if="sessionLoading" />
-        <template v-else>
-          <h1 class="text-2xl font-semibold leading-tight tracking-tight text-grey-900 sm:text-[1.75rem]">
-            Good morning,
-            <span class="text-primary-600">{{ greetingName }}.</span>
-          </h1>
-          <p class="mt-2 text-sm font-medium text-grey-900">
-            {{ outletLabel }}
-          </p>
-        </template>
-      </div>
-
-      <div class="shrink-0 text-left lg:text-right">
-        <p
-          class="text-lg font-semibold tracking-tight text-grey-900 sm:text-xl"
-          :class="{ 'animate-pulse text-grey-200': heroStatsLoading || sessionLoading }"
-        >
-          {{ heroStatsLoading || sessionLoading ? '—' : ordersLabel }}
-        </p>
-        <p class="mt-1 text-sm text-grey-300">
-          <template v-if="heroStatsLoading || sessionLoading">
-            Loading monthly summary…
-          </template>
-          <template v-else>
-            this month · saving {{ savingsLabel }} vs walk-in
-          </template>
-        </p>
-      </div>
+  <header class="mb-2 pt-3 sm:mb-2 sm:pt-6">
+    <div class="flex min-h-0 min-w-0 flex-col gap-1">
+      <ExplorePageHeroGreetingSkeleton v-if="sessionLoading" />
+      <h1
+        v-else
+        class="text-[15px] font-medium leading-[1.35] tracking-tight sm:text-base"
+      >
+        <span class="text-grey-600">{{ timeGreeting }},</span>
+        <span class="font-semibold text-primary-600"> {{ greetingName }}.</span>
+      </h1>
     </div>
 
-    <div class="mt-6 w-full">
+    <div class="mt-1 w-full min-w-0 sm:mt-4">
       <ExploreMarketBannerCarousel />
     </div>
   </header>

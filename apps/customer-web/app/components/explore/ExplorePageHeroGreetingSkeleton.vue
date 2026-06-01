@@ -3,8 +3,8 @@ import ExploreSkeletonBar from '~/components/explore/ExploreSkeletonBar.vue';
 </script>
 
 <template>
-  <div class="min-h-[4.25rem] space-y-2.5" aria-busy="true" aria-label="Loading greeting">
-    <ExploreSkeletonBar class="h-8 w-[min(100%,16rem)] rounded-lg bg-grey-100 sm:h-9" />
-    <ExploreSkeletonBar class="h-4 w-[min(100%,10rem)] bg-grey-100" />
+  <div class="flex flex-col gap-1" aria-busy="true" aria-label="Loading greeting">
+    <ExploreSkeletonBar class="h-[1.35rem] w-[min(100%,14rem)] rounded-md bg-grey-100" />
+    <ExploreSkeletonBar class="h-3.5 w-[min(100%,9rem)] bg-grey-100" />
   </div>
 </template>

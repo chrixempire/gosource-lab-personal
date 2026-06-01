@@ -495,17 +495,13 @@ async function handleCreateRequest() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <p class="max-w-3xl text-base leading-7 text-grey-text">
-      Add products from the market with <span class="font-medium text-grey-900">Add to list</span>, then click a row or choose <span class="font-medium text-grey-900">View list items</span> to see and edit items. Create a request when you are ready.
-    </p>
-
-    <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2">
       <div
-        class="flex w-full flex-col gap-3 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between"
+        class="flex w-full flex-col gap-2 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between"
       >
         <div
-          class="flex w-full flex-col gap-3 min-[900px]:max-w-md"
+          class="flex w-full flex-col gap-2 min-[900px]:max-w-md"
           :class="showBranchControls ? 'min-[900px]:flex-1' : undefined"
         >
           <BranchPickerDropdown

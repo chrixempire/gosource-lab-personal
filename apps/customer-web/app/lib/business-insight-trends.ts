@@ -60,8 +60,9 @@ export function isYearMonthSpendTrendFilter(filterType: InsightDateFilterType) {
   return filterType === 'this_year' || filterType === 'last_year';
 }
 
+/** Hourly views may show every tick when the chart is wide enough; month/day uses auto-skip on narrow screens. */
 export function showsEverySpendTrendAxisLabel(filterType: InsightDateFilterType) {
-  return isHourlySpendTrendFilter(filterType) || isMonthDaySpendTrendFilter(filterType);
+  return isHourlySpendTrendFilter(filterType);
 }
 
 function parseDayKey(key: string): Date | null {

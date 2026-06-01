@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import { defineNuxtConfig } from 'nuxt/config';
 import { gosourceIconCollections } from '@gosource/icons';
+import { CUSTOMER_THEME_BOOTSTRAP_SCRIPT } from './app/lib/customer-theme';
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -41,7 +42,7 @@ export default defineNuxtConfig({
       script: [
         {
           key: 'customer-theme-bootstrap',
-          innerHTML: `(function(){try{var k='gosource.customer.theme';var s=localStorage.getItem(k);var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;if(d){e.classList.add('dark');e.style.colorScheme='dark';}else{e.classList.remove('dark');e.style.colorScheme='light';}}catch(e){}})();`,
+          innerHTML: CUSTOMER_THEME_BOOTSTRAP_SCRIPT,
           type: 'text/javascript',
           tagPriority: 'critical' as const,
         },

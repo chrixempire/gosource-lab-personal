@@ -112,7 +112,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex w-full max-w-2xl flex-col gap-6">
+  <div class="flex w-full max-w-2xl flex-col gap-2">
     <div>
       <p class="text-sm text-grey-300">
         Update your name and phone number. Your phone is required for checkout and order updates.

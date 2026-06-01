@@ -165,7 +165,7 @@ async function confirmEmailChange() {
 </script>
 
 <template>
-  <div class="flex w-full max-w-2xl flex-col gap-8">
+  <div class="flex w-full max-w-2xl flex-col gap-2">
     <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6">
       <div class="space-y-1">
         <h2 class="text-base font-semibold text-grey-900">Change your password</h2>

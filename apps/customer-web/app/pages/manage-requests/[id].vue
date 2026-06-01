@@ -500,7 +500,7 @@ function openRelatedRequest(item: RequestListItem) {
 </script>
 
 <template>
-  <div data-testid="request-detail-page" class="flex w-full flex-col gap-6">
+  <div data-testid="request-detail-page" class="flex w-full flex-col gap-2">
     <div class="flex items-center justify-between gap-3">
       <Button
         variant="neutral"
@@ -563,7 +563,7 @@ function openRelatedRequest(item: RequestListItem) {
       </div>
     </div>
 
-    <div v-if="loading || !payloadReadyForRoute" class="flex flex-col gap-6">
+    <div v-if="loading || !payloadReadyForRoute" class="flex flex-col gap-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div
           v-for="index in 3"
@@ -587,7 +587,7 @@ function openRelatedRequest(item: RequestListItem) {
       </section>
     </div>
 
-    <div v-else-if="request" class="flex flex-col gap-6">
+    <div v-else-if="request" class="flex flex-col gap-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div
           v-for="card in summaryCards"
@@ -604,7 +604,7 @@ function openRelatedRequest(item: RequestListItem) {
       </div>
 
       <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 class="text-xl font-semibold text-grey-900">

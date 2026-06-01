@@ -29,9 +29,6 @@ const canScrollProducts = ref(false);
 const canScrollLeft = ref(false);
 const canScrollRight = ref(false);
 
-const navButtonClass =
-  'inline-flex size-7 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-white/15 text-white shadow-sm transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/15';
-
 function updateScrollerState() {
   const scroller = scrollerRef.value;
   if (!scroller) {
@@ -146,45 +143,47 @@ watch(
 <template>
   <section
     v-if="loading || visibleProducts.length > 0"
-    class="mb-8 mt-6 overflow-hidden rounded-[16px] border border-primary-500/35 bg-background-on-canvas transition-colors duration-300"
+    class="m-0"
   >
-    <header class="customer-brand-hero flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
-      <div class="flex min-w-0 items-center gap-2">
-        <h2 class="truncate text-base font-semibold text-white sm:text-lg">
+    <header
+      class="mb-3 flex items-center justify-between gap-2 px-1 sm:px-0"
+    >
+      <div class="flex min-w-0 items-center gap-1.5">
+        <h2 class="truncate text-base font-semibold text-grey-900 sm:text-lg">
           Deals combo for you
         </h2>
         <span
           v-if="headerIconHtml"
-          class="inline-flex size-4 shrink-0 items-center justify-center text-white"
+          class="inline-flex size-4 shrink-0 items-center justify-center text-primary-500 [&_svg]:size-4"
           v-html="headerIconHtml"
         />
       </div>
 
-      <div v-if="canScrollProducts" class="flex shrink-0 items-center gap-1.5">
+      <div v-if="canScrollProducts" class="flex shrink-0 gap-1">
         <button
           type="button"
-          :class="navButtonClass"
+          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
           :disabled="!canScrollLeft"
           aria-label="Scroll promotions left"
           @click="scrollByDirection(-1)"
         >
-          <ChevronLeft class="size-4" />
+          <ChevronLeft class="size-5" aria-hidden="true" />
         </button>
         <button
           type="button"
-          :class="navButtonClass"
+          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
           :disabled="!canScrollRight"
           aria-label="Scroll promotions right"
           @click="scrollByDirection(1)"
         >
-          <ChevronRight class="size-4" />
+          <ChevronRight class="size-5" aria-hidden="true" />
         </button>
       </div>
     </header>
 
     <div
       v-if="loading && visibleProducts.length === 0"
-      class="mt-3 flex gap-4 overflow-x-auto px-4 pb-4 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-5 [&::-webkit-scrollbar]:hidden"
+      class="flex touch-pan-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
     >
       <div
         v-for="index in 5"
@@ -196,7 +195,7 @@ watch(
     <div
       v-else
       ref="scrollerRef"
-      class="mt-3 flex gap-4 overflow-x-auto px-4 pb-4 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-5 [&::-webkit-scrollbar]:hidden"
+      class="flex touch-pan-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
     >
       <div
         v-for="product in visibleProducts"

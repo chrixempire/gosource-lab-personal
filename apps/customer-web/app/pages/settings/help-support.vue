@@ -1,5 +1,5 @@
 <template>
-  <p class="max-w-3xl text-base leading-7 text-grey-text">
-    Find answers and get support for your workspace here
-  </p>
+  <div class="py-2 text-sm text-grey-300">
+    Support resources will appear here.
+  </div>
 </template>

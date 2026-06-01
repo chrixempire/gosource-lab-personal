@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import type { MarketProduct } from "~/lib/marketplace-data";
-import { Plus } from "lucide-vue-next";
-import MarketProductImage from "~/components/market/MarketProductImage.vue";
-import { exploreProductUnitLine } from "~/lib/explore-product-display";
-import { formatNaira } from "~/composables/useMarketplaceCart";
+import type { MarketProduct } from '~/lib/marketplace-data';
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import ExploreRecentOrderCompactCard from '~/components/explore/ExploreRecentOrderCompactCard.vue';
 
 const props = defineProps<{
   products: MarketProduct[];
@@ -14,98 +12,199 @@ const emit = defineEmits<{
   select: [product: MarketProduct];
 }>();
 
-const visibleProducts = computed(() => props.products.slice(0, 8));
+const visibleProducts = computed(() => props.products);
 
-function productUnitLabel(product: MarketProduct) {
-  return (
-    exploreProductUnitLine(product) ?? `${formatNaira(product.priceNaira)}`
-  );
+/** One visible column in a 4-up row (gap-3 = 0.75rem × 3 gutters). */
+const recentOrderCardWidthClass =
+  'w-[calc((100%-2.25rem)/4)] min-w-[200px] shrink-0 sm:min-w-[220px]';
+
+const scrollerRef = ref<HTMLElement | null>(null);
+const canScroll = ref(false);
+const canScrollLeft = ref(false);
+const canScrollRight = ref(false);
+
+function updateScrollHints() {
+  const scroller = scrollerRef.value;
+  if (!scroller) {
+    canScroll.value = false;
+    canScrollLeft.value = false;
+    canScrollRight.value = false;
+    return;
+  }
+
+  const { scrollLeft, scrollWidth, clientWidth } = scroller;
+  const maxScrollLeft = Math.max(0, scrollWidth - clientWidth);
+
+  canScroll.value = scrollWidth > clientWidth + 2;
+  canScrollLeft.value = scrollLeft > 1;
+  canScrollRight.value = scrollLeft < maxScrollLeft - 1;
 }
+
+function scrollByDirection(direction: -1 | 1) {
+  if (direction === -1 && !canScrollLeft.value) {
+    return;
+  }
+
+  if (direction === 1 && !canScrollRight.value) {
+    return;
+  }
+
+  const scroller = scrollerRef.value;
+  if (!scroller) {
+    return;
+  }
+
+  const amount = Math.max(280, Math.floor(scroller.clientWidth * 0.8));
+  scroller.scrollTo({
+    left: scroller.scrollLeft + direction * amount,
+    behavior: 'smooth',
+  });
+}
+
+function scheduleScrollHintsUpdate() {
+  nextTick(() => {
+    updateScrollHints();
+    requestAnimationFrame(updateScrollHints);
+  });
+}
+
+let resizeObserver: ResizeObserver | null = null;
+let scrollEndTimer: ReturnType<typeof setTimeout> | undefined;
+
+function onScrollerScroll() {
+  updateScrollHints();
+  if (scrollEndTimer) {
+    clearTimeout(scrollEndTimer);
+  }
+  scrollEndTimer = setTimeout(updateScrollHints, 120);
+}
+
+function attachScrollerListeners(scroller: HTMLElement) {
+  scroller.addEventListener('scroll', onScrollerScroll, { passive: true });
+  scroller.addEventListener('scrollend', onScrollerScroll, { passive: true });
+}
+
+function detachScrollerListeners(scroller: HTMLElement | null) {
+  if (!scroller) {
+    return;
+  }
+
+  scroller.removeEventListener('scroll', onScrollerScroll);
+  scroller.removeEventListener('scrollend', onScrollerScroll);
+}
+
+watch(scrollerRef, (scroller, previousScroller) => {
+  detachScrollerListeners(previousScroller);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+
+  if (!scroller) {
+    canScroll.value = false;
+    canScrollLeft.value = false;
+    canScrollRight.value = false;
+    return;
+  }
+
+  attachScrollerListeners(scroller);
+  resizeObserver = new ResizeObserver(() => {
+    updateScrollHints();
+  });
+  resizeObserver.observe(scroller);
+  scheduleScrollHintsUpdate();
+});
+
+watch(
+  () => [visibleProducts.value.length, props.loading] as const,
+  () => scheduleScrollHintsUpdate(),
+);
+
+onMounted(() => scheduleScrollHintsUpdate());
+
+onUnmounted(() => {
+  detachScrollerListeners(scrollerRef.value);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (scrollEndTimer) {
+    clearTimeout(scrollEndTimer);
+  }
+});
 </script>
 
 <template>
   <section
     v-if="loading || visibleProducts.length > 0"
-    class="mb-8 mt-6"
+    class="m-0"
+    data-testid="explore-recent-orders-section"
   >
-    <header class="px-1 py-1.5 sm:px-0">
-      <h2 class="text-base font-semibold text-grey-900 sm:text-lg">
-        Recently ordered items
+    <header
+      class="mb-3 flex items-center justify-between gap-2 px-1 sm:px-0"
+    >
+      <h2 class="min-w-0 truncate text-base font-semibold text-grey-900 sm:text-lg">
+        <span class="min-[720px]:hidden">Recently ordered</span>
+        <span class="hidden min-[720px]:inline">Recently ordered items</span>
       </h2>
+
+      <div class="flex shrink-0 items-center gap-2">
+        <NuxtLink
+          to="/market/recent-orders"
+          class="text-sm font-semibold text-grey-900 underline-offset-4 transition hover:text-primary-500 hover:underline"
+        >
+          <span class="min-[720px]:hidden">View all</span>
+          <span class="hidden min-[720px]:inline">
+            View all ({{ visibleProducts.length }})
+          </span>
+          <span aria-hidden="true" class="inline">&nbsp;›</span>
+        </NuxtLink>
+
+        <div v-if="canScroll" class="flex gap-1">
+          <button
+            type="button"
+            class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+            :disabled="!canScrollLeft"
+            aria-label="Scroll recent orders left"
+            @click="scrollByDirection(-1)"
+          >
+            <ChevronLeft class="size-5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+            :disabled="!canScrollRight"
+            aria-label="Scroll recent orders right"
+            @click="scrollByDirection(1)"
+          >
+            <ChevronRight class="size-5" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
     </header>
 
-    <div class="pt-3">
-      <div
-        v-if="loading && visibleProducts.length === 0"
-        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
+    <div
+      ref="scrollerRef"
+      class="flex touch-pan-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      <template v-if="loading && visibleProducts.length === 0">
         <div
-          v-for="index in 8"
+          v-for="index in 4"
           :key="index"
-          class="h-[72px] animate-pulse rounded-[8px] border border-grey-50 bg-grey-55"
+          :class="[
+            recentOrderCardWidthClass,
+            'h-[72px] animate-pulse rounded-[8px] border border-grey-50 bg-grey-55',
+          ]"
         />
-      </div>
-
-      <div v-else class="recent-orders-grid">
-        <button
+      </template>
+      <template v-else>
+        <div
           v-for="product in visibleProducts"
           :key="product.id"
-          type="button"
-          class="group flex min-h-[72px] min-w-0 cursor-pointer items-center gap-3 rounded-[8px] border border-grey-50 bg-background-on-canvas p-2 text-left transition-[transform,border-color,background-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary-500/45"
-          @click="emit('select', product)"
+          :class="recentOrderCardWidthClass"
         >
-          <span
-            class="relative size-12 shrink-0 overflow-hidden rounded-[8px] bg-grey-55"
-          >
-            <MarketProductImage
-              :src="product.imageUrl"
-              :alt="product.name"
-              :hover-zoom="true"
-              logo-class="w-[72%] max-w-[2.5rem]"
-            />
-          </span>
-
-          <span class="min-w-0 flex-1">
-            <span
-              class="line-clamp-1 text-[13px] font-semibold leading-5 text-grey-900"
-            >
-              {{ product.name }}
-            </span>
-            <span
-              class="mt-1 inline-flex max-w-full rounded-md bg-grey-55 px-2 py-1 text-[11px] font-medium leading-none text-grey-700"
-            >
-              <span class="truncate">{{ productUnitLabel(product) }}</span>
-            </span>
-          </span>
-
-          <span
-            class="inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-background-on-canvas text-grey-300 transition group-hover:border-primary-500 group-hover:text-primary-500"
-            aria-hidden="true"
-          >
-            <Plus class="size-4" />
-          </span>
-        </button>
-      </div>
+          <ExploreRecentOrderCompactCard
+            :product="product"
+            @select="emit('select', $event)"
+          />
+        </div>
+      </template>
     </div>
   </section>
 </template>
-
-<style scoped>
-.recent-orders-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-@media (min-width: 640px) {
-  .recent-orders-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1180px) {
-  .recent-orders-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-</style>

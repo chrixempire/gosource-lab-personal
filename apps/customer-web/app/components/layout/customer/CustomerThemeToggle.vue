@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { Switch, cn } from '@gosource/ui';
+import { cn } from '@gosource/ui';
 import { Moon, Sun } from 'lucide-vue-next';
 
 const props = withDefaults(
   defineProps<{
-    compact?: boolean;
     class?: string;
   }>(),
   {
-    compact: false,
     class: undefined,
   },
 );
@@ -21,8 +19,7 @@ const { isDark, toggleTheme, ready } = useCustomerTheme();
     type="button"
     :class="
       cn(
-        'group relative inline-flex shrink-0 cursor-pointer items-center gap-2.5 overflow-visible rounded-[14px] border border-border-default bg-background-on-canvas text-sm font-medium text-text-default transition-[background-color,border-color,color,box-shadow] duration-300 ease-out hover:bg-background-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
-        compact ? 'size-10 justify-center p-0' : 'w-full px-3 py-2.5',
+        'inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-grey-50 bg-background-on-canvas text-grey-900 transition-colors duration-300 hover:bg-grey-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
         props.class,
       )
     "
@@ -30,10 +27,7 @@ const { isDark, toggleTheme, ready } = useCustomerTheme();
     :aria-pressed="isDark"
     @click="toggleTheme"
   >
-    <span
-      class="relative flex size-5 shrink-0 items-center justify-center"
-      aria-hidden="true"
-    >
+    <span class="relative flex size-5 items-center justify-center" aria-hidden="true">
       <Sun
         :class="
           cn(
@@ -55,16 +49,5 @@ const { isDark, toggleTheme, ready } = useCustomerTheme();
         "
       />
     </span>
-    <span v-if="!compact" class="min-w-0 flex-1 text-left">
-      {{ isDark ? 'Dark mode' : 'Light mode' }}
-    </span>
-    <Switch
-      v-if="!compact"
-      :model-value="isDark"
-      tabindex="-1"
-      class="pointer-events-none shrink-0 data-[state=checked]:!bg-primary-500 data-[state=unchecked]:!bg-grey-300"
-      thumb-class="!bg-background-on-canvas"
-      aria-hidden="true"
-    />
   </button>
 </template>

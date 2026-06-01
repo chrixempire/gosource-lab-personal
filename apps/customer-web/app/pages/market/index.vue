@@ -204,29 +204,6 @@ const greetingName = computed(() => {
   return 'there';
 });
 
-function formatExploreBranchLabel(branchName: string) {
-  const trimmed = branchName.trim();
-  if (!trimmed) {
-    return 'Your branch';
-  }
-
-  if (/\bbranch$/i.test(trimmed)) {
-    return trimmed;
-  }
-
-  return `${trimmed} branch`;
-}
-
-const outletLabel = computed(() => {
-  const branch = (branches.value ?? []).find(
-    (row) => row.id === activeBranchId.value,
-  );
-  if (branch?.branchName) {
-    return formatExploreBranchLabel(branch.branchName);
-  }
-  return 'Your branch';
-});
-
 function syncFiltersToRoute() {
   if (skipRouteSync) {
     return;
@@ -415,37 +392,10 @@ onUnmounted(() => {
     <ExplorePageHero
       v-if="showPersonalizedExploreHero"
       :greeting-name="greetingName"
-      :outlet-label="outletLabel"
       :session-loading="heroSessionLoading"
     />
 
-    <ExploreCategoryFilterBar
-      v-if="hasCatalog"
-      :categories="visibleCategories"
-      :active-category-id="activeCategoryId"
-      :in-stock-only="inStockOnly"
-      :price-min="priceMin"
-      :price-max="priceMax"
-      @select-category="onSelectCategory"
-      @update:in-stock-only="inStockOnly = $event"
-      @apply-price="onApplyPrice"
-    />
-
-    <div
-      v-if="catalogPending && !hasCatalog"
-      class="flex flex-col items-center justify-center gap-2 py-20 text-center"
-    >
-      <p class="text-sm font-medium text-grey-900">Loading catalog…</p>
-    </div>
-
-    <div
-      v-else-if="!hasCatalog"
-      class="py-16 text-center text-sm text-grey-300"
-    >
-      No categories available right now.
-    </div>
-
-    <div v-else id="explore-catalog-start" class="space-y-2">
+    <div class="flex flex-col gap-2">
       <ExploreRecentOrdersSection
         v-if="showRecentOrders"
         :products="recentOrderProducts"
@@ -459,18 +409,46 @@ onUnmounted(() => {
         :loading="promotionsPending"
       />
 
-      <ExploreCategorySection
-        v-for="section in exploreSections"
-        :key="section.id"
-        :section="section"
+      <ExploreCategoryFilterBar
+        v-if="hasCatalog"
+        :categories="visibleCategories"
+        :active-category-id="activeCategoryId"
+        :in-stock-only="inStockOnly"
+        :price-min="priceMin"
+        :price-max="priceMax"
+        @select-category="onSelectCategory"
+        @update:in-stock-only="inStockOnly = $event"
+        @apply-price="onApplyPrice"
       />
 
-      <p
-        v-if="exploreSections.length === 0"
+      <div
+        v-if="catalogPending && !hasCatalog"
+        class="flex flex-col items-center justify-center gap-2 py-20 text-center"
+      >
+        <p class="text-sm font-medium text-grey-900">Loading catalog…</p>
+      </div>
+
+      <div
+        v-else-if="!hasCatalog"
         class="py-16 text-center text-sm text-grey-300"
       >
-        No products match your filters.
-      </p>
+        No categories available right now.
+      </div>
+
+      <div v-else id="explore-catalog-start" class="flex flex-col gap-2">
+        <ExploreCategorySection
+          v-for="section in exploreSections"
+          :key="section.id"
+          :section="section"
+        />
+
+        <p
+          v-if="exploreSections.length === 0"
+          class="py-16 text-center text-sm text-grey-300"
+        >
+          No products match your filters.
+        </p>
+      </div>
     </div>
 
     <MarketProductDetailSlideModal

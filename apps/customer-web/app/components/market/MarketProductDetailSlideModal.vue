@@ -231,16 +231,16 @@ onUnmounted(() => {
               <h3 class="text-[11px] font-semibold uppercase tracking-[0.14em] text-grey-300">
                 Product details
               </h3>
-              <p class="text-[15px] leading-6 text-grey-text">
+              <p class="line-clamp-3 text-[15px] leading-6 text-grey-text">
                 {{ detailText }}
-                <NuxtLink
-                  :to="`/market/product/${product.id}`"
-                  class="inline font-semibold text-primary-500 underline-offset-2 hover:underline"
-                  @click="close"
-                >
-                  &nbsp;View full page
-                </NuxtLink>
               </p>
+              <NuxtLink
+                :to="`/market/product/${product.id}`"
+                class="inline-block text-sm font-semibold text-primary-500 underline-offset-2 hover:underline"
+                @click="close"
+              >
+                View full page
+              </NuxtLink>
             </section>
 
             <section class="mt-5 space-y-2.5">
