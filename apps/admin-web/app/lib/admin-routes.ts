@@ -12,6 +12,8 @@ export const ADMIN_PAGE_ROUTES = {
   CREDIT_APPLICATIONS: '/credit/application',
   CREDIT_REQUESTS: '/credit/request',
   CREDIT_REPAYMENTS: '/credit/repayment',
+  CREDIT_SCHEDULES: '/credit/schedules',
+  CREDIT_OVERDUE: '/credit/overdue',
   DISCOUNTS: '/discounts',
   PROMOTIONS: '/promotions',
   CUSTOMERS: '/customers',
@@ -55,12 +57,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   {
     label: 'Credit',
     icon: 'i-lucide-badge-percent',
-    disabled: true,
     children: [
       { label: 'Analytics', to: ADMIN_PAGE_ROUTES.CREDIT_ANALYTICS },
       { label: 'Applications', to: ADMIN_PAGE_ROUTES.CREDIT_APPLICATIONS },
       { label: 'Credit requests', to: ADMIN_PAGE_ROUTES.CREDIT_REQUESTS },
       { label: 'Repayments', to: ADMIN_PAGE_ROUTES.CREDIT_REPAYMENTS },
+      { label: 'Repayment schedules', to: ADMIN_PAGE_ROUTES.CREDIT_SCHEDULES },
     ],
   },
   { label: 'Discounts', icon: 'i-lucide-ticket', to: ADMIN_PAGE_ROUTES.DISCOUNTS },
@@ -85,6 +87,43 @@ export function isAdminNavChildActive(path: string, childTo: string) {
     return (
       path === ADMIN_PAGE_ROUTES.PURCHASE_ORDERS ||
       path.startsWith(`${ADMIN_PAGE_ROUTES.PURCHASE_ORDERS}/`)
+    );
+  }
+
+  if (childTo === ADMIN_PAGE_ROUTES.CREDIT_ANALYTICS) {
+    return (
+      path === ADMIN_PAGE_ROUTES.CREDIT_ANALYTICS ||
+      path.startsWith(`${ADMIN_PAGE_ROUTES.CREDIT_ANALYTICS}/`)
+    );
+  }
+
+  if (childTo === ADMIN_PAGE_ROUTES.CREDIT_APPLICATIONS) {
+    return (
+      path === ADMIN_PAGE_ROUTES.CREDIT_APPLICATIONS ||
+      path.startsWith(`${ADMIN_PAGE_ROUTES.CREDIT_APPLICATIONS}/`)
+    );
+  }
+
+  if (childTo === ADMIN_PAGE_ROUTES.CREDIT_REQUESTS) {
+    return (
+      path === ADMIN_PAGE_ROUTES.CREDIT_REQUESTS ||
+      path.startsWith(`${ADMIN_PAGE_ROUTES.CREDIT_REQUESTS}/`)
+    );
+  }
+
+  if (childTo === ADMIN_PAGE_ROUTES.CREDIT_REPAYMENTS) {
+    return (
+      path === ADMIN_PAGE_ROUTES.CREDIT_REPAYMENTS ||
+      path.startsWith(`${ADMIN_PAGE_ROUTES.CREDIT_REPAYMENTS}/`)
+    );
+  }
+
+  if (childTo === ADMIN_PAGE_ROUTES.CREDIT_SCHEDULES) {
+    return (
+      path === ADMIN_PAGE_ROUTES.CREDIT_SCHEDULES ||
+      path.startsWith(`${ADMIN_PAGE_ROUTES.CREDIT_SCHEDULES}/`) ||
+      path === ADMIN_PAGE_ROUTES.CREDIT_OVERDUE ||
+      path.startsWith(`${ADMIN_PAGE_ROUTES.CREDIT_OVERDUE}/`)
     );
   }
 
@@ -130,6 +169,10 @@ export function discountEditPath(type: string, id: string) {
   return `${ADMIN_PAGE_ROUTES.DISCOUNTS}/${type}/${id}`;
 }
 
+export function customerCreditHistoryPath(customerId: string) {
+  return `${customerDetailPath(customerId)}?tab=credit-history`;
+}
+
 export function customerDetailPath(id: string) {
   return `${ADMIN_PAGE_ROUTES.CUSTOMERS}/${id}`;
 }
@@ -140,4 +183,18 @@ export function promotionCreatePath() {
 
 export function promotionEditPath(id: string) {
   return `${ADMIN_PAGE_ROUTES.PROMOTIONS}/${id}`;
+}
+
+export function creditApplicationPath(id: string) {
+  return `${ADMIN_PAGE_ROUTES.CREDIT_APPLICATIONS}/${id}`;
+}
+
+export function creditRequestPath(id: string) {
+  return `${ADMIN_PAGE_ROUTES.CREDIT_REQUESTS}/${id}`;
+}
+
+export function creditSchedulesPath(view?: 'overdue') {
+  return view === 'overdue'
+    ? `${ADMIN_PAGE_ROUTES.CREDIT_SCHEDULES}?tab=overdue`
+    : ADMIN_PAGE_ROUTES.CREDIT_SCHEDULES;
 }

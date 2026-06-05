@@ -8,6 +8,7 @@ import {
   createRequestApi,
   createSessionRefreshCoordinator,
   createShoppingListApi,
+  createCreditApi,
   createWalletApi,
   wrapFetchWithSessionRetry,
 } from '@gosource/api-client';
@@ -67,6 +68,7 @@ export default defineNuxtPlugin(() => {
       orderApi: createOrderApi(apiClient),
       shoppingListApi: createShoppingListApi(apiClient),
       walletApi: createWalletApi(apiClient),
+      creditApi: createCreditApi(apiClient),
     },
   };
 });
@@ -81,6 +83,7 @@ declare module '#app' {
     $orderApi: ReturnType<typeof createOrderApi>;
     $shoppingListApi: ReturnType<typeof createShoppingListApi>;
     $walletApi: ReturnType<typeof createWalletApi>;
+    $creditApi: ReturnType<typeof createCreditApi>;
   }
 }
 
@@ -94,5 +97,6 @@ declare module 'vue' {
     $orderApi: ReturnType<typeof createOrderApi>;
     $shoppingListApi: ReturnType<typeof createShoppingListApi>;
     $walletApi: ReturnType<typeof createWalletApi>;
+    $creditApi: ReturnType<typeof createCreditApi>;
   }
 }

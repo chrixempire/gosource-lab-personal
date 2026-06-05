@@ -10,14 +10,22 @@ export default defineNuxtPlugin(async () => {
     return;
   }
 
+  const capabilities = useState('admin-capabilities', () => null);
+  const capabilitiesResolved = useState('admin-capabilities-resolved', () => false);
+
   try {
-    const response = await $fetch<AdminSessionState>('/api/auth/session/me', {
-      credentials: 'same-origin',
-    });
-    session.value = response;
+    const [meResult, capabilitiesResult] = await Promise.allSettled([
+      $fetch<AdminSessionState>('/api/auth/session/me', { credentials: 'same-origin' }),
+      $fetch('/api/auth/capabilities', { credentials: 'same-origin' }),
+    ]);
+
+    session.value = meResult.status === 'fulfilled' ? meResult.value : null;
+    capabilities.value = capabilitiesResult.status === 'fulfilled' ? capabilitiesResult.value : null;
   } catch {
     session.value = null;
+    capabilities.value = null;
   } finally {
     sessionResolved.value = true;
+    capabilitiesResolved.value = true;
   }
 });

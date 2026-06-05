@@ -13,6 +13,11 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/icon'],
 
+  devServer: {
+    port: 3003,
+    strictPort: true,
+  },
+
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
@@ -24,6 +29,8 @@ export default defineNuxtConfig({
     public: {
       /** legacy-api root URL (no /v2 suffix — admin BFF adds /v2). */
       legacyApiBaseUrl: 'http://127.0.0.1:8000',
+      /** Optional CDN root for credit uploads stored as bare object keys. */
+      creditDocumentCdnBaseUrl: process.env.NUXT_PUBLIC_CREDIT_DOCUMENT_CDN_BASE_URL || '',
     },
   },
 

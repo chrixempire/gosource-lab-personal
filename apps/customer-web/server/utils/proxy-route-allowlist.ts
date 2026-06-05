@@ -61,6 +61,17 @@ export const PROXY_ROUTE_RULES: ProxyRouteRule[] = [
   { methods: ['GET'], pattern: /^analytics\/branch-performance$/ },
   { methods: ['GET'], pattern: /^analytics\/get-total-per-day$/ },
   { methods: ['GET'], pattern: /^analytics\/general-stats$/ },
+  { methods: ['GET'], pattern: /^credit$/ },
+  { methods: ['POST'], pattern: /^credit$/ },
+  { methods: ['POST'], pattern: /^credit\/limit-increase$/ },
+  { methods: ['GET', 'POST'], pattern: /^credit\/requests$/ },
+  { methods: ['GET'], pattern: /^credit\/requests\/[^/]+$/ },
+  { methods: ['GET'], pattern: /^credit\/repayment-history$/ },
+  { methods: ['GET'], pattern: /^credit\/credit-account$/ },
+  { methods: ['PATCH'], pattern: /^credit\/cancel-request\/[^/]+$/ },
+  { methods: ['POST'], pattern: /^credit\/payment$/ },
+  { methods: ['GET'], pattern: /^credit\/upcoming-payment$/ },
+  { methods: ['GET'], pattern: /^credit\/[^/]+$/ },
 ];
 
 export function getProxyRouteRule(method: string, pathSegments: string[]) {

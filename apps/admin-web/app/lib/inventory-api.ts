@@ -22,8 +22,14 @@ export function parseInventoryTableMeta(
       limit,
       total,
       totalPages,
-      hasNext: meta.hasNext === true || page < totalPages,
-      hasPrev: meta.hasPrev === true || page > 1,
+      hasNext:
+        meta.hasNext === true ||
+        meta.hasNextPage === true ||
+        page < totalPages,
+      hasPrev:
+        meta.hasPrev === true ||
+        meta.hasPrevPage === true ||
+        page > 1,
     };
   }
 

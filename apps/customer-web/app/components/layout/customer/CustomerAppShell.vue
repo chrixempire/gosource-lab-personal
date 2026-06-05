@@ -76,6 +76,7 @@ const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/business-insight', title: 'Business insight' },
   { match: '/track-orders', title: 'Orders' },
   { match: '/wallet', title: 'Wallet' },
+  { match: '/credit', title: 'Credit' },
   { match: '/manage-requests', title: 'Request' },
   { match: '/checkout', title: 'Checkout' },
   { match: '/lists', title: 'Lists' },

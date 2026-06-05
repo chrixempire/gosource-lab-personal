@@ -12,6 +12,8 @@ import {
   adminNavSectionHasActiveChild,
   isAdminNavChildActive,
 } from '~/lib/admin-routes';
+import { filterAdminNavByCapabilities } from '~/lib/admin-permissions';
+import { useAdminCapabilities } from '~/composables/useAdminCapabilities';
 import { useAdminSession } from '~/composables/useAdminSession';
 
 const ADMIN_SIDEBAR_BG = '#1F4031';
@@ -27,7 +29,14 @@ const emit = defineEmits<{
 
 const route = useRoute();
 const { session } = useAdminSession();
+const { capabilities, ensureCapabilities } = useAdminCapabilities();
 const openSections = ref<Record<string, boolean>>({});
+
+onMounted(() => {
+  void ensureCapabilities();
+});
+
+const navItems = computed(() => filterAdminNavByCapabilities(ADMIN_NAV_ITEMS, capabilities.value));
 
 const showNavTooltips = computed(() => !props.expanded);
 
@@ -126,7 +135,7 @@ watch(
           expanded ? 'px-3' : 'px-0',
         ]"
       >
-        <template v-for="item in ADMIN_NAV_ITEMS" :key="item.label">
+        <template v-for="item in navItems" :key="item.label">
           <div v-if="item.children?.length" class="w-full">
             <AdminSidebarTooltip :label="item.label" :enabled="showNavTooltips">
               <button

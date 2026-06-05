@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { Checkbox, DatePickerField, Input } from '@gosource/ui';
+import { Checkbox, DatePickerField } from '@gosource/ui';
+import CreditFilterClearLink from '~/components/credit/CreditFilterClearLink.vue';
 import OrderFilterPopover from '~/components/orders/OrderFilterPopover.vue';
-
-export type CustomerCreditHistoryFilters = {
-  amountMin: string;
-  amountMax: string;
-  status: string[];
-  startDate: string;
-  endDate: string;
-};
+import {
+  CREDIT_CUSTOMER_HISTORY_REQUEST_TYPE_OPTIONS,
+  CREDIT_CUSTOMER_HISTORY_STATUS_FILTER_OPTIONS,
+  CREDIT_CUSTOMER_HISTORY_TENURE_OPTIONS,
+} from '~/lib/credit-constants';
+import type { CustomerCreditHistoryFilters } from '~/lib/credit-filters';
 
 const props = defineProps<{
   filters: CustomerCreditHistoryFilters;
@@ -19,26 +18,20 @@ const emit = defineEmits<{
   clearAll: [];
 }>();
 
-const amountOpen = ref(false);
+const requestTypeOpen = ref(false);
+const tenureOpen = ref(false);
 const statusOpen = ref(false);
 const dateOpen = ref(false);
 
-const draftAmountMin = ref('');
-const draftAmountMax = ref('');
+const draftRequestType = ref<string[]>([]);
+const draftTenure = ref<string[]>([]);
 const draftStatus = ref<string[]>([]);
 const draftStartDate = ref('');
 const draftEndDate = ref('');
 
-const statusOptions = [
-  { label: 'Pending', value: 'pending' },
-  { label: 'Approved', value: 'approved' },
-  { label: 'Rejected', value: 'rejected' },
-  { label: 'Completed', value: 'completed' },
-];
-
 function syncDrafts() {
-  draftAmountMin.value = props.filters.amountMin;
-  draftAmountMax.value = props.filters.amountMax;
+  draftRequestType.value = [...props.filters.requestType];
+  draftTenure.value = [...props.filters.tenure];
   draftStatus.value = [...props.filters.status];
   draftStartDate.value = props.filters.startDate;
   draftEndDate.value = props.filters.endDate;
@@ -49,26 +42,60 @@ watch(() => props.filters, syncDrafts, { deep: true, immediate: true });
 function toggle(values: string[], next: string) {
   return values.includes(next) ? values.filter((value) => value !== next) : [...values, next];
 }
+
+const hasActive = computed(
+  () =>
+    props.filters.requestType.length > 0 ||
+    props.filters.tenure.length > 0 ||
+    props.filters.status.length > 0 ||
+    Boolean(props.filters.startDate || props.filters.endDate),
+);
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2">
+  <div class="flex min-w-0 flex-wrap items-center gap-2">
     <OrderFilterPopover
-      v-model:open="amountOpen"
-      label="Amount"
-      :active="Boolean(filters.amountMin || filters.amountMax)"
+      v-model:open="requestTypeOpen"
+      label="Request type"
+      :active="filters.requestType.length > 0"
       @update:open="(value) => value && syncDrafts()"
-      @apply="emit('apply', { amountMin: draftAmountMin, amountMax: draftAmountMax })"
-      @clear="emit('apply', { amountMin: '', amountMax: '' })"
+      @apply="emit('apply', { requestType: [...draftRequestType] })"
+      @clear="emit('apply', { requestType: [] })"
     >
-      <div class="grid gap-3">
-        <label class="grid gap-1.5 text-sm text-grey-700">
-          <span class="font-medium">Minimum</span>
-          <Input v-model="draftAmountMin" type="number" min="0" placeholder="0" />
+      <div class="flex flex-col gap-2">
+        <label
+          v-for="option in CREDIT_CUSTOMER_HISTORY_REQUEST_TYPE_OPTIONS"
+          :key="option.value"
+          class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
+        >
+          <Checkbox
+            :model-value="draftRequestType.includes(option.value)"
+            @update:model-value="draftRequestType = toggle(draftRequestType, option.value)"
+          />
+          <span>{{ option.label }}</span>
         </label>
-        <label class="grid gap-1.5 text-sm text-grey-700">
-          <span class="font-medium">Maximum</span>
-          <Input v-model="draftAmountMax" type="number" min="0" placeholder="Any" />
+      </div>
+    </OrderFilterPopover>
+
+    <OrderFilterPopover
+      v-model:open="tenureOpen"
+      label="Tenure"
+      :active="filters.tenure.length > 0"
+      @update:open="(value) => value && syncDrafts()"
+      @apply="emit('apply', { tenure: [...draftTenure] })"
+      @clear="emit('apply', { tenure: [] })"
+    >
+      <div class="flex flex-col gap-2">
+        <label
+          v-for="option in CREDIT_CUSTOMER_HISTORY_TENURE_OPTIONS"
+          :key="option.value"
+          class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
+        >
+          <Checkbox
+            :model-value="draftTenure.includes(option.value)"
+            @update:model-value="draftTenure = toggle(draftTenure, option.value)"
+          />
+          <span>{{ option.label }}</span>
         </label>
       </div>
     </OrderFilterPopover>
@@ -83,7 +110,7 @@ function toggle(values: string[], next: string) {
     >
       <div class="flex flex-col gap-2">
         <label
-          v-for="option in statusOptions"
+          v-for="option in CREDIT_CUSTOMER_HISTORY_STATUS_FILTER_OPTIONS"
           :key="option.value"
           class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
         >
@@ -98,7 +125,7 @@ function toggle(values: string[], next: string) {
 
     <OrderFilterPopover
       v-model:open="dateOpen"
-      label="Date"
+      label="Date applied"
       :active="Boolean(filters.startDate || filters.endDate)"
       @update:open="(value) => value && syncDrafts()"
       @apply="emit('apply', { startDate: draftStartDate, endDate: draftEndDate })"
@@ -116,13 +143,6 @@ function toggle(values: string[], next: string) {
       </div>
     </OrderFilterPopover>
 
-    <button
-      v-if="filters.amountMin || filters.amountMax || filters.status.length || filters.startDate || filters.endDate"
-      type="button"
-      class="rounded-full px-2 py-1 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-50"
-      @click="emit('clearAll')"
-    >
-      Clear all
-    </button>
+    <CreditFilterClearLink :show="hasActive" @clear="emit('clearAll')" />
   </div>
 </template>

@@ -7,11 +7,16 @@ import {
   DoughnutController,
   Legend,
   LinearScale,
+  LineController,
+  LineElement,
+  PieController,
+  PointElement,
   Tooltip,
 } from 'chart.js';
 
 let registered = false;
 
+/** Registers Chart.js controllers/elements used by dashboard and credit analytics charts. */
 export function ensureDashboardChartsRegistered() {
   if (registered) {
     return;
@@ -22,7 +27,11 @@ export function ensureDashboardChartsRegistered() {
     LinearScale,
     BarController,
     BarElement,
+    LineController,
+    LineElement,
+    PointElement,
     DoughnutController,
+    PieController,
     ArcElement,
     Tooltip,
     Legend,
