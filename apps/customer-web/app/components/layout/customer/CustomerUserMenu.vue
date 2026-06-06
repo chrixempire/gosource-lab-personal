@@ -2,6 +2,7 @@
 import { useMediaQuery } from '@vueuse/core';
 import { Avatar, cn, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@gosource/ui';
 import { ChevronDown, CircleHelp, Info, LogOut } from 'lucide-vue-next';
+import { CUSTOMER_FLOATING_LAYER_Z } from '~/lib/customer-overlay-z';
 
 type SessionShape = {
   user_type?: 'customer' | 'employee';
@@ -113,7 +114,7 @@ function requestLogout() {
       :side="props.sidebar ? sidebarPopupSide : 'bottom'"
       :class="
         props.sidebar
-          ? 'z-[80] w-[18rem] rounded-2xl p-0'
+          ? cn('w-[18rem] rounded-2xl p-0', CUSTOMER_FLOATING_LAYER_Z)
           : 'w-56'
       "
     >

@@ -11,6 +11,7 @@ import {
   AutocompleteRoot,
   AutocompleteViewport,
 } from 'reka-ui';
+import { CUSTOMER_MODAL_POPOVER_Z } from '~/lib/customer-overlay-z';
 import {
   getAddressSelection,
   getAddressSuggestions,
@@ -248,7 +249,8 @@ async function useCurrentLocation() {
           align="start"
           :side-offset="4"
           hide-when-empty
-          class="z-[120] w-[var(--reka-combobox-trigger-width)] overflow-hidden rounded-[14px] border border-border-default bg-background-on-canvas shadow-[0_16px_40px_rgba(16,24,40,0.14)]"
+          class="w-[var(--reka-combobox-trigger-width)] overflow-hidden rounded-[14px] border border-border-default bg-background-on-canvas shadow-[0_16px_40px_rgba(16,24,40,0.14)]"
+          :class="CUSTOMER_MODAL_POPOVER_Z"
         >
           <AutocompleteViewport class="max-h-72 overflow-y-auto py-1">
             <button

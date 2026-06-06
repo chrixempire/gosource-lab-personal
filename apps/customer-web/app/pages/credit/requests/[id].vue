@@ -11,8 +11,10 @@ import {
   TableShell,
 } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
+import { useMediaQuery } from '@vueuse/core';
 import CreditCancelRequestDialog from '~/components/credit/CreditCancelRequestDialog.vue';
 import CreditGetCreditDialog from '~/components/credit/CreditGetCreditDialog.vue';
+import CreditRepaymentScheduleCards from '~/components/credit/CreditRepaymentScheduleCards.vue';
 import CreditRequestDetailSummary from '~/components/credit/CreditRequestDetailSummary.vue';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import {
@@ -45,6 +47,7 @@ import { useCustomerCreditService } from '~/services/credit.service';
 const runWhenSessionReady = useAuthenticatedFetch();
 const route = useRoute();
 const { setPageTitle, clearPageHeader } = useCustomerPageHeader();
+const isCompactViewport = useMediaQuery('(max-width: 999px)');
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const { getRequest, getCreditAccount } = useCustomerCreditService();
 
@@ -250,48 +253,12 @@ onMounted(() => {
       <div v-if="request.schedules.length > 0" class="space-y-3">
         <h2 class="text-base font-semibold text-grey-900">Repayment schedule</h2>
 
-        <div class="grid gap-3 md:hidden">
-          <article
-            v-for="schedule in request.schedules"
-            :key="schedule.id"
-            class="rounded-[16px] border border-grey-50 bg-background-on-canvas p-4 shadow-sm"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <p class="text-sm font-semibold text-grey-900">
-                Installment {{ schedule.installmentNumber || '—' }}
-              </p>
-              <StatusTag :variant="creditRepaymentScheduleStatusVariant(schedule.status)">
-                {{ creditRepaymentScheduleStatusLabel(schedule.status) }}
-              </StatusTag>
-            </div>
-            <dl class="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <dt class="text-grey-300">Due date</dt>
-                <dd class="font-medium text-grey-900">{{ formatRequestDate(schedule.dueDate) }}</dd>
-              </div>
-              <div>
-                <dt class="text-grey-300">Amount due</dt>
-                <dd class="font-medium text-grey-900">
-                  {{ formatCreditFromKobo(schedule.remainingAmountKobo) }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-grey-300">Principal</dt>
-                <dd class="font-medium text-grey-900">
-                  {{ formatCreditFromKobo(schedule.principalAmountKobo) }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-grey-300">Interest</dt>
-                <dd class="font-medium text-grey-900">
-                  {{ formatCreditFromKobo(schedule.interestAmountKobo) }}
-                </dd>
-              </div>
-            </dl>
-          </article>
-        </div>
+        <CreditRepaymentScheduleCards
+          v-if="isCompactViewport"
+          :items="request.schedules"
+        />
 
-        <TableShell class="hidden md:block" :class="CUSTOMER_TABLE_PANEL_CLASS">
+        <TableShell v-else :class="CUSTOMER_TABLE_PANEL_CLASS">
           <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
             <TableHeadRow
               class="grid grid-cols-[0.6fr_1fr_1fr_1fr_1fr_0.8fr] gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400"
