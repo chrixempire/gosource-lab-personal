@@ -17,9 +17,13 @@ import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { usePaystack } from '~/composables/usePaystack';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { formatRequestCurrency } from '~/lib/request-details';
+import { resolveCheckoutCreditEligibility } from '~/lib/checkout-credit';
+import { useCustomerCreditService } from '~/services/credit.service';
 import { useCustomerOrderService } from '~/services/order.service';
+import { useCustomerProfileService } from '~/services/profile.service';
 import { useCustomerRequestService } from '~/services/request.service';
 import { useCustomerWalletService } from '~/services/wallet.service';
+import type { CustomerCreditAccount } from '~/types/credit';
 
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const runWhenSessionReady = useAuthenticatedFetch();
@@ -31,6 +35,8 @@ const { getRequest, approveRequest } = useCustomerRequestService();
 const { resetCartState, loadCart } = useMarketplaceCart();
 const { getWallet } = useCustomerWalletService();
 const { getOrderInvoiceUrl } = useCustomerOrderService();
+const { getBusinessAccount } = useCustomerProfileService();
+const { getCreditAccount } = useCustomerCreditService();
 
 const loading = ref(true);
 const submitting = ref(false);
@@ -42,6 +48,8 @@ const transferDialogOpen = ref(false);
 const successDialogOpen = ref(false);
 const downloadingInvoice = ref(false);
 const walletBalance = ref<number | null>(null);
+const canBuyOnCredit = ref<boolean | null>(null);
+const creditAccount = ref<CustomerCreditAccount | null>(null);
 
 const { mutate: paystackMutate } = usePaystack();
 
@@ -88,6 +96,34 @@ const computedTotal = computed(
     requestDiscount.value,
 );
 
+const checkoutCreditEligibility = computed(() =>
+  resolveCheckoutCreditEligibility({
+    canBuyOnCredit: canBuyOnCredit.value,
+    account: creditAccount.value,
+    orderTotalNaira: computedTotal.value,
+  }),
+);
+
+watch(checkoutCreditEligibility, (eligibility) => {
+  if (selectedMethod.value === 'Credit' && !eligibility.enabled) {
+    selectedMethod.value = null;
+  }
+});
+
+async function loadCheckoutCreditContext() {
+  try {
+    const [business, account] = await Promise.all([
+      getBusinessAccount(),
+      getCreditAccount({ silent: true }),
+    ]);
+    canBuyOnCredit.value = business?.canBuyOnCredit ?? null;
+    creditAccount.value = account;
+  } catch {
+    canBuyOnCredit.value = null;
+    creditAccount.value = null;
+  }
+}
+
 async function loadWalletBalance() {
   try {
     const wallet = await runWhenSessionReady(() => getWallet());
@@ -106,7 +142,7 @@ async function loadRequest() {
   loading.value = true;
   try {
     await runWhenSessionReady(async () => {
-      await loadWalletBalance();
+      await Promise.all([loadWalletBalance(), loadCheckoutCreditContext()]);
       const response = await getRequest(requestId.value);
       const record = response.data ?? null;
 
@@ -146,6 +182,15 @@ async function submitCheckout() {
       return;
     }
     await processApproval('Wallet');
+    return;
+  }
+
+  if (selectedMethod.value === 'Credit') {
+    if (!checkoutCreditEligibility.value.enabled) {
+      toast.error(checkoutCreditEligibility.value.description);
+      return;
+    }
+    await processApproval('Credit');
     return;
   }
 
@@ -259,6 +304,9 @@ const checkoutCtaLabel = computed(() => {
   if (selectedMethod.value === 'Wallet') {
     return 'Pay with wallet';
   }
+  if (selectedMethod.value === 'Credit') {
+    return 'Pay with credit';
+  }
   return 'Complete checkout';
 });
 
@@ -361,6 +409,9 @@ watch(requestId, () => {
           v-model="selectedMethod"
           :order-total="computedTotal"
           :wallet-balance="walletBalance"
+          :credit-enabled="checkoutCreditEligibility.enabled"
+          :credit-available-kobo="creditAccount?.availableKobo ?? 0"
+          :credit-description="checkoutCreditEligibility.description"
         />
 
         <CheckoutPaymentSummary

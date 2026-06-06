@@ -25,6 +25,7 @@ import CustomerPageTitleInfo from '~/components/layout/customer/CustomerPageTitl
 import CustomerSidebar from '~/components/layout/customer/CustomerSidebar.vue';
 import CustomerThemeToggle from '~/components/layout/customer/CustomerThemeToggle.vue';
 import { resolveCustomerPageDescription } from '~/lib/customer-page-descriptions';
+import { useCustomerPageHeader } from '~/composables/useCustomerPageHeader';
 import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.vue';
 import MarketSearch from '~/components/market/MarketSearch.vue';
 import { getMarketCategoryById } from '~/lib/marketplace-data';
@@ -66,6 +67,7 @@ const props = withDefaults(
 );
 
 const route = useRoute();
+const { header: pageHeaderOverride } = useCustomerPageHeader();
 const mobileNavOpen = ref(false);
 const desktopSidebarOpen = useState('customer-shell-sidebar-open', () => true);
 const isDesktopViewport = useMediaQuery('(min-width: 1024px)');
@@ -76,6 +78,7 @@ const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/business-insight', title: 'Business insight' },
   { match: '/track-orders', title: 'Orders' },
   { match: '/wallet', title: 'Wallet' },
+  { match: '/credit', title: 'Credit' },
   { match: '/manage-requests', title: 'Request' },
   { match: '/checkout', title: 'Checkout' },
   { match: '/lists', title: 'Lists' },
@@ -88,6 +91,10 @@ const pageTitleMap: Array<{ match: string; title: string }> = [
 ];
 
 const pageTitle = computed(() => {
+  if (pageHeaderOverride.value.title) {
+    return pageHeaderOverride.value.title;
+  }
+
   const matchedPage = pageTitleMap.find(({ match }) => route.path === match || route.path.startsWith(`${match}/`));
   return matchedPage?.title ?? 'GoSource';
 });

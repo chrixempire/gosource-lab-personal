@@ -67,7 +67,7 @@ export class S3Service {
 
       return {
         key,
-        url: `${this.endpoint}/${this.bucketName}/${key}`,
+        url: `${this.endpoint}/${key}`,
       };
     } catch (error) {
       throw new InternalServerErrorException(

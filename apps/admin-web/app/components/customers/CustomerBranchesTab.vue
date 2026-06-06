@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  Avatar,
   PaginationBar,
   SearchField,
   StatusTag,
@@ -18,6 +19,26 @@ import CustomerBranchFilterBar, {
 } from '~/components/customers/CustomerBranchFilterBar.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { parseCustomerBranches } from '~/lib/customer-api';
+
+const HEADQUARTER_BADGE_STYLE =
+  'background: linear-gradient(84deg, #F3A218 8.47%, #A718A7 51.23%, #B81A5B 97.75%)';
+
+function branchInitials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2) || '?'
+  );
+}
+
+function branchAvatarFallbackClass(isInactive: boolean) {
+  return isInactive
+    ? '!bg-grey-55 !text-grey-400'
+    : '!bg-primary-50 !text-primary-700';
+}
 
 const props = defineProps<{
   customerId: string;
@@ -194,12 +215,26 @@ function onPageSizeChange(next: number) {
             :style="{ gridTemplateColumns: gridTemplate }"
           >
             <TableCell>
-              <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                  <p class="text-sm font-medium text-grey-900">{{ branch.name }}</p>
-                  <StatusTag v-if="branch.isHeadquarter" variant="info" size="small">HQ</StatusTag>
+              <div class="flex min-w-0 items-start gap-3">
+                <Avatar
+                  size="md"
+                  :alt="branch.name"
+                  :fallback="branchInitials(branch.name)"
+                  :fallback-class="branchAvatarFallbackClass(branch.statusLabel === 'Inactive')"
+                />
+                <div class="min-w-0 space-y-1">
+                  <div class="flex min-w-0 flex-wrap items-center gap-2">
+                    <p class="truncate text-sm font-medium text-grey-900">{{ branch.name }}</p>
+                    <span
+                      v-if="branch.isHeadquarter"
+                      class="shrink-0 rounded-[100px] px-1.5 py-1 text-[10px] font-bold uppercase text-white"
+                      :style="HEADQUARTER_BADGE_STYLE"
+                    >
+                      Headquarter
+                    </span>
+                  </div>
+                  <p class="truncate text-sm text-grey-500">{{ branch.address }}</p>
                 </div>
-                <p class="text-sm text-grey-500">{{ branch.address }}</p>
               </div>
             </TableCell>
             <TableCell>

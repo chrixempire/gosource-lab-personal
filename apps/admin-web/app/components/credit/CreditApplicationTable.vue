@@ -1,0 +1,155 @@
+<script setup lang="ts">
+import {
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  StatusTag,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHeadRow,
+  TableHeader,
+  TableRow,
+  TableShell,
+  TableSkeleton,
+} from '@gosource/ui';
+import CreditTableActionsTrigger from '~/components/credit/CreditTableActionsTrigger.vue';
+import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
+import { creditStatusVariant } from '~/lib/credit-constants';
+import { CREDIT_APPLICATION_TABLE_GRID, CREDIT_LIST_PANEL_CLASS } from '~/lib/credit-table-layout';
+import type { AdminCreditApplicationListItem } from '~/types/credit';
+import type { InventoryTableMeta } from '~/types/inventory';
+
+const props = defineProps<{
+  rows: AdminCreditApplicationListItem[];
+  meta: InventoryTableMeta;
+  loading?: boolean;
+}>();
+
+const selectedIds = defineModel<string[]>('selectedIds', { default: () => [] });
+
+const emit = defineEmits<{
+  page: [page: number];
+  pageSize: [pageSize: number];
+  view: [row: AdminCreditApplicationListItem];
+  viewCreditHistory: [row: AdminCreditApplicationListItem];
+}>();
+
+const selectedSet = computed(() => new Set(selectedIds.value ?? []));
+
+const selectionState = computed<boolean | 'indeterminate'>(() => {
+  if (props.rows.length === 0) return false;
+  const n = props.rows.filter((row) => selectedSet.value.has(row.id)).length;
+  if (n === 0) return false;
+  if (n === props.rows.length) return true;
+  return 'indeterminate';
+});
+
+function toggleAll(value: boolean | 'indeterminate') {
+  if (value === false) {
+    const ids = new Set(props.rows.map((row) => row.id));
+    selectedIds.value = selectedIds.value.filter((id) => !ids.has(id));
+    return;
+  }
+  const merged = new Set(selectedIds.value);
+  props.rows.forEach((row) => merged.add(row.id));
+  selectedIds.value = [...merged];
+}
+
+function toggleRow(id: string, checked: boolean | 'indeterminate') {
+  const next = new Set(selectedIds.value);
+  if (checked === true) next.add(id);
+  else next.delete(id);
+  selectedIds.value = [...next];
+}
+</script>
+
+<template>
+  <TableShell :class="[CREDIT_LIST_PANEL_CLASS, 'overflow-visible']">
+    <TableHeader
+      class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]"
+    >
+      <TableHeadRow :style="{ gridTemplateColumns: CREDIT_APPLICATION_TABLE_GRID }">
+        <TableCell class="flex items-center">
+          <Checkbox
+            :model-value="selectionState"
+            aria-label="Select all applications"
+            @update:model-value="toggleAll"
+            @click.stop
+          />
+        </TableCell>
+        <TableCell>Request</TableCell>
+        <TableCell>Business name</TableCell>
+        <TableCell>Application type</TableCell>
+        <TableCell>Status</TableCell>
+        <TableCell />
+      </TableHeadRow>
+    </TableHeader>
+
+    <div v-if="loading" class="p-4">
+      <TableSkeleton
+        :columns="Array(6).fill({ kind: 'line' as const, lineClass: 'w-full' })"
+        :grid-template-columns="CREDIT_APPLICATION_TABLE_GRID"
+        :row-count="10"
+      />
+    </div>
+
+    <TableBody v-else class="!max-h-none !overflow-visible">
+      <TableRow
+        v-for="row in rows"
+        :key="row.id"
+        class="cursor-pointer even:bg-[#FAFBFC]"
+        :style="{ gridTemplateColumns: CREDIT_APPLICATION_TABLE_GRID }"
+        @click="emit('view', row)"
+      >
+        <TableCell class="flex items-center" @click.stop>
+          <Checkbox
+            :model-value="selectedSet.has(row.id)"
+            @update:model-value="toggleRow(row.id, $event)"
+          />
+        </TableCell>
+        <TableCell>
+          <p class="text-sm font-medium text-grey-900">{{ row.reference }}</p>
+          <p class="mt-1 text-xs text-grey-500">{{ row.createdAtLabel }}</p>
+        </TableCell>
+        <TableCell>
+          <p class="truncate text-sm font-medium text-grey-900">{{ row.displayName }}</p>
+        </TableCell>
+        <TableCell>
+          <p class="text-sm font-medium text-grey-800">{{ row.applicationTypeLabel }}</p>
+        </TableCell>
+        <TableCell>
+          <StatusTag :variant="creditStatusVariant(row.status)" class="capitalize">
+            {{ row.statusLabel }}
+          </StatusTag>
+        </TableCell>
+        <TableCell class="flex justify-end" @click.stop>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <CreditTableActionsTrigger aria-label="Application actions" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem @select="emit('view', row)">View details</DropdownMenuItem>
+              <DropdownMenuItem
+                v-if="row.businessId"
+                @select="emit('viewCreditHistory', row)"
+              >
+                View credit history
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    </TableBody>
+
+    <TableFooter v-if="!loading && meta.total > 0">
+      <CreditTablePagination
+        :meta="meta"
+        @page="emit('page', $event)"
+        @page-size="emit('pageSize', $event)"
+      />
+    </TableFooter>
+  </TableShell>
+</template>

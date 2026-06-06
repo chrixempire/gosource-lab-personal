@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RadioGroup, RadioGroupItem } from '@gosource/ui';
-import { CreditCard, Landmark, Wallet } from 'lucide-vue-next';
+import { BadgePercent, CreditCard, Landmark, Wallet } from 'lucide-vue-next';
+import { formatCreditFromKobo } from '~/lib/credit-money';
 
 export type CheckoutPaymentMethodValue = 'Paystack' | 'Credit' | 'Transfer' | 'Wallet';
 
@@ -8,6 +9,9 @@ const props = defineProps<{
   modelValue: CheckoutPaymentMethodValue | null;
   walletBalance?: number | null;
   orderTotal: number;
+  creditEnabled?: boolean;
+  creditAvailableKobo?: number;
+  creditDescription?: string;
 }>();
 
 const emit = defineEmits<{
@@ -17,7 +21,7 @@ const emit = defineEmits<{
 const methods: Array<{
   value: CheckoutPaymentMethodValue;
   label: string;
-  description: string;
+  description: string | ((walletBalance: number, orderTotal: number) => string);
   icon: typeof CreditCard;
   disabled?: (walletBalance: number, orderTotal: number) => boolean;
 }> = [
@@ -30,9 +34,9 @@ const methods: Array<{
   {
     value: 'Credit',
     label: 'Pay with credit',
-    description: 'Credit checkout is coming soon and is currently unavailable.',
-    icon: CreditCard,
-    disabled: () => true,
+    description: () => props.creditDescription ?? 'Pay using your GoSource credit line.',
+    icon: BadgePercent,
+    disabled: () => !props.creditEnabled,
   },
   {
     value: 'Transfer',
@@ -48,6 +52,13 @@ const methods: Array<{
     disabled: (walletBalance, orderTotal) => orderTotal > walletBalance,
   },
 ];
+
+function methodDescription(method: (typeof methods)[number]) {
+  const value = method.description;
+  return typeof value === 'function'
+    ? value(Number(props.walletBalance ?? 0), props.orderTotal)
+    : value;
+}
 
 function isDisabled(method: (typeof methods)[number]) {
   return method.disabled?.(Number(props.walletBalance ?? 0), props.orderTotal) ?? false;
@@ -94,13 +105,26 @@ function isDisabled(method: (typeof methods)[number]) {
             </p>
           </div>
           <p class="text-sm leading-6 text-grey-text">
-            {{ method.description }}
+            {{ methodDescription(method) }}
           </p>
           <p
             v-if="method.value === 'Wallet' && walletBalance !== null && walletBalance !== undefined"
             class="mt-2 text-xs font-medium text-grey-300"
           >
-            Wallet balance: {{ new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(walletBalance) }}
+            Wallet balance:
+            {{
+              new Intl.NumberFormat('en-NG', {
+                style: 'currency',
+                currency: 'NGN',
+                maximumFractionDigits: 0,
+              }).format(walletBalance)
+            }}
+          </p>
+          <p
+            v-if="method.value === 'Credit' && creditAvailableKobo != null && creditAvailableKobo > 0"
+            class="mt-2 text-xs font-medium text-grey-300"
+          >
+            Available credit: {{ formatCreditFromKobo(creditAvailableKobo) }}
           </p>
         </div>
 

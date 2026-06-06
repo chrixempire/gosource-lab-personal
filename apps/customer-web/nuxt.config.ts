@@ -79,12 +79,14 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
     optimizeDeps: {
       include: [
-        'vue-sonner',
+        '@internationalized/date',
         'class-variance-authority',
+        'clsx',
+        'lucide-vue-next',
         'reka-ui',
         'tailwind-merge',
-        'lucide-vue-next',
         'vue-input-otp',
+        'vue-sonner',
       ],
     },
 

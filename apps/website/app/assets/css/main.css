@@ -1,0 +1,296 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* ------------------------------------------------------------------ *
+ * GoSource website — design tokens (sourced from Figma variables)
+ * ------------------------------------------------------------------ */
+@theme {
+  /* Brand — primary green */
+  --color-primary-50: #e8f8e9;
+  --color-primary-100: #d1f0d3;
+  --color-primary-200: #95de98;
+  --color-primary-300: #6bd070;
+  --color-primary-400: #3fc346;
+  --color-primary-500: #19b820;
+  --color-primary-600: #15a01b;
+  --color-primary-700: #128317;
+  --color-primary-800: #0d5f11;
+  --color-primary-900: #09420c;
+
+  /* Supporting — deep green */
+  --color-supporting-50: #e6ece6;
+  --color-supporting-100: #c2d0c2;
+  --color-supporting-500: #09420c;
+  --color-supporting-700: #062f08;
+  --color-supporting-900: #041c05;
+
+  /* Greys */
+  --color-grey-25: #fcfcfd;
+  --color-grey-50: #f9fafb;
+  --color-grey-75: #f7f9fc;
+  --color-grey-100: #f0f2f5;
+  --color-grey-200: #e4e7ec;
+  --color-grey-300: #d0d5dd;
+  --color-grey-400: #98a2b3;
+  --color-grey-500: #667185;
+  --color-grey-600: #475367;
+  --color-grey-700: #344054;
+  --color-grey-800: #1d2739;
+  --color-grey-900: #101928;
+
+  /* Accents */
+  --color-orange-25: #fdf5f4;
+  --color-orange-50: #fdeed4;
+  --color-orange-200: #f3a898;
+  --color-orange-500: #e54120;
+  --color-orange-800: #7e2412;
+
+  --color-wine-50: #f8e8ef;
+  --color-wine-500: #b81a5b;
+
+  --color-purple-50: #f8e8f8;
+  --color-purple-500: #b71ab8;
+  --color-purple-700: #821283;
+
+  --color-success-50: #e7f6ec;
+  --color-success-75: #daf1e2;
+  --color-success-500: #19b820;
+  --color-success-700: #036b26;
+
+  --color-warning-50: #fdeed4;
+
+  --color-canvas: #f0f2f5;
+  --color-cream: #ece9d2;
+  --color-announce: #6e2012;
+
+  /* Fonts — Graphik is a licensed face; Inter is the closest open fallback */
+  --font-display: 'Graphik', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif-accent: 'Playfair Display', 'Georgia', serif;
+
+  /* Shadows (from Figma effect styles) */
+  --shadow-xsmall: 0 3px 2px 0 rgba(71, 83, 103, 0.05);
+  --shadow-small: 0 4px 8px 0 rgba(71, 83, 103, 0.1);
+  --shadow-medium: 0 12px 16px 0 rgba(71, 83, 103, 0.1);
+  --shadow-large: 0 20px 24px 0 rgba(71, 83, 103, 0.15);
+  --shadow-card: 0 2px 4px -2px rgba(16, 25, 40, 0.06), 0 4px 8px -2px rgba(16, 25, 40, 0.1);
+
+  /* Layout — Figma content width (1346 of a 1440 frame) */
+  --container-site: 1346px;
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-grey-900);
+    background-color: #ffffff;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 500;
+  }
+
+  ::selection {
+    background-color: var(--color-primary-200);
+    color: var(--color-supporting-900);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Reusable type / layout helpers
+ * ------------------------------------------------------------------ */
+@layer components {
+  .site-container {
+    width: 100%;
+    max-width: calc(var(--container-site) + 2 * 1.25rem);
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    .site-container {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  /* Display + heading scale (Graphik metrics) */
+  .text-display {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.5rem, 5.2vw, 4.5rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+  }
+  .text-h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+  }
+  .text-h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.75rem, 3vw, 2.125rem);
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+  }
+  .text-h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.5rem;
+    line-height: 1.5;
+    letter-spacing: -0.02em;
+  }
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-primary-700);
+  }
+}
+
+@layer utilities {
+  .animate-paused {
+    animation-play-state: paused;
+  }
+
+  /* Scroll reveal (driven by the v-reveal directive) */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 0.7s var(--ease-spring),
+      transform 0.7s var(--ease-spring);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+  .reveal.is-revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  .text-serif-accent {
+    font-family: var(--font-serif-accent);
+    font-style: italic;
+    font-weight: 500;
+  }
+}
+
+/* Marquee for the partner logo strip */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+/* Soft floating bob for hero produce */
+@keyframes float-bob {
+  0%, 100% {
+    transform: translateY(0) rotate(var(--rot, 0deg));
+  }
+  50% {
+    transform: translateY(-14px) rotate(var(--rot, 0deg));
+  }
+}
+.animate-float {
+  animation: float-bob var(--float-dur, 6s) ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+}
+
+/* Vertical auto-scroll (About hero produce collage) */
+@keyframes vscroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+.animate-vscroll {
+  animation: vscroll 36s linear infinite;
+}
+.animate-vscroll:hover {
+  animation-play-state: paused;
+}
+
+/* Horizontal auto-scroll (Careers hero team strip) */
+@keyframes hscroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-hscroll {
+  animation: hscroll 42s linear infinite;
+}
+.animate-hscroll:hover {
+  animation-play-state: paused;
+}
+.hmask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.vmask {
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+/* Shimmering skeleton placeholder */
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-grey-100);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.65),
+    transparent
+  );
+  animation: skeleton-shimmer 1.6s var(--ease-spring) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-float,
+  .animate-vscroll,
+  .animate-hscroll,
+  .skeleton::after {
+    animation: none;
+  }
+}

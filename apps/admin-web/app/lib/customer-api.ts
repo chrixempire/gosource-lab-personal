@@ -266,17 +266,26 @@ export function parseCustomerBranches(
   const totalPages = Math.max(1, Number(metaRaw?.totalPages) || Math.ceil(total / limit) || 1);
 
   return {
-    rows: (branches as Record<string, unknown>[]).map((branch) => ({
-      id: String(branch._id ?? branch.id ?? ''),
-      name: String(branch.name ?? branch.branchName ?? '—'),
-      address: String(branch.address ?? branch.streetName ?? branch.location ?? '—'),
-      statusLabel:
-        branch.active === false || branch.isDeactivated === true ? 'Inactive' : 'Active',
-      isHeadquarter: branch.isHeadquarter === true || branch.isHQ === true,
-      membersCount: Array.isArray(branch.employees) ? branch.employees.length : 0,
-      totalSpentLabel: formatDashboardCurrency(Number(branch.totalAmountProcured ?? 0)),
-      createdAtLabel: formatDateLabel(String(branch.createdAt ?? '')),
-    })),
+    rows: (branches as Record<string, unknown>[]).map((branch) => {
+      const streetName = String(branch.streetName ?? '').trim();
+      const lga = String(branch.lga ?? '').trim();
+      const address =
+        streetName && lga
+          ? `${streetName}, ${lga}`
+          : streetName || lga || String(branch.address ?? branch.location ?? '—');
+
+      return {
+        id: String(branch._id ?? branch.id ?? ''),
+        name: String(branch.name ?? branch.branchName ?? '—'),
+        address,
+        statusLabel:
+          branch.active === false || branch.isDeactivated === true ? 'Inactive' : 'Active',
+        isHeadquarter: branch.isHeadquarter === true || branch.isHQ === true,
+        membersCount: Array.isArray(branch.employees) ? branch.employees.length : 0,
+        totalSpentLabel: formatDashboardCurrency(Number(branch.totalAmountProcured ?? 0)),
+        createdAtLabel: formatDateLabel(String(branch.createdAt ?? '')),
+      };
+    }),
     meta: {
       page,
       limit,
