@@ -593,7 +593,6 @@ function cardArticleClass(member: BranchMemberRecord) {
           :class="membersListLoading ? 'pointer-events-none opacity-50' : undefined"
         >
           <ViewToggle
-            v-if="!isCompactViewport"
             :model-value="routeView"
             @update:model-value="setView"
           />

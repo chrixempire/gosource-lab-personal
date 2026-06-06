@@ -221,9 +221,9 @@ watch(
 <style scoped>
 .explore-promotions-scroller {
   display: flex;
-  touch-action: pan-x;
   gap: 1rem;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   padding-bottom: 0.25rem;
   -ms-overflow-style: none;
   scrollbar-width: none;

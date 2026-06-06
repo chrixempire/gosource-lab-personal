@@ -495,7 +495,6 @@ useHead({
               {{ insightCountLabel }} · {{ insightPeriodLabelText }}
             </p>
             <ViewToggle
-              v-if="!isCompactViewport"
               class="shrink-0"
               :model-value="insightRouteView"
               @update:model-value="setInsightView"
@@ -617,7 +616,6 @@ useHead({
               {{ displayedCountLabel }}
             </p>
             <ViewToggle
-              v-if="!isCompactViewport"
               class="shrink-0"
               :model-value="routeView"
               @update:model-value="setView"

@@ -24,6 +24,12 @@ import { Menu } from 'lucide-vue-next';
 import CustomerPageTitleInfo from '~/components/layout/customer/CustomerPageTitleInfo.vue';
 import CustomerSidebar from '~/components/layout/customer/CustomerSidebar.vue';
 import CustomerThemeToggle from '~/components/layout/customer/CustomerThemeToggle.vue';
+import {
+  CUSTOMER_FLOATING_CONTENT_Z,
+  CUSTOMER_FLOATING_OVERLAY_Z,
+  CUSTOMER_MOBILE_NAV_BACKDROP_Z,
+  CUSTOMER_MOBILE_NAV_DRAWER_Z,
+} from '~/lib/customer-overlay-z';
 import { resolveCustomerPageDescription } from '~/lib/customer-page-descriptions';
 import { useCustomerPageHeader } from '~/composables/useCustomerPageHeader';
 import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.vue';
@@ -321,7 +327,7 @@ async function confirmLogout() {
             <main
               id="customer-shell-scroll"
               :class="[
-                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain bg-background-canvas px-4 [overflow-scrolling:touch] sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
+                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain bg-background-canvas px-4 [-webkit-overflow-scrolling:touch] sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
                 mainPaddingClass,
               ]"
             >
@@ -344,7 +350,8 @@ async function confirmLogout() {
           >
             <div
               v-if="mobileNavOpen"
-              class="customer-shell-overlay fixed inset-0 z-[100] backdrop-blur-[2px] lg:hidden"
+              class="customer-shell-overlay fixed inset-0 backdrop-blur-[2px] lg:hidden"
+              :class="CUSTOMER_MOBILE_NAV_BACKDROP_Z"
               @click="mobileNavOpen = false"
             />
           </Transition>
@@ -359,7 +366,8 @@ async function confirmLogout() {
           >
             <aside
               v-if="mobileNavOpen"
-              class="fixed inset-y-0 left-0 z-[110] w-[min(84vw,20rem)] border-r border-grey-50 bg-background-on-canvas shadow-[24px_0_64px_-24px_rgba(16,24,40,0.32)] lg:hidden"
+              class="fixed inset-y-0 left-0 w-[min(84vw,20rem)] border-r border-grey-50 bg-background-on-canvas shadow-[24px_0_64px_-24px_rgba(16,24,40,0.32)] lg:hidden"
+              :class="CUSTOMER_MOBILE_NAV_DRAWER_Z"
             >
               <CustomerSidebar
                 :session="session"
@@ -374,7 +382,7 @@ async function confirmLogout() {
       <slot name="overlays" />
 
       <Dialog :open="logoutConfirmOpen" @update:open="onLogoutDialogOpenChange">
-        <DialogContent class="z-[100]">
+        <DialogContent :overlay-class="CUSTOMER_FLOATING_OVERLAY_Z" :class="CUSTOMER_FLOATING_CONTENT_Z">
           <DialogHeader>
             <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
               <DialogTitle class="text-[24px] font-semibold text-grey-900">

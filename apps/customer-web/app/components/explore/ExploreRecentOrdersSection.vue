@@ -181,7 +181,7 @@ onUnmounted(() => {
 
     <div
       ref="scrollerRef"
-      class="flex touch-pan-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      class="flex gap-3 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       <template v-if="loading && visibleProducts.length === 0">
         <div

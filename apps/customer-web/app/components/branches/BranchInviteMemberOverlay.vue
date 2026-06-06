@@ -22,6 +22,10 @@ import {
 import { useMediaQuery } from '@vueuse/core';
 import { Copy } from 'lucide-vue-next';
 import InviteEmployeeForm from '~/components/onboarding/team/InviteEmployeeForm.vue';
+import {
+  CUSTOMER_FLOATING_CONTENT_Z,
+  CUSTOMER_FLOATING_OVERLAY_Z,
+} from '~/lib/customer-overlay-z';
 import { useCustomerEmployeeService } from '~/services/employee.service';
 import { validateEmail } from '~/utils/auth-validation';
 import { extractApiErrorMessage, extractApiResponseMessage } from '~/utils/api-error';
@@ -173,7 +177,10 @@ async function submit() {
 
 <template>
   <Drawer v-if="isMobile" :open="open" @update:open="emit('update:open', $event)">
-    <DrawerContent class="max-h-[92vh]">
+    <DrawerContent
+      :overlay-class="CUSTOMER_FLOATING_OVERLAY_Z"
+      :class="['max-h-[92vh]', CUSTOMER_FLOATING_CONTENT_Z]"
+    >
       <DrawerHeader>
         <div class="flex flex-col gap-1">
           <DrawerTitle class="text-[24px] font-semibold text-grey-900">
@@ -245,7 +252,7 @@ async function submit() {
   </Drawer>
 
   <Dialog v-else :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent>
+    <DialogContent :overlay-class="CUSTOMER_FLOATING_OVERLAY_Z" :class="CUSTOMER_FLOATING_CONTENT_Z">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
           <DialogTitle class="text-[24px] font-semibold text-grey-900">

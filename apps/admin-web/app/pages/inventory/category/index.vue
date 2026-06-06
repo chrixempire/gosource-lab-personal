@@ -289,7 +289,6 @@ updateHeader({
         :class="pending && categories.length === 0 ? 'pointer-events-none opacity-50' : undefined"
       >
         <ViewToggle
-          v-if="!isCompactViewport"
           :model-value="routeView"
           @update:model-value="setView"
         />

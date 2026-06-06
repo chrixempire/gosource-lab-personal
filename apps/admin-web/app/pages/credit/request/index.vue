@@ -128,7 +128,6 @@ useHead({ title: 'Credit requests' });
         :disabled="pending && rows.length === 0"
       />
       <ViewToggle
-        v-if="!isCompactViewport"
         :model-value="routeView"
         @update:model-value="setView"
       />
