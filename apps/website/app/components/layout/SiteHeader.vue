@@ -10,20 +10,20 @@ const navLinks = [
   {
     label: 'Features',
     children: [
-      { label: 'Bulk procurement', href: '#features' },
-      { label: 'Credit access', href: '#features' },
-      { label: 'Wallet management', href: '#features' },
-      { label: 'Dashboard insights', href: '#features' },
+      { label: 'Bulk procurement', href: '/#features' },
+      { label: 'Credit access', href: '/#features' },
+      { label: 'Wallet management', href: '/#features' },
+      { label: 'Dashboard insights', href: '/#features' },
     ],
   },
   { label: 'Blog', href: '#' },
-  { label: 'FAQs', href: '#faq' },
+  { label: 'FAQs', href: '/faq' },
   {
     label: 'Company',
     children: [
-      { label: 'About us', href: '#' },
-      { label: 'Careers', href: '#' },
-      { label: 'Contact', href: '#footer' },
+      { label: 'About us', href: '/about' },
+      { label: 'Careers', href: '/careers' },
+      { label: 'Contact', href: '/contact' },
     ],
   },
 ];

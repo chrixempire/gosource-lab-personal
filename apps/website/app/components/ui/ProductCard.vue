@@ -1,15 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-defineProps<{
+const props = defineProps<{
   image: string;
   name: string;
   price: string;
   oldPrice?: string;
+  unit?: string;
+  /** "-12%" renders a discount disc, anything else (e.g. "New") a corner pill. */
   badge?: string;
 }>();
 
 const qty = ref(0);
+const inCart = computed(() => qty.value > 0);
+
+const discount = computed(() =>
+  props.badge && props.badge.trim().startsWith('-') ? props.badge.replace('-', '') : null,
+);
+const tag = computed(() => (props.badge && !discount.value ? props.badge : null));
+
 function add() {
   qty.value += 1;
 }
@@ -19,60 +28,94 @@ function remove() {
 </script>
 
 <template>
-  <div
-    class="group relative flex flex-col overflow-hidden rounded-2xl border border-grey-100 bg-white p-3 transition-all duration-300 hover:-translate-y-1 hover:border-grey-200 hover:shadow-medium"
+  <article
+    :class="[
+      'flex h-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white transition-[transform,border-color,background-color] duration-300 ease-out hover:-translate-y-1',
+      inCart
+        ? 'border-2 border-primary-500 bg-primary-50/40'
+        : 'border border-grey-100 hover:border-primary-500/35',
+    ]"
   >
-    <div class="relative mb-3 aspect-square overflow-hidden rounded-xl bg-grey-50">
-      <span
-        v-if="badge"
-        class="absolute left-2 top-2 z-10 rounded-full bg-primary-500 px-2 py-0.5 text-[0.625rem] font-semibold text-white shadow-sm"
-      >
-        {{ badge }}
-      </span>
+    <!-- Image -->
+    <div class="relative aspect-[1.12/1] w-full shrink-0 overflow-hidden bg-grey-50">
       <img
         :src="image"
         :alt="name"
         loading="lazy"
-        class="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+        class="h-full w-full object-contain p-3 transition-transform duration-500 hover:scale-105"
       />
 
-      <!-- Add control -->
-      <div class="absolute bottom-2 right-2">
-        <Transition name="swap" mode="out-in">
-          <button
-            v-if="qty === 0"
-            key="add"
-            type="button"
-            class="flex items-center gap-1 rounded-full border border-primary-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-primary-700 shadow-sm transition hover:bg-primary-50"
-            @click="add"
-          >
-            <Icon name="lucide:plus" class="size-3.5" /> Add
-          </button>
-          <div
-            v-else
-            key="stepper"
-            class="flex items-center gap-2 rounded-full bg-primary-500 px-1.5 py-1 text-white shadow-sm"
-          >
-            <button type="button" aria-label="Remove one" class="flex size-5 items-center justify-center rounded-full transition hover:bg-white/20" @click="remove">
-              <Icon name="lucide:minus" class="size-3.5" />
-            </button>
-            <span class="min-w-4 text-center text-xs font-bold tabular-nums">{{ qty }}</span>
-            <button type="button" aria-label="Add one" class="flex size-5 items-center justify-center rounded-full transition hover:bg-white/20" @click="add">
-              <Icon name="lucide:plus" class="size-3.5" />
-            </button>
-          </div>
-        </Transition>
+      <span
+        v-if="discount"
+        class="absolute right-2 top-2 z-10 flex size-[3rem] flex-col items-center justify-center rounded-full bg-primary-500 text-center text-white shadow-sm"
+      >
+        <span class="text-[0.8125rem] font-bold leading-none">{{ discount }}</span>
+        <span class="mt-0.5 text-[0.5625rem] font-medium leading-none">Off</span>
+      </span>
+      <span
+        v-else-if="tag"
+        class="absolute left-2 top-2 z-10 rounded-full bg-orange-500 px-2 py-1 text-[0.6875rem] font-bold leading-none text-white shadow-sm"
+      >
+        {{ tag }}
+      </span>
+    </div>
+
+    <!-- Body -->
+    <div class="flex flex-1 flex-col gap-1.5 px-3 pb-2.5 pt-2.5">
+      <h3 class="line-clamp-2 min-h-[2.5rem] text-[0.875rem] font-medium leading-snug text-grey-900">
+        {{ name }}
+      </h3>
+      <div class="mt-auto space-y-1">
+        <div class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+          <span class="text-[0.9375rem] font-bold leading-tight tabular-nums text-grey-900">{{ price }}</span>
+          <span v-if="oldPrice" class="text-[0.75rem] tabular-nums text-grey-400 line-through">{{ oldPrice }}</span>
+        </div>
+        <p v-if="unit" class="line-clamp-1 text-[0.6875rem] text-grey-400">{{ unit }}</p>
       </div>
     </div>
 
-    <p class="line-clamp-2 min-h-[2.5rem] text-[0.8125rem] font-medium leading-snug text-grey-700">
-      {{ name }}
-    </p>
-    <div class="mt-1.5 flex items-baseline gap-2">
-      <span class="text-sm font-bold text-grey-900">{{ price }}</span>
-      <span v-if="oldPrice" class="text-xs text-grey-400 line-through">{{ oldPrice }}</span>
+    <!-- Separator -->
+    <div class="w-full shrink-0 border-t border-grey-100" role="presentation" />
+
+    <!-- Action -->
+    <div class="px-3 pb-2.5 pt-2.5">
+      <Transition name="swap" mode="out-in">
+        <button
+          v-if="!inCart"
+          key="add"
+          type="button"
+          class="flex h-9 w-full items-center justify-center gap-1 rounded-full bg-primary-500 text-sm font-semibold text-white shadow-[0_8px_18px_-10px_rgba(4,85,11,0.58)] transition hover:bg-primary-600"
+          @click="add"
+        >
+          <Icon name="lucide:plus" class="size-4" /> Add
+        </button>
+
+        <div
+          v-else
+          key="strip"
+          class="flex h-9 w-full items-center overflow-hidden rounded-full bg-primary-500 p-0.5 text-white shadow-sm"
+        >
+          <button
+            type="button"
+            aria-label="Decrease quantity"
+            class="flex h-full basis-[35%] items-center justify-center rounded-l-full transition hover:bg-white/15"
+            @click="remove"
+          >
+            <Icon name="lucide:minus" class="size-4" />
+          </button>
+          <span class="flex basis-[30%] items-center justify-center text-sm font-bold tabular-nums">{{ qty }}</span>
+          <button
+            type="button"
+            aria-label="Increase quantity"
+            class="flex h-full basis-[35%] items-center justify-center rounded-r-full transition hover:bg-white/15"
+            @click="add"
+          >
+            <Icon name="lucide:plus" class="size-4" />
+          </button>
+        </div>
+      </Transition>
     </div>
-  </div>
+  </article>
 </template>
 
 <style scoped>
@@ -83,6 +126,6 @@ function remove() {
 .swap-enter-from,
 .swap-leave-to {
   opacity: 0;
-  transform: scale(0.85);
+  transform: scale(0.9);
 }
 </style>

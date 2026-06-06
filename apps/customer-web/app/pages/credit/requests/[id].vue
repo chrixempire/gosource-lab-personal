@@ -16,6 +16,10 @@ import CreditGetCreditDialog from '~/components/credit/CreditGetCreditDialog.vue
 import CreditRequestDetailSummary from '~/components/credit/CreditRequestDetailSummary.vue';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import {
+  creditRequestDetailPageTitle,
+  useCustomerPageHeader,
+} from '~/composables/useCustomerPageHeader';
+import {
   creditRepaymentScheduleStatusLabel,
   creditRepaymentScheduleStatusVariant,
   creditWorkflowStatusLabel,
@@ -40,6 +44,7 @@ import { useCustomerCreditService } from '~/services/credit.service';
 
 const runWhenSessionReady = useAuthenticatedFetch();
 const route = useRoute();
+const { setPageTitle, clearPageHeader } = useCustomerPageHeader();
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const { getRequest, getCreditAccount } = useCustomerCreditService();
 
@@ -114,13 +119,27 @@ function onReapplySuccess() {
   void navigateTo(CREDIT_PAGE_ROUTES.HOME);
 }
 
+watch(
+  request,
+  (value) => {
+    if (value) {
+      setPageTitle(creditRequestDetailPageTitle(value.requestType));
+    }
+  },
+  { immediate: true },
+);
+
+onUnmounted(() => {
+  clearPageHeader();
+});
+
 onMounted(() => {
   void runWhenSessionReady(() => loadRequest());
 });
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <div class="w-fit self-start">
       <Button
         type="button"
@@ -150,16 +169,14 @@ onMounted(() => {
     </div>
 
     <template v-else>
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div class="space-y-2">
-          <p class="text-sm text-grey-400">#{{ request.reference }}</p>
-          <h1 class="text-xl font-semibold text-grey-900">
-            Credit details
-            <span class="text-grey-400">
-              ({{ request.requestType === 'topup' ? 'Top-up' : 'New request' }})
-            </span>
-          </h1>
-          <StatusTag :variant="creditWorkflowStatusVariant(request.status)">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="text-lg font-semibold text-grey-900">#{{ request.reference }}</p>
+          <StatusTag
+            :variant="creditWorkflowStatusVariant(request.status)"
+            size="medium"
+            class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
+          >
             {{ creditWorkflowStatusLabel(request.status) }}
           </StatusTag>
         </div>
@@ -182,19 +199,19 @@ onMounted(() => {
       </div>
 
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="rounded-lg border border-grey-50 bg-white p-5">
+        <div class="customer-surface-card rounded-lg p-5">
           <p class="text-xs font-semibold uppercase text-grey-400">Requested</p>
           <p class="mt-2 text-xl font-semibold text-grey-900">
             {{ formatCreditFromKobo(request.requestedAmountKobo) }}
           </p>
         </div>
-        <div class="rounded-lg border border-grey-50 bg-white p-5">
+        <div class="customer-surface-card rounded-lg p-5">
           <p class="text-xs font-semibold uppercase text-grey-400">Repaid</p>
           <p class="mt-2 text-xl font-semibold text-grey-900">
             {{ formatCreditFromKobo(request.repaidAmountKobo) }}
           </p>
         </div>
-        <div class="rounded-lg border border-grey-50 bg-white p-5">
+        <div class="customer-surface-card rounded-lg p-5">
           <p class="text-xs font-semibold uppercase text-grey-400">Submitted</p>
           <p class="mt-2 text-xl font-semibold text-grey-900">
             {{ formatRequestDate(request.createdAt) }}
@@ -204,7 +221,7 @@ onMounted(() => {
 
       <div
         v-if="request.status === 'pending'"
-        class="rounded-xl bg-grey-55 px-6 py-5 text-center text-sm text-grey-600"
+        class="rounded-xl border border-grey-50 bg-background-on-canvas px-6 py-5 text-center text-sm text-grey-600"
       >
         <p class="font-medium text-grey-900">Credit request in review</p>
         <p class="mt-1">

@@ -33,7 +33,7 @@ export default defineNuxtConfig({
         { property: 'og:title', content: 'GoSource — All your food supplies in one platform' },
         { property: 'og:type', content: 'website' },
       ],
-      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+      link: [{ rel: 'icon', href: '/favicon.ico' }],
     },
   },
 

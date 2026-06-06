@@ -1,44 +1,56 @@
 <script setup lang="ts">
-defineProps<{
-  tint: string;
-  icon: string;
-  iconClass: string;
-  pillClass: string;
-  label: string;
-  title: string;
-}>();
+import { computed } from 'vue';
+
+const props = withDefaults(
+  defineProps<{
+    tint: string;
+    tagTint?: string;
+    icon: string;
+    iconClass: string;
+    label: string;
+    title: string;
+    cta?: string;
+  }>(),
+  { cta: 'Learn more' },
+);
+
+const tagTintClass = computed(() => props.tagTint ?? props.tint);
 </script>
 
 <template>
   <div
     v-reveal
-    class="flex h-full flex-col overflow-hidden rounded-3xl"
-    :class="tint"
+    class="flex h-full flex-col overflow-hidden rounded-xl border border-grey-100 bg-white p-1.5 shadow-small lg:min-h-[608px]"
   >
-    <!-- Visual / mockup region -->
-    <div class="relative px-5 pt-6 sm:px-7 sm:pt-8">
+    <div class="relative h-[360px] shrink-0 overflow-hidden rounded-lg" :class="tint">
       <slot name="mock" />
     </div>
 
-    <!-- Copy region -->
-    <div class="px-5 pb-7 pt-2 sm:px-8 sm:pb-9">
+    <div class="flex flex-1 flex-col gap-6 p-6">
       <span
-        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold text-grey-900"
-        :class="pillClass"
+        class="inline-flex h-7 w-fit items-center gap-1.5 rounded-full px-2 text-xs font-semibold text-grey-900"
+        :class="tagTintClass"
       >
-        <Icon :name="icon" class="size-4" :class="iconClass" />
+        <Icon :name="icon" class="size-4 shrink-0" :class="iconClass" />
         {{ label }}
       </span>
-      <h3 class="text-h3 mt-4 text-grey-900">{{ title }}</h3>
-      <p class="mt-2.5 max-w-md text-[0.95rem] leading-relaxed text-grey-500">
-        <slot />
-      </p>
+
+      <div class="flex flex-col gap-2">
+        <h3 class="text-h2 text-grey-900">{{ title }}</h3>
+        <p class="text-base leading-6 text-grey-700">
+          <slot />
+        </p>
+      </div>
+
       <a
         href="#"
-        class="group/link mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-grey-900 transition-colors hover:text-primary-700"
+        class="group/link mt-auto inline-flex items-center gap-1 text-base font-semibold text-grey-700 transition-colors hover:text-primary-700"
       >
-        <slot name="cta">Learn more</slot>
-        <Icon name="lucide:chevron-right" class="size-4 transition-transform group-hover/link:translate-x-1" />
+        <slot name="cta">{{ cta }}</slot>
+        <Icon
+          name="lucide:chevron-right"
+          class="size-5 transition-transform group-hover/link:translate-x-0.5"
+        />
       </a>
     </div>
   </div>

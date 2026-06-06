@@ -70,6 +70,10 @@ const hasPendingRequest = computed(() =>
 
 const showMakeRepayment = computed(() => (props.account?.outstandingKobo ?? 0) > 0);
 
+const showUpcomingBanner = computed(
+  () => (props.upcomingPayment?.totalNextPaymentKobo ?? 0) > 0,
+);
+
 /** Match gosource-web-app: disable primary actions while under review or not eligible. */
 const isGetCreditDisabled = computed(
   () =>
@@ -116,7 +120,7 @@ function onActionSuccess() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-1.5">
     <div
       v-if="hasPendingApplication"
       role="status"
@@ -126,24 +130,28 @@ function onActionSuccess() {
       <p>Your application is being reviewed. You'll be notified once it is approved.</p>
     </div>
 
-    <div
-      class="flex flex-wrap items-start justify-between gap-4 border-b border-grey-50 pb-4"
-    >
-      <div class="min-w-0">
-        <h2 class="text-xl font-medium text-grey-900">Credit</h2>
-        <p class="mt-1 text-sm text-grey-400">
-          Access credit, manage your limits, and grow your business.
-        </p>
-      </div>
+    <div class="flex flex-wrap items-center gap-6">
+      <CreditUpcomingBanner
+        v-if="showUpcomingBanner"
+        class="min-w-0 flex-1 basis-[min(100%,20rem)]"
+        :upcoming="upcomingPayment"
+      />
 
-      <p v-if="!isOwner" class="text-sm text-grey-400">
+      <p
+        v-if="!isOwner"
+        class="text-sm text-grey-400"
+        :class="{ 'ml-auto': !showUpcomingBanner }"
+      >
         Credit actions are available to the business owner only.
       </p>
 
       <div
         v-else
-        class="flex flex-wrap items-center gap-2"
-        :class="{ 'cursor-not-allowed': lockOwnerCreditActions }"
+        class="flex shrink-0 flex-wrap items-center gap-2"
+        :class="[
+          { 'cursor-not-allowed': lockOwnerCreditActions },
+          { 'ml-auto': !showUpcomingBanner },
+        ]"
       >
         <Button
           v-if="showMakeRepayment"
@@ -184,36 +192,34 @@ function onActionSuccess() {
           </Button>
         </template>
         <DropdownMenu v-else>
-            <DropdownMenuTrigger as-child>
-              <Button
-                type="button"
-                variant="outline"
-                size="small"
-                class="!w-auto shrink-0"
-                :right-icon="ChevronDown"
-              >
-                More actions
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                :disabled="!account || hasPendingRequest"
-                @select="openGetCredit('topup')"
-              >
-                Top up credit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                :disabled="disableManageCreditLimit"
-                @select="manageLimitOpen = true"
-              >
-                Manage credit limit
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+          <DropdownMenuTrigger as-child>
+            <Button
+              type="button"
+              variant="outline"
+              size="small"
+              class="!w-auto shrink-0"
+              :right-icon="ChevronDown"
+            >
+              More actions
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              :disabled="!account || hasPendingRequest"
+              @select="openGetCredit('topup')"
+            >
+              Top up credit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              :disabled="disableManageCreditLimit"
+              @select="manageLimitOpen = true"
+            >
+              Manage credit limit
+            </DropdownMenuItem>
+          </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </div>
-
-    <CreditUpcomingBanner :upcoming="upcomingPayment" />
 
     <CreditAccountOverview :account="account" />
 

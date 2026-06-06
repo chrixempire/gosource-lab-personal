@@ -60,14 +60,18 @@ const year = new Date().getFullYear();
           <h3 class="font-display text-base font-medium text-grey-900">Legal</h3>
           <ul class="mt-4 space-y-3">
             <li>
-              <a href="#" class="text-[0.95rem] text-grey-500 transition-colors hover:text-primary-700">
+              <NuxtLink to="/privacy-policy" class="text-[0.95rem] text-grey-500 transition-colors hover:text-primary-700">
                 Privacy policy
-              </a>
+              </NuxtLink>
             </li>
             <li>
-              <a href="#" class="inline-flex items-center gap-1 text-[0.95rem] font-medium text-grey-700 transition-colors hover:text-primary-700">
-                Terms of Use <Icon name="lucide:arrow-up-right" class="size-3.5" />
-              </a>
+              <NuxtLink
+                to="/terms-of-service"
+                class="inline-flex items-center gap-1 text-[0.95rem] font-medium text-grey-700 transition-colors hover:text-primary-700"
+              >
+                Terms of Use
+                <Icon name="lucide:arrow-up-right" class="size-3.5" />
+              </NuxtLink>
             </li>
           </ul>
 

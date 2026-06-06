@@ -64,7 +64,7 @@ const categories = [
             <div class="relative h-[34rem] overflow-hidden rounded-[2.1rem] bg-white">
               <div class="flex items-center justify-between px-4 pb-3 pt-7">
                 <div class="flex items-center gap-1.5">
-                  <BrandLogo :with-wordmark="false" class="[&_svg]:size-6" />
+                  <BrandLogo :with-wordmark="false" class="[&_svg]:h-6 [&_svg]:w-auto" />
                   <span class="font-display text-base font-semibold text-supporting-900">GoSource</span>
                 </div>
                 <div class="flex items-center gap-2">
