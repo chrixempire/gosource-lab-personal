@@ -308,7 +308,10 @@ updateHeader({
                   :total-branches="customer.totalBranches"
                   :total-employees="customer.totalEmployees"
                 />
-                <CustomerCreditHistoryTab v-else-if="activeTab === 'credit-history'" />
+                <CustomerCreditHistoryTab
+                  v-else-if="activeTab === 'credit-history'"
+                  :customer-id="customer.id"
+                />
               </div>
             </section>
           </div>

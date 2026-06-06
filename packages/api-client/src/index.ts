@@ -17,6 +17,12 @@ export {
   createRequestApi,
 } from './auth';
 export { createWalletApi } from './wallet';
+export {
+  createCreditApi,
+  type CreditPaginationQuery,
+  type CreateCreditRequestPayload,
+  type CreateCreditRepaymentPayload,
+} from './credit';
 export { createOrderApi } from './order';
 export { createShoppingListApi } from './shopping-list';
 export type {

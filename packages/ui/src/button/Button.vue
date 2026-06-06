@@ -38,6 +38,13 @@ const props = withDefaults(defineProps<Props>(), {
           'hover:!bg-button-disabled hover:!shadow-none',
           'active:!bg-button-disabled active:!shadow-none active:!translate-y-0',
         ],
+        props.disabled &&
+          !props.loading && [
+            'pointer-events-none !cursor-not-allowed select-none',
+            '!border-border-default !bg-button-disabled !text-disabled !shadow-none',
+            'hover:!border-border-default hover:!bg-button-disabled hover:!text-disabled hover:!shadow-none',
+            'active:!translate-y-0 active:!border-border-default active:!bg-button-disabled active:!shadow-none',
+          ],
         props.class,
       )
     "

@@ -13,6 +13,8 @@ const PAGE_DESCRIPTIONS: Record<string, string> = {
     'Find answers and get support for your workspace here.',
   '/market/recent-orders':
     'Full list of products you have ordered recently for this branch.',
+  '/credit':
+    'Access credit, view your limit and repayment history, and manage credit requests.',
 };
 
 export function resolveCustomerPageDescription(

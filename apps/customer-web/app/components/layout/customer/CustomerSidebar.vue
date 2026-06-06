@@ -12,6 +12,7 @@ import {
 } from '@gosource/ui';
 import {
   ClipboardList,
+  BadgePercent,
   CreditCard,
   ChevronDown,
   BarChart3,
@@ -103,6 +104,7 @@ const navItems: NavLeaf[] = [
   { label: 'Business insight', icon: BarChart3, path: '/business-insight' },
   { label: 'Orders', icon: ShoppingBag, path: '/track-orders' },
   { label: 'Wallet', icon: CreditCard, path: '/wallet' },
+  { label: 'Credit', icon: BadgePercent, path: '/credit' },
   { label: 'Request', icon: ClipboardList, path: '/manage-requests' },
   { label: 'Lists', icon: Layers3, path: '/lists' },
   { label: 'Branches', icon: Store, path: '/branches' },

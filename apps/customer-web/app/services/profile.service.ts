@@ -24,6 +24,7 @@ export type BusinessAccountRecord = {
   phoneNumber?: string | null;
   branchId?: string | null;
   createdAt?: string;
+  canBuyOnCredit?: boolean;
 };
 
 export function useCustomerProfileService() {
@@ -31,7 +32,7 @@ export function useCustomerProfileService() {
   const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 
   return {
-    async getBusinessAccount() {
+    async getBusinessAccount(options?: { silent?: boolean }) {
       try {
         const response = await $apiClient.get<{
           data?: Record<string, unknown>;
@@ -51,9 +52,13 @@ export function useCustomerProfileService() {
           phoneNumber: data.phoneNumber ? String(data.phoneNumber) : null,
           branchId: data.branchId ? String(data.branchId) : null,
           createdAt: data.createdAt ? String(data.createdAt) : undefined,
+          canBuyOnCredit:
+            typeof data.canBuyOnCredit === 'boolean' ? data.canBuyOnCredit : undefined,
         } satisfies BusinessAccountRecord;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to load business profile'));
+        if (!options?.silent) {
+          toast.error(extractApiErrorMessage(error, 'Unable to load business profile'));
+        }
         throw error;
       }
     },
