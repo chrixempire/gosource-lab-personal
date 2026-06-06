@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Button, StatusTag } from '@gosource/ui';
+import { StatusTag } from '@gosource/ui';
+import CreditRequestActionsMenu from '~/components/credit/CreditRequestActionsMenu.vue';
 import {
   creditWorkflowStatusLabel,
   creditWorkflowStatusVariant,
@@ -41,13 +42,26 @@ const cardArticleClass =
       @click="navigateTo(creditRequestPath(row.id))"
     >
       <div class="flex items-start justify-between gap-2">
-        <div>
+        <div class="min-w-0">
           <p class="font-semibold text-grey-900">#{{ row.reference }}</p>
           <p class="mt-0.5 text-xs capitalize text-grey-400">{{ row.requestType }}</p>
         </div>
-        <StatusTag :variant="creditWorkflowStatusVariant(row.status)">
-          {{ creditWorkflowStatusLabel(row.status) }}
-        </StatusTag>
+        <div class="flex shrink-0 items-center gap-2">
+          <StatusTag
+            :variant="creditWorkflowStatusVariant(row.status)"
+            size="medium"
+            class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
+          >
+            {{ creditWorkflowStatusLabel(row.status) }}
+          </StatusTag>
+          <CreditRequestActionsMenu
+            :can-cancel="isOwner && row.status === 'pending'"
+            :can-reapply="isOwner && row.status === 'rejected'"
+            @view-details="navigateTo(creditRequestPath(row.id))"
+            @cancel="emit('cancel', row)"
+            @reapply="emit('reapply', row)"
+          />
+        </div>
       </div>
       <dl class="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div>
@@ -59,26 +73,6 @@ const cardArticleClass =
           <dd class="font-medium text-grey-900">{{ formatRequestDate(row.createdAt) }}</dd>
         </div>
       </dl>
-      <div v-if="isOwner" class="mt-3 flex gap-2" @click.stop>
-        <Button
-          v-if="row.status === 'pending'"
-          variant="destructive"
-          size="small"
-          class="!w-auto shrink-0"
-          @click="emit('cancel', row)"
-        >
-          Cancel
-        </Button>
-        <Button
-          v-else-if="row.status === 'rejected'"
-          variant="outline"
-          size="small"
-          class="!w-auto shrink-0"
-          @click="emit('reapply', row)"
-        >
-          Reapply
-        </Button>
-      </div>
     </article>
   </div>
 </template>

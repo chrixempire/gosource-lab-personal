@@ -75,8 +75,8 @@
   --shadow-large: 0 20px 24px 0 rgba(71, 83, 103, 0.15);
   --shadow-card: 0 2px 4px -2px rgba(16, 25, 40, 0.06), 0 4px 8px -2px rgba(16, 25, 40, 0.1);
 
-  /* Layout */
-  --container-site: 1140px;
+  /* Layout — Figma content width (1346 of a 1440 frame) */
+  --container-site: 1346px;
 
   /* Motion */
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
@@ -223,9 +223,74 @@
   animation-delay: var(--float-delay, 0s);
 }
 
+/* Vertical auto-scroll (About hero produce collage) */
+@keyframes vscroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+.animate-vscroll {
+  animation: vscroll 36s linear infinite;
+}
+.animate-vscroll:hover {
+  animation-play-state: paused;
+}
+
+/* Horizontal auto-scroll (Careers hero team strip) */
+@keyframes hscroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-hscroll {
+  animation: hscroll 42s linear infinite;
+}
+.animate-hscroll:hover {
+  animation-play-state: paused;
+}
+.hmask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.vmask {
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+/* Shimmering skeleton placeholder */
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-grey-100);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.65),
+    transparent
+  );
+  animation: skeleton-shimmer 1.6s var(--ease-spring) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
-  .animate-float {
+  .animate-float,
+  .animate-vscroll,
+  .animate-hscroll,
+  .skeleton::after {
     animation: none;
   }
 }

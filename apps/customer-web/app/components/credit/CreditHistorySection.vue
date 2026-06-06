@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  Button,
   PaginationBar,
   SegmentedControl,
   StatusTag,
@@ -14,6 +13,7 @@ import {
 } from '@gosource/ui';
 import { useDebounceFn, useMediaQuery } from '@vueuse/core';
 import CreditRepaymentHistoryCards from '~/components/credit/CreditRepaymentHistoryCards.vue';
+import CreditRequestActionsMenu from '~/components/credit/CreditRequestActionsMenu.vue';
 import CreditRequestHistoryCards from '~/components/credit/CreditRequestHistoryCards.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
 import {
@@ -28,6 +28,7 @@ import {
   CUSTOMER_TABLE_DATA_ROW_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+  CREDIT_REQUEST_TABLE_GRID_TEMPLATE,
 } from '~/lib/customer-table-layout';
 import type {
   CustomerCreditRepayment,
@@ -102,7 +103,7 @@ const repaymentTotalPages = computed(() =>
 </script>
 
 <template>
-  <div class="mt-8 space-y-4">
+  <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <SegmentedControl v-model="activeTab" :options="tabOptions" />
       <SearchField v-model="searchValue" placeholder="Search history" class="w-full sm:max-w-xs" />
@@ -117,63 +118,47 @@ const repaymentTotalPages = computed(() =>
         @cancel="emit('cancelRequest', $event)"
         @reapply="emit('reapply', $event)"
       />
-      <TableShell v-else :class="CUSTOMER_TABLE_PANEL_CLASS">
+      <TableShell v-else :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
         <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
           <TableHeadRow
-            :class="[
-              'gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400',
-              isOwner
-                ? 'grid grid-cols-[1.2fr_1fr_1fr_0.8fr_0.9fr]'
-                : 'grid grid-cols-[1.2fr_1fr_1fr_0.8fr]',
-            ]"
+            :style="{ gridTemplateColumns: CREDIT_REQUEST_TABLE_GRID_TEMPLATE }"
+            class="gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400"
           >
             <span>Reference</span>
             <span>Amount</span>
             <span>Date</span>
             <span>Status</span>
-            <span v-if="isOwner">Actions</span>
+            <span class="sr-only">Actions</span>
           </TableHeadRow>
         </TableHeader>
         <TableBody :class="CUSTOMER_TABLE_BODY_CLASS">
           <TableRow
             v-for="row in filteredCreditRequests"
             :key="row.id"
-            :class="[
-              CUSTOMER_TABLE_DATA_ROW_CLASS,
-              'grid cursor-pointer gap-3 px-4 py-3',
-              isOwner
-                ? 'grid-cols-[1.2fr_1fr_1fr_0.8fr_0.9fr]'
-                : 'grid-cols-[1.2fr_1fr_1fr_0.8fr]',
-            ]"
+            :class="[CUSTOMER_TABLE_DATA_ROW_CLASS, 'grid gap-3 px-4 py-3']"
+            :style="{ gridTemplateColumns: CREDIT_REQUEST_TABLE_GRID_TEMPLATE }"
             @click="navigateTo(creditRequestPath(row.id))"
           >
             <TableCell class="font-medium text-grey-900">#{{ row.reference }}</TableCell>
             <TableCell>{{ formatCreditFromKobo(row.requestedAmountKobo) }}</TableCell>
             <TableCell>{{ formatRequestDate(row.createdAt) }}</TableCell>
             <TableCell>
-              <StatusTag :variant="creditWorkflowStatusVariant(row.status)">
+              <StatusTag
+                :variant="creditWorkflowStatusVariant(row.status)"
+                size="medium"
+                class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
+              >
                 {{ creditWorkflowStatusLabel(row.status) }}
               </StatusTag>
             </TableCell>
-            <TableCell v-if="isOwner" @click.stop>
-              <Button
-                v-if="row.status === 'pending'"
-                variant="destructive"
-                size="small"
-                class="!w-auto shrink-0"
-                @click="emit('cancelRequest', row)"
-              >
-                Cancel
-              </Button>
-              <Button
-                v-else-if="row.status === 'rejected'"
-                variant="ghost"
-                size="small"
-                class="!w-auto shrink-0"
-                @click="emit('reapply', row)"
-              >
-                Reapply
-              </Button>
+            <TableCell class="flex items-center justify-end">
+              <CreditRequestActionsMenu
+                :can-cancel="isOwner && row.status === 'pending'"
+                :can-reapply="isOwner && row.status === 'rejected'"
+                @view-details="navigateTo(creditRequestPath(row.id))"
+                @cancel="emit('cancelRequest', row)"
+                @reapply="emit('reapply', row)"
+              />
             </TableCell>
           </TableRow>
           <p
