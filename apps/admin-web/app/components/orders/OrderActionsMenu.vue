@@ -12,6 +12,7 @@ import type { AdminOrderListItem } from '~/types/orders';
 
 defineProps<{
   order: AdminOrderListItem;
+  loading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -30,6 +31,8 @@ const emit = defineEmits<{
           variant="ghost"
           class="!size-9 !rounded-full !border !border-grey-50 !bg-white !p-0"
           aria-label="Order actions"
+          :loading="loading"
+          :disabled="loading"
         >
           <Ellipsis class="size-4" />
         </Button>

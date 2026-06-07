@@ -10,6 +10,8 @@ import {
   TableShell,
   TableSkeleton,
 } from '@gosource/ui';
+import CreditAnalyticsPerformerCards from '~/components/credit/CreditAnalyticsPerformerCards.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { formatCreditFromKobo } from '~/lib/credit-money';
 import { CREDIT_ANALYTICS_TABLE_GRID, CREDIT_LIST_PANEL_CLASS } from '~/lib/credit-table-layout';
 import { CREDIT_LIST_SEARCH_CLASS } from '~/lib/credit-page-layout';
@@ -19,6 +21,8 @@ const props = defineProps<{
   rows: CreditTopPerformerRow[];
   loading?: boolean;
 }>();
+
+const isCompactViewport = useAdminCompactViewport();
 
 const searchQuery = ref('');
 
@@ -58,7 +62,14 @@ function avatarFallbackClass(isInactive: boolean) {
       :disabled="loading && rows.length === 0"
     />
 
-    <TableShell :class="[CREDIT_LIST_PANEL_CLASS, 'mt-4 overflow-visible']">
+    <CreditAnalyticsPerformerCards
+      v-if="isCompactViewport"
+      class="mt-4"
+      :rows="filteredRows"
+      :loading="loading"
+    />
+
+    <TableShell v-else :class="[CREDIT_LIST_PANEL_CLASS, 'mt-4 overflow-visible']">
       <TableHeader
         class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]"
       >

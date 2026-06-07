@@ -84,7 +84,7 @@ function remove() {
           v-if="!inCart"
           key="add"
           type="button"
-          class="flex h-9 w-full items-center justify-center gap-1 rounded-full bg-primary-500 text-sm font-semibold text-white shadow-[0_8px_18px_-10px_rgba(4,85,11,0.58)] transition hover:bg-primary-600"
+          class="flex h-9 w-full cursor-pointer items-center justify-center gap-1 rounded-full bg-primary-500 text-sm font-semibold text-white shadow-[0_8px_18px_-10px_rgba(4,85,11,0.58)] transition hover:bg-primary-600"
           @click="add"
         >
           <Icon name="lucide:plus" class="size-4" /> Add
@@ -98,7 +98,7 @@ function remove() {
           <button
             type="button"
             aria-label="Decrease quantity"
-            class="flex h-full basis-[35%] items-center justify-center rounded-l-full transition hover:bg-white/15"
+            class="flex h-full basis-[35%] cursor-pointer items-center justify-center rounded-l-full transition hover:bg-white/15"
             @click="remove"
           >
             <Icon name="lucide:minus" class="size-4" />
@@ -107,7 +107,7 @@ function remove() {
           <button
             type="button"
             aria-label="Increase quantity"
-            class="flex h-full basis-[35%] items-center justify-center rounded-r-full transition hover:bg-white/15"
+            class="flex h-full basis-[35%] cursor-pointer items-center justify-center rounded-r-full transition hover:bg-white/15"
             @click="add"
           >
             <Icon name="lucide:plus" class="size-4" />

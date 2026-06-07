@@ -104,24 +104,32 @@ function tableCellStyle(options: { isLastRow?: boolean; isHeader?: boolean; isSu
     class="box-border w-full max-w-[821px] bg-white font-[Inter,Arial,sans-serif] text-grey-900"
     :style="rootStyle"
   >
-    <div class="flex min-h-[76px] items-center justify-between gap-3 bg-[#09420c] px-6 py-4">
+    <div
+      class="flex items-center justify-between gap-3 bg-[#09420c] px-6 py-4"
+    >
       <img
         :src="logoSrc"
         alt="GoSource"
         crossorigin="anonymous"
-        class="block w-[150px] object-contain"
+        class="block w-[150px] shrink-0 object-contain"
         :style="{ height: typography.logoHeight }"
       >
       <p
-        class="text-right font-semibold capitalize text-white"
+        class="min-w-0 text-right font-semibold capitalize text-white"
         :style="{ fontSize: typography.reference }"
       >
         {{ preview.referenceLabel }}
       </p>
     </div>
 
-    <div :style="{ padding: typography.contentPadding, display: 'flex', flexDirection: 'column', gap: typography.sectionGap }">
-      <div :style="infoGridStyle">
+    <div
+      class="px-4 sm:px-6"
+      :style="{ paddingBottom: typography.contentPadding, display: 'flex', flexDirection: 'column', gap: typography.sectionGap, paddingTop: typography.contentPadding }"
+    >
+      <div
+        v-if="isDownloadLayout"
+        :style="infoGridStyle"
+      >
         <div
           v-for="(item, index) in infoFields"
           :key="`order-info-${index}`"
@@ -135,6 +143,29 @@ function tableCellStyle(options: { isLastRow?: boolean; isHeader?: boolean; isSu
           </p>
           <p
             class="font-semibold text-grey-900"
+            :style="{ fontSize: typography.value, lineHeight: '1.4' }"
+          >
+            {{ item.value }}
+          </p>
+        </div>
+      </div>
+      <div
+        v-else
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <div
+          v-for="(item, index) in infoFields"
+          :key="`order-info-${index}`"
+          class="flex min-w-0 flex-col gap-2 sm:gap-3"
+        >
+          <p
+            class="text-grey-500"
+            :style="{ fontSize: typography.label, lineHeight: '1.4' }"
+          >
+            {{ item.label }}
+          </p>
+          <p
+            class="break-words font-semibold text-grey-900"
             :style="{ fontSize: typography.value, lineHeight: '1.4' }"
           >
             {{ item.value }}

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { CUSTOMER_MARKET_URL } from '~/lib/customer-app';
+
 const products = [
   { image: '/images/product-01.png', name: 'Barbecue Sauce (Kraft)', price: '₦4,500', oldPrice: '₦5,000' },
   { image: '/images/product-02.png', name: 'Durcra Thyme', price: '₦4,200', oldPrice: '₦4,800', badge: '-12%' },
@@ -24,7 +26,7 @@ const products = [
         Browse our marketplace and see today's prices. Order in bulk, save more,
         and get your delivery within 24 hours.
         <template #actions>
-          <AppButton variant="primary" href="#">
+          <AppButton variant="primary" :href="CUSTOMER_MARKET_URL">
             Explore market
             <Icon name="lucide:chevron-right" class="size-4 transition-transform group-hover:translate-x-0.5" />
           </AppButton>
@@ -37,7 +39,7 @@ const products = [
             <h3 class="font-display text-lg font-medium text-grey-900">Customer favorites</h3>
             <Icon name="lucide:heart" class="size-5 text-orange-500" />
           </div>
-          <a href="#" class="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">
+          <a :href="CUSTOMER_MARKET_URL" class="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">
             See all <Icon name="lucide:chevron-right" class="size-4" />
           </a>
         </div>

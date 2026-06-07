@@ -184,6 +184,7 @@ useIntersectionObserver(
           <TableCell class="flex items-center justify-end">
             <OrderActionsMenu
               :order="order"
+              :loading="updatingOrderId === order.id"
               @view="emit('rowClick', order)"
               @download="emit('download', order)"
               @cancel="emit('cancel', order)"
