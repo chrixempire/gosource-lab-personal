@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onClickOutside } from '@vueuse/core';
 import type { LegalSection } from '~/lib/legal-document';
 
 const props = defineProps<{
@@ -23,17 +24,24 @@ const {
   updateIndicator,
 } = useLegalScrollSpy(sectionIds);
 
-const mobileNavRef = ref<HTMLElement | null>(null);
+const mobileNavOpen = ref(false);
+const mobileNavRootRef = ref<HTMLElement | null>(null);
 
-watch(activeId, async () => {
-  await nextTick();
-  updateIndicator();
+const activeNavLabel = computed(
+  () => props.navItems.find((item) => item.id === activeId.value)?.label ?? 'Jump to section',
+);
 
-  if (!import.meta.client || !mobileNavRef.value) return;
-  const activeButton = mobileNavRef.value.querySelector<HTMLElement>(
-    `[data-section-id="${activeId.value}"]`,
-  );
-  activeButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+function selectMobileSection(id: string) {
+  mobileNavOpen.value = false;
+  scrollTo(id);
+}
+
+onClickOutside(mobileNavRootRef, () => {
+  mobileNavOpen.value = false;
+});
+
+watch(activeId, () => {
+  nextTick(updateIndicator);
 });
 
 onMounted(() => {
@@ -63,26 +71,51 @@ onMounted(() => {
       </header>
 
       <div class="mt-12 grid gap-8 lg:mt-14 lg:grid-cols-[15.5rem_minmax(0,1fr)] lg:gap-10">
-        <!-- Mobile nav -->
+        <!-- Mobile sticky section dropdown -->
         <div
-          ref="mobileNavRef"
-          class="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 lg:hidden"
+          class="sticky top-[72px] z-30 -mx-5 border-b border-grey-100 bg-white/95 px-4 py-3 backdrop-blur-md lg:hidden"
         >
-          <button
-            v-for="item in navItems"
-            :key="item.id"
-            type="button"
-            :data-section-id="item.id"
-            class="shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-300"
-            :class="
-              activeId === item.id
-                ? 'border-primary-500 bg-primary-50 text-primary-800'
-                : 'border-grey-200 bg-white text-grey-600 hover:border-grey-300'
-            "
-            @click="scrollTo(item.id)"
-          >
-            {{ item.label }}
-          </button>
+          <div ref="mobileNavRootRef" class="relative">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-3 rounded-xl border border-grey-200 bg-white px-4 py-3 text-left text-sm font-medium text-grey-900 shadow-xsmall transition-colors hover:border-grey-300"
+              :aria-expanded="mobileNavOpen"
+              aria-haspopup="listbox"
+              @click="mobileNavOpen = !mobileNavOpen"
+            >
+              <span class="min-w-0 truncate">{{ activeNavLabel }}</span>
+              <Icon
+                name="lucide:chevron-down"
+                class="size-4 shrink-0 text-grey-400 transition-transform duration-200"
+                :class="mobileNavOpen ? 'rotate-180' : ''"
+              />
+            </button>
+
+            <Transition name="legal-nav-dropdown">
+              <div
+                v-if="mobileNavOpen"
+                class="absolute inset-x-0 top-[calc(100%+0.5rem)] z-10 max-h-[min(18rem,50vh)] overflow-y-auto rounded-xl border border-grey-200 bg-white py-1 shadow-medium"
+                role="listbox"
+              >
+                <button
+                  v-for="item in navItems"
+                  :key="item.id"
+                  type="button"
+                  role="option"
+                  :aria-selected="activeId === item.id"
+                  class="flex w-full px-4 py-3 text-left text-sm leading-snug transition-colors"
+                  :class="
+                    activeId === item.id
+                      ? 'bg-primary-50 font-medium text-primary-800'
+                      : 'text-grey-600 hover:bg-grey-50 hover:text-grey-900'
+                  "
+                  @click="selectMobileSection(item.id)"
+                >
+                  {{ item.label }}
+                </button>
+              </div>
+            </Transition>
+          </div>
         </div>
 
         <!-- Desktop sticky nav -->
@@ -133,7 +166,7 @@ onMounted(() => {
             :id="section.id"
             :key="section.id"
             v-reveal="sectionIndex * 40"
-            class="scroll-mt-32 border-b border-grey-100 py-10 last:border-b-0 first:pt-0 lg:scroll-mt-36 lg:py-11 lg:first:pt-0"
+            class="scroll-mt-[8.75rem] border-b border-grey-100 py-10 last:border-b-0 first:pt-0 lg:scroll-mt-36 lg:py-11 lg:first:pt-0"
           >
             <h2
               class="flex min-h-10 items-center font-display text-2xl font-medium tracking-[-0.02em] text-grey-900 sm:text-[1.75rem] sm:leading-9"
@@ -194,11 +227,16 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.scrollbar-none {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+.legal-nav-dropdown-enter-active,
+.legal-nav-dropdown-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+
+.legal-nav-dropdown-enter-from,
+.legal-nav-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>
