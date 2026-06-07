@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
 // Built For You — feature grid aligned to Figma node 891:23792.
 </script>
 
@@ -21,7 +22,7 @@
           </p>
         </div>
 
-        <AppButton variant="primary" size="sm" href="#market">
+        <AppButton variant="primary" size="sm" :href="CUSTOMER_REGISTER_URL">
           Try GoSource now
           <Icon name="lucide:chevron-right" class="size-5 transition-transform group-hover:translate-x-0.5" />
         </AppButton>
@@ -39,6 +40,7 @@
             label="Bulk procurement"
             title="All food items in one store"
             cta="Explore market"
+            :cta-href="CUSTOMER_MARKET_URL"
           >
             <template #mock>
               <img

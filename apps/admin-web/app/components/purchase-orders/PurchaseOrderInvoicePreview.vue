@@ -21,17 +21,11 @@ const logoSrc =
   <!-- Same root id as gosource-admin-v2 for PDF capture -->
   <div
     id="preview-invoice"
-    style="
-      width: 100%;
-      max-width: 821px;
-      box-sizing: border-box;
-      background: #ffffff;
-      color: #111827;
-      font-family: Inter, Arial, sans-serif;
-    "
+    class="invoice-preview-root box-border w-full max-w-[821px] bg-white font-[Inter,Arial,sans-serif] text-grey-900"
   >
-    <div style="background: #09420c; padding: 16px 24px">
+    <div class="invoice-preview-header" style="background: #09420c; padding: 16px 24px">
       <div
+        class="invoice-preview-header-row"
         style="
           display: flex;
           align-items: center;
@@ -46,6 +40,7 @@ const logoSrc =
           style="display: block; width: 150px; height: 30px; object-fit: contain"
         >
         <div
+          class="invoice-preview-reference"
           style="
             min-width: 0;
             font-size: 24px;
@@ -61,16 +56,16 @@ const logoSrc =
       </div>
     </div>
 
-    <div style="padding: 0 24px 24px">
+    <div class="invoice-preview-body" style="padding: 0 24px 24px">
       <div style="padding-top: 24px">
-        <div style="display: flex; width: 100%">
-          <div style="width: 50%; padding-right: 12px">
+        <div class="invoice-preview-meta-row" style="display: flex; width: 100%">
+          <div class="invoice-preview-meta-col" style="width: 50%; padding-right: 12px">
             <p style="margin: 0; font-size: 14px; color: #667085">Expected date</p>
             <p style="margin: 8px 0 0; font-size: 14px; font-weight: 600; color: #111827">
               {{ preview.expectedDateLabel }}
             </p>
           </div>
-          <div style="width: 50%; padding-left: 12px">
+          <div class="invoice-preview-meta-col" style="width: 50%; padding-left: 12px">
             <p style="margin: 0; font-size: 14px; color: #667085">Ordered by</p>
             <p style="margin: 8px 0 0; font-size: 14px; font-weight: 600; color: #111827">
               {{ preview.orderedByLabel }}
@@ -84,6 +79,7 @@ const logoSrc =
             <div
               v-for="(person, index) in preview.billTo"
               :key="index"
+              class="invoice-preview-bill-to-item"
               style="
                 display: inline-block;
                 width: 48%;
@@ -104,6 +100,7 @@ const logoSrc =
       </div>
 
       <div
+        class="invoice-line-items-shell"
         style="
           margin-top: 24px;
           border: 1px solid #f0f2f5;
@@ -112,12 +109,13 @@ const logoSrc =
         "
       >
         <table
+          class="invoice-line-items-table"
           style="
             width: 100%;
-            min-width: 0;
+            min-width: 520px;
             border-collapse: collapse;
             font-size: 14px;
-            table-layout: fixed;
+            table-layout: auto;
           "
         >
           <thead>
@@ -126,18 +124,11 @@ const logoSrc =
                 v-for="(header, headerIndex) in tableHeaders"
                 :key="header"
                 :style="{
-                  padding: '10px',
-                  textAlign: 'left',
+                  padding: '10px 12px',
+                  textAlign: headerIndex >= 3 ? 'right' : 'left',
                   fontWeight: 400,
                   color: '#667085',
-                  width:
-                    headerIndex === 0
-                      ? '8%'
-                      : headerIndex === 1
-                        ? '36%'
-                        : headerIndex === 2
-                          ? '10%'
-                          : '23%',
+                  whiteSpace: 'nowrap',
                 }"
               >
                 {{ header }}
@@ -150,10 +141,12 @@ const logoSrc =
               :key="`${item.name}-${index}`"
               style="border-top: 1px solid #f0f2f5"
             >
-              <td style="padding: 10px; color: #111827">{{ index + 1 }}.</td>
+              <td style="padding: 10px 12px; color: #111827; white-space: nowrap">
+                {{ index + 1 }}.
+              </td>
               <td
                 style="
-                  padding: 10px;
+                  padding: 10px 12px;
                   color: #111827;
                   font-weight: 500;
                   word-break: break-word;
@@ -162,16 +155,62 @@ const logoSrc =
               >
                 {{ item.name }}
               </td>
-              <td style="padding: 10px; color: #111827">{{ item.quantity }}</td>
-              <td style="padding: 10px; color: #111827">
+              <td style="padding: 10px 12px; color: #111827; text-align: right; white-space: nowrap">
+                {{ item.quantity }}
+              </td>
+              <td
+                style="
+                  padding: 10px 12px;
+                  color: #111827;
+                  text-align: right;
+                  white-space: nowrap;
+                  font-variant-numeric: tabular-nums;
+                "
+              >
                 {{ formatPrice(item.unitPrice) }}
               </td>
-              <td style="padding: 10px; color: #111827">
+              <td
+                style="
+                  padding: 10px 12px;
+                  color: #111827;
+                  text-align: right;
+                  white-space: nowrap;
+                  font-weight: 600;
+                  font-variant-numeric: tabular-nums;
+                "
+              >
                 {{ formatPrice(item.totalPrice) }}
               </td>
             </tr>
           </tbody>
         </table>
+
+        <div class="invoice-line-items-cards">
+          <article
+            v-for="(item, index) in preview.lineItems"
+            :key="`card-${item.name}-${index}`"
+            class="invoice-line-item-card"
+          >
+            <div class="invoice-line-item-card-head">
+              <span class="invoice-line-item-index">{{ index + 1 }}.</span>
+              <p class="invoice-line-item-name">{{ item.name }}</p>
+            </div>
+            <dl class="invoice-line-item-stats">
+              <div>
+                <dt>Qty</dt>
+                <dd>{{ item.quantity }}</dd>
+              </div>
+              <div>
+                <dt>Rate</dt>
+                <dd>{{ formatPrice(item.unitPrice) }}</dd>
+              </div>
+              <div>
+                <dt>Price</dt>
+                <dd>{{ formatPrice(item.totalPrice) }}</dd>
+              </div>
+            </dl>
+          </article>
+        </div>
       </div>
 
       <div
@@ -212,3 +251,129 @@ const logoSrc =
     </div>
   </div>
 </template>
+
+<style scoped>
+.invoice-preview-root {
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #111827;
+  font-family: Inter, Arial, sans-serif;
+  container-type: inline-size;
+}
+
+.invoice-line-items-cards {
+  display: none;
+}
+
+.invoice-line-item-card {
+  border-top: 1px solid #f0f2f5;
+  padding: 12px 14px;
+}
+
+.invoice-line-item-card:first-child {
+  border-top: none;
+}
+
+.invoice-line-item-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.invoice-line-item-index {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #667085;
+}
+
+.invoice-line-item-name {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #111827;
+  word-break: break-word;
+}
+
+.invoice-line-item-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #f0f2f5;
+}
+
+.invoice-line-item-stats dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #667085;
+}
+
+.invoice-line-item-stats dd {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+  word-break: break-word;
+}
+
+@container (max-width: 520px) {
+  .invoice-line-items-table {
+    display: none;
+  }
+
+  .invoice-line-items-cards {
+    display: block;
+  }
+
+  .invoice-line-items-shell {
+    overflow-x: visible !important;
+  }
+}
+
+@media (max-width: 999px) {
+  .invoice-preview-header {
+    padding: 14px 16px !important;
+  }
+
+  .invoice-preview-header-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .invoice-preview-reference {
+    font-size: 18px !important;
+    text-align: right !important;
+  }
+
+  .invoice-preview-body {
+    padding: 0 16px 20px !important;
+  }
+
+  .invoice-preview-meta-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .invoice-preview-meta-col {
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .invoice-preview-bill-to-item {
+    display: block !important;
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+}
+</style>

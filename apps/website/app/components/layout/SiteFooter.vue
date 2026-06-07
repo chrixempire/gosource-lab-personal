@@ -2,15 +2,31 @@
 const columns = [
   {
     title: 'Who we serve',
-    links: ['Restaurants & Bars', 'Hotels & Resorts', 'Caterers', 'Retail food sellers', 'Home consumers'],
+    links: [
+      { label: 'Restaurants & Bars', href: '#' },
+      { label: 'Hotels & Resorts', href: '#' },
+      { label: 'Caterers', href: '#' },
+      { label: 'Retail food sellers', href: '#' },
+      { label: 'Home consumers', href: '#' },
+    ],
   },
   {
     title: 'Features',
-    links: ['Bulk procurement', 'Credit access', 'Dashboard management'],
+    links: [
+      { label: 'Bulk procurement', href: '#' },
+      { label: 'Credit access', href: '#' },
+      { label: 'Dashboard management', href: '#' },
+    ],
   },
   {
     title: 'Quick links',
-    links: ['About Us', 'Help/FAQ', 'Blog', 'Careers', 'Contact us'],
+    links: [
+      { label: 'About Us', href: '/about' },
+      { label: 'Help/FAQ', href: '/faq' },
+      { label: 'Blog', href: '#' },
+      { label: 'Careers', href: '/careers' },
+      { label: 'Contact us', href: '/contact' },
+    ],
   },
 ];
 
@@ -44,12 +60,20 @@ const year = new Date().getFullYear();
         >
           <h3 class="font-display text-base font-medium text-grey-900">{{ col.title }}</h3>
           <ul class="mt-4 space-y-3">
-            <li v-for="link in col.links" :key="link">
-              <a
-                href="#"
+            <li v-for="link in col.links" :key="link.label">
+              <NuxtLink
+                v-if="link.href.startsWith('/')"
+                :to="link.href"
                 class="text-[0.95rem] text-grey-500 transition-colors hover:text-primary-700"
               >
-                {{ link }}
+                {{ link.label }}
+              </NuxtLink>
+              <a
+                v-else
+                :href="link.href"
+                class="text-[0.95rem] text-grey-500 transition-colors hover:text-primary-700"
+              >
+                {{ link.label }}
               </a>
             </li>
           </ul>

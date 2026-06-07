@@ -24,7 +24,7 @@
 
       <div
         v-reveal="140"
-        class="group relative z-10 mt-[3.75rem] w-full max-w-[56.375rem] overflow-hidden rounded-lg bg-[#fadcd6]"
+        class="group relative z-10 mt-[3.75rem] w-full max-w-[56.375rem] overflow-hidden rounded-t-lg bg-[#fadcd6]"
       >
         <div class="relative h-52 overflow-hidden sm:h-64 lg:h-[26.125rem]">
           <img

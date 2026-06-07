@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
+
 withDefaults(
   defineProps<{
     variant?: 'default' | 'about' | 'careers';
@@ -21,7 +23,7 @@ withDefaults(
           </p>
         </div>
         <div class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-          <AppButton variant="primary" size="lg" href="#">
+          <AppButton variant="primary" size="lg" :href="CUSTOMER_REGISTER_URL">
             Get started for free
             <Icon name="lucide:chevron-right" class="size-4 transition-transform group-hover:translate-x-0.5" />
           </AppButton>
@@ -49,7 +51,7 @@ withDefaults(
           </p>
         </div>
         <div class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-          <AppButton variant="primary" size="lg" href="#">
+          <AppButton variant="primary" size="lg" :href="CUSTOMER_REGISTER_URL">
             Get started for free
             <Icon name="lucide:chevron-right" class="size-4 transition-transform group-hover:translate-x-0.5" />
           </AppButton>
@@ -89,7 +91,7 @@ withDefaults(
           </p>
 
           <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <AppButton variant="primary" size="lg" href="#">
+            <AppButton variant="primary" size="lg" :href="CUSTOMER_REGISTER_URL">
               Get started for free
               <Icon name="lucide:chevron-right" class="size-5 transition-transform group-hover:translate-x-0.5" />
             </AppButton>

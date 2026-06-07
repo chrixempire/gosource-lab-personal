@@ -15,6 +15,8 @@ import {
   SETTINGS_TABLE_STATUS_TAG_CLASS,
   adminUserStatusVariant,
 } from '~/lib/settings-constants';
+import SettingsRoleUsersMobileCards from '~/components/settings/SettingsRoleUsersMobileCards.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import type { AdminRoleMember } from '~/types/settings';
 
 defineProps<{
@@ -23,10 +25,18 @@ defineProps<{
 }>();
 
 const gridTemplate = 'minmax(0,1fr) minmax(0,0.45fr)';
+
+const isCompactViewport = useAdminCompactViewport();
 </script>
 
 <template>
-  <TableShell class="overflow-visible rounded-xl border border-grey-50 bg-white">
+  <SettingsRoleUsersMobileCards
+    v-if="isCompactViewport"
+    :members="members"
+    :loading="loading"
+  />
+
+  <TableShell v-else class="overflow-visible rounded-xl border border-grey-50 bg-white">
     <TableHeader
       class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]"
     >

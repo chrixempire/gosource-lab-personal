@@ -11,7 +11,9 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
+import CreditRepaymentScheduleMobileList from '~/components/credit/CreditRepaymentScheduleMobileList.vue';
 import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { parseCreditRepaymentSchedule } from '~/lib/credit-api';
 import {
   creditRepaymentScheduleStatusVariant,
@@ -35,11 +37,28 @@ const { data, pending } = await useFetch<unknown>(
 const parsed = computed(() =>
   parseCreditRepaymentSchedule(data.value, page.value, limit.value),
 );
+
+const isCompactViewport = useAdminCompactViewport();
 </script>
 
 <template>
   <CreditPanelCard title="Repayment breakdown">
-    <TableShell class="overflow-visible border-0 shadow-none">
+    <CreditRepaymentScheduleMobileList
+      v-if="isCompactViewport"
+      :rows="parsed.rows"
+      :loading="pending"
+    />
+
+    <CreditTablePagination
+      v-if="isCompactViewport && !pending && parsed.meta.total > 0"
+      standalone
+      class="mt-4"
+      :meta="parsed.meta"
+      @page="page = $event"
+      @page-size="limit = $event; page = 1"
+    />
+
+    <TableShell v-else class="overflow-visible border-0 shadow-none">
       <TableHeader class="border-b border-grey-50 bg-grey-25">
         <TableHeadRow :style="{ gridTemplateColumns: CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID }">
           <TableCell>Installments</TableCell>

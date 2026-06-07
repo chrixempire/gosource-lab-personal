@@ -170,6 +170,13 @@
     animation-play-state: paused;
   }
 
+  @media (hover: hover) {
+    .marquee-hover-pause:hover .animate-marquee,
+    .marquee-hover-pause:hover .animate-hscroll {
+      animation-play-state: paused;
+    }
+  }
+
   /* Scroll reveal (driven by the v-reveal directive) */
   .reveal {
     opacity: 0;

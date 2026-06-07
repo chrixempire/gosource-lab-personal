@@ -1,3 +1,6 @@
+import { mapLegacyOrderLineItems } from '../../app/lib/order-details';
+import { resolveOrderSubtotal } from '../../app/lib/order-line-pricing';
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
 }
@@ -59,26 +62,6 @@ function formatDateTimeLabel(value: unknown) {
   }).format(date);
 }
 
-function lineItemName(line: Record<string, unknown>) {
-  const product = asRecord(line.product);
-  return (
-    (typeof line.productName === 'string' && line.productName) ||
-    (typeof product?.name === 'string' && product.name) ||
-    'Product'
-  );
-}
-
-function lineItemTotal(line: Record<string, unknown>) {
-  const explicit = Number(line.totalPrice ?? line.lineTotal);
-  if (Number.isFinite(explicit) && explicit > 0) {
-    return explicit;
-  }
-
-  const quantity = Number(line.quantity ?? 1);
-  const unitPrice = Number(line.unitPrice ?? line.price ?? 0);
-  return quantity * unitPrice;
-}
-
 export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderInvoicePreview {
   const reference = String(order.reference ?? order._id ?? '');
   const business = asRecord(order.business);
@@ -96,31 +79,19 @@ export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderI
   const state = String(address?.state ?? '');
   const deliveryAddress = [street, lga, state].filter(Boolean).join(', ') || '—';
 
-  const products = Array.isArray(order.products) ? order.products : [];
-  const lineItems = products.map((entry) => {
-    const line = asRecord(entry) ?? {};
-    const quantity = Number(line.quantity ?? 0);
-    const unit = String(line.unit ?? 'unit');
-    const totalPrice = lineItemTotal(line);
-    const unitPrice = quantity > 0 ? totalPrice / quantity : totalPrice;
-
-    return {
-      name: lineItemName(line),
-      quantityLabel: `${quantity} ${unit}`.trim(),
-      unitPrice,
-      totalPrice,
-    };
-  });
+  const mappedLines = mapLegacyOrderLineItems(order);
+  const lineItems = mappedLines.map((item) => ({
+    name: item.name,
+    quantityLabel: `${item.quantity} ${item.unit}`.trim(),
+    unitPrice: item.quantity > 0 ? item.lineTotal / item.quantity : item.lineTotal,
+    totalPrice: item.lineTotal,
+  }));
 
   const deliveryFee = Number(order.deliveryFee ?? 0);
   const serviceCharge = Number(order.serviceCharge ?? 0);
   const discount = Number(order.discount ?? 0);
   const storedTotal = Number(order.totalPrice ?? 0);
-  const subtotalFromLines = lineItems.reduce((sum, row) => sum + row.totalPrice, 0);
-  const subtotal =
-    subtotalFromLines > 0
-      ? subtotalFromLines
-      : Math.max(0, storedTotal - deliveryFee - serviceCharge + discount);
+  const subtotal = resolveOrderSubtotal(order, lineItems);
   const total = storedTotal > subtotal ? storedTotal : subtotal + deliveryFee + serviceCharge - discount;
 
   return {

@@ -20,7 +20,10 @@ import { useDebounce } from '@vueuse/core';
 import CreditTableActionsTrigger from '~/components/credit/CreditTableActionsTrigger.vue';
 import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
 import CustomerCreditHistoryFilterBar from '~/components/customers/CustomerCreditHistoryFilterBar.vue';
+import CustomerCreditHistoryMobileList from '~/components/customers/CustomerCreditHistoryMobileList.vue';
+import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { creditRequestPath } from '~/lib/admin-routes';
 import {
   formatCreditFromKobo,
@@ -144,6 +147,8 @@ function clearAllFilters() {
 function onViewDetails(rowId: string) {
   void navigateTo(creditRequestPath(rowId));
 }
+
+const isCompactViewport = useAdminCompactViewport();
 </script>
 
 <template>
@@ -168,7 +173,9 @@ function onViewDetails(rowId: string) {
         </div>
       </div>
 
-      <TableShell :class="[CREDIT_LIST_PANEL_CLASS, 'overflow-visible']">
+      <AdminMobileCardsSkeleton v-if="isCompactViewport" :count="8" />
+
+      <TableShell v-else :class="[CREDIT_LIST_PANEL_CLASS, 'overflow-visible']">
         <TableHeader
           class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]"
         >
@@ -223,6 +230,16 @@ function onViewDetails(rowId: string) {
       load-failed-title="Unable to load credit history"
       resource-label="credit history"
       @retry="refresh()"
+    />
+
+    <CustomerCreditHistoryMobileList
+      v-else-if="isCompactViewport"
+      :rows="parsed.rows"
+      :meta="parsed.meta"
+      :pending="pending"
+      @view-details="onViewDetails"
+      @page="replaceFilters({ page: $event })"
+      @page-size="replaceFilters({ limit: $event, page: 1 })"
     />
 
     <TableShell v-else :class="[CREDIT_LIST_PANEL_CLASS, 'overflow-visible']">

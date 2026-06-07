@@ -16,6 +16,9 @@ import { useDebounce } from '@vueuse/core';
 import CustomerWalletFilterBar, {
   type CustomerWalletTabFilters,
 } from '~/components/customers/CustomerWalletFilterBar.vue';
+import CustomerWalletMobileList from '~/components/customers/CustomerWalletMobileList.vue';
+import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { parseCustomerTransactions } from '~/lib/customer-api';
@@ -86,6 +89,8 @@ function statusVariant(label: string) {
   if (label === 'Cancelled') return 'negative';
   return 'warning';
 }
+
+const isCompactViewport = useAdminCompactViewport();
 </script>
 
 <template>
@@ -113,7 +118,9 @@ function statusVariant(label: string) {
         </div>
       </div>
 
-      <TableShell class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white">
+      <AdminMobileCardsSkeleton v-if="isCompactViewport" :count="8" />
+
+      <TableShell v-else class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white">
         <TableHeader class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]">
           <TableHeadRow :style="{ gridTemplateColumns: gridTemplate }">
             <TableCell>Title</TableCell>
@@ -162,7 +169,18 @@ function statusVariant(label: string) {
       />
     </div>
 
-    <TableShell class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white">
+    <CustomerWalletMobileList
+      v-if="isCompactViewport"
+      :rows="parsed.rows"
+      :meta="parsed.meta"
+      :pending="pending"
+      :error="error"
+      @retry="refresh()"
+      @page="page = $event"
+      @page-size="onPageSizeChange"
+    />
+
+    <TableShell v-else class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white">
       <TableHeader class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]">
         <TableHeadRow :style="{ gridTemplateColumns: gridTemplate }">
           <TableCell>Title</TableCell>

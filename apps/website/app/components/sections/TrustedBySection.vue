@@ -45,18 +45,19 @@ const aboutQuote =
         />
       </div>
 
-      <!-- Homepage — infinite marquee -->
-      <div v-else v-reveal="120" class="marquee-mask group w-full overflow-hidden">
-        <div class="flex w-max animate-marquee items-center group-hover:animate-paused">
-          <img
-            v-for="(logo, i) in [...logos, ...logos]"
-            :key="`${logo.name}-${i}`"
-            :src="logo.src"
-            :alt="i < logos.length ? logo.name : ''"
-            :aria-hidden="i >= logos.length ? 'true' : undefined"
-            loading="lazy"
-            class="mx-8 h-8 w-auto shrink-0 opacity-80 transition duration-300 hover:opacity-100 sm:mx-10 sm:h-9 lg:mx-12 lg:h-10"
-          />
+      <div v-else v-reveal="120" class="w-full">
+        <div class="hmask marquee-hover-pause w-full overflow-hidden">
+          <div class="flex w-max animate-hscroll items-center will-change-transform">
+            <img
+              v-for="(logo, i) in [...logos, ...logos]"
+              :key="`${logo.name}-${i}`"
+              :src="logo.src"
+              :alt="i < logos.length ? logo.name : ''"
+              :aria-hidden="i >= logos.length ? 'true' : undefined"
+              loading="lazy"
+              class="mx-8 h-8 w-auto shrink-0 opacity-80 transition duration-300 hover:opacity-100 sm:mx-10 sm:h-9 lg:mx-12 lg:h-10"
+            />
+          </div>
         </div>
       </div>
 

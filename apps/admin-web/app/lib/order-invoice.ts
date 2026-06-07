@@ -1,3 +1,4 @@
+import { resolveOrderSubtotal } from '~/lib/order-line-pricing';
 import {
   mapLegacyOrderLineItems,
   mapLegacyOrderToDetailsView,
@@ -52,11 +53,7 @@ export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderI
   const serviceCharge = Number(order.serviceCharge ?? 0);
   const discount = Number(order.discount ?? 0);
   const total = Number(order.totalPrice ?? 0);
-  const subtotalFromLines = lineItems.reduce((sum, row) => sum + row.totalPrice, 0);
-  const subtotal =
-    subtotalFromLines > 0
-      ? subtotalFromLines
-      : Math.max(0, total - deliveryFee - serviceCharge + discount);
+  const subtotal = resolveOrderSubtotal(order, lineItems);
 
   const itemCount = lineItems.length;
 

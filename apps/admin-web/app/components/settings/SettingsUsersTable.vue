@@ -13,6 +13,8 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import SettingsUserActionsMenu from '~/components/settings/SettingsUserActionsMenu.vue';
+import SettingsUsersMobileCards from '~/components/settings/SettingsUsersMobileCards.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import {
   SETTINGS_TABLE_STATUS_TAG_CLASS,
   adminUserStatusVariant,
@@ -34,6 +36,8 @@ const emit = defineEmits<{
 }>();
 
 const gridTemplate = '3rem minmax(0,1.4fr) minmax(0,0.7fr) minmax(0,0.55fr) minmax(0,0.7fr) 3rem';
+
+const isCompactViewport = useAdminCompactViewport();
 
 const selectedIds = defineModel<string[]>('selectedIds', { default: () => [] });
 
@@ -71,7 +75,20 @@ function displayName(user: AdminUserListItem) {
 </script>
 
 <template>
-  <TableShell class="overflow-visible rounded-xl border border-grey-50 bg-white">
+  <SettingsUsersMobileCards
+    v-if="isCompactViewport"
+    v-model:selected-ids="selectedIds"
+    :users="users"
+    :loading="loading"
+    :current-user-id="currentUserId"
+    :busy-user-id="busyUserId"
+    @edit="emit('edit', $event)"
+    @activate="emit('activate', $event)"
+    @suspend="emit('suspend', $event)"
+    @resend="emit('resend', $event)"
+  />
+
+  <TableShell v-else class="overflow-visible rounded-xl border border-grey-50 bg-white">
     <TableHeader
       class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]"
     >

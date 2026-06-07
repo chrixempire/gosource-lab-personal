@@ -10,8 +10,9 @@ const props = withDefaults(
     label: string;
     title: string;
     cta?: string;
+    ctaHref?: string;
   }>(),
-  { cta: 'Learn more' },
+  { cta: 'Learn more', ctaHref: '#' },
 );
 
 const tagTintClass = computed(() => props.tagTint ?? props.tint);
@@ -43,7 +44,7 @@ const tagTintClass = computed(() => props.tagTint ?? props.tint);
       </div>
 
       <a
-        href="#"
+        :href="ctaHref"
         class="group/link mt-auto inline-flex items-center gap-1 text-base font-semibold text-grey-700 transition-colors hover:text-primary-700"
       >
         <slot name="cta">{{ cta }}</slot>

@@ -11,6 +11,8 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import { Pencil, Trash2, Users } from 'lucide-vue-next';
+import SettingsRolesMobileCards from '~/components/settings/SettingsRolesMobileCards.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import type { AdminRoleListItem } from '~/types/settings';
 
 defineProps<{
@@ -26,10 +28,22 @@ const emit = defineEmits<{
 }>();
 
 const gridTemplate = 'minmax(0,1.2fr) minmax(0,0.5fr) minmax(0,0.7fr) 7rem';
+
+const isCompactViewport = useAdminCompactViewport();
 </script>
 
 <template>
-  <TableShell class="overflow-visible rounded-xl border border-grey-50 bg-white">
+  <SettingsRolesMobileCards
+    v-if="isCompactViewport"
+    :roles="roles"
+    :loading="loading"
+    :busy-role-id="busyRoleId"
+    @view-users="emit('viewUsers', $event)"
+    @edit="emit('edit', $event)"
+    @delete="emit('delete', $event)"
+  />
+
+  <TableShell v-else class="overflow-visible rounded-xl border border-grey-50 bg-white">
     <TableHeader
       class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]"
     >
