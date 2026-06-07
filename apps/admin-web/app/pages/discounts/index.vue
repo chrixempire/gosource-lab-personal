@@ -189,7 +189,6 @@ updateHeader({ title: 'Discounts' });
         />
       </div>
       <ViewToggle
-        v-if="!isCompactViewport"
         :model-value="routeView"
         @update:model-value="setView"
       />

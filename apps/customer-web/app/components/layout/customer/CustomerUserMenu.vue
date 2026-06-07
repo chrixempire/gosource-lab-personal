@@ -2,6 +2,8 @@
 import { useMediaQuery } from '@vueuse/core';
 import { Avatar, cn, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@gosource/ui';
 import { ChevronDown, CircleHelp, Info, LogOut } from 'lucide-vue-next';
+import { CUSTOMER_FLOATING_LAYER_Z } from '~/lib/customer-overlay-z';
+import { MARKETING_WEBSITE_FAQ_URL } from '~/lib/marketing-website';
 
 type SessionShape = {
   user_type?: 'customer' | 'employee';
@@ -69,6 +71,11 @@ function requestLogout() {
   open.value = false;
   emit('logoutRequest');
 }
+
+function openFaq() {
+  open.value = false;
+  window.open(MARKETING_WEBSITE_FAQ_URL, '_blank', 'noopener,noreferrer');
+}
 </script>
 
 <template>
@@ -113,7 +120,7 @@ function requestLogout() {
       :side="props.sidebar ? sidebarPopupSide : 'bottom'"
       :class="
         props.sidebar
-          ? 'z-[80] w-[18rem] rounded-2xl p-0'
+          ? cn('w-[18rem] rounded-2xl p-0', CUSTOMER_FLOATING_LAYER_Z)
           : 'w-56'
       "
     >
@@ -145,6 +152,7 @@ function requestLogout() {
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2.5 rounded-lg px-3 py-3 text-sm font-medium text-grey-900 hover:bg-primary-50/70 data-highlighted:bg-primary-50/70 data-highlighted:text-grey-900 focus:bg-primary-50/70 focus:text-grey-900 dark:hover:bg-white/8 dark:data-highlighted:bg-white/8 dark:focus:bg-white/8"
+          @click="openFaq"
         >
           <CircleHelp class="size-4" />
           FAQ

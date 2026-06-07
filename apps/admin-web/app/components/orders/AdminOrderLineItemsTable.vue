@@ -9,7 +9,9 @@ import {
   TableShell,
   TableSkeleton,
 } from '@gosource/ui';
+import AdminOrderLineItemsMobileList from '~/components/orders/AdminOrderLineItemsMobileList.vue';
 import AdminTableRowIndex from '~/components/shared/AdminTableRowIndex.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import type { AdminOrderLineItem } from '~/lib/order-details';
 
 defineProps<{
@@ -18,10 +20,18 @@ defineProps<{
 }>();
 
 const gridTemplate = '3.5rem minmax(0,1.5fr) minmax(0,0.5fr) minmax(0,0.65fr) minmax(0,0.75fr)';
+
+const isCompactViewport = useAdminCompactViewport();
 </script>
 
 <template>
-  <TableShell class="overflow-visible rounded-[20px] border border-grey-50 bg-white">
+  <AdminOrderLineItemsMobileList
+    v-if="isCompactViewport"
+    :items="items"
+    :loading="loading"
+  />
+
+  <TableShell v-else class="overflow-visible rounded-[20px] border border-grey-50 bg-white">
     <TableHeader class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-[20px] border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]">
       <TableHeadRow :style="{ gridTemplateColumns: gridTemplate }">
         <TableCell>S/N</TableCell>

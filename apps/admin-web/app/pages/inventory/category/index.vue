@@ -6,6 +6,7 @@ import CategoryCardsGrid from '~/components/inventory/CategoryCardsGrid.vue';
 import CategoryDeleteDialog from '~/components/inventory/CategoryDeleteDialog.vue';
 import CategoryFormDialog from '~/components/inventory/CategoryFormDialog.vue';
 import CategoryRearrangeConfirmDialog from '~/components/inventory/CategoryRearrangeConfirmDialog.vue';
+import CategoryRearrangeCards from '~/components/inventory/CategoryRearrangeCards.vue';
 import CategoryTable from '~/components/inventory/CategoryTable.vue';
 import CategoryViewDialog from '~/components/inventory/CategoryViewDialog.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
@@ -289,7 +290,6 @@ updateHeader({
         :class="pending && categories.length === 0 ? 'pointer-events-none opacity-50' : undefined"
       >
         <ViewToggle
-          v-if="!isCompactViewport"
           :model-value="routeView"
           @update:model-value="setView"
         />
@@ -297,7 +297,12 @@ updateHeader({
     </div>
 
     <p v-else class="text-sm text-grey-600">
-      Drag categories to change their order, then save your arrangement.
+      <template v-if="isCompactViewport">
+        Drag categories or use move up/down, then save your arrangement.
+      </template>
+      <template v-else>
+        Drag categories to change their order, then save your arrangement.
+      </template>
     </p>
 
     <LoadErrorState
@@ -315,8 +320,14 @@ updateHeader({
     />
 
     <template v-else>
+      <CategoryRearrangeCards
+        v-if="isRearrange && isCompactViewport"
+        v-model:categories="rearrangeList"
+        :loading="rearrangeLoading"
+      />
+
       <CategoryTable
-        v-if="isRearrange || effectiveView === 'table'"
+        v-else-if="isRearrange || effectiveView === 'table'"
         v-model:selected-ids="selectedCategoryIds"
         :categories="displayCategories"
         :meta="meta"

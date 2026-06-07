@@ -49,15 +49,16 @@ const orderCardClass =
         </div>
         <OrderActionsMenu
           :order="order"
+          :loading="updatingOrderId === order.id"
           @view="emit('rowClick', order)"
           @download="emit('download', order)"
           @cancel="emit('cancel', order)"
         />
       </div>
 
-      <p class="mt-3 truncate text-left text-sm text-grey-700">{{ order.customerName }}</p>
+      <p class="mt-3 shrink-0 truncate text-left text-sm text-grey-700">{{ order.customerName }}</p>
 
-      <div class="mt-4 grid grid-cols-2 gap-3 text-left auto-rows-fr">
+      <div class="mt-4 grid shrink-0 grid-cols-2 gap-3 text-left">
         <AdminMobileCardStat label="Total">{{ order.totalLabel }}</AdminMobileCardStat>
         <AdminMobileCardStat label="Items">{{ order.itemCountLabel }}</AdminMobileCardStat>
         <AdminMobileCardStat label="Payment">{{ order.paymentMethodLabel }}</AdminMobileCardStat>

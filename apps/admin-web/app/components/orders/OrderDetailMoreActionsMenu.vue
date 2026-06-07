@@ -40,7 +40,8 @@ const emit = defineEmits<{
         size="small"
         class="!w-fit shrink-0"
         :right-icon="ChevronDown"
-        :disabled="disabled"
+        :loading="invoiceLoading"
+        :disabled="disabled || invoiceLoading"
       >
         More actions
       </Button>

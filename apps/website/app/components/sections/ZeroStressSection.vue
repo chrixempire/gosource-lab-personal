@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CUSTOMER_MARKET_URL } from '~/lib/customer-app';
 // Dark-green focus band with the large market lifestyle photo.
 </script>
 
@@ -12,7 +13,7 @@
           <span class="text-serif-accent text-primary-300"> let's go to the market for you</span>
         </h2>
         <div class="mt-8 flex justify-center">
-          <AppButton variant="primary" size="lg" href="#market">
+          <AppButton variant="primary" size="lg" :href="CUSTOMER_MARKET_URL">
             Explore market
             <Icon name="lucide:chevron-right" class="size-5 transition-transform group-hover:translate-x-0.5" />
           </AppButton>

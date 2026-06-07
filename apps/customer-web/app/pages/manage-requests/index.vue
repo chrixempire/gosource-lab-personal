@@ -24,16 +24,16 @@ import {
   ViewToggle,
   toast,
 } from '@gosource/ui';
-import { useDebounceFn, useMediaQuery } from '@vueuse/core';
+import { useDebounceFn } from '@vueuse/core';
 import BranchPickerDropdown from '~/components/branches/BranchPickerDropdown.vue';
 import MemberConfirmOverlay from '~/components/members/MemberConfirmOverlay.vue';
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import RequestCards, { type RequestListItem } from '~/components/requests/RequestCards.vue';
+import RequestCardsSkeleton from '~/components/requests/RequestCardsSkeleton.vue';
 import RequestDetailsPanel from '~/components/requests/RequestDetailsPanel.vue';
 import RequestRejectForm from '~/components/requests/RequestRejectForm.vue';
 import RequestBranchSetupBanner from '~/components/requests/RequestBranchSetupBanner.vue';
 import RequestFilterBar from '~/components/requests/RequestFilterBar.vue';
-import RequestRoleGuide from '~/components/requests/RequestRoleGuide.vue';
 import RequestTable from '~/components/requests/RequestTable.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
@@ -66,9 +66,6 @@ import {
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
-const requestRoleGuideVariant = computed(() =>
-  isSuperAdmin.value ? ('super_admin' as const) : ('member' as const),
-);
 const currentActorId = computed(() => {
   const data = session.value?.data;
   return data && typeof data === 'object' && 'id' in data ? String(data.id) : '';
@@ -301,11 +298,20 @@ const showNoBranchSetup = computed(
   () => isSuperAdmin.value && hasFinishedInitialFetch.value && branches.value.length === 0,
 );
 
-const showRequestTable = computed(
-  () =>
-    showNoBranchSetup.value ||
-    requestsLoading.value ||
-    effectiveView.value === 'table',
+const showDesktopTable = computed(
+  () => showNoBranchSetup.value || effectiveView.value === 'table',
+);
+
+const cardSectionClass = computed(() => {
+  if (showNoBranchSetup.value) {
+    return 'block min-[1000px]:hidden';
+  }
+
+  return effectiveView.value === 'table' ? 'block min-[1000px]:hidden' : 'block';
+});
+
+const showCardSkeleton = computed(
+  () => requestsLoading.value || branchesLoading.value || showNoBranchSetup.value,
 );
 
 const tableRequests = computed(() => (showNoBranchSetup.value ? [] : requestItems.value));
@@ -680,8 +686,6 @@ async function handleRequestCancel(request: RequestListItem) {
 
 <template>
   <div class="flex flex-col gap-2">
-    <RequestRoleGuide :variant="requestRoleGuideVariant" />
-
     <div class="flex w-full flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
         <div
           v-if="!isEmployeeSession"
@@ -711,7 +715,6 @@ async function handleRequestCancel(request: RequestListItem) {
         </div>
 
         <ViewToggle
-          v-if="!isCompactViewport"
           class="shrink-0 self-end min-[1000px]:self-auto"
           :model-value="routeView"
           @update:model-value="setView"
@@ -731,47 +734,26 @@ async function handleRequestCancel(request: RequestListItem) {
         :branches-ready="hasFinishedInitialFetch"
       />
 
-      <RequestTable
-        v-if="showRequestTable"
-        :requests="tableRequests"
-        :page="meta.page"
-        :total-pages="meta.totalPages"
-        :total-items="meta.total"
-        :page-size="meta.limit"
-        :has-next-page="meta.hasNextPage"
-        :has-prev-page="meta.hasPrevPage"
-        :loading="tableLoading"
-        :empty-message="tableEmptyMessage"
-        :can-approve-reject="rowCanApproveReject"
-        :can-cancel="rowCanCancel"
-        :can-edit="rowCanEdit"
-        :can-add-more="rowCanAddMore"
-        :can-reopen="rowCanReopen"
-        :can-checkout="rowCanCheckout"
-        @page="setPage"
-        @page-size="setLimit"
-        @row-click="handleRequestClick"
-        @view-details="handleRequestViewDetails"
-        @edit="handleRequestEdit"
-        @add-more="handleRequestAddMore"
-        @reopen="handleRequestReopen"
-        @checkout="handleRequestCheckout"
-        @approve="handleRequestApprove"
-        @reject="handleRequestReject"
-        @cancel="handleRequestCancel"
-      />
-
-      <div v-else-if="!showNoBranchSetup && !requestsLoading" class="space-y-2">
-        <RequestCards
-          v-if="requestItems.length"
-          :requests="requestItems"
+      <div v-if="showDesktopTable" class="hidden min-[1000px]:block">
+        <RequestTable
+          :requests="tableRequests"
+          :page="meta.page"
+          :total-pages="meta.totalPages"
+          :total-items="meta.total"
+          :page-size="meta.limit"
+          :has-next-page="meta.hasNextPage"
+          :has-prev-page="meta.hasPrevPage"
+          :loading="tableLoading"
+          :empty-message="tableEmptyMessage"
           :can-approve-reject="rowCanApproveReject"
           :can-cancel="rowCanCancel"
           :can-edit="rowCanEdit"
           :can-add-more="rowCanAddMore"
           :can-reopen="rowCanReopen"
           :can-checkout="rowCanCheckout"
-          @click="handleRequestClick"
+          @page="setPage"
+          @page-size="setLimit"
+          @row-click="handleRequestClick"
           @view-details="handleRequestViewDetails"
           @edit="handleRequestEdit"
           @add-more="handleRequestAddMore"
@@ -781,60 +763,50 @@ async function handleRequestCancel(request: RequestListItem) {
           @reject="handleRequestReject"
           @cancel="handleRequestCancel"
         />
-
-        <div
-          v-else
-          class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center text-sm text-grey-300"
-        >
-          No requests found for the current filters.
-        </div>
-
-        <PaginationBar
-          plain
-          :page="meta.page"
-          :total-pages="meta.totalPages"
-          :total-items="meta.total"
-          :page-size="meta.limit"
-          :has-next-page="meta.hasNextPage"
-          :has-prev-page="meta.hasPrevPage"
-          @change="setPage"
-          @page-size-change="setLimit"
-        />
       </div>
 
-      <div v-else-if="!showNoBranchSetup" class="flex flex-wrap gap-4">
-        <div
-          v-for="index in 4"
-          :key="index"
-          class="max-w-[500px] w-full min-w-0 flex-[1_1_320px] rounded-[24px] border border-grey-50 bg-background-on-canvas p-3 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] sm:p-5"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex min-w-0 flex-1 items-start gap-3">
-              <div class="size-10 shrink-0 animate-pulse rounded-full bg-grey-55" />
-              <div class="min-w-0 flex-1 space-y-2 pt-0.5">
-                <div class="flex flex-wrap items-center gap-2">
-                  <div class="h-5 max-w-[12rem] animate-pulse rounded-md bg-grey-55" />
-                  <div class="h-6 w-24 shrink-0 animate-pulse rounded-full bg-grey-55" />
-                </div>
-                <div class="h-3.5 w-full max-w-[18rem] animate-pulse rounded-md bg-grey-55" />
-              </div>
-            </div>
-            <div class="flex shrink-0 items-center gap-2">
-              <div class="h-7 w-[4.5rem] animate-pulse rounded-full bg-grey-55" />
-              <div class="size-9 animate-pulse rounded-full bg-grey-55" />
-            </div>
+      <div :class="cardSectionClass">
+        <RequestCardsSkeleton v-if="showCardSkeleton" />
+
+        <div v-else class="space-y-2">
+          <RequestCards
+            v-if="requestItems.length"
+            :requests="requestItems"
+            :can-approve-reject="rowCanApproveReject"
+            :can-cancel="rowCanCancel"
+            :can-edit="rowCanEdit"
+            :can-add-more="rowCanAddMore"
+            :can-reopen="rowCanReopen"
+            :can-checkout="rowCanCheckout"
+            @click="handleRequestClick"
+            @view-details="handleRequestViewDetails"
+            @edit="handleRequestEdit"
+            @add-more="handleRequestAddMore"
+            @reopen="handleRequestReopen"
+            @checkout="handleRequestCheckout"
+            @approve="handleRequestApprove"
+            @reject="handleRequestReject"
+            @cancel="handleRequestCancel"
+          />
+
+          <div
+            v-else
+            class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center text-sm text-grey-300"
+          >
+            No requests found for the current filters.
           </div>
 
-          <div class="mt-5 grid grid-cols-2 gap-3">
-            <div
-              v-for="cardIndex in 4"
-              :key="cardIndex"
-              class="rounded-[18px] bg-grey-55 px-4 py-3"
-            >
-              <div class="h-3 w-20 animate-pulse rounded-full bg-grey-100" />
-              <div class="mt-2 h-4 w-16 animate-pulse rounded-full bg-grey-100" />
-            </div>
-          </div>
+          <PaginationBar
+            plain
+            :page="meta.page"
+            :total-pages="meta.totalPages"
+            :total-items="meta.total"
+            :page-size="meta.limit"
+            :has-next-page="meta.hasNextPage"
+            :has-prev-page="meta.hasPrevPage"
+            @change="setPage"
+            @page-size-change="setLimit"
+          />
         </div>
       </div>
 

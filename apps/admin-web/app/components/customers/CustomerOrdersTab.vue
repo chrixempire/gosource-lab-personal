@@ -16,6 +16,9 @@ import { useDebounce } from '@vueuse/core';
 import CustomerOrderHistoryFilterBar, {
   type CustomerOrderHistoryFilters,
 } from '~/components/customers/CustomerOrderHistoryFilterBar.vue';
+import CustomerOrdersMobileList from '~/components/customers/CustomerOrdersMobileList.vue';
+import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
@@ -83,6 +86,8 @@ function onPageSizeChange(next: number) {
   limit.value = next;
   page.value = 1;
 }
+
+const isCompactViewport = useAdminCompactViewport();
 </script>
 
 <template>
@@ -110,7 +115,9 @@ function onPageSizeChange(next: number) {
         </div>
       </div>
 
-      <TableShell class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white">
+      <AdminMobileCardsSkeleton v-if="isCompactViewport" :count="8" />
+
+      <TableShell v-else class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white">
         <TableHeader class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]">
           <TableHeadRow :style="{ gridTemplateColumns: gridTemplate }">
             <TableCell>Reference</TableCell>
@@ -160,7 +167,18 @@ function onPageSizeChange(next: number) {
       />
     </div>
 
-    <TableShell class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white">
+    <CustomerOrdersMobileList
+      v-if="isCompactViewport"
+      :rows="parsed.rows"
+      :meta="parsed.meta"
+      :pending="pending"
+      :error="error"
+      @retry="refresh()"
+      @page="page = $event"
+      @page-size="onPageSizeChange"
+    />
+
+    <TableShell v-else class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white">
       <TableHeader class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]">
         <TableHeadRow :style="{ gridTemplateColumns: gridTemplate }">
           <TableCell>Reference</TableCell>

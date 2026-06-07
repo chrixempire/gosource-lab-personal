@@ -4,8 +4,10 @@ import { useScroll } from '@vueuse/core';
 
 const { y } = useScroll(import.meta.client ? window : null);
 
-const customerSignInUrl = 'https://gosource-lab-personal-customer-web.vercel.app/auth/sign-in';
-const customerMarketUrl = 'https://gosource-lab-personal-customer-web.vercel.app/market';
+import { CUSTOMER_MARKET_URL, CUSTOMER_SIGN_IN_URL } from '~/lib/customer-app';
+
+const customerSignInUrl = CUSTOMER_SIGN_IN_URL;
+const customerMarketUrl = CUSTOMER_MARKET_URL;
 
 const headerEl = ref<HTMLElement | null>(null);
 const mobileOpen = ref(false);

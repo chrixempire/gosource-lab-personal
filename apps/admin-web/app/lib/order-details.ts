@@ -1,5 +1,10 @@
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import {
+  applySubtotalFallbackToOrderLines,
+  resolveOrderLinePricing,
+  resolveOrderSubtotal,
+} from '~/lib/order-line-pricing';
+import {
   displayOrDash,
   formatOrderActorName,
   mapLegacyOrderActor,
@@ -192,40 +197,48 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function getLineItemName(line: Record<string, unknown>) {
   const product = asRecord(line.product);
+  const cartProduct = asRecord(line.cartProduct);
   return (
     (typeof line.productName === 'string' && line.productName) ||
     (typeof product?.name === 'string' && product.name) ||
+    (typeof cartProduct?.name === 'string' && cartProduct.name) ||
     'Product'
   );
 }
 
-function getLineItemTotal(line: Record<string, unknown>) {
-  const explicit = Number(line.totalPrice ?? line.lineTotal);
-  if (Number.isFinite(explicit) && explicit > 0) {
-    return explicit;
-  }
+function resolveOrderBusinessId(order: Record<string, unknown>) {
+  const business = resolveOrderBusiness(order);
+  return toStringValue(business?._id ?? order.business ?? order.businessId ?? order.customerId);
+}
 
-  const quantity = Number(line.quantity ?? 1);
-  const unitPrice = Number(line.unitPrice ?? line.price ?? 0);
-  return quantity * unitPrice;
+function toStringValue(value: unknown) {
+  return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
 }
 
 export function mapLegacyOrderLineItems(order: Record<string, unknown>): AdminOrderLineItem[] {
   const products = Array.isArray(order.products) ? order.products : [];
+  const businessId = resolveOrderBusinessId(order);
 
-  return products.map((entry, index) => {
+  const rawLines = products.map((entry, index) => {
     const line = asRecord(entry) ?? {};
-    const lineTotal = getLineItemTotal(line);
+    const { lineTotal, unit } = resolveOrderLinePricing(line, businessId);
 
     return {
       id: String(line._id ?? `line-${index}`),
       name: getLineItemName(line),
       quantity: Number(line.quantity ?? 0),
-      unit: String(line.unit ?? 'unit'),
+      unit,
       lineTotal,
-      lineTotalLabel: formatDashboardCurrency(lineTotal),
     };
   });
+
+  const fallbackSubtotal = resolveOrderSubtotal(order, rawLines);
+  const pricedLines = applySubtotalFallbackToOrderLines(rawLines, fallbackSubtotal);
+
+  return pricedLines.map((line) => ({
+    ...line,
+    lineTotalLabel: formatDashboardCurrency(line.lineTotal),
+  }));
 }
 
 export function mapLegacyOrderTimeline(order: Record<string, unknown>): AdminOrderTimelineEvent[] {
@@ -273,6 +286,8 @@ export function mapLegacyOrderToDetailsView(order: Record<string, unknown>): Adm
 
   const approvedByName = formatOrderActorName(approver) ?? customerFullName;
 
+  const lineItems = mapLegacyOrderLineItems(order);
+
   return {
     id: listItem.id,
     reference: listItem.reference,
@@ -298,8 +313,8 @@ export function mapLegacyOrderToDetailsView(order: Record<string, unknown>): Adm
       typeof address?.directions === 'string' && address.directions
         ? address.directions
         : null,
-    lineItems: mapLegacyOrderLineItems(order),
-    subtotal: Number(order.subtotal ?? order.totalPrice ?? 0),
+    lineItems,
+    subtotal: resolveOrderSubtotal(order, lineItems),
     deliveryFee: Number(order.deliveryFee ?? 0),
     serviceCharge: Number(order.serviceCharge ?? 0),
     discount: Number(order.discount ?? 0),

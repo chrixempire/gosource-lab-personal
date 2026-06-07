@@ -159,7 +159,6 @@ useHead({ title: 'Credit repayments' });
           :disabled="pending && rows.length === 0"
         />
         <ViewToggle
-          v-if="!isCompactViewport"
           :model-value="routeView"
           @update:model-value="setView"
         />

@@ -11,6 +11,7 @@ import {
 } from '@gosource/ui';
 import { Check, ChevronDown, Store } from 'lucide-vue-next';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
+import { CUSTOMER_FLOATING_LAYER_Z } from '~/lib/customer-overlay-z';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 
 const props = defineProps<{
@@ -101,7 +102,10 @@ onMounted(() => {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        class="flex max-h-[min(18rem,70vh)] w-[var(--reka-dropdown-menu-trigger-width)] flex-col overflow-hidden p-0"
+        :class="[
+          CUSTOMER_FLOATING_LAYER_Z,
+          'flex max-h-[min(18rem,70vh)] w-[var(--reka-dropdown-menu-trigger-width)] flex-col overflow-hidden p-0',
+        ]"
       >
         <div class="shrink-0 border-b border-grey-50 px-2 pb-2 pt-1">
           <Input

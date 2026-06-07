@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
 // Floating produce. Positions are expressed against the dark hero card.
 const produce = [
   { src: '/images/hero-food-04.png', cls: 'right-[31%] top-[10%] w-16 sm:w-20 lg:w-24', rot: '-18deg', dur: '7s', delay: '0s', hideSm: false },
@@ -62,7 +63,7 @@ const produce = [
           </p>
 
           <div v-reveal="220" class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <AppButton variant="primary" size="lg" href="#" class="sm:w-auto">
+            <AppButton variant="primary" size="lg" :href="CUSTOMER_REGISTER_URL" class="sm:w-auto">
               Get started for free
               <Icon
                 name="lucide:chevron-right"

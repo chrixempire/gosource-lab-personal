@@ -131,7 +131,6 @@ defineExpose({
     ) {
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    touch-action: pan-x;
   }
 
   .explore-mobile-triple-grid:not(.explore-mobile-triple-grid--compact) {

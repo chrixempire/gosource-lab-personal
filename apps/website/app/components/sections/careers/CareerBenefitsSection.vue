@@ -11,7 +11,7 @@ const benefits = [
     desc: 'We value results, not rigid hours. Own your time, meet your goals.',
   },
   {
-    icon: 'lucide:palm-tree',
+    icon: 'lucide:tree-palm',
     title: 'Paid holidays',
     desc: 'Enjoy well-deserved rest with fully paid time off.',
   },

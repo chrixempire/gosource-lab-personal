@@ -18,7 +18,9 @@ import {
 import { useDebounce } from '@vueuse/core';
 import { LoaderCircle, Search, Trash2, X } from 'lucide-vue-next';
 import PurchaseOrderInvoiceDrawer from '~/components/purchase-orders/PurchaseOrderInvoiceDrawer.vue';
+import PurchaseOrderLineItemsMobileEditor from '~/components/purchase-orders/PurchaseOrderLineItemsMobileEditor.vue';
 import PurchaseOrderSupplierSelect from '~/components/purchase-orders/PurchaseOrderSupplierSelect.vue';
+import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import {
   PRODUCT_ITEM_INPUT_CLASS,
   PRODUCT_ITEM_TEXTAREA_CLASS,
@@ -46,6 +48,7 @@ const props = defineProps<{
 }>();
 
 const { session } = useAdminSession();
+const isCompactViewport = useAdminCompactViewport();
 const supplierContactCache = ref<Record<string, { name: string; email: string }>>({});
 
 function registerSupplierContact(option: { id: string; label: string; email: string }) {
@@ -395,7 +398,13 @@ function clearProductSearch() {
         </div>
 
         <div class="mt-4">
-          <TableShell class="overflow-hidden">
+          <PurchaseOrderLineItemsMobileEditor
+            v-if="isCompactViewport"
+            v-model:line-items="form.lineItems"
+            :format-editable-number="formatEditableNumber"
+          />
+
+          <TableShell v-else class="overflow-hidden">
             <TableHeader>
               <TableHeadRow class="grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_80px]">
                 <TableCell>Item</TableCell>
