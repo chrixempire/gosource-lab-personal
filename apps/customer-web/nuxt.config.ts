@@ -10,6 +10,12 @@ import { CUSTOMER_THEME_BOOTSTRAP_SCRIPT } from './app/lib/customer-theme';
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
 
+  // Don't ship source maps in the production build (.output/**/*.map).
+  sourcemap: {
+    server: false,
+    client: false,
+  },
+
   devtools: {
     enabled: process.env.NODE_ENV === 'development',
   },

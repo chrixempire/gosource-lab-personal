@@ -1,0 +1,45 @@
+# DigitalOcean App Platform spec — GoSource admin web (Nuxt SSR).
+#
+# Create:  doctl apps create --spec .do/admin-web.app.yaml
+# Update:  doctl apps update <APP_ID> --spec .do/admin-web.app.yaml
+#
+# Region slugs: nyc ams fra lon sfo sgp blr tor syd
+name: gosource-admin-web
+region: sfo
+services:
+  - name: admin-web
+    # Built from the repo root (pnpm workspace) using the app's Dockerfile.
+    dockerfile_path: apps/admin-web/Dockerfile
+    source_dir: /
+    github:
+      repo: ipcafrica/gosource-lab-v2
+      branch: dev
+      deploy_on_push: true
+    http_port: 8080
+    instance_size_slug: apps-s-1vcpu-1gb
+    instance_count: 1
+    routes:
+      - path: /
+    envs:
+      # ── REQUIRED: where the deployed legacy-api lives (admin BFF adds /v2) ──
+      - key: NUXT_PUBLIC_LEGACY_API_BASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: https://REPLACE-with-your-api-host
+
+      # ── Optional ──
+      # Public host used in supplier purchase-order receipt emails.
+      # - key: NUXT_PURCHASE_ORDER_RECEIPT_HOST
+      #   scope: RUN_TIME
+      #   value: api.gosource.example
+      # CDN root for credit-document uploads stored as bare object keys.
+      # - key: NUXT_PUBLIC_CREDIT_DOCUMENT_CDN_BASE_URL
+      #   scope: RUN_AND_BUILD_TIME
+      #   value: https://gosource.sfo3.cdn.digitaloceanspaces.com
+
+      # ⚠️  Do NOT enable the dev admin-bootstrap vars in production
+      #     (NUXT_DEV_ADMIN_BOOTSTRAP_ENABLED / _SECRET / NUXT_DEV_MONGODB_URI).
+
+# Add your domain once DNS is pointed at the app:
+# domains:
+#   - domain: admin.gosource.example
+#     type: PRIMARY

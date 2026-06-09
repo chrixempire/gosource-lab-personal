@@ -1,0 +1,34 @@
+# DigitalOcean App Platform spec — GoSource marketing website (static site).
+#
+# Built with the Node buildpack (no Dockerfile — App Platform static sites are
+# buildpack-only) and served from DO's CDN. `nuxt generate` prerenders the site
+# to apps/website/.output/public.
+#
+# Create:  doctl apps create --spec .do/website.app.yaml
+# Update:  doctl apps update <APP_ID> --spec .do/website.app.yaml
+#
+# Region slugs: nyc ams fra lon sfo sgp blr tor syd
+name: gosource-website
+region: sfo
+static_sites:
+  - name: website
+    # Run from the repo root so pnpm sees the workspace; filter to just this app.
+    source_dir: /
+    github:
+      repo: ipcafrica/gosource-lab-v2
+      branch: dev
+      deploy_on_push: true
+    build_command: corepack enable && pnpm install --frozen-lockfile --filter "@gosource/website..." && pnpm --filter "@gosource/website" generate
+    output_dir: apps/website/.output/public
+    routes:
+      - path: /
+    # Nuxt emits 404.html for unmatched routes after prerender. If you later add
+    # client-side-only routes, point catchall at the SPA fallback instead.
+    error_document: 404.html
+
+# Add your domain once DNS is pointed at the app:
+# domains:
+#   - domain: gosource.example
+#     type: PRIMARY
+#   - domain: www.gosource.example
+#     type: ALIAS
