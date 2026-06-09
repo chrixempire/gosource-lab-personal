@@ -11,7 +11,9 @@ COPY . .
 
 RUN npm run build
 
-RUN npm prune --production
+# --legacy-peer-deps must match the install step above; without it, prune
+# re-resolves dependencies and fails on the @nestjs/bullmq peer conflict.
+RUN npm prune --omit=dev --legacy-peer-deps
 
 # Production stage
 FROM node:24-alpine AS production

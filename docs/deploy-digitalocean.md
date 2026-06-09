@@ -1,15 +1,43 @@
 # Deploying to DigitalOcean App Platform
 
-The three frontends each deploy as **their own App Platform app**, so each gets
-its own domain and scales independently. The backend (`apps/legacy-api`) and the
-paused `apps/api` are **not** deployed here — the frontends must point at a
-legacy-api hosted elsewhere.
+Each app deploys as **its own App Platform app**, so each gets its own domain and
+scales independently. The paused `apps/api` is not deployed.
 
 | App            | Type         | How it's built                          | Spec |
 |----------------|--------------|-----------------------------------------|------|
 | `customer-web` | Nuxt SSR     | Dockerfile (repo-root context)          | [.do/customer-web.app.yaml](../.do/customer-web.app.yaml) |
 | `admin-web`    | Nuxt SSR     | Dockerfile (repo-root context)          | [.do/admin-web.app.yaml](../.do/admin-web.app.yaml) |
 | `website`      | Static site  | Node buildpack → `nuxt generate` → CDN  | [.do/website.app.yaml](../.do/website.app.yaml) |
+| `legacy-api`   | NestJS       | `Dockerfile.dev` (context `apps/legacy-api`) | `.do/legacy-api.app.yaml` (gitignored — contains secrets) |
+
+## legacy-api (NestJS backend)
+
+Deployed from [apps/legacy-api/Dockerfile.dev](../apps/legacy-api/Dockerfile.dev),
+which already runs as a non-root user, uses `dumb-init`, and bundles Chromium for
+Puppeteer PDF generation. It builds standalone with `npm` from its own directory,
+so the spec sets `source_dir: apps/legacy-api`.
+
+```bash
+doctl apps create --spec .do/legacy-api.app.yaml
+# or, if the app already exists:
+doctl apps update <APP_ID> --spec .do/legacy-api.app.yaml
+```
+
+Key points for this service:
+
+- **The spec is gitignored** because it holds real secrets (DB, JWT, CDN, Spaces,
+  encryption keys). `SECRET`-scoped env vars are encrypted by App Platform on
+  create/update. Never commit this file; rotate any secret that leaks.
+- **Listens on `PORT` (8000)** → `http_port: 8000`.
+- **Memory:** runs at `apps-s-1vcpu-2gb` — Chromium PDF rendering tends to OOM on
+  1 GB.
+- **Redis:** the app reads `REDIS_URL` for both the cache store and Bull queues
+  (`REDIS_HOST`/`REDIS_PORT` are unused). It must point at a reachable managed
+  Redis/Valkey (`rediss://…`), not `localhost`.
+- **MongoDB:** `DB_URL` is an external Atlas cluster — reachable from App Platform
+  as-is.
+- **CORS:** add the deployed frontend origins to `FRONTEND_APP_ORIGINS`
+  (comma-separated) or browsers calling the API directly will be blocked.
 
 ## Why Dockerfiles for the SSR apps
 
