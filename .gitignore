@@ -20,3 +20,6 @@ reference/gosource-admin-v2
 reference/gosource-api
 reference/gosource-web-app
 apps/legacy-api/src/notification/firebase/gosource-fcm.json
+
+# Contains real secrets (DB/JWT/CDN/encryption keys) — never commit.
+.do/legacy-api.app.yaml
