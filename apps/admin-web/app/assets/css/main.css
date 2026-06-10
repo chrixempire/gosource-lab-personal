@@ -1,3 +1,4 @@
 @import 'tailwindcss';
+@import '@gosource/shared/styles/typography.css';
 @import 'tw-animate-css';
 @import '@gosource/shared/styles/main.css';

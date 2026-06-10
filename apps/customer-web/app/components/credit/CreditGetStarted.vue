@@ -20,10 +20,10 @@ import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
           </div>
         </div>
 
-        <h2 class="mt-8 text-2xl font-semibold leading-tight text-grey-900">
+        <h3 class="mt-8">
           Access the credit you need, when you need it
-        </h2>
-        <p class="mt-3 max-w-md text-base leading-6 text-grey-text">
+        </h3>
+        <p class="mt-3 max-w-md text-body-lg text-grey-text">
           Apply in minutes, share your business details, and start shopping with GoSource credit—no
           long queues, no delays.
         </p>

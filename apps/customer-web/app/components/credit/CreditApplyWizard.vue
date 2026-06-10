@@ -128,7 +128,7 @@ async function handleContinue() {
         <CheckCircle2 class="size-10 text-primary-600" aria-hidden="true" />
       </div>
       <div class="space-y-2">
-        <h2 class="text-2xl font-semibold text-grey-900">Application submitted</h2>
+        <h3>Application submitted</h3>
         <p class="max-w-sm text-sm text-grey-400">
           Your credit application has been submitted successfully. We'll review it and notify you
           once a decision has been made.

@@ -219,13 +219,7 @@ updateHeader({
 
 <template>
   <div class="flex min-w-0 flex-col gap-4">
-    <div
-      class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between"
-    >
-      <p class="max-w-xl text-sm text-grey-600">
-        Product categories used to organise your catalogue.
-      </p>
-
+    <div class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-end">
       <div class="flex flex-wrap items-center gap-2 self-start min-[900px]:self-auto">
         <template v-if="isRearrange">
           <Button

@@ -70,7 +70,7 @@ const emit = defineEmits<{
             {{ view.statusLabel }}
           </StatusTag>
         </div>
-        <h1 class="mt-1 text-lg font-semibold text-grey-900 sm:text-2xl">
+        <h1 class="mt-1 text-h5 lg:text-h3">
           {{ view.reference }}
         </h1>
       </div>

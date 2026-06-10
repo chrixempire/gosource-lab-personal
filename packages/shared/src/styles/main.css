@@ -356,6 +356,9 @@
   body {
     margin: 0;
     font-family: var(--font-inter);
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.5rem;
     @apply bg-background text-foreground antialiased;
     color: var(--color-grey-text);
   }
@@ -365,16 +368,6 @@
   textarea,
   select {
     font: inherit;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-graphik);
-    color: var(--grey-900);
   }
 }
 

@@ -231,7 +231,7 @@ async function onAddToList() {
 
         <div class="flex min-w-0 flex-1 flex-col gap-2">
           <header class="space-y-1">
-            <h1 class="text-2xl font-semibold text-grey-900 sm:text-3xl">
+            <h1 class="text-h3 lg:text-h2">
               {{ product.name }}
             </h1>
             <div class="flex w-full items-center justify-between gap-3">

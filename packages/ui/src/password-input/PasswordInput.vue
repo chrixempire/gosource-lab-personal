@@ -36,7 +36,7 @@ const hasFieldChrome = computed(() => Boolean(props.label || props.hint));
 
 <template>
   <div v-if="hasFieldChrome" class="flex w-full flex-col gap-2">
-    <label v-if="label" :for="inputId" class="text-sm font-medium text-grey-900">
+    <label v-if="label" :for="inputId" class="text-body-sm font-medium text-grey-900">
       {{ label }}
     </label>
     <p v-if="hint" class="text-xs text-grey-500">

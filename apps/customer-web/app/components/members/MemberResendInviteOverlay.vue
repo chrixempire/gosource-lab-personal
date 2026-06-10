@@ -167,7 +167,7 @@ async function submit() {
     <DrawerContent class="max-h-[92vh]">
       <DrawerHeader>
         <div class="flex flex-col gap-1">
-          <DrawerTitle class="text-[24px] font-semibold text-grey-900">
+          <DrawerTitle>
             {{ title }}
           </DrawerTitle>
           <DrawerDescription class="text-[12px] leading-5 text-grey-text">
@@ -293,7 +293,7 @@ async function submit() {
     <DialogContent>
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             {{ title }}
           </DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">

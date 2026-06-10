@@ -225,10 +225,7 @@ updateHeader({
 <template>
   <div class="flex min-w-0 flex-col gap-4">
     <div class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-start min-[900px]:justify-between">
-      <PageHeader
-        title="Items"
-        description="Browse, filter, and manage catalogue products."
-      />
+      <PageHeader title="Items" />
       <Button
         type="button"
         size="small"

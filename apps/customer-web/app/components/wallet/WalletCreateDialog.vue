@@ -174,7 +174,7 @@ watch(
     <DialogContent class="max-w-lg">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             Wallets
           </DialogTitle>
           <DialogDescription class="text-sm leading-6 text-grey-text">

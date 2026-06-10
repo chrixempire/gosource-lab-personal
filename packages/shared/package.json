@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./styles/main.css": "./src/styles/main.css",
-    "./styles/fonts.css": "./src/styles/fonts.css"
+    "./styles/fonts.css": "./src/styles/fonts.css",
+    "./styles/typography.css": "./src/styles/typography.css"
   }
 }

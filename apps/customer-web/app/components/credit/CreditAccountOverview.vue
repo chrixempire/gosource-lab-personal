@@ -26,7 +26,7 @@ const stats = computed(
   <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
     <div class="customer-surface-card rounded-lg p-5">
       <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-grey-400">Available credit</p>
-      <h3 class="text-2xl font-semibold text-grey-900">{{ formatCreditFromKobo(stats.availableKobo) }}</h3>
+      <h3>{{ formatCreditFromKobo(stats.availableKobo) }}</h3>
       <p class="mt-1 text-xs text-grey-300">
         Outstanding {{ formatCreditFromKobo(stats.outstandingKobo) }} / Limit
         {{ formatCreditFromKobo(stats.limitKobo) }}
@@ -35,14 +35,14 @@ const stats = computed(
 
     <div class="customer-surface-card rounded-lg p-5">
       <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-grey-400">Spendable amount</p>
-      <h3 class="text-2xl font-semibold text-grey-900">
+      <h3>
         {{ formatCreditFromKobo(stats.spendableAmountKobo) }}
       </h3>
     </div>
 
     <div class="customer-surface-card rounded-lg p-5">
       <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-grey-400">Amount due</p>
-      <h3 class="text-2xl font-semibold text-grey-900">
+      <h3>
         {{ formatCreditFromKobo(stats.outstandingKobo) }}
       </h3>
     </div>

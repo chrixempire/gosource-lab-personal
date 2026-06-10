@@ -91,7 +91,7 @@ useHead({
     </div>
 
     <header class="mb-2">
-      <h1 class="text-2xl font-semibold tracking-tight text-grey-900 sm:text-[1.75rem]">
+      <h1 class="text-h3">
         Recently ordered
       </h1>
       <p

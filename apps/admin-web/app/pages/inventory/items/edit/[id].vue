@@ -3,7 +3,6 @@ import { Button } from '@gosource/ui';
 import { ArrowLeft } from 'lucide-vue-next';
 import ProductItemForm from '~/components/inventory/ProductItemForm.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
-import PageHeader from '~/components/shared/PageHeader.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useProductMutations } from '~/composables/useProductMutations';
 import {
@@ -122,17 +121,11 @@ useHead({
     <div
       class="flex flex-col gap-4 min-[960px]:flex-row min-[960px]:items-start min-[960px]:justify-between"
     >
-      <div class="flex min-w-0 items-start gap-3">
-        <Button type="button" size="icon" variant="ghost" class="!size-10 shrink-0" @click="goBack">
-          <ArrowLeft class="size-5" />
-        </Button>
-        <PageHeader
-          title="Edit item"
-          description="Update images, stock settings, pricing, and special prices."
-        />
-      </div>
+      <Button type="button" size="icon" variant="ghost" class="!size-10 shrink-0" @click="goBack">
+        <ArrowLeft class="size-5" />
+      </Button>
 
-      <div class="flex items-center gap-3 self-start">
+      <div class="flex items-center gap-3 self-start min-[960px]:ml-auto">
         <Button
           type="button"
           variant="secondary"

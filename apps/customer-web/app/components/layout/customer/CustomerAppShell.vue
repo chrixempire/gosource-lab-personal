@@ -273,9 +273,7 @@ async function confirmLogout() {
                   : 'flex-1'
               "
             >
-              <h1
-                class="min-w-0 truncate text-[15px] font-semibold leading-tight text-grey-900 lg:text-lg"
-              >
+              <h1 class="min-w-0 truncate text-h5 lg:text-h3">
                 <span class="lg:hidden">{{ mobileHeaderTitle }}</span>
                 <span
                   v-if="isMarketCategoryPage && marketCategoryHeaderTitle"
@@ -385,10 +383,8 @@ async function confirmLogout() {
         <DialogContent :overlay-class="CUSTOMER_FLOATING_OVERLAY_Z" :class="CUSTOMER_FLOATING_CONTENT_Z">
           <DialogHeader>
             <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-              <DialogTitle class="text-[24px] font-semibold text-grey-900">
-                Log out?
-              </DialogTitle>
-              <DialogDescription class="text-[12px] leading-5 text-grey-text">
+              <DialogTitle>Log out?</DialogTitle>
+              <DialogDescription class="text-body-sm text-grey-text">
                 You will need to sign in again to access your workspace.
               </DialogDescription>
             </div>
@@ -396,7 +392,7 @@ async function confirmLogout() {
           </DialogHeader>
 
           <DialogBody>
-            <p class="text-sm leading-6 text-grey-text">
+            <p class="text-body-sm text-grey-text">
               You will be signed out on this device.
             </p>
           </DialogBody>

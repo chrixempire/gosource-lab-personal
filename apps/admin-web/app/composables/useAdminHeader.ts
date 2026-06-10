@@ -2,6 +2,7 @@ import type { Component } from 'vue';
 
 export type AdminHeaderOptions = {
   title?: string;
+  description?: string | null;
   goBack?: boolean;
   goBackTo?: string;
   rightComponent?: Component;
