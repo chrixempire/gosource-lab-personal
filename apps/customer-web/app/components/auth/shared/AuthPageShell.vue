@@ -23,7 +23,7 @@ import CustomerThemeToggle from '~/components/layout/customer/CustomerThemeToggl
     >
       <NuxtLink
         to="/market"
-        class="group inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-grey-900 underline-offset-4 transition hover:text-primary-500 hover:underline"
+        class="group inline-flex cursor-pointer items-center gap-2 font-graphik text-sm font-medium text-grey-900 underline-offset-4 transition hover:text-primary-500 hover:underline"
       >
         Explore our market here
         <span aria-hidden="true" class="text-primary-500 transition-transform group-hover:translate-x-0.5">→</span>
