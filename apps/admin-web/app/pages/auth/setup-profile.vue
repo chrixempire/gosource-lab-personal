@@ -163,7 +163,7 @@ async function submit() {
     >
       <form v-if="hasInviteToken" class="space-y-4" @submit.prevent="submit">
         <label class="block space-y-2">
-          <span class="text-[13px] font-semibold text-grey-text">Password</span>
+          <span class="text-body-sm font-semibold text-grey-text">Password</span>
           <PasswordInput
             v-model="passwordForm.password"
             autocomplete="new-password"
@@ -178,7 +178,7 @@ async function submit() {
         </label>
 
         <label class="block space-y-2">
-          <span class="text-[13px] font-semibold text-grey-text">Confirm password</span>
+          <span class="text-body-sm font-semibold text-grey-text">Confirm password</span>
           <PasswordInput
             v-model="passwordForm.confirmPassword"
             autocomplete="new-password"
@@ -198,7 +198,7 @@ async function submit() {
 
       <p
         v-else
-        class="rounded-[18px] border border-[#fda29b] bg-[#fef3f2] px-4 py-3 text-[13px] font-medium text-negative-500"
+        class="rounded-[18px] border border-[#fda29b] bg-[#fef3f2] px-4 py-3 text-body-sm font-medium text-negative-500"
       >
         This setup link is invalid or has expired. Open the invitation email again or ask an administrator to resend your invite.
       </p>
@@ -206,7 +206,7 @@ async function submit() {
       <template #footer>
         <p
           v-if="errorMessage"
-          class="rounded-[18px] border border-[#fda29b] bg-[#fef3f2] px-4 py-3 text-[13px] font-medium text-negative-500"
+          class="rounded-[18px] border border-[#fda29b] bg-[#fef3f2] px-4 py-3 text-body-sm font-medium text-negative-500"
         >
           {{ errorMessage }}
         </p>

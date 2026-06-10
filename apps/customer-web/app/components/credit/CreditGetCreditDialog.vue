@@ -134,7 +134,7 @@ const formBody = computed(() => ({
   <Drawer v-if="isMobile" :open="open" @update:open="emit('update:open', $event)">
     <DrawerContent class="max-h-[92vh]">
       <DrawerHeader>
-        <DrawerTitle class="text-[24px] font-semibold text-grey-900">{{ title }}</DrawerTitle>
+        <DrawerTitle>{{ title }}</DrawerTitle>
         <DrawerDescription class="text-[12px] leading-5 text-grey-text">
           {{ formBody.intro }}
         </DrawerDescription>
@@ -195,7 +195,7 @@ const formBody = computed(() => ({
     <DialogContent class="max-w-md">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">{{ title }}</DialogTitle>
+          <DialogTitle>{{ title }}</DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">
             {{ formBody.intro }}
           </DialogDescription>

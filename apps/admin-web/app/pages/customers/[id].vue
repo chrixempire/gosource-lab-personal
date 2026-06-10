@@ -239,7 +239,7 @@ updateHeader({
 
             <div class="min-w-0 space-y-2">
               <div class="flex flex-wrap items-center gap-3">
-                <h1 class="font-display text-2xl font-semibold text-grey-900">
+                <h1 class="text-h3 lg:text-h2">
                   {{ customer.displayName }}
                 </h1>
                 <StatusTag :variant="customerStatusVariant(customer.status)" size="medium">

@@ -269,7 +269,7 @@ watch(transferDialogOpen, (isOpen) => {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             {{ step === 'amount' ? 'Add money' : 'How would you like to pay?' }}
           </DialogTitle>
           <DialogDescription v-if="step === 'method'" class="text-[12px] leading-5 text-grey-text">

@@ -171,7 +171,7 @@ const passwordRules = computed(() => getPasswordRuleStates(passwordForm.newPassw
     <AuthCardShell badge="Password Recovery" :title="title" :description="description">
       <form v-if="step === 1" class="space-y-4" @submit.prevent="submitEmail">
         <label class="block space-y-2">
-          <span class="text-[13px] font-semibold text-grey-text">Email address</span>
+          <span class="text-body-sm font-semibold text-grey-text">Email address</span>
           <Input
             v-model="emailForm.email"
             type="email"
@@ -212,7 +212,7 @@ const passwordRules = computed(() => getPasswordRuleStates(passwordForm.newPassw
           Verify reset code
         </Button>
 
-        <div class="flex items-center justify-center gap-2 text-[13px] text-grey-300">
+        <div class="flex items-center justify-center gap-2 text-body-sm text-grey-300">
           <p>Didn’t get the code?</p>
           <button
             type="button"
@@ -227,7 +227,7 @@ const passwordRules = computed(() => getPasswordRuleStates(passwordForm.newPassw
 
       <form v-else class="space-y-4" @submit.prevent="submitNewPassword">
         <label class="block space-y-2">
-          <span class="text-[13px] font-semibold text-grey-text">New password</span>
+          <span class="text-body-sm font-semibold text-grey-text">New password</span>
           <PasswordInput
             v-model="passwordForm.newPassword"
             autocomplete="new-password"
@@ -242,7 +242,7 @@ const passwordRules = computed(() => getPasswordRuleStates(passwordForm.newPassw
         </label>
 
         <label class="block space-y-2">
-          <span class="text-[13px] font-semibold text-grey-text">Confirm password</span>
+          <span class="text-body-sm font-semibold text-grey-text">Confirm password</span>
           <PasswordInput
             v-model="passwordForm.confirmPassword"
             autocomplete="new-password"
@@ -263,7 +263,7 @@ const passwordRules = computed(() => getPasswordRuleStates(passwordForm.newPassw
       <template #footer>
         <p
           v-if="errorMessage"
-          class="rounded-[18px] border border-[#fda29b] bg-[#fef3f2] px-4 py-3 text-[13px] font-medium text-negative-500"
+          class="rounded-[18px] border border-[#fda29b] bg-[#fef3f2] px-4 py-3 text-body-sm font-medium text-negative-500"
         >
           {{ errorMessage }}
         </p>

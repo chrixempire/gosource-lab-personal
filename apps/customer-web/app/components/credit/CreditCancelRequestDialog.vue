@@ -59,7 +59,7 @@ async function submit() {
   <Drawer v-if="isMobile" :open="open" @update:open="emit('update:open', $event)">
     <DrawerContent class="max-h-[85vh]">
       <DrawerHeader>
-        <DrawerTitle class="text-[24px] font-semibold text-grey-900">Cancel credit request</DrawerTitle>
+        <DrawerTitle>Cancel credit request</DrawerTitle>
         <DrawerDescription class="text-[12px] leading-5 text-grey-text">
           You'll need to submit a new request if you change your mind later.
         </DrawerDescription>
@@ -83,7 +83,7 @@ async function submit() {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">Cancel credit request</DialogTitle>
+          <DialogTitle>Cancel credit request</DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">
             This action cannot be undone.
           </DialogDescription>

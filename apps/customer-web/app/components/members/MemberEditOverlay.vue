@@ -157,7 +157,7 @@ function selectBranch(branchId: string) {
     <DrawerContent class="max-h-[92vh]">
       <DrawerHeader>
         <div class="flex flex-col gap-1">
-          <DrawerTitle class="text-[24px] font-semibold text-grey-900">
+          <DrawerTitle>
             Edit member
           </DrawerTitle>
           <DrawerDescription class="text-[12px] leading-5 text-grey-text">
@@ -288,7 +288,7 @@ function selectBranch(branchId: string) {
     <DialogContent class="max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             Edit member
           </DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">

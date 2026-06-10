@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   SidebarProvider,
+  TooltipProvider,
   toast,
 } from '@gosource/ui';
 import { Menu } from 'lucide-vue-next';
@@ -100,6 +101,7 @@ async function confirmLogout() {
 </script>
 
 <template>
+  <TooltipProvider :delay-duration="200">
   <SidebarProvider v-model:open="sidebarExpanded">
     <div class="flex h-[100dvh] max-h-[100dvh] min-h-0 gap-0 overflow-hidden bg-[#1F4031] p-0 lg:gap-3 lg:p-3">
       <div v-if="isDesktopViewport" class="hidden shrink-0 lg:flex">
@@ -136,10 +138,8 @@ async function confirmLogout() {
       <DialogContent class="z-[100]">
         <DialogHeader>
           <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-            <DialogTitle class="text-base font-semibold leading-snug text-grey-900">
-              Log out?
-            </DialogTitle>
-            <DialogDescription class="text-[12px] leading-5 text-grey-text">
+            <DialogTitle>Log out?</DialogTitle>
+            <DialogDescription class="text-body-sm text-grey-text">
               You will need to sign in again to access the admin workspace.
             </DialogDescription>
           </div>
@@ -147,7 +147,7 @@ async function confirmLogout() {
         </DialogHeader>
 
         <DialogBody>
-          <p class="text-sm leading-6 text-grey-text">
+          <p class="text-body-sm text-grey-text">
             You will be signed out on this device.
           </p>
         </DialogBody>
@@ -163,4 +163,5 @@ async function confirmLogout() {
       </DialogContent>
     </Dialog>
   </SidebarProvider>
+  </TooltipProvider>
 </template>

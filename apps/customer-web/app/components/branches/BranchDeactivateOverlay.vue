@@ -92,7 +92,7 @@ async function submit() {
     >
       <DrawerHeader>
         <div class="flex flex-col gap-1">
-          <DrawerTitle class="text-[24px] font-semibold text-grey-900">
+          <DrawerTitle>
             {{ branch?.isDeactivated ? 'Activate branch' : 'Deactivate branch' }}
           </DrawerTitle>
           <DrawerDescription class="text-[12px] leading-5 text-grey-text">
@@ -142,7 +142,7 @@ async function submit() {
     <DialogContent :overlay-class="CUSTOMER_FLOATING_OVERLAY_Z" :class="CUSTOMER_FLOATING_CONTENT_Z">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             {{ branch?.isDeactivated ? 'Activate branch' : 'Deactivate branch' }}
           </DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">

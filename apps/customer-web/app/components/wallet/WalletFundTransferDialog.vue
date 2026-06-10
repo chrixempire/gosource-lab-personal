@@ -64,7 +64,7 @@ function onDone() {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             Bank transfer
           </DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">

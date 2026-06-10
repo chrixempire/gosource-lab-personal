@@ -204,7 +204,7 @@ watch(useCustomAmount, () => {
   <Drawer v-if="isMobile" :open="open" @update:open="emit('update:open', $event)">
     <DrawerContent class="max-h-[92vh]">
       <DrawerHeader>
-        <DrawerTitle class="text-[24px] font-semibold text-grey-900">Make repayment</DrawerTitle>
+        <DrawerTitle>Make repayment</DrawerTitle>
         <DrawerDescription v-if="upcoming?.nextDueDate" class="text-[12px] leading-5 text-grey-text">
           Next due {{ formatRequestDate(upcoming.nextDueDate) }}
         </DrawerDescription>
@@ -313,7 +313,7 @@ watch(useCustomAmount, () => {
     <DialogContent class="max-w-lg">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">Make repayment</DialogTitle>
+          <DialogTitle>Make repayment</DialogTitle>
           <DialogDescription v-if="upcoming?.nextDueDate" class="text-[12px] leading-5 text-grey-text">
             Next due {{ formatRequestDate(upcoming.nextDueDate) }}
           </DialogDescription>

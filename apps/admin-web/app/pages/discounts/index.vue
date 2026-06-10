@@ -159,12 +159,7 @@ updateHeader({ title: 'Discounts' });
 
 <template>
   <div class="flex min-w-0 flex-col gap-4">
-    <div
-      class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between"
-    >
-      <p class="max-w-xl text-sm text-grey-600">
-        Create and manage coupon discounts for categories, products, orders, and delivery.
-      </p>
+    <div class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-end">
       <Button
         type="button"
         size="small"

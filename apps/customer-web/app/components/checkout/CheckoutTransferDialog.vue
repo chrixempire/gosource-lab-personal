@@ -41,7 +41,7 @@ function close() {
     <DrawerContent class="max-h-[92vh]">
       <DrawerHeader>
         <div class="flex flex-col gap-1">
-          <DrawerTitle class="text-[24px] font-semibold text-grey-900">
+          <DrawerTitle>
             Transfer payment
           </DrawerTitle>
           <DrawerDescription class="text-[12px] leading-5 text-grey-text">
@@ -86,7 +86,7 @@ function close() {
     <DialogContent>
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             Transfer payment
           </DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">

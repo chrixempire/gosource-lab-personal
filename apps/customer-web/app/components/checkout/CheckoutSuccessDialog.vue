@@ -51,7 +51,7 @@ function handleOpenChange(value: boolean) {
           <div class="flex size-14 items-center justify-center rounded-full bg-success-100 text-success-700">
             <CircleCheckBig class="size-7" />
           </div>
-          <DrawerTitle class="text-[24px] font-semibold text-grey-900">
+          <DrawerTitle>
             Payment successful
           </DrawerTitle>
           <DrawerDescription class="text-[12px] leading-5 text-grey-text">
@@ -91,7 +91,7 @@ function handleOpenChange(value: boolean) {
           <div class="flex size-14 items-center justify-center rounded-full bg-success-100 text-success-700">
             <CircleCheckBig class="size-7" />
           </div>
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             Payment successful
           </DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">
