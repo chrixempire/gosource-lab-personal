@@ -13,8 +13,10 @@ const props = withDefaults(
     closeOnSuccess?: boolean;
     /** Stretch the add button to fill remaining footer width (slide product modal). */
     expandAddButton?: boolean;
+    /** Product details page: out-of-stock CTA at half width. */
+    narrowOutOfStock?: boolean;
   }>(),
-  { expandAddButton: false },
+  { expandAddButton: false, narrowOutOfStock: false },
 );
 
 const emit = defineEmits<{
@@ -64,7 +66,10 @@ async function onAddToCart() {
       v-if="!inStock"
       size="large"
       variant="destructive"
-      class="!h-14 w-full !rounded-full !text-[17px] !font-semibold shadow-md"
+      :class="[
+        '!h-14 !rounded-full !text-[17px] !font-semibold shadow-md',
+        narrowOutOfStock ? '!w-1/2' : 'w-full',
+      ]"
       type="button"
       disabled
     >

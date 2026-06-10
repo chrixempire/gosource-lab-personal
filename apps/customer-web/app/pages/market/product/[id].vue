@@ -301,21 +301,21 @@ async function onAddToList() {
               </RadioGroup>
             </section>
 
-            <template v-if="inStock && product">
-              <div class="mt-4 flex flex-col gap-2">
-                <MarketProductLineTotal
-                  :product="product"
-                  :unit="selectedUnit"
-                  :quantity="pickQty"
-                />
-                <MarketProductDetailCartActions
-                  v-model:quantity="pickQty"
-                  :product="product"
-                  :unit="selectedUnit"
-                  :in-stock="inStock"
-                />
-              </div>
-            </template>
+            <div v-if="product" class="mt-4 flex flex-col gap-2">
+              <MarketProductLineTotal
+                v-if="inStock"
+                :product="product"
+                :unit="selectedUnit"
+                :quantity="pickQty"
+              />
+              <MarketProductDetailCartActions
+                v-model:quantity="pickQty"
+                :product="product"
+                :unit="selectedUnit"
+                :in-stock="inStock"
+                narrow-out-of-stock
+              />
+            </div>
           </div>
         </div>
       </div>
