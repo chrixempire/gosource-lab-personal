@@ -33,7 +33,6 @@ const props = defineProps<{
   creditMeta: CreditListMeta;
   repaymentMeta: CreditListMeta;
   upcomingPayment: CustomerUpcomingCreditPayment;
-  isOwner: boolean;
   creditLoading?: boolean;
   repaymentLoading?: boolean;
 }>();
@@ -137,16 +136,7 @@ function onActionSuccess() {
         :upcoming="upcomingPayment"
       />
 
-      <p
-        v-if="!isOwner"
-        class="text-sm text-grey-400"
-        :class="{ 'ml-auto': !showUpcomingBanner }"
-      >
-        Credit actions are available to the business owner only.
-      </p>
-
       <div
-        v-else
         class="flex shrink-0 flex-wrap items-center gap-2"
         :class="[
           { 'cursor-not-allowed': lockOwnerCreditActions },
@@ -235,7 +225,6 @@ function onActionSuccess() {
         }}
       </p>
       <Button
-        v-if="isOwner"
         class="mt-3 !w-auto shrink-0"
         size="small"
         variant="outline"
@@ -253,7 +242,6 @@ function onActionSuccess() {
       :repayment-meta="repaymentMeta"
       :credit-loading="creditLoading"
       :repayment-loading="repaymentLoading"
-      :is-owner="isOwner"
       @credit-page="emit('creditPage', $event)"
       @credit-limit="emit('creditLimit', $event)"
       @repayment-page="emit('repaymentPage', $event)"

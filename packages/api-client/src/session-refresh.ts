@@ -128,10 +128,6 @@ export function wrapFetchWithSessionRetry<TFetch extends OfetchLike>(
         try {
           return await originalFetch<T>(request, { ...fetchOptions, _authRetry: true });
         } catch (retryError) {
-          if (getFetchErrorStatus(retryError) === 401) {
-            await options.onSessionRefreshFailed?.();
-          }
-
           throw retryError;
         }
       }

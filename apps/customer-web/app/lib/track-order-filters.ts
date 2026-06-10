@@ -19,8 +19,6 @@ export const TRACK_ORDER_STATUS_OPTIONS: Array<{ value: OrderStatusFilter; label
   { value: 'refunded', label: 'Refunded' },
 ];
 
-export const DEFAULT_TRACK_ORDER_STATUS: OrderStatusFilter = 'ongoing';
-
 function readQueryString(
   query: Record<string, string | string[] | undefined | null>,
   key: string,
@@ -59,7 +57,7 @@ export function parseTrackOrderFiltersFromQuery(
   return {
     amountMin: amountFrom ? Number(amountFrom) : null,
     amountMax: amountTo ? Number(amountTo) : null,
-    status: status ?? [DEFAULT_TRACK_ORDER_STATUS],
+    status: status ?? [],
   };
 }
 
@@ -78,9 +76,6 @@ export function trackOrderFiltersToRouteQuery(
 
   if (filters.status.length > 0) {
     query.status = filters.status.join(',');
-  } else {
-    // Explicit empty value = no status filter (all orders), distinct from omitting the param (default ongoing).
-    query.status = '';
   }
 
   return query;
@@ -100,7 +95,6 @@ export function trackOrderStatusFiltersToApiStatus(
 export function hasActiveTrackOrderFilters(input: {
   filters: TrackOrderListFilters;
   search: string;
-  hasDefaultStatusOnly: boolean;
 }) {
   if (input.search.trim()) {
     return true;
@@ -110,7 +104,7 @@ export function hasActiveTrackOrderFilters(input: {
     return true;
   }
 
-  if (!input.hasDefaultStatusOnly) {
+  if (input.filters.status.length > 0) {
     return true;
   }
 

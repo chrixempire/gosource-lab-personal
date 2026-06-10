@@ -57,11 +57,11 @@ const visibleNavItems = computed(() => {
     return navItems.filter((item) => item.path === '/market');
   }
 
-  const owner = isBusinessOwnerSession(props.session);
+  const isOwner = isBusinessOwnerSession(props.session);
 
   return navItems.filter((item) => {
     if (item.path === '/wallet') {
-      return owner;
+      return isOwner;
     }
 
     return true;

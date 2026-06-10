@@ -57,7 +57,7 @@ export function normalizeLegacyCustomerSession(payload: LegacyAuthResponse): Cus
       user_type: 'employee',
       data: {
         id: String(decoded.id ?? decoded.sub ?? ''),
-        businessId: toStringOrFallback(user?.businessId, decoded.businessId),
+        businessId: resolveLegacyBusinessId(user, decoded.businessId),
         branchId: toStringOrFallback(user?.branchId, decoded.branchId),
         email: toStringOrFallback(user?.email, decoded.email),
         firstName: toStringOrFallback(user?.firstName, decoded.firstName),
@@ -66,6 +66,7 @@ export function normalizeLegacyCustomerSession(payload: LegacyAuthResponse): Cus
         position: toStringOrFallback(user?.position, ''),
         role: normalizeEmployeeRole(toStringOrFallback(user?.role, decoded.role)),
         status: normalizeLegacyStatus(user?.status),
+        businessName: resolveLegacyBusinessName(user) || null,
       },
     };
   }
@@ -186,6 +187,40 @@ function toStringValue(value: unknown) {
 
   if (isRecord(value) && typeof value._id === 'string') {
     return value._id;
+  }
+
+  return '';
+}
+
+function resolveLegacyBusinessId(
+  user: Record<string, unknown> | null,
+  fallback: unknown,
+) {
+  if (!user) {
+    return toStringValue(fallback);
+  }
+
+  const businessId = user.businessId;
+  if (isRecord(businessId)) {
+    return toStringOrFallback(businessId._id, fallback);
+  }
+
+  return toStringOrFallback(businessId, fallback);
+}
+
+function resolveLegacyBusinessName(user: Record<string, unknown> | null) {
+  if (!user) {
+    return '';
+  }
+
+  const direct = toStringValue(user.businessName);
+  if (direct) {
+    return direct;
+  }
+
+  const businessId = user.businessId;
+  if (isRecord(businessId)) {
+    return toStringValue(businessId.businessName);
   }
 
   return '';
