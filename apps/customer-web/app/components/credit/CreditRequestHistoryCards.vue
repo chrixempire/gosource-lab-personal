@@ -13,7 +13,6 @@ import type { CustomerCreditRequest } from '~/types/credit';
 defineProps<{
   items: CustomerCreditRequest[];
   loading?: boolean;
-  isOwner?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -55,8 +54,8 @@ const cardArticleClass =
             {{ creditWorkflowStatusLabel(row.status) }}
           </StatusTag>
           <CreditRequestActionsMenu
-            :can-cancel="isOwner && row.status === 'pending'"
-            :can-reapply="isOwner && row.status === 'rejected'"
+            :can-cancel="row.status === 'pending'"
+            :can-reapply="row.status === 'rejected'"
             @view-details="navigateTo(creditRequestPath(row.id))"
             @cancel="emit('cancel', row)"
             @reapply="emit('reapply', row)"

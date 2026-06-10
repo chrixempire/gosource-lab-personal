@@ -566,7 +566,7 @@ async function handleCreateRequest() {
       />
 
       <div
-        v-if="!loading && !filteredLists.length"
+        v-if="!loading && !filteredLists.length && effectiveView !== 'table'"
         class="rounded-[16px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
       >
         <p class="text-base font-medium text-grey-900">No lists yet</p>

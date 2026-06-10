@@ -43,7 +43,6 @@ const props = defineProps<{
   repaymentMeta: CreditListMeta;
   creditLoading?: boolean;
   repaymentLoading?: boolean;
-  isOwner?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -114,7 +113,6 @@ const repaymentTotalPages = computed(() =>
         v-if="isCompactViewport"
         :items="filteredCreditRequests"
         :loading="creditLoading"
-        :is-owner="isOwner"
         @cancel="emit('cancelRequest', $event)"
         @reapply="emit('reapply', $event)"
       />
@@ -153,8 +151,8 @@ const repaymentTotalPages = computed(() =>
             </TableCell>
             <TableCell class="flex items-center justify-end">
               <CreditRequestActionsMenu
-                :can-cancel="isOwner && row.status === 'pending'"
-                :can-reapply="isOwner && row.status === 'rejected'"
+                :can-cancel="row.status === 'pending'"
+                :can-reapply="row.status === 'rejected'"
                 @view-details="navigateTo(creditRequestPath(row.id))"
                 @cancel="emit('cancelRequest', row)"
                 @reapply="emit('reapply', row)"

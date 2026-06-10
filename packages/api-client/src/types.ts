@@ -37,6 +37,8 @@ export interface EmployeeSessionData {
   position: string;
   role: string;
   status: string;
+  /** Populated from legacy login when businessId is embedded on the employee record. */
+  businessName?: string | null;
 }
 
 export interface CustomerSessionData {

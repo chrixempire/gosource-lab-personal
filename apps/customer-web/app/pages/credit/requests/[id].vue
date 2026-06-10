@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { CustomerMeResponse } from '@gosource/api-client';
 import {
   Button,
   StatusTag,
@@ -30,7 +29,6 @@ import {
 import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
 import { formatCreditFromKobo } from '~/lib/credit-money';
 import { formatRequestDate } from '~/lib/request-details';
-import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import {
   CUSTOMER_TABLE_BODY_CLASS,
   CUSTOMER_TABLE_DATA_ROW_CLASS,
@@ -48,7 +46,6 @@ const runWhenSessionReady = useAuthenticatedFetch();
 const route = useRoute();
 const { setPageTitle, clearPageHeader } = useCustomerPageHeader();
 const isCompactViewport = useMediaQuery('(max-width: 999px)');
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const { getRequest, getCreditAccount } = useCustomerCreditService();
 
 const creditAccount = ref<CustomerCreditAccount | null>(null);
@@ -58,7 +55,6 @@ const loading = ref(true);
 const loadError = ref<string | null>(null);
 const request = ref<CustomerCreditRequestDetail | null>(null);
 
-const isOwner = computed(() => isBusinessOwnerSession(session.value));
 const cancelOpen = ref(false);
 const reapplyOpen = ref(false);
 
@@ -184,7 +180,7 @@ onMounted(() => {
           </StatusTag>
         </div>
 
-        <div v-if="isOwner" class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2">
           <Button
             v-if="request.status === 'pending'"
             variant="destructive"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CustomerMeResponse } from '@gosource/api-client';
 import { Button, toast } from '@gosource/ui';
 import { CheckCircle2 } from 'lucide-vue-next';
 import CreditApplyStepper from '~/components/credit/CreditApplyStepper.vue';
@@ -17,12 +18,14 @@ import {
 } from '~/lib/credit-apply';
 import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { useCustomerCreditService } from '~/services/credit.service';
 import { useCustomerProfileService } from '~/services/profile.service';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
 const { submitApplication } = useCustomerCreditService();
 const { getBusinessAccount } = useCustomerProfileService();
+const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 
 const currentStep = ref(1);
 const submitted = ref(false);
@@ -34,10 +37,20 @@ const errors = ref<CreditApplyFieldErrors>({});
 const { data: applyBusinessContext } = await useAuthenticatedAsyncData(
   'credit-apply-business',
   async () => {
-    const account = await getBusinessAccount({ silent: true }).catch(() => null);
-    return {
-      businessName: account?.businessName?.trim() ?? '',
-    };
+    if (isBusinessOwnerSession(session.value)) {
+      const account = await getBusinessAccount({ silent: true }).catch(() => null);
+      return {
+        businessName: account?.businessName?.trim() ?? '',
+      };
+    }
+
+    const employeeData = session.value?.user_type === 'employee' ? session.value.data : null;
+    const businessName =
+      employeeData && 'businessName' in employeeData
+        ? String(employeeData.businessName ?? '').trim()
+        : '';
+
+    return { businessName };
   },
   {
     default: () => ({ businessName: '' }),

@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import type { CustomerMeResponse } from '@gosource/api-client';
 import { Button } from '@gosource/ui';
 import CreditDashboard from '~/components/credit/CreditDashboard.vue';
 import CreditGetStarted from '~/components/credit/CreditGetStarted.vue';
 import CreditNotEligible from '~/components/credit/CreditNotEligible.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useCreditPageData } from '~/composables/useCreditPageData';
-import { isBusinessOwnerSession } from '~/lib/customer-roles';
-
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 
 const creditPage = useCreditPageData();
 
@@ -52,7 +48,6 @@ watch(
   { immediate: true },
 );
 
-const isOwner = computed(() => isBusinessOwnerSession(session.value));
 const creditHistoryLoading = ref(false);
 const repaymentHistoryLoading = ref(false);
 
@@ -109,7 +104,6 @@ async function refreshCreditPage() {
       :credit-meta="creditMeta"
       :repayment-meta="repaymentMeta"
       :upcoming-payment="upcomingPayment"
-      :is-owner="isOwner"
       :credit-loading="creditHistoryLoading"
       :repayment-loading="repaymentHistoryLoading"
       @credit-page="refreshCreditHistory"

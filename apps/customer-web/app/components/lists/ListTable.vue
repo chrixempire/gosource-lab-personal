@@ -20,11 +20,16 @@ import {
 import type { ShoppingListListItem } from '~/lib/shopping-list';
 import { formatShoppingListCurrency, formatShoppingListDate } from '~/lib/shopping-list';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   lists: ShoppingListListItem[];
   loading?: boolean;
   showBranchColumn?: boolean;
-}>();
+  emptyTitle?: string;
+  emptyDescription?: string;
+}>(), {
+  emptyTitle: 'No lists yet',
+  emptyDescription: 'Create a list to save products your branch orders often.',
+});
 
 const emit = defineEmits<{
   rowClick: [list: ShoppingListListItem];
@@ -114,6 +119,8 @@ function toggleRowSelection(listId: string) {
 
   emit('selectionChange', [...selectedIds.value]);
 }
+
+const showEmpty = computed(() => !props.loading && props.lists.length === 0);
 </script>
 
 <template>
@@ -191,6 +198,16 @@ function toggleRowSelection(listId: string) {
           />
         </TableCell>
       </TableRow>
+
+      <div
+        v-if="showEmpty"
+        class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center"
+      >
+        <p class="text-base font-medium text-grey-900">{{ emptyTitle }}</p>
+        <p v-if="emptyDescription" class="mt-2 text-sm text-grey-300">
+          {{ emptyDescription }}
+        </p>
+      </div>
     </TableBody>
   </TableShell>
 </template>

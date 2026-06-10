@@ -32,7 +32,6 @@ import {
 import { fetchProcurementInsightForBranch } from '~/lib/explore-procurement-insight';
 import { buildProcurementInsightTableRowsFromProcuredItems } from '~/lib/procurement-insight-table';
 import {
-  DEFAULT_TRACK_ORDER_STATUS,
   parseTrackOrderFiltersFromQuery,
   trackOrderFiltersToRouteQuery,
   trackOrderStatusFiltersToApiStatus,
@@ -125,20 +124,15 @@ watch(searchValue, (value) => {
 
 const listFilters = computed(() => parseTrackOrderFiltersFromQuery(route.query));
 
-const hasDefaultStatusOnly = computed(() => {
-  const { status } = listFilters.value;
-  return status.length === 1 && status[0] === DEFAULT_TRACK_ORDER_STATUS;
-});
-
-const emptyStateStatusLabel = computed(() => {
+const emptyStateTitle = computed(() => {
   const { status } = listFilters.value;
   if (status.length === 0) {
-    return 'matching';
+    return 'No orders';
   }
   if (status.length === 1) {
-    return status[0];
+    return `No ${status[0]} orders`;
   }
-  return 'matching';
+  return 'No matching orders';
 });
 
 watch(debouncedSearch, (next, prev) => {
@@ -626,7 +620,6 @@ useHead({
         <TrackOrdersFilterBar
           :filters="listFilters"
           :search="debouncedSearch"
-          :has-default-status-only="hasDefaultStatusOnly"
           @apply="onApplyFilters"
           @clear-all="clearAllFilters"
         />
@@ -643,7 +636,7 @@ useHead({
           :loading="ordersLoading"
           :reorder-loading="reordering"
           :reorder-loading-order-id="reorderLoadingOrderId"
-          :empty-title="`No ${emptyStateStatusLabel} orders`"
+          :empty-title="emptyStateTitle"
           empty-description="Orders appear here after a request is approved and paid at checkout."
           @page="setPage"
           @page-size="setLimit"
@@ -668,7 +661,7 @@ useHead({
             class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
           >
             <p class="text-base font-medium text-grey-900">
-              No {{ emptyStateStatusLabel }} orders
+              {{ emptyStateTitle }}
             </p>
             <p class="mt-2 text-sm text-grey-300">
               Orders appear here after a request is approved and paid at checkout.

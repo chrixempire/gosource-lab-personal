@@ -31,6 +31,7 @@ type EmployeeCookieSessionData = {
   position: string | null;
   role: string;
   status: string;
+  businessName?: string | null;
 };
 
 export type CustomerSessionState = Omit<CustomerMeResponse, 'data'> & {
@@ -66,6 +67,7 @@ export function serializeCustomerSessionSnapshot(session: CustomerSessionState):
         position: data.position ?? null,
         role: data.role,
         status: data.status,
+        businessName: data.businessName ?? null,
       },
       bootstrap: session.bootstrap,
     };
@@ -116,6 +118,7 @@ export function deserializeCustomerSessionSnapshot(
         position: data.position ?? '',
         role: data.role ?? 'employee',
         status: data.status ?? 'active',
+        businessName: data.businessName ?? null,
       },
       bootstrap: snapshot.bootstrap,
     };
