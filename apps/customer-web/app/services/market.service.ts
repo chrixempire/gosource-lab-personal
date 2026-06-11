@@ -9,8 +9,7 @@ import type {
   MarketPromotionsResponse,
   MarketRecentOrdersResponse,
 } from '~/lib/marketplace-data';
-import { toast } from '@gosource/ui';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 /** How long catalog blobs stay usable before refetch (reference-style persisted browse). */
 export const MARKET_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -143,7 +142,7 @@ export function useCustomerMarketService() {
       return response;
     } catch (error) {
       if (!quiet) {
-        toast.error(extractApiErrorMessage(error, 'Unable to fetch categories right now'));
+        reportCustomerApiError(error, 'Unable to fetch categories right now');
       }
       throw error;
     }
@@ -234,7 +233,7 @@ export function useCustomerMarketService() {
         return response;
       } catch (error) {
         if (!options.quiet) {
-          toast.error(extractApiErrorMessage(error, 'Unable to fetch category right now'));
+          reportCustomerApiError(error, 'Unable to fetch category right now');
         }
         throw error;
       }
@@ -251,7 +250,7 @@ export function useCustomerMarketService() {
         return response;
       } catch (error) {
         if (!options.quiet) {
-          toast.error(extractApiErrorMessage(error, 'Unable to fetch promotions right now'));
+          reportCustomerApiError(error, 'Unable to fetch promotions right now');
         }
         throw error;
       }
@@ -274,7 +273,7 @@ export function useCustomerMarketService() {
         return response;
       } catch (error) {
         if (!options.quiet) {
-          toast.error(extractApiErrorMessage(error, 'Unable to fetch recent orders right now'));
+          reportCustomerApiError(error, 'Unable to fetch recent orders right now');
         }
         throw error;
       }
@@ -306,7 +305,7 @@ export function useCustomerMarketService() {
         return response;
       } catch (error) {
         if (!options.quiet) {
-          toast.error(extractApiErrorMessage(error, 'Unable to fetch product right now'));
+          reportCustomerApiError(error, 'Unable to fetch product right now');
         }
         throw error;
       }
@@ -317,7 +316,7 @@ export function useCustomerMarketService() {
           credentials: 'same-origin',
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to fetch cart right now'));
+        reportCustomerApiError(error, 'Unable to fetch cart right now');
         throw error;
       }
     },
@@ -333,7 +332,7 @@ export function useCustomerMarketService() {
         });
       } catch (error) {
         if (!options.quiet) {
-          toast.error(extractApiErrorMessage(error, 'Unable to add item to cart right now'));
+          reportCustomerApiError(error, 'Unable to add item to cart right now');
         }
         throw error;
       }
@@ -346,7 +345,7 @@ export function useCustomerMarketService() {
           credentials: 'same-origin',
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to update cart right now'));
+        reportCustomerApiError(error, 'Unable to update cart right now');
         throw error;
       }
     },
@@ -358,7 +357,7 @@ export function useCustomerMarketService() {
           credentials: 'same-origin',
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to update cart quantity right now'));
+        reportCustomerApiError(error, 'Unable to update cart quantity right now');
         throw error;
       }
     },
@@ -369,7 +368,7 @@ export function useCustomerMarketService() {
           credentials: 'same-origin',
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to remove item from cart right now'));
+        reportCustomerApiError(error, 'Unable to remove item from cart right now');
         throw error;
       }
     },
@@ -380,7 +379,7 @@ export function useCustomerMarketService() {
           credentials: 'same-origin',
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to clear cart right now'));
+        reportCustomerApiError(error, 'Unable to clear cart right now');
         throw error;
       }
     },

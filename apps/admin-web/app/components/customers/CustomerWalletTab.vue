@@ -18,6 +18,7 @@ import CustomerWalletFilterBar, {
 } from '~/components/customers/CustomerWalletFilterBar.vue';
 import CustomerWalletMobileList from '~/components/customers/CustomerWalletMobileList.vue';
 import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
@@ -51,9 +52,13 @@ const query = computed(() => ({
   ...(filters.value.status.length > 0 && { status: filters.value.status }),
 }));
 
-const { data, pending, error, refresh } = useFetch<unknown>(
+const { data, pending, error, refresh } = useAdminAuthenticatedFetch<unknown>(
   () => `/api/customers/${props.customerId}/transactions`,
-  { query, watch: [() => props.customerId, query] },
+  {
+    query,
+    watch: [() => props.customerId, query],
+    key: computed(() => `admin-customer-transactions:${props.customerId}`),
+  },
 );
 
 const parsed = computed(() => parseCustomerTransactions(data.value, page.value, limit.value));

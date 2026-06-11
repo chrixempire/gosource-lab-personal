@@ -10,7 +10,7 @@ import {
 } from '~/lib/guest-market-cart';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useCustomerMarketService } from '~/services/market.service';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 function hasServerCartId(cartId: string | undefined): cartId is string {
   return Boolean(cartId && !cartId.includes(CART_LINE_UNIT_SEP));
@@ -101,7 +101,7 @@ export function useGuestCartSync() {
       clearGuestCartStorage();
       return true;
     } catch (error) {
-      toast.error(extractApiErrorMessage(error, 'Unable to move your cart to your account'));
+      reportCustomerApiError(error, 'Unable to move your cart to your account');
       return false;
     } finally {
       syncing.value = false;

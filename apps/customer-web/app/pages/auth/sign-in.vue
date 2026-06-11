@@ -6,6 +6,7 @@ import AuthPageShell from '~/components/auth/shared/AuthPageShell.vue';
 import { validateEmail } from '~/utils/auth-validation';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { sanitizeAuthRedirectPath, customerDefaultAfterLogin } from '~/lib/auth-redirect';
+import { useCustomerSession } from '~/composables/useCustomerSession';
 import { extractApiErrorMessage, extractApiResponseMessage } from '~/utils/api-error';
 
 definePageMeta({
@@ -20,12 +21,15 @@ const form = reactive({
 
 const loading = ref(false);
 const errorMessage = ref('');
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+const { adoptSession } = useCustomerSession();
 const { mergeGuestCartAfterLogin } = useMarketplaceCart();
 const fieldErrors = reactive({
   email: '',
   password: '',
 });
+
+const { endIntentionalSignOut } = useCustomerSignOut();
+onMounted(endIntentionalSignOut);
 
 watch(
   () => route.query.email,
@@ -57,7 +61,7 @@ async function submit() {
       } satisfies CustomerLoginPayload,
       credentials: 'same-origin',
     });
-    session.value = result;
+    adoptSession(result);
     toast.success(extractApiResponseMessage(result, 'Signed in'));
     await mergeGuestCartAfterLogin();
     await navigateTo(sanitizeAuthRedirectPath(route.query.redirect, customerDefaultAfterLogin()));

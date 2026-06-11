@@ -18,6 +18,7 @@ import CustomerOrderHistoryFilterBar, {
 } from '~/components/customers/CustomerOrderHistoryFilterBar.vue';
 import CustomerOrdersMobileList from '~/components/customers/CustomerOrdersMobileList.vue';
 import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -55,9 +56,13 @@ const query = computed(() => ({
   ...(filters.value.paymentStatus.length > 0 && { paymentStatus: filters.value.paymentStatus }),
 }));
 
-const { data, pending, error, refresh } = useFetch<unknown>(
+const { data, pending, error, refresh } = useAdminAuthenticatedFetch<unknown>(
   () => `/api/customers/${props.customerId}/orders`,
-  { query, watch: [() => props.customerId, query] },
+  {
+    query,
+    watch: [() => props.customerId, query],
+    key: computed(() => `admin-customer-orders:${props.customerId}`),
+  },
 );
 
 const parsed = computed(() => parseCustomerOrdersResponse(data.value, page.value, limit.value));

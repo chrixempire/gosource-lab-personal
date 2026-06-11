@@ -1,7 +1,7 @@
 import { toast } from '@gosource/ui';
 import { SESSION_EXPIRED_MESSAGE } from '@gosource/api-client';
+import { useAdminSession } from '~/composables/useAdminSession';
 import { adminSignInLocation } from '~/lib/auth-redirect';
-import type { AdminSessionState } from '~/types/admin-session';
 
 let handlingSessionExpired = false;
 
@@ -10,8 +10,7 @@ let handlingSessionExpired = false;
  */
 export function useSessionExpired() {
   const route = useRoute();
-  const session = useState<AdminSessionState | null>('admin-session', () => null);
-  const sessionResolved = useState('admin-session-resolved', () => false);
+  const { sessionResolved, clearSession } = useAdminSession();
 
   async function handleSessionExpired() {
     if (!import.meta.client || handlingSessionExpired) {
@@ -25,7 +24,7 @@ export function useSessionExpired() {
     handlingSessionExpired = true;
     const returnPath = route.fullPath;
 
-    session.value = null;
+    clearSession();
     sessionResolved.value = true;
 
     try {

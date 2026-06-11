@@ -16,6 +16,7 @@ import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
 import CreditRejectDialog from '~/components/credit/CreditRejectDialog.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import LoadingState from '~/components/shared/LoadingState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useAdminCapabilities } from '~/composables/useAdminCapabilities';
 import { useCreditMutations } from '~/composables/useCreditMutations';
@@ -46,9 +47,12 @@ const rejectOpen = ref(false);
 const reopenOpen = ref(false);
 const moreInfoOpen = ref(false);
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/credit/applications/${applicationId.value}`,
-  { watch: [applicationId] },
+  {
+    watch: [applicationId],
+    key: computed(() => `admin-credit-application-detail:${applicationId.value}`),
+  },
 );
 
 const credit = computed(() =>

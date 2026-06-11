@@ -15,7 +15,7 @@ definePageMeta({
 
 const route = useRoute();
 const { login } = useAdminAuthService();
-const { session } = useAdminSession();
+const { adoptSession } = useAdminSession();
 
 const form = reactive({
   email: '',
@@ -30,10 +30,12 @@ async function submit() {
   errorMessage.value = '';
 
   try {
-    session.value = await login({
-      email: normalizeEmail(form.email),
-      password: form.password,
-    });
+    adoptSession(
+      await login({
+        email: normalizeEmail(form.email),
+        password: form.password,
+      }),
+    );
     await navigateTo(sanitizeAuthRedirectPath(route.query.redirect, '/'));
   } catch (error) {
     const message = extractApiErrorMessage(error, 'Unable to sign in right now');

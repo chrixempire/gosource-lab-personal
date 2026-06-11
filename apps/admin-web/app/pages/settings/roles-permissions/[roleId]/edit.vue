@@ -3,6 +3,7 @@ import { Button } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
 import SettingsRoleForm from '~/components/settings/SettingsRoleForm.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useSettingsMutations } from '~/composables/useSettingsMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -23,13 +24,21 @@ const roleId = computed(() => String(route.params.roleId ?? ''));
 const form = reactive(createEmptyRoleFormValues());
 const fieldErrors = reactive<Record<string, string>>({});
 
-const { data: roleData, pending: rolePending, error: roleError, refresh } = await useFetch<unknown>(
-  () => `/api/roles/${roleId.value}`,
-  { watch: [roleId] },
-);
+const { data: roleData, pending: rolePending, error: roleError, refresh } =
+  await useAdminAuthenticatedFetch<unknown>(
+    () => `/api/roles/${roleId.value}`,
+    {
+      watch: [roleId],
+      key: computed(() => `admin-role-edit:${roleId.value}`),
+    },
+  );
 
-const { data: permissionsData, pending: permissionsPending } = await useFetch<unknown>(
+const { data: permissionsData, pending: permissionsPending } = await useAdminAuthenticatedFetch<unknown>(
   '/api/roles/permissions',
+  {
+    key: 'admin-role-permissions',
+    staleAfterMs: 60_000,
+  },
 );
 
 const role = computed(() => parseAdminRoleDetail(roleData.value));

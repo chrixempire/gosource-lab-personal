@@ -10,8 +10,7 @@ import type {
   UpdateRequestPayload,
   UpdateRequestProductQuantityPayload,
 } from '@gosource/api-client';
-import { toast } from '@gosource/ui';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 export function useCustomerRequestService() {
   const { $requestApi } = useNuxtApp();
@@ -21,7 +20,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.createRequest(payload)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to create request right now'));
+        reportCustomerApiError(error, 'Unable to create request right now');
         throw error;
       }
     },
@@ -29,7 +28,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.createRequestFromShoppingList(listId, payload)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to create request from list right now'));
+        reportCustomerApiError(error, 'Unable to create request from list right now');
         throw error;
       }
     },
@@ -37,7 +36,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.listRequests(query)) as RequestListResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to load requests right now'));
+        reportCustomerApiError(error, 'Unable to load requests right now');
         throw error;
       }
     },
@@ -45,7 +44,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.getRequest(requestId)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to load request right now'));
+        reportCustomerApiError(error, 'Unable to load request right now');
         throw error;
       }
     },
@@ -53,7 +52,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.approveRequest(requestId, payload)) as ApproveRequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to approve request right now'));
+        reportCustomerApiError(error, 'Unable to approve request right now');
         throw error;
       }
     },
@@ -61,7 +60,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.rejectRequest(requestId, payload)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to reject request right now'));
+        reportCustomerApiError(error, 'Unable to reject request right now');
         throw error;
       }
     },
@@ -69,7 +68,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.cancelRequest(requestId)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to cancel request right now'));
+        reportCustomerApiError(error, 'Unable to cancel request right now');
         throw error;
       }
     },
@@ -77,7 +76,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.updateRequestProductQuantity(payload)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to update product quantity'));
+        reportCustomerApiError(error, 'Unable to update product quantity');
         throw error;
       }
     },
@@ -85,7 +84,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.removeRequestProduct(requestId, cartLineId)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to remove product from request'));
+        reportCustomerApiError(error, 'Unable to remove product from request');
         throw error;
       }
     },
@@ -93,7 +92,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.addRequestProduct(requestId, payload)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to add product to request'));
+        reportCustomerApiError(error, 'Unable to add product to request');
         throw error;
       }
     },
@@ -101,7 +100,7 @@ export function useCustomerRequestService() {
       try {
         return (await $requestApi.updateRequest(requestId, payload)) as RequestResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to update request'));
+        reportCustomerApiError(error, 'Unable to update request');
         throw error;
       }
     },

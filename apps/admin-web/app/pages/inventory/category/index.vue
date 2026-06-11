@@ -11,6 +11,7 @@ import CategoryTable from '~/components/inventory/CategoryTable.vue';
 import CategoryViewDialog from '~/components/inventory/CategoryViewDialog.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useCategoryMutations } from '~/composables/useCategoryMutations';
@@ -30,10 +31,11 @@ const {
   effectiveView,
   isCompactViewport,
   setView,
+  page,
+  limit,
+  setPage,
+  setLimit,
 } = useCollectionRouteState('table');
-
-const page = ref(1);
-const limit = ref(20);
 const searchQuery = ref('');
 const debouncedSearch = useDebounce(searchQuery, 500);
 
@@ -65,12 +67,12 @@ const apiQuery = computed(() => {
   };
 });
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/categories', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/categories', {
   query: apiQuery,
   watch: [apiQuery],
 });
 
-const { data: categoriesPayload, refresh: refreshCategoryOptions } = await useFetch<unknown>(
+const { data: categoriesPayload, refresh: refreshCategoryOptions } = await useAdminListFetch<unknown>(
   '/api/categories',
   {
     query: { page: 1, limit: 200 },
@@ -94,19 +96,10 @@ const deleteLoading = computed(
 );
 
 watch(debouncedSearch, () => {
-  if (!isRearrange.value) {
-    page.value = 1;
+  if (!isRearrange.value && page.value !== 1) {
+    setPage(1);
   }
 });
-
-function setPage(nextPage: number) {
-  page.value = nextPage;
-}
-
-function setLimit(nextLimit: number) {
-  limit.value = nextLimit;
-  page.value = 1;
-}
 
 function onCreateCategory() {
   formMode.value = 'create';

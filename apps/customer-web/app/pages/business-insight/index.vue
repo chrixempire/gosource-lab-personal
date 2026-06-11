@@ -158,6 +158,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [
       apiBranchId,
       () => insightDateRange.value.startDate,
@@ -238,6 +239,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [
       apiBranchId,
       viewingAllBranches,

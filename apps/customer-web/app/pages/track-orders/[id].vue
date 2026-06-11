@@ -58,6 +58,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [orderId],
     default: () => ({
       order: null as OrderDetailRecord | null,

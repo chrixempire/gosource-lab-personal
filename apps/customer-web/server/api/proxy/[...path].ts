@@ -345,6 +345,21 @@ export default defineEventHandler(async (event) => {
       };
     }
 
+    if (
+      isLegacyCustomerApiMode(event) &&
+      method === 'GET' &&
+      targetPathSegments[0] === 'analytics' &&
+      targetPathSegments[1] === 'top-procured-items' &&
+      (response.status === 404 || response.status === 500)
+    ) {
+      setResponseStatus(event, 200);
+      return {
+        status: true,
+        message: 'Items fetched successfully',
+        data: [],
+      };
+    }
+
     const payload = response._data as Record<string, unknown> | string | null;
     return forwardApiError(
       event,

@@ -47,6 +47,8 @@ import {
   type TrackOrdersTab,
 } from '~/lib/track-orders-page';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { usePaginatedListData } from '~/composables/usePaginatedListData';
+import { buildCollectionListKey } from '~/lib/collection-list-key';
 import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import { useReorderProducts } from '~/composables/useReorderProducts';
 import { useCustomerOrderService } from '~/services/order.service';
@@ -141,12 +143,23 @@ watch(debouncedSearch, (next, prev) => {
   }
 });
 
+const ordersListKeyParts = computed(() => [
+  page.value,
+  limit.value,
+  debouncedSearch.value,
+  listFilters.value.amountMin ?? '',
+  listFilters.value.amountMax ?? '',
+  listFilters.value.status.join(','),
+  apiBranchId.value ?? '',
+]);
+
 const {
   data: ordersPayload,
   pending: ordersPending,
   refresh: refreshOrders,
-} = await useAuthenticatedAsyncData(
+} = await usePaginatedListData(
   'track-orders-list',
+  ordersListKeyParts,
   async () => {
     const statusParam = trackOrderStatusFiltersToApiStatus(listFilters.value.status);
 
@@ -166,7 +179,6 @@ const {
     };
   },
   {
-    watch: false,
     default: () => ({
       orders: [] as OrderRecord[],
       meta: { ...defaultMeta },
@@ -179,7 +191,13 @@ const {
   pending: insightPending,
   refresh: refreshInsight,
 } = await useAuthenticatedAsyncData(
-  'track-orders-procurement-insight',
+  computed(() =>
+    buildCollectionListKey('track-orders-procurement-insight', [
+      insightBranchId.value ?? '',
+      insightDateRange.value.startDate,
+      insightDateRange.value.endDate,
+    ]),
+  ),
   async () => {
     if (!insightBranchId.value) {
       return { rows: [] };
@@ -197,7 +215,7 @@ const {
     };
   },
   {
-    watch: false,
+    fastNav: true,
     default: () => ({ rows: [] }),
   },
 );
@@ -229,25 +247,6 @@ function replaceRouteQuery(patch: Record<string, string | undefined>) {
 
   router.replace({ query: nextQuery });
 }
-
-watch(
-  [
-    activeTab,
-    page,
-    limit,
-    debouncedSearch,
-    () => listFilters.value.amountMin,
-    () => listFilters.value.amountMax,
-    () => listFilters.value.status.join(','),
-    apiBranchId,
-  ],
-  () => {
-    if (activeTab.value === 'orders') {
-      void refreshOrders();
-    }
-  },
-  { immediate: true },
-);
 
 watch(
   [
@@ -627,10 +626,10 @@ useHead({
         <OrderTable
           v-if="effectiveView === 'table'"
           :orders="orderItems"
-          :page="meta.page"
+          :page="page"
           :total-pages="meta.totalPages"
           :total-items="meta.total"
-          :page-size="meta.limit"
+          :page-size="limit"
           :has-next-page="meta.hasNextPage"
           :has-prev-page="meta.hasPrevPage"
           :loading="ordersLoading"
@@ -670,10 +669,10 @@ useHead({
 
           <PaginationBar
             plain
-            :page="meta.page"
+            :page="page"
             :total-pages="meta.totalPages"
             :total-items="meta.total"
-            :page-size="meta.limit"
+            :page-size="limit"
             :visible-count="orderItems.length"
             :has-next-page="meta.hasNextPage"
             :has-prev-page="meta.hasPrevPage"

@@ -13,6 +13,7 @@ import {
 import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
 import CreditRepaymentScheduleMobileList from '~/components/credit/CreditRepaymentScheduleMobileList.vue';
 import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { parseCreditRepaymentSchedule } from '~/lib/credit-api';
 import {
@@ -29,9 +30,13 @@ const limit = ref(25);
 
 const query = computed(() => ({ page: page.value, limit: limit.value }));
 
-const { data, pending } = await useFetch<unknown>(
+const { data, pending } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/credit/requests/${props.requestId}/repayment-schedule`,
-  { query, watch: [() => props.requestId, query] },
+  {
+    query,
+    watch: [() => props.requestId, query],
+    key: computed(() => `admin-credit-repayment-schedule:${props.requestId}`),
+  },
 );
 
 const parsed = computed(() =>

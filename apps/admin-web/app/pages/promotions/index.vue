@@ -9,6 +9,7 @@ import PromotionCardsGrid from '~/components/promotions/PromotionCardsGrid.vue';
 import PromotionFilterBar from '~/components/promotions/PromotionFilterBar.vue';
 import PromotionStatCards from '~/components/promotions/PromotionStatCards.vue';
 import PromotionTable from '~/components/promotions/PromotionTable.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { usePromotionListFilters } from '~/composables/usePromotionListFilters';
@@ -18,6 +19,7 @@ import {
   filterPromotionsByStatus,
   parsePromotionsListResponse,
 } from '~/lib/promotion-api';
+import { withRoutePaginationMeta } from '~/lib/list-pagination-meta';
 import { promotionListFiltersToApiQuery } from '~/lib/promotion-filters';
 import type { AdminPromotionListItem, PromotionActionMode } from '~/types/promotions';
 
@@ -42,7 +44,7 @@ const activePromotion = ref<AdminPromotionListItem | null>(null);
 
 const apiQuery = computed(() => promotionListFiltersToApiQuery(filters.value));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/promotions', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/promotions', {
   query: apiQuery,
   watch: [apiQuery],
 });
@@ -56,7 +58,9 @@ const filteredRows = computed(() =>
 );
 
 const stats = computed(() => parsed.value.stats);
-const meta = computed(() => parsed.value.meta);
+const meta = computed(() =>
+  withRoutePaginationMeta(parsed.value.meta, filters.value.page, filters.value.limit),
+);
 
 watch(
   () => filters.value.name,

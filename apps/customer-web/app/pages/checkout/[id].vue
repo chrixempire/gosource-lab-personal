@@ -28,6 +28,7 @@ import type { CustomerCreditAccount } from '~/types/credit';
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const runWhenSessionReady = useAuthenticatedFetch();
 const route = useRoute();
+const router = useRouter();
 const requestId = computed(() => String(route.params.id ?? ''));
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
@@ -243,9 +244,17 @@ function openRequestDetails() {
   void navigateTo(`/manage-requests/${targetId}`);
 }
 
-function goBackToRequests() {
-  successDialogOpen.value = false;
-  void navigateTo('/manage-requests');
+function goBackFromCheckout() {
+  if (successDialogOpen.value) {
+    successDialogOpen.value = false;
+  }
+
+  if (import.meta.client && window.history.length > 1) {
+    router.back();
+    return;
+  }
+
+  void navigateTo('/market');
 }
 
 async function downloadApprovedInvoice() {
@@ -306,9 +315,9 @@ watch(requestId, () => {
         size="small"
         class="!w-auto"
         :left-icon="ChevronLeft"
-        @click="approvedRequest ? goBackToRequests() : navigateTo(`/manage-requests/${requestId}`)"
+        @click="goBackFromCheckout"
       >
-        {{ approvedRequest ? 'Back to requests' : 'Back to request' }}
+        Back
       </Button>
 
       <StatusTag

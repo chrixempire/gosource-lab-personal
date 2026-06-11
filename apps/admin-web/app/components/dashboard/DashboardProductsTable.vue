@@ -12,6 +12,7 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import DashboardProductRankCards from '~/components/dashboard/DashboardProductRankCards.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
@@ -77,10 +78,14 @@ const query = computed(() => ({
   limit: pageSize.value,
 }));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/dashboard/best-selling', {
-  query,
-  watch: [query],
-});
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
+  '/api/dashboard/best-selling',
+  {
+    query,
+    watch: [query],
+    key: 'admin-dashboard-best-selling',
+  },
+);
 
 const parsed = computed(() =>
   parseBestSellingResponse(data.value, page.value, pageSize.value),

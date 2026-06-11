@@ -7,6 +7,7 @@ import {
   formatDashboardNumber,
   toDashboardQueryParams,
 } from '~/lib/dashboard-date';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import type { DashboardDateFilterValue, DashboardSummaryResponse } from '~/types/dashboard';
 
 const props = defineProps<{
@@ -15,9 +16,13 @@ const props = defineProps<{
 
 const query = computed(() => toDashboardQueryParams(props.filter));
 
-const { data, pending, error } = await useFetch<DashboardSummaryResponse>('/api/dashboard/summary', {
+const { data, pending, error } = await useAdminAuthenticatedFetch<DashboardSummaryResponse>(
+  '/api/dashboard/summary',
+  {
     query,
     watch: [query],
+    key: 'admin-dashboard-summary',
+    staleAfterMs: 60_000,
   },
 );
 

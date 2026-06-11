@@ -9,7 +9,7 @@ import { useMarketplaceUi } from '~/composables/useMarketplaceUi';
 import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerRequestService } from '~/services/request.service';
 import { customerSignInLocation } from '~/lib/auth-redirect';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 import { MIN_ORDER_SUBTOTAL_NAIRA } from '~/lib/market-cart';
 
@@ -177,12 +177,13 @@ export function useCartRequestAction() {
 
       const response = await createRequest(payload);
       const createdRequestId = response.data?.id;
+      const routesToCheckout = Boolean(isBusinessOwner.value && createdRequestId);
 
       closeCartDrawer();
 
       // Reference gosource-web-app: cart → POST /request → Super Admin → /checkout/:id (pay/approve).
       // Members only create the pending request; owner completes checkout separately.
-      if (isBusinessOwner.value && createdRequestId) {
+      if (routesToCheckout) {
         await router.push(`/checkout/${createdRequestId}`);
       } else if (createdRequestId) {
         await router.push({
@@ -193,10 +194,13 @@ export function useCartRequestAction() {
         await router.push('/manage-requests');
       }
 
-      toast.success('Request created successfully');
+      if (!routesToCheckout) {
+        toast.success('Request submitted', { duration: 2000 });
+      }
+
       void clearCartAfterRequest(branchId);
     } catch (error) {
-      toast.error(extractApiErrorMessage(error, 'Unable to create request right now'));
+      reportCustomerApiError(error, 'Unable to create request right now');
     } finally {
       isSubmitting.value = false;
     }

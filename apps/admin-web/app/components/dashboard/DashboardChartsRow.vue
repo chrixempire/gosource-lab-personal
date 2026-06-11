@@ -4,6 +4,7 @@ import DashboardOrderStatusPieChart from '~/components/dashboard/DashboardOrderS
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { parseOrderMetrics } from '~/lib/dashboard-api';
 import { toDashboardQueryParams } from '~/lib/dashboard-date';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import type { DashboardDateFilterValue } from '~/types/dashboard';
 
 const props = defineProps<{
@@ -12,12 +13,17 @@ const props = defineProps<{
 
 const query = computed(() => toDashboardQueryParams(props.filter));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/dashboard/order-metrics', {
-  query,
-  watch: [query],
-  /** Client-only so metrics load after login cookie exists (avoids stale SSR/prefetch). */
-  server: false,
-});
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
+  '/api/dashboard/order-metrics',
+  {
+    query,
+    watch: [query],
+    key: 'admin-dashboard-order-metrics',
+    staleAfterMs: 60_000,
+    /** Client-only so metrics load after login cookie exists (avoids stale SSR/prefetch). */
+    server: false,
+  },
+);
 
 const metrics = computed(() => parseOrderMetrics(data.value, props.filter));
 const trendPoints = computed(() => metrics.value.trendPoints);

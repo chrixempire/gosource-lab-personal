@@ -16,6 +16,7 @@ import {
   validatePhoneNumber,
   validateRequiredText,
 } from '~/utils/auth-validation';
+import { useCustomerSession } from '~/composables/useCustomerSession';
 import { extractApiErrorMessage, extractApiResponseMessage } from '~/utils/api-error';
 import { customerDefaultAfterLogin, sanitizeAuthRedirectPath } from '~/lib/auth-redirect';
 
@@ -81,7 +82,7 @@ const flowState = useState<{
   businessId: null,
   verified: false,
 }));
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+const { adoptSession, clearSession } = useCustomerSession();
 
 async function submitSignup() {
   signupErrors.businessName = validateBusinessName(signupForm.businessName);
@@ -202,7 +203,7 @@ async function submitSetupAccount() {
     toast.success(extractApiResponseMessage(result, 'Account setup complete'));
 
     if (runtimeConfig.public.customerApiMode === 'legacy') {
-      session.value = null;
+      clearSession();
       await navigateTo({
         path: '/auth/sign-in',
         query: {
@@ -212,7 +213,7 @@ async function submitSetupAccount() {
       return;
     }
 
-    session.value = result;
+    adoptSession(result);
     await mergeGuestCartAfterLogin();
     await navigateTo(sanitizeAuthRedirectPath(route.query.redirect, customerDefaultAfterLogin()));
   } catch (error) {

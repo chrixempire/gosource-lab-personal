@@ -2,6 +2,7 @@
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import PromotionForm from '~/components/promotions/PromotionForm.vue';
 import PromotionFormPageHeader from '~/components/promotions/PromotionFormPageHeader.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { usePromotionMutations } from '~/composables/usePromotionMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -23,9 +24,12 @@ const form = reactive(createEmptyPromotionFormValues());
 const fieldErrors = reactive<Record<string, string>>({});
 const submitting = computed(() => busyPromotionId.value === promotionId.value);
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/promotions/${promotionId.value}`,
-  { watch: [promotionId] },
+  {
+    watch: [promotionId],
+    key: computed(() => `admin-promotion-detail:${promotionId.value}`),
+  },
 );
 
 const detail = computed(() => parsePromotionDetail(data.value));

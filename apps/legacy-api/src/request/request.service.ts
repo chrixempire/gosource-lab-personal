@@ -1122,7 +1122,9 @@ export class RequestService {
         throw new NotFoundException('Branch not found');
       }
 
-      if (branch.businessId.toString() !== businessDetails.id) {
+      const scopedBusinessId = await this.getAuthBusinessId(businessDetails.id);
+
+      if (branch.businessId.toString() !== scopedBusinessId) {
         throw new UnauthorizedException(
           'You cannot view requests for this branch',
         );

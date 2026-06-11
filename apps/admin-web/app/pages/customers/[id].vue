@@ -13,6 +13,7 @@ import CustomerWalletDetailsCard from '~/components/customers/CustomerWalletDeta
 import CustomerWalletTab from '~/components/customers/CustomerWalletTab.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import LoadingState from '~/components/shared/LoadingState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useCustomerMutations } from '~/composables/useCustomerMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -61,9 +62,12 @@ const tabHighlightStyle = computed(() => ({
   transform: `translateX(calc(${activeTabIndex.value} * (100% + ${TAB_GAP_PX}px)))`,
 }));
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/customers/${customerId.value}`,
-  { watch: [customerId] },
+  {
+    watch: [customerId],
+    key: computed(() => `admin-customer-detail:${customerId.value}`),
+  },
 );
 
 const customer = computed(() => parseCustomerDetail(data.value));

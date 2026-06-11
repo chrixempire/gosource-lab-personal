@@ -5,8 +5,7 @@ import type {
   CreateBranchPayload,
   UpdateBranchPayload,
 } from '@gosource/api-client';
-import { toast } from '@gosource/ui';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 export function useCustomerBranchService() {
   const { $branchApi } = useNuxtApp();
@@ -16,7 +15,7 @@ export function useCustomerBranchService() {
       try {
         return (await $branchApi.createBranch(payload)) as BranchResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to create branch right now'));
+        reportCustomerApiError(error, 'Unable to create branch right now');
         throw error;
       }
     },
@@ -24,7 +23,7 @@ export function useCustomerBranchService() {
       try {
         return (await $branchApi.listBranches(query)) as BranchListResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to fetch branches right now'));
+        reportCustomerApiError(error, 'Unable to fetch branches right now');
         throw error;
       }
     },
@@ -32,7 +31,7 @@ export function useCustomerBranchService() {
       try {
         return (await $branchApi.getBranch(branchId)) as BranchResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to load branch right now'));
+        reportCustomerApiError(error, 'Unable to load branch right now');
         throw error;
       }
     },
@@ -40,7 +39,7 @@ export function useCustomerBranchService() {
       try {
         return (await $branchApi.updateBranch(branchId, payload)) as BranchResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to update branch right now'));
+        reportCustomerApiError(error, 'Unable to update branch right now');
         throw error;
       }
     },
@@ -48,7 +47,7 @@ export function useCustomerBranchService() {
       try {
         return (await $branchApi.activateBranch(branchId)) as BranchResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to activate branch right now'));
+        reportCustomerApiError(error, 'Unable to activate branch right now');
         throw error;
       }
     },
@@ -56,7 +55,7 @@ export function useCustomerBranchService() {
       try {
         return (await $branchApi.deactivateBranch(branchId)) as BranchResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to deactivate branch right now'));
+        reportCustomerApiError(error, 'Unable to deactivate branch right now');
         throw error;
       }
     },
@@ -64,7 +63,7 @@ export function useCustomerBranchService() {
       try {
         return (await $branchApi.deleteBranch(branchId)) as BranchDeleteResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to delete branch right now'));
+        reportCustomerApiError(error, 'Unable to delete branch right now');
         throw error;
       }
     },

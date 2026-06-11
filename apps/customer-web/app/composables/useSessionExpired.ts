@@ -1,6 +1,7 @@
-import type { CustomerMeResponse } from '@gosource/api-client';
 import { SESSION_EXPIRED_MESSAGE } from '@gosource/api-client';
 import { toast } from '@gosource/ui';
+import { useCustomerSession } from '~/composables/useCustomerSession';
+import { useCustomerSignOut } from '~/composables/useCustomerSignOut';
 import { customerSignInLocation } from '~/lib/auth-redirect';
 
 let handlingSessionExpired = false;
@@ -10,22 +11,22 @@ let handlingSessionExpired = false;
  */
 export function useSessionExpired() {
   const route = useRoute();
-  const session = useState<CustomerMeResponse | null>('customer-session', () => null);
-  const sessionResolved = useState('customer-session-resolved', () => false);
+  const { sessionResolved, clearSession } = useCustomerSession();
+  const { isIntentionalSignOut } = useCustomerSignOut();
 
   async function handleSessionExpired() {
     if (!import.meta.client || handlingSessionExpired) {
       return;
     }
 
-    if (route.path.startsWith('/auth')) {
+    if (isIntentionalSignOut() || route.path.startsWith('/auth')) {
       return;
     }
 
     handlingSessionExpired = true;
     const returnPath = route.fullPath;
 
-    session.value = null;
+    clearSession();
     sessionResolved.value = true;
 
     try {

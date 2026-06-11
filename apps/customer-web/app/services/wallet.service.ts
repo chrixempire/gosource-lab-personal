@@ -7,8 +7,7 @@ import type {
   WalletResponse,
   WalletTransactionsResponse,
 } from '@gosource/api-client';
-import { toast } from '@gosource/ui';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 function isNotFoundError(error: unknown) {
   return (
@@ -32,7 +31,7 @@ export function useCustomerWalletService() {
           return null;
         }
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load wallet right now'));
+          reportCustomerApiError(error, 'Unable to load wallet right now');
         }
         throw error;
       }
@@ -41,7 +40,7 @@ export function useCustomerWalletService() {
       try {
         return (await $walletApi.verifyBvn(payload)) as VerifyBvnResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to verify BVN right now'));
+        reportCustomerApiError(error, 'Unable to verify BVN right now');
         throw error;
       }
     },
@@ -49,7 +48,7 @@ export function useCustomerWalletService() {
       try {
         return (await $walletApi.createWallet(payload)) as WalletResponse;
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to create wallet right now'));
+        reportCustomerApiError(error, 'Unable to create wallet right now');
         throw error;
       }
     },
@@ -57,7 +56,7 @@ export function useCustomerWalletService() {
       try {
         return await $walletApi.fundWallet(payload);
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to fund wallet right now'));
+        reportCustomerApiError(error, 'Unable to fund wallet right now');
         throw error;
       }
     },
@@ -69,7 +68,7 @@ export function useCustomerWalletService() {
         return (await $walletApi.listTransactions(query)) as WalletTransactionsResponse;
       } catch (error) {
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load transactions right now'));
+          reportCustomerApiError(error, 'Unable to load transactions right now');
         }
         throw error;
       }

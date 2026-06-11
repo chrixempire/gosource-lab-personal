@@ -38,8 +38,12 @@ import { getMarketCategoryById } from '~/lib/marketplace-data';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
+import { useCustomerSession } from '~/composables/useCustomerSession';
+import { useCustomerSignOut } from '~/composables/useCustomerSignOut';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
+const { session, clearSession } = useCustomerSession();
+const { beginIntentionalSignOut } = useCustomerSignOut();
 const { clearAllDismissals } = useMarketBranchSetupDismissal();
 const { resetCartState } = useMarketplaceCart();
 const { ensureBranchesLoaded, clearActiveBranchForLogout, hasSession } =
@@ -77,8 +81,6 @@ const { header: pageHeaderOverride } = useCustomerPageHeader();
 const mobileNavOpen = ref(false);
 const desktopSidebarOpen = useState('customer-shell-sidebar-open', () => true);
 const isDesktopViewport = useMediaQuery('(min-width: 1024px)');
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
-
 const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/market', title: 'Market' },
   { match: '/business-insight', title: 'Business insight' },
@@ -199,6 +201,7 @@ async function confirmLogout() {
   }
 
   logoutLoading.value = true;
+  beginIntentionalSignOut();
 
   try {
     await $fetch('/api/auth/session/logout', {
@@ -206,9 +209,13 @@ async function confirmLogout() {
       credentials: 'same-origin',
     });
   } catch (error) {
-    toast.error(
-      extractApiErrorMessage(error, 'Unable to reach the server to sign out. You have been signed out here.'),
+    const message = extractApiErrorMessage(
+      error,
+      'Unable to reach the server to sign out. You have been signed out here.',
     );
+    if (message) {
+      toast.error(message);
+    }
   } finally {
     logoutLoading.value = false;
   }
@@ -217,8 +224,9 @@ async function confirmLogout() {
   clearAllDismissals();
   clearActiveBranchForLogout();
   resetCartState();
-  session.value = null;
+  clearSession();
   mobileNavOpen.value = false;
+
   await navigateTo('/auth/sign-in');
 }
 </script>
