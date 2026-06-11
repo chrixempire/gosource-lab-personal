@@ -82,6 +82,8 @@ export default defineNuxtConfig({
         '@internationalized/date',
         'class-variance-authority',
         'clsx',
+        'html2canvas',
+        'jspdf',
         'lucide-vue-next',
         'reka-ui',
         'tailwind-merge',
@@ -98,6 +100,6 @@ export default defineNuxtConfig({
   },
 
   build: {
-    transpile: ['@gosource/ui', '@gosource/api-client'],
+    transpile: ['@gosource/ui', '@gosource/api-client', 'jspdf', 'html2canvas'],
   },
 });

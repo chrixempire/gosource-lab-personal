@@ -674,6 +674,7 @@ useHead({
             :total-pages="meta.totalPages"
             :total-items="meta.total"
             :page-size="meta.limit"
+            :visible-count="orderItems.length"
             :has-next-page="meta.hasNextPage"
             :has-prev-page="meta.hasPrevPage"
             @change="setPage"

@@ -13,13 +13,13 @@ import CheckoutRequestItems from '~/components/checkout/CheckoutRequestItems.vue
 import CheckoutSuccessDialog from '~/components/checkout/CheckoutSuccessDialog.vue';
 import CheckoutTransferDialog from '~/components/checkout/CheckoutTransferDialog.vue';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
+import { useDownloadOrderInvoice } from '~/composables/useDownloadOrderInvoice';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { usePaystack } from '~/composables/usePaystack';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { formatRequestCurrency } from '~/lib/request-details';
 import { resolveCheckoutCreditEligibility } from '~/lib/checkout-credit';
 import { useCustomerCreditService } from '~/services/credit.service';
-import { useCustomerOrderService } from '~/services/order.service';
 import { useCustomerProfileService } from '~/services/profile.service';
 import { useCustomerRequestService } from '~/services/request.service';
 import { useCustomerWalletService } from '~/services/wallet.service';
@@ -34,8 +34,8 @@ const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 const { getRequest, approveRequest } = useCustomerRequestService();
 const { resetCartState, loadCart } = useMarketplaceCart();
 const { getWallet } = useCustomerWalletService();
-const { getOrderInvoiceUrl } = useCustomerOrderService();
 const { getBusinessAccount } = useCustomerProfileService();
+const { downloadingInvoice, downloadOrderInvoice } = useDownloadOrderInvoice();
 const { getCreditAccount } = useCustomerCreditService();
 
 const loading = ref(true);
@@ -46,7 +46,6 @@ const approvedOrderId = ref<string | null>(null);
 const selectedMethod = ref<CheckoutPaymentMethodValue | null>(null);
 const transferDialogOpen = ref(false);
 const successDialogOpen = ref(false);
-const downloadingInvoice = ref(false);
 const walletBalance = ref<number | null>(null);
 const canBuyOnCredit = ref<boolean | null>(null);
 const creditAccount = ref<CustomerCreditAccount | null>(null);
@@ -255,33 +254,7 @@ async function downloadApprovedInvoice() {
     return;
   }
 
-  if (downloadingInvoice.value) {
-    return;
-  }
-
-  downloadingInvoice.value = true;
-
-  try {
-    const response = await fetch(getOrderInvoiceUrl(approvedOrderId.value), {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Invoice download failed');
-    }
-
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = objectUrl;
-    anchor.download = `order_invoice_${approvedRequest.value?.reference ?? approvedOrderId.value}.pdf`;
-    anchor.click();
-    URL.revokeObjectURL(objectUrl);
-  } catch {
-    toast.error('Unable to download invoice right now.');
-  } finally {
-    downloadingInvoice.value = false;
-  }
+  await downloadOrderInvoice(approvedOrderId.value);
 }
 
 function trackApprovedOrder() {

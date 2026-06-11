@@ -19,6 +19,8 @@ const props = defineProps<{
   plain?: boolean;
   disabled?: boolean;
   hidePageSize?: boolean;
+  /** When set, the range label uses the actual rendered row count for this page. */
+  visibleCount?: number;
 }>();
 
 const emit = defineEmits<{
@@ -36,7 +38,17 @@ const startIndex = computed(() => {
   return (props.page - 1) * props.pageSize + 1;
 });
 
-const endIndex = computed(() => Math.min(props.page * props.pageSize, props.totalItems));
+const endIndex = computed(() => {
+  if (props.totalItems === 0) {
+    return 0;
+  }
+
+  if (props.visibleCount != null && props.visibleCount >= 0) {
+    return (props.page - 1) * props.pageSize + props.visibleCount;
+  }
+
+  return Math.min(props.page * props.pageSize, props.totalItems);
+});
 
 const previousDisabled = computed(() => props.hasPrevPage === false || props.page <= 1);
 const nextDisabled = computed(() => props.hasNextPage === false || props.page >= props.totalPages);

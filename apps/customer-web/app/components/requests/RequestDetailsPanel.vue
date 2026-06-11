@@ -110,6 +110,7 @@ const emit = defineEmits<{
         :products="[]"
         loading
         :embedded="props.pageLayout"
+        :list-style="!props.pageLayout"
         :format-currency="formatCurrency"
       />
     </div>
@@ -214,7 +215,7 @@ const emit = defineEmits<{
 
     <template v-else>
       <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5">
-        <div class="min-w-0">
+        <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <p class="text-xs font-semibold uppercase tracking-[0.14em] text-grey-300">
               Order request
@@ -226,6 +227,13 @@ const emit = defineEmits<{
               {{ view.branchOrderLabel }}
             </p>
           </div>
+          <StatusTag
+            :variant="view.statusVariant"
+            size="medium"
+            class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold normal-case"
+          >
+            {{ view.statusLabel }}
+          </StatusTag>
         </div>
       </div>
 
@@ -310,6 +318,7 @@ const emit = defineEmits<{
         :format-currency="formatCurrency"
         :editable="editable"
         :embedded="props.pageLayout"
+        :list-style="!props.pageLayout"
         :disabled="productsEditing"
         :loading="productsEditing"
         @quantity-change="(cartLineId, quantity) => emit('quantityChange', cartLineId, quantity)"
