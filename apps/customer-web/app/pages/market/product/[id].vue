@@ -66,6 +66,7 @@ const { data: productDetailPayload, pending: loading } = await useAuthenticatedA
     };
   },
   {
+    fastNav: true,
     watch: [productId],
     default: () => ({
       product: cachedProduct.value,

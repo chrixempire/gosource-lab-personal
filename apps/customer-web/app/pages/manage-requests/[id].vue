@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'customer-market' });
 
-import type { CustomerMeResponse, RequestRecord } from '@gosource/api-client';
+import type { RequestRecord } from '@gosource/api-client';
 import { Button, StatusTag, toast } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
 import MemberConfirmOverlay from '~/components/members/MemberConfirmOverlay.vue';
@@ -24,6 +24,7 @@ import {
   resolveCurrentActorId,
 } from '~/lib/request-edit';
 import { useCustomerSession } from '~/composables/useCustomerSession';
+import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useRequestEdit } from '~/composables/useRequestEdit';
@@ -31,14 +32,16 @@ import { useCustomerRequestService } from '~/services/request.service';
 
 const runWhenSessionReady = useAuthenticatedFetch();
 
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
-const { sessionResolved } = useCustomerSession();
+const { session, sessionResolved } = useCustomerSession();
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
 const route = useRoute();
 const router = useRouter();
 const requestId = computed(() => String(route.params.id ?? ''));
-const requestDetailKey = computed(() => `manage-request-detail:${requestId.value || 'empty'}`);
+const requestDetailKey = computed(
+  () =>
+    `manage-request-detail:${getCustomerSessionCacheSignature(session.value)}:${requestId.value || 'empty'}`,
+);
 const isEditingProducts = ref(false);
 
 const { getRequest, listRequests, rejectRequest, cancelRequest } = useCustomerRequestService();
@@ -165,6 +168,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [requestId],
     default: () => ({
       requestKey: requestId.value,
@@ -197,11 +201,7 @@ watch(
       return;
     }
 
-    if (!resolved && !activeSession) {
-      setActiveRequest(nextRequest);
-      if (isEditingProducts.value) {
-        beginProductEdit(nextRequest);
-      }
+    if (!resolved || !activeSession) {
       return;
     }
 

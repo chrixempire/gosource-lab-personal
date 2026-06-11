@@ -3,6 +3,7 @@ import { Button } from '@gosource/ui';
 import { ArrowLeft } from 'lucide-vue-next';
 import DiscountForm from '~/components/discounts/DiscountForm.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useDiscountMutations } from '~/composables/useDiscountMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -28,9 +29,12 @@ const form = reactive(createEmptyDiscountFormValues());
 const fieldErrors = reactive<Record<string, string>>({});
 const submitting = computed(() => busyDiscountId.value === discountId.value);
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/coupons/${discountId.value}`,
-  { watch: [discountId] },
+  {
+    watch: [discountId],
+    key: computed(() => `admin-discount-detail:${discountId.value}`),
+  },
 );
 
 watch(

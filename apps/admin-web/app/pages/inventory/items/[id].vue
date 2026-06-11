@@ -5,6 +5,7 @@ import ProductActionConfirmDialog from '~/components/inventory/ProductActionConf
 import ProductAddStockDialog from '~/components/inventory/ProductAddStockDialog.vue';
 import ProductRemoveStockDialog from '~/components/inventory/ProductRemoveStockDialog.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useProductActionConfirm } from '~/composables/useProductActionConfirm';
 import { useProductMutations } from '~/composables/useProductMutations';
 import { useProductStockDialog } from '~/composables/useProductStockDialog';
@@ -50,9 +51,12 @@ const {
   requestConfirm,
 } = useProductActionConfirm();
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/products/${productId.value}`,
-  { watch: [productId] },
+  {
+    watch: [productId],
+    key: computed(() => `admin-product-detail:${productId.value}`),
+  },
 );
 
 const { data: unitsPayload } = await useFetch<unknown>('/api/products/units');

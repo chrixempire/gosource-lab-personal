@@ -12,6 +12,7 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import DashboardCustomerRankCards from '~/components/dashboard/DashboardCustomerRankCards.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
@@ -75,9 +76,12 @@ const query = computed(() => ({
   limit: pageSize.value,
 }));
 
-const { data, pending, error } = await useFetch<unknown>('/api/dashboard/customer-ranking', {
+const { data, pending, error } = await useAdminAuthenticatedFetch<unknown>(
+  '/api/dashboard/customer-ranking',
+  {
     query,
     watch: [query],
+    key: 'admin-dashboard-customer-ranking',
   },
 );
 

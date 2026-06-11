@@ -19,6 +19,17 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/icon'],
 
+  experimental: {
+    defaults: {
+      nuxtLink: {
+        prefetchOn: {
+          interaction: true,
+          visibility: true,
+        },
+      },
+    },
+  },
+
   devServer: {
     port: 3003,
     strictPort: true,

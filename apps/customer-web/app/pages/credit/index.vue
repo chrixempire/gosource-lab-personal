@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@gosource/ui';
 import CreditDashboard from '~/components/credit/CreditDashboard.vue';
+import CreditPageSkeleton from '~/components/credit/CreditPageSkeleton.vue';
 import CreditGetStarted from '~/components/credit/CreditGetStarted.vue';
 import CreditNotEligible from '~/components/credit/CreditNotEligible.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
@@ -33,6 +34,7 @@ const { data: creditPayload, pending: pagePending } = await useAuthenticatedAsyn
   'credit-page',
   () => fetchPayload(),
   {
+    fastNav: true,
     default: () => createEmptyCreditPagePayload(),
     staleAfterMs: 60_000,
   },
@@ -76,13 +78,7 @@ async function refreshCreditPage() {
 
 <template>
   <div class="flex flex-col gap-6">
-    <div v-if="pagePending" class="space-y-4">
-      <div class="h-8 w-48 animate-pulse rounded bg-grey-55" />
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div v-for="index in 3" :key="index" class="h-28 animate-pulse rounded-lg bg-grey-55" />
-      </div>
-      <div class="h-64 animate-pulse rounded-lg bg-grey-55" />
-    </div>
+    <CreditPageSkeleton v-if="pagePending" />
 
     <div
       v-else-if="loadError"

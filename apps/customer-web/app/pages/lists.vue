@@ -217,6 +217,7 @@ const { data: listsPayload, pending: listsPending, refresh: refreshListsPayload 
       };
     },
     {
+      fastNav: true,
       watch: [apiBranchId, employeeBranchId, () => route.query.branchId],
       default: () => ({
         branchId: '',

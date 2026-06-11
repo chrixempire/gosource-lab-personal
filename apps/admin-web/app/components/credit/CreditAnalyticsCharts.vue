@@ -5,6 +5,7 @@ import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadingState from '~/components/shared/LoadingState.vue';
 import { ensureDashboardChartsRegistered } from '~/lib/dashboard-charts';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import {
   buildCreditUsageLineData,
   buildRepaymentPerformancePieData,
@@ -13,7 +14,13 @@ import {
   parseCreditAnalyticsCharts,
 } from '~/lib/credit-analytics-charts';
 
-const { data: chartsData, pending } = useFetch<unknown>('/api/credit/analytics/charts');
+const { data: chartsData, pending } = await useAdminAuthenticatedFetch<unknown>(
+  '/api/credit/analytics/charts',
+  {
+    key: 'admin-credit-analytics-charts',
+    staleAfterMs: 60_000,
+  },
+);
 const charts = computed(() => parseCreditAnalyticsCharts(chartsData.value));
 
 const lineCanvas = ref<HTMLCanvasElement | null>(null);

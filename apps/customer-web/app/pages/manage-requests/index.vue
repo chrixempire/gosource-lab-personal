@@ -1,11 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'customer-market' });
 
-import type {
-  BranchRecord,
-  CustomerMeResponse,
-  RequestRecord,
-} from '@gosource/api-client';
+import type { BranchRecord, RequestRecord } from '@gosource/api-client';
 import {
   Button,
   PaginationBar,
@@ -43,7 +39,8 @@ import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useCustomerBranchService } from '~/services/branch.service';
-import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { useCustomerSession } from '~/composables/useCustomerSession';
+import { usePaginatedListData } from '~/composables/usePaginatedListData';
 import { useCustomerRequestService } from '~/services/request.service';
 import {
   parseRequestFiltersFromQuery,
@@ -52,7 +49,7 @@ import {
   type RequestListFilters,
 } from '~/lib/request-list-filters';
 
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+const { session, whenReady } = useCustomerSession();
 const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 const currentActorId = computed(() => {
@@ -156,13 +153,24 @@ watch(employeeBranchId, (next) => {
   }
 });
 
+const requestsListKeyParts = computed(() => [
+  page.value,
+  limit.value,
+  debouncedSearch.value,
+  listFilters.value.amountMin ?? '',
+  listFilters.value.amountMax ?? '',
+  listFilters.value.status.join(','),
+  apiBranchId.value ?? '',
+]);
+
 const {
   data: requestsPagePayload,
   pending: requestsLoading,
   status: requestsFetchStatus,
   refresh: refreshRequestsData,
-} = await useAuthenticatedAsyncData(
+} = await usePaginatedListData(
   'manage-requests-index',
+  requestsListKeyParts,
   async () => {
     const branchesResponse = await listBranches({ page: 1, limit: 100 });
     const branchRows = branchesResponse.data ?? [];
@@ -175,12 +183,19 @@ const {
       };
     }
 
+    const requestedBranchId = !isEmployeeSession.value ? apiBranchId.value?.trim() : '';
+    const scopedBranchId =
+      requestedBranchId
+      && (branchRows.length === 0 || branchRows.some((branch) => branch.id === requestedBranchId))
+        ? requestedBranchId
+        : undefined;
+
     const requestsResponse = await listRequests({
       page: page.value,
       limit: limit.value,
       search: debouncedSearch.value.trim() || undefined,
       status: requestStatusFiltersToApiParam(listFilters.value.status),
-      branchId: !isEmployeeSession.value ? apiBranchId.value : undefined,
+      branchId: scopedBranchId,
       amountFrom: listFilters.value.amountMin ?? undefined,
       amountTo: listFilters.value.amountMax ?? undefined,
     });
@@ -196,15 +211,6 @@ const {
     };
   },
   {
-    watch: [
-      page,
-      limit,
-      debouncedSearch,
-      () => listFilters.value.amountMin,
-      () => listFilters.value.amountMax,
-      () => listFilters.value.status.join(','),
-      apiBranchId,
-    ],
     default: () => ({
       branches: [] as BranchRecord[],
       requests: [] as RequestRecord[],
@@ -388,8 +394,17 @@ async function openRequestDetails(
     return;
   }
 
+  if (import.meta.client) {
+    await whenReady();
+  }
+
+  const activeSession = session.value;
+  if (!activeSession) {
+    return;
+  }
+
   const cached = requests.value.find((item) => item.id === requestId);
-  if (cached && !memberCanViewRequest(session.value, cached)) {
+  if (cached && !memberCanViewRequest(activeSession, cached)) {
     toast.error('You do not have access to this request.');
     return;
   }
@@ -408,7 +423,7 @@ async function openRequestDetails(
   try {
     const response = await getRequest(requestId);
     if (response.data) {
-      if (!memberCanViewRequest(session.value, response.data)) {
+      if (!memberCanViewRequest(activeSession, response.data)) {
         toast.error('You do not have access to this request.');
         closeDetails();
         return;
@@ -726,10 +741,10 @@ async function handleRequestCancel(request: RequestListItem) {
       <div v-if="showDesktopTable" class="hidden min-[1000px]:block">
         <RequestTable
           :requests="tableRequests"
-          :page="meta.page"
+          :page="page"
           :total-pages="meta.totalPages"
           :total-items="meta.total"
-          :page-size="meta.limit"
+          :page-size="limit"
           :has-next-page="meta.hasNextPage"
           :has-prev-page="meta.hasPrevPage"
           :loading="tableLoading"
@@ -787,10 +802,10 @@ async function handleRequestCancel(request: RequestListItem) {
 
           <PaginationBar
             plain
-            :page="meta.page"
+            :page="page"
             :total-pages="meta.totalPages"
             :total-items="meta.total"
-            :page-size="meta.limit"
+            :page-size="limit"
             :has-next-page="meta.hasNextPage"
             :has-prev-page="meta.hasPrevPage"
             @change="setPage"

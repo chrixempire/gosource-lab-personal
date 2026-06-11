@@ -7,7 +7,9 @@ import CreditRequestStatCards from '~/components/credit/CreditRequestStatCards.v
 import CreditRequestTable from '~/components/credit/CreditRequestTable.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
+import { useCreditRequestListFilters } from '~/composables/useCreditListFilters';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { creditRequestPath, customerCreditHistoryPath } from '~/lib/admin-routes';
 import { creditRequestListFiltersToApiQuery } from '~/lib/credit-filters';
@@ -17,20 +19,11 @@ import {
   CREDIT_LIST_TOOLBAR_CLASS,
   CREDIT_LIST_VIEW_TOOLBAR_CLASS,
 } from '~/lib/credit-page-layout';
-import type { CreditRequestListFilters, CreditWorkflowStatus } from '~/types/credit';
+import type { CreditWorkflowStatus } from '~/types/credit';
 
 const { updateHeader } = useAdminHeader();
 const { routeView, effectiveView, isCompactViewport, setView } = useCollectionRouteState('table');
-
-const filters = ref<CreditRequestListFilters>({
-  page: 1,
-  limit: 10,
-  search: '',
-  requestType: [],
-  status: [],
-  startDate: '',
-  endDate: '',
-});
+const { filters, replaceFilters, resetFilters, setPage, setLimit } = useCreditRequestListFilters();
 
 const searchQuery = ref('');
 const debouncedSearch = useDebounce(searchQuery, 400);
@@ -39,12 +32,12 @@ const activeStat = ref<string | null>(null);
 
 const apiQuery = computed(() => creditRequestListFiltersToApiQuery(filters.value));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/credit/requests', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/credit/requests', {
   query: apiQuery,
   watch: [apiQuery],
 });
 
-const { data: statsData } = await useFetch<unknown>('/api/credit/requests/stats');
+const { data: statsData } = await useAdminListFetch<unknown>('/api/credit/requests/stats');
 
 const parsed = computed(() =>
   parseCreditRequestsListResponse(data.value, filters.value.page, filters.value.limit),
@@ -72,20 +65,8 @@ watch(debouncedSearch, (value) => {
   replaceFilters({ search: trimmed, page: 1 });
 });
 
-function replaceFilters(next: Partial<CreditRequestListFilters>) {
-  filters.value = { ...filters.value, ...next };
-}
-
-function resetFilters() {
-  filters.value = {
-    page: 1,
-    limit: filters.value.limit,
-    search: '',
-    requestType: [],
-    status: [],
-    startDate: '',
-    endDate: '',
-  };
+function onClearAllFilters() {
+  resetFilters();
   searchQuery.value = '';
   activeStat.value = null;
 }
@@ -137,7 +118,7 @@ useHead({ title: 'Credit requests' });
       <CreditRequestFilterBar
         :filters="filters"
         @apply="replaceFilters"
-        @clear-all="resetFilters"
+        @clear-all="onClearAllFilters"
       />
     </div>
 
@@ -162,8 +143,8 @@ useHead({ title: 'Credit requests' });
         :rows="rows"
         :meta="parsed.meta"
         :loading="pending"
-        @page="replaceFilters({ page: $event })"
-        @page-size="replaceFilters({ limit: $event, page: 1 })"
+        @page="setPage"
+        @page-size="setLimit"
         @view="onView"
         @view-credit-history="onViewCreditHistory"
       />
@@ -173,8 +154,8 @@ useHead({ title: 'Credit requests' });
         :rows="rows"
         :meta="parsed.meta"
         :loading="pending"
-        @page="replaceFilters({ page: $event })"
-        @page-size="replaceFilters({ limit: $event, page: 1 })"
+        @page="setPage"
+        @page-size="setLimit"
         @view="onView"
         @view-credit-history="onViewCreditHistory"
       />

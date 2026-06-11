@@ -10,6 +10,7 @@ import {
   TableHeadRow,
   TableRow,
   TableShell,
+  TableSkeleton,
 } from '@gosource/ui';
 import { useDebounceFn, useMediaQuery } from '@vueuse/core';
 import CreditRepaymentHistoryCards from '~/components/credit/CreditRepaymentHistoryCards.vue';
@@ -24,11 +25,16 @@ import { creditRequestPath } from '~/lib/credit-routes';
 import { formatCreditFromKobo } from '~/lib/credit-money';
 import { formatRequestDate } from '~/lib/request-details';
 import {
+  CREDIT_REPAYMENT_HISTORY_SKELETON_COLUMNS,
+  CREDIT_REPAYMENT_TABLE_GRID,
+  CREDIT_REQUEST_HISTORY_SKELETON_COLUMNS,
+  CREDIT_REQUEST_TABLE_GRID_TEMPLATE,
+} from '~/lib/credit-history-table-layout';
+import {
   CUSTOMER_TABLE_BODY_CLASS,
   CUSTOMER_TABLE_DATA_ROW_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
-  CREDIT_REQUEST_TABLE_GRID_TEMPLATE,
 } from '~/lib/customer-table-layout';
 import type {
   CustomerCreditRepayment,
@@ -99,6 +105,14 @@ const creditTotalPages = computed(() =>
 const repaymentTotalPages = computed(() =>
   Math.max(1, Math.ceil(props.repaymentMeta.total / props.repaymentMeta.limit)),
 );
+
+const creditSkeletonRowCount = computed(() =>
+  Math.max(1, Math.min(props.creditMeta.limit, 10)),
+);
+
+const repaymentSkeletonRowCount = computed(() =>
+  Math.max(1, Math.min(props.repaymentMeta.limit, 10)),
+);
 </script>
 
 <template>
@@ -120,7 +134,10 @@ const repaymentTotalPages = computed(() =>
         <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
           <TableHeadRow
             :style="{ gridTemplateColumns: CREDIT_REQUEST_TABLE_GRID_TEMPLATE }"
-            class="gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400"
+            :class="[
+              'gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400',
+              creditLoading ? 'pointer-events-none opacity-60' : undefined,
+            ]"
           >
             <span>Reference</span>
             <span>Amount</span>
@@ -129,7 +146,17 @@ const repaymentTotalPages = computed(() =>
             <span class="sr-only">Actions</span>
           </TableHeadRow>
         </TableHeader>
-        <TableBody :class="CUSTOMER_TABLE_BODY_CLASS">
+
+        <TableSkeleton
+          v-if="creditLoading"
+          :columns="CREDIT_REQUEST_HISTORY_SKELETON_COLUMNS"
+          :grid-template-columns="CREDIT_REQUEST_TABLE_GRID_TEMPLATE"
+          :row-count="creditSkeletonRowCount"
+          :body-class="CUSTOMER_TABLE_BODY_CLASS"
+          row-class="min-h-14 gap-3 bg-background-on-canvas px-4 py-3"
+        />
+
+        <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
           <TableRow
             v-for="row in filteredCreditRequests"
             :key="row.id"
@@ -160,12 +187,13 @@ const repaymentTotalPages = computed(() =>
             </TableCell>
           </TableRow>
           <p
-            v-if="!creditLoading && filteredCreditRequests.length === 0"
+            v-if="filteredCreditRequests.length === 0"
             class="px-4 py-8 text-center text-sm text-grey-400"
           >
             No credit requests yet.
           </p>
         </TableBody>
+
         <TableFooter>
           <PaginationBar
             :page="creditMeta.page"
@@ -174,8 +202,9 @@ const repaymentTotalPages = computed(() =>
             :page-size="creditMeta.limit"
             :has-next-page="creditMeta.page < creditTotalPages"
             :has-prev-page="creditMeta.page > 1"
-            @update:page="emit('creditPage', $event)"
-            @update:page-size="emit('creditLimit', $event)"
+            :disabled="creditLoading"
+            @change="emit('creditPage', $event)"
+            @page-size-change="emit('creditLimit', $event)"
           />
         </TableFooter>
       </TableShell>
@@ -189,8 +218,9 @@ const repaymentTotalPages = computed(() =>
         :page-size="creditMeta.limit"
         :has-next-page="creditMeta.page < creditTotalPages"
         :has-prev-page="creditMeta.page > 1"
-        @update:page="emit('creditPage', $event)"
-        @update:page-size="emit('creditLimit', $event)"
+        :disabled="creditLoading"
+        @change="emit('creditPage', $event)"
+        @page-size-change="emit('creditLimit', $event)"
       />
     </template>
 
@@ -203,7 +233,11 @@ const repaymentTotalPages = computed(() =>
       <TableShell v-else :class="CUSTOMER_TABLE_PANEL_CLASS">
         <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
           <TableHeadRow
-            class="grid grid-cols-[1.2fr_1fr_1fr_0.8fr] gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400"
+            :style="{ gridTemplateColumns: CREDIT_REPAYMENT_TABLE_GRID }"
+            :class="[
+              'gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400',
+              repaymentLoading ? 'pointer-events-none opacity-60' : undefined,
+            ]"
           >
             <span>Reference</span>
             <span>Amount</span>
@@ -211,11 +245,22 @@ const repaymentTotalPages = computed(() =>
             <span>Status</span>
           </TableHeadRow>
         </TableHeader>
-        <TableBody :class="CUSTOMER_TABLE_BODY_CLASS">
+
+        <TableSkeleton
+          v-if="repaymentLoading"
+          :columns="CREDIT_REPAYMENT_HISTORY_SKELETON_COLUMNS"
+          :grid-template-columns="CREDIT_REPAYMENT_TABLE_GRID"
+          :row-count="repaymentSkeletonRowCount"
+          :body-class="CUSTOMER_TABLE_BODY_CLASS"
+          row-class="min-h-14 gap-3 bg-background-on-canvas px-4 py-3"
+        />
+
+        <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
           <TableRow
             v-for="row in filteredRepayments"
             :key="row.id"
-            :class="`${CUSTOMER_TABLE_DATA_ROW_CLASS} grid grid-cols-[1.2fr_1fr_1fr_0.8fr] gap-3 px-4 py-3`"
+            :class="`${CUSTOMER_TABLE_DATA_ROW_CLASS} grid gap-3 px-4 py-3`"
+            :style="{ gridTemplateColumns: CREDIT_REPAYMENT_TABLE_GRID }"
           >
             <TableCell class="font-medium text-grey-900">{{ row.referenceCode }}</TableCell>
             <TableCell>{{ formatCreditFromKobo(row.paymentAmountKobo) }}</TableCell>
@@ -225,12 +270,13 @@ const repaymentTotalPages = computed(() =>
             </TableCell>
           </TableRow>
           <p
-            v-if="!repaymentLoading && filteredRepayments.length === 0"
+            v-if="filteredRepayments.length === 0"
             class="px-4 py-8 text-center text-sm text-grey-400"
           >
             No repayments yet.
           </p>
         </TableBody>
+
         <TableFooter>
           <PaginationBar
             :page="repaymentMeta.page"
@@ -239,8 +285,9 @@ const repaymentTotalPages = computed(() =>
             :page-size="repaymentMeta.limit"
             :has-next-page="repaymentMeta.page < repaymentTotalPages"
             :has-prev-page="repaymentMeta.page > 1"
-            @update:page="emit('repaymentPage', $event)"
-            @update:page-size="emit('repaymentLimit', $event)"
+            :disabled="repaymentLoading"
+            @change="emit('repaymentPage', $event)"
+            @page-size-change="emit('repaymentLimit', $event)"
           />
         </TableFooter>
       </TableShell>
@@ -254,8 +301,9 @@ const repaymentTotalPages = computed(() =>
         :page-size="repaymentMeta.limit"
         :has-next-page="repaymentMeta.page < repaymentTotalPages"
         :has-prev-page="repaymentMeta.page > 1"
-        @update:page="emit('repaymentPage', $event)"
-        @update:page-size="emit('repaymentLimit', $event)"
+        :disabled="repaymentLoading"
+        @change="emit('repaymentPage', $event)"
+        @page-size-change="emit('repaymentLimit', $event)"
       />
     </template>
   </div>

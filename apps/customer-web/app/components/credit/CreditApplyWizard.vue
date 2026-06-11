@@ -21,7 +21,7 @@ import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncDa
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { useCustomerCreditService } from '~/services/credit.service';
 import { useCustomerProfileService } from '~/services/profile.service';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 const { submitApplication } = useCustomerCreditService();
 const { getBusinessAccount } = useCustomerProfileService();
@@ -124,7 +124,7 @@ async function handleContinue() {
     submitted.value = true;
     toast.success('Credit application submitted successfully');
   } catch (error) {
-    toast.error(extractApiErrorMessage(error, 'Failed to submit application. Please try again.'));
+    reportCustomerApiError(error, 'Failed to submit application. Please try again.');
   } finally {
     submitting.value = false;
   }

@@ -81,6 +81,7 @@ const { data: catalogPayload, pending: catalogPending } =
       return response.data ?? [];
     },
     {
+      fastNav: true,
       default: () => catalogList(),
     },
   );

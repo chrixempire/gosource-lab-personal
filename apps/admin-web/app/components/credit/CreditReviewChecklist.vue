@@ -2,6 +2,7 @@
 import { Button, Checkbox } from '@gosource/ui';
 import { LoaderCircle } from 'lucide-vue-next';
 import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useCreditMutations } from '~/composables/useCreditMutations';
 import { customerDetailPath } from '~/lib/admin-routes';
 import { parseCreditChecklist } from '~/lib/credit-api';
@@ -21,9 +22,12 @@ const { busyId, initialiseChecklist, updateChecklistItem } = useCreditMutations(
 
 const applicationId = toRef(props, 'applicationId');
 
-const { data, refresh, status } = await useFetch<unknown>(
+const { data, refresh, status } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/credit/applications/${applicationId.value}/checklist`,
-  { watch: [applicationId], lazy: true },
+  {
+    watch: [applicationId],
+    key: computed(() => `admin-credit-checklist:${applicationId.value}`),
+  },
 );
 
 const items = computed(() => parseCreditChecklist(data.value));

@@ -2,19 +2,28 @@
 import CreditAnalyticsCharts from '~/components/credit/CreditAnalyticsCharts.vue';
 import CreditAnalyticsPerformersTable from '~/components/credit/CreditAnalyticsPerformersTable.vue';
 import CreditAnalyticsStatCards from '~/components/credit/CreditAnalyticsStatCards.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { parseCreditAnalyticsSummary, parseCreditTopPerformers } from '~/lib/credit-api';
 
 const { updateHeader } = useAdminHeader();
 
-const { data: summaryData, pending: summaryPending } = useFetch<unknown>(
+const { data: summaryData, pending: summaryPending } = await useAdminAuthenticatedFetch<unknown>(
   '/api/credit/analytics/summary',
+  {
+    key: 'admin-credit-analytics-summary',
+    staleAfterMs: 60_000,
+  },
 );
 const summary = computed(() => parseCreditAnalyticsSummary(summaryData.value));
 
-const { data: performersData, pending: performersPending } = useFetch<unknown>(
+const { data: performersData, pending: performersPending } = await useAdminAuthenticatedFetch<unknown>(
   '/api/credit/analytics/top-performers',
-  { query: { page: 1, limit: 10 } },
+  {
+    query: { page: 1, limit: 10 },
+    key: 'admin-credit-analytics-top-performers',
+    staleAfterMs: 60_000,
+  },
 );
 const performers = computed(() => parseCreditTopPerformers(performersData.value));
 

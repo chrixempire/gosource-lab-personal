@@ -13,10 +13,20 @@ import {
   wrapFetchWithSessionRetry,
 } from '@gosource/api-client';
 import type { CustomerMeResponse } from '@gosource/api-client';
+import { useCustomerSignOut } from '~/composables/useCustomerSignOut';
 
 export default defineNuxtPlugin(() => {
   const session = useState<CustomerMeResponse | null>('customer-session', () => null);
   const { handleSessionExpired } = useSessionExpired();
+  const { isIntentionalSignOut } = useCustomerSignOut();
+
+  async function onSessionRefreshFailed() {
+    if (isIntentionalSignOut()) {
+      return;
+    }
+
+    await handleSessionExpired();
+  }
   const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined;
   const proxyBaseURL = import.meta.server
     ? new URL('/api/proxy', useRequestURL().origin).toString()
@@ -37,7 +47,7 @@ export default defineNuxtPlugin(() => {
   if (import.meta.client) {
     globalThis.$fetch = wrapFetchWithSessionRetry(originalFetch, {
       refreshSession,
-      onSessionRefreshFailed: handleSessionExpired,
+      onSessionRefreshFailed: onSessionRefreshFailed,
     });
   }
 
@@ -55,7 +65,7 @@ export default defineNuxtPlugin(() => {
       return headers;
     },
     onSessionRefresh: refreshSession,
-    onSessionExpired: handleSessionExpired,
+    onSessionExpired: onSessionRefreshFailed,
   });
 
   return {

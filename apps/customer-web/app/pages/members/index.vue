@@ -42,7 +42,7 @@ import {
   ALL_BRANCHES_VALUE,
   branchFilterFromQueryParam,
 } from '~/lib/branch-picker';
-import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { usePaginatedListData } from '~/composables/usePaginatedListData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useCustomerEmployeeService } from '~/services/employee.service';
@@ -265,9 +265,18 @@ const defaultMeta = {
   hasPrevPage: false,
 };
 
+const membersListKeyParts = computed(() => [
+  page.value,
+  limit.value,
+  debouncedSearch.value,
+  apiBranchId.value ?? '',
+  route.query.branchId ?? '',
+]);
+
 const { data: membersPayload, pending: membersPayloadPending, refresh: refreshMembersPayload } =
-  await useAuthenticatedAsyncData(
+  await usePaginatedListData(
     'members-index',
+    membersListKeyParts,
     async () => {
       await ensureBranchesLoaded();
       const nextBranches = normalizeBranches(branches.value ?? []);
@@ -294,7 +303,6 @@ const { data: membersPayload, pending: membersPayloadPending, refresh: refreshMe
       };
     },
     {
-      watch: [page, limit, debouncedSearch, apiBranchId, () => route.query.branchId],
       default: () => ({
         members: [] as BranchMemberRecord[],
         meta: { ...defaultMeta },
@@ -751,10 +759,10 @@ function cardArticleClass(member: BranchMemberRecord) {
 
         <TableFooter>
           <PaginationBar
-            :page="meta.page"
+            :page="page"
             :total-pages="meta.totalPages"
             :total-items="meta.total"
-            :page-size="meta.limit"
+            :page-size="limit"
             :has-next-page="meta.hasNextPage"
             :has-prev-page="meta.hasPrevPage"
             :disabled="membersListLoading"
@@ -858,10 +866,10 @@ function cardArticleClass(member: BranchMemberRecord) {
 
         <PaginationBar
           plain
-          :page="meta.page"
+          :page="page"
           :total-pages="meta.totalPages"
           :total-items="meta.total"
-          :page-size="meta.limit"
+          :page-size="limit"
           :has-next-page="meta.hasNextPage"
           :has-prev-page="meta.hasPrevPage"
           :disabled="membersListLoading"

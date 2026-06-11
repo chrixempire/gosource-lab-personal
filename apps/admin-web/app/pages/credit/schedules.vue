@@ -7,7 +7,9 @@ import CreditScheduleFilterBar from '~/components/credit/CreditScheduleFilterBar
 import CreditScheduleStatCards from '~/components/credit/CreditScheduleStatCards.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
+import { useCreditScheduleListFilters } from '~/composables/useCreditListFilters';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { creditRequestPath } from '~/lib/admin-routes';
 import { creditScheduleListFiltersToApiQuery } from '~/lib/credit-filters';
@@ -19,7 +21,7 @@ import {
   CREDIT_LIST_SEARCH_CLASS,
   CREDIT_LIST_VIEW_TOOLBAR_CLASS,
 } from '~/lib/credit-page-layout';
-import type { AdminRepaymentScheduleListItem, CreditScheduleListFilters } from '~/types/credit';
+import type { AdminRepaymentScheduleListItem } from '~/types/credit';
 
 type SchedulePageView = 'schedules' | 'overdue';
 
@@ -32,6 +34,17 @@ const route = useRoute();
 const router = useRouter();
 const { updateHeader } = useAdminHeader();
 const { routeView, effectiveView, isCompactViewport, setView } = useCollectionRouteState('table');
+const {
+  filters: scheduleFilters,
+  overdueFilters,
+  replaceFilters: replaceScheduleFilters,
+  replaceOverdueFilters,
+  resetFilters: resetScheduleFilters,
+  setPage: setSchedulePage,
+  setLimit: setScheduleLimit,
+  setOverduePage,
+  setOverdueLimit,
+} = useCreditScheduleListFilters();
 
 const activeView = computed<SchedulePageView>(() => {
   if (route.query.tab === 'overdue' || route.query.view === 'overdue') {
@@ -47,21 +60,6 @@ onMounted(() => {
       query: { tab: 'overdue' },
     });
   }
-});
-
-const scheduleFilters = ref<CreditScheduleListFilters>({
-  page: 1,
-  limit: 10,
-  search: '',
-  status: [],
-  startDate: '',
-  endDate: '',
-});
-
-const overdueFilters = ref({
-  page: 1,
-  limit: 10,
-  search: '',
 });
 
 const scheduleSearchQuery = ref('');
@@ -81,7 +79,7 @@ const {
   pending: schedulePending,
   error: scheduleError,
   refresh: refreshSchedules,
-} = useFetch<unknown>('/api/credit/repayment-schedules', {
+} = await useAdminListFetch<unknown>('/api/credit/repayment-schedules', {
   query: scheduleApiQuery,
   watch: [scheduleApiQuery],
 });
@@ -91,7 +89,7 @@ const {
   pending: overduePending,
   error: overdueError,
   refresh: refreshOverdue,
-} = useFetch<unknown>('/api/credit/repayment-schedules/overdue', {
+} = await useAdminListFetch<unknown>('/api/credit/repayment-schedules/overdue', {
   query: overdueApiQuery,
   watch: [overdueApiQuery],
 });
@@ -137,50 +135,43 @@ watch(
   { immediate: true },
 );
 
+watch(
+  () => overdueFilters.value.search,
+  (value) => {
+    if (value !== overdueSearchQuery.value) overdueSearchQuery.value = value;
+  },
+  { immediate: true },
+);
+
 watch(debouncedScheduleSearch, (value) => {
   const trimmed = value.trim();
   if (trimmed === scheduleFilters.value.search) return;
-  scheduleFilters.value = { ...scheduleFilters.value, search: trimmed, page: 1 };
+  replaceScheduleFilters({ search: trimmed, page: 1 });
 });
 
 watch(debouncedOverdueSearch, (value) => {
   const trimmed = value.trim();
   if (trimmed === overdueFilters.value.search) return;
-  overdueFilters.value = { ...overdueFilters.value, search: trimmed, page: 1 };
+  replaceOverdueFilters({ search: trimmed, page: 1 });
 });
 
 function setActiveView(view: SchedulePageView) {
   if (view === activeView.value) return;
 
-  const nextQuery: Record<string, string> = {};
-  if (route.query.view === 'cards' || route.query.view === 'table') {
-    nextQuery.view = String(route.query.view);
-  }
+  const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>;
   if (view === 'overdue') {
     nextQuery.tab = 'overdue';
+  } else {
+    delete nextQuery.tab;
   }
 
   router.replace({ path: route.path, query: nextQuery });
 }
 
-function replaceScheduleFilters(next: Partial<CreditScheduleListFilters>) {
-  scheduleFilters.value = { ...scheduleFilters.value, ...next };
-}
-
-function resetScheduleFilters() {
-  scheduleFilters.value = {
-    page: 1,
-    limit: scheduleFilters.value.limit,
-    search: '',
-    status: [],
-    startDate: '',
-    endDate: '',
-  };
+function onClearScheduleFilters() {
+  resetScheduleFilters();
   scheduleSearchQuery.value = '';
-}
-
-function replaceOverdueFilters(next: Partial<typeof overdueFilters.value>) {
-  overdueFilters.value = { ...overdueFilters.value, ...next };
+  overdueSearchQuery.value = '';
 }
 
 function onViewSchedule(row: AdminRepaymentScheduleListItem) {
@@ -242,7 +233,7 @@ useHead(() => ({ title: pageTitle.value }));
         v-if="!isOverdueView"
         :filters="scheduleFilters"
         @apply="replaceScheduleFilters"
-        @clear-all="resetScheduleFilters"
+        @clear-all="onClearScheduleFilters"
       />
     </div>
 
@@ -273,12 +264,8 @@ useHead(() => ({ title: pageTitle.value }));
         :meta="parsed.meta"
         :loading="pending"
         :show-days-overdue="isOverdueView"
-        @page="isOverdueView ? replaceOverdueFilters({ page: $event }) : replaceScheduleFilters({ page: $event })"
-        @page-size="
-          isOverdueView
-            ? replaceOverdueFilters({ limit: $event, page: 1 })
-            : replaceScheduleFilters({ limit: $event, page: 1 })
-        "
+        @page="isOverdueView ? setOverduePage($event) : setSchedulePage($event)"
+        @page-size="isOverdueView ? setOverdueLimit($event) : setScheduleLimit($event)"
         @view="onViewSchedule"
       />
       <CreditRepaymentSchedulesTable
@@ -287,12 +274,8 @@ useHead(() => ({ title: pageTitle.value }));
         :meta="parsed.meta"
         :loading="pending"
         :show-days-overdue="isOverdueView"
-        @page="isOverdueView ? replaceOverdueFilters({ page: $event }) : replaceScheduleFilters({ page: $event })"
-        @page-size="
-          isOverdueView
-            ? replaceOverdueFilters({ limit: $event, page: 1 })
-            : replaceScheduleFilters({ limit: $event, page: 1 })
-        "
+        @page="isOverdueView ? setOverduePage($event) : setSchedulePage($event)"
+        @page-size="isOverdueView ? setOverdueLimit($event) : setScheduleLimit($event)"
       />
     </template>
   </div>

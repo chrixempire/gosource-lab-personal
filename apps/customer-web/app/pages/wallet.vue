@@ -16,7 +16,7 @@ import WalletTransactionDetailDialog from '~/components/wallet/WalletTransaction
 import WalletPageSkeleton from '~/components/wallet/WalletPageSkeleton.vue';
 import WalletTransactionsTable from '~/components/wallet/WalletTransactionsTable.vue';
 import WalletTransactionsToolbarSkeleton from '~/components/wallet/WalletTransactionsToolbarSkeleton.vue';
-import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { usePaginatedListData } from '~/composables/usePaginatedListData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 
@@ -152,9 +152,12 @@ const walletAccountNumber = computed(() =>
 );
 const walletAccountName = computed(() => formatWalletAccountDisplay(wallet.value?.accountName));
 
+const walletListKeyParts = computed(() => [page.value, limit.value]);
+
 const { data: walletPayload, pending: loading, refresh: refreshWalletPayload } =
-  await useAuthenticatedAsyncData(
+  await usePaginatedListData(
     'wallet-page',
+    walletListKeyParts,
     async () => {
       if (!isOwner.value) {
         return {
@@ -187,7 +190,6 @@ const { data: walletPayload, pending: loading, refresh: refreshWalletPayload } =
       };
     },
     {
-      watch: [page, limit],
       default: () => ({
         wallet: null as WalletRecord | null,
         transactions: [] as WalletTransactionRecord[],

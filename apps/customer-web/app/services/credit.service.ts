@@ -3,7 +3,6 @@ import type {
   CreateCreditRequestPayload,
   CreditPaginationQuery,
 } from '@gosource/api-client';
-import { toast } from '@gosource/ui';
 import {
   parseCreditAccount,
   parseCreditApplicationDetail,
@@ -22,7 +21,7 @@ import type {
   CustomerCreditRequestsResult,
   CustomerUpcomingCreditPayment,
 } from '~/types/credit';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 function isNotFoundError(error: unknown) {
   return (
@@ -46,7 +45,7 @@ export function useCustomerCreditService() {
         return parseCreditApplications(response, query?.page, query?.limit ?? 200);
       } catch (error) {
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load credit applications right now'));
+          reportCustomerApiError(error, 'Unable to load credit applications right now');
         }
         throw error;
       }
@@ -61,7 +60,7 @@ export function useCustomerCreditService() {
         return parseCreditApplicationDetail(response);
       } catch (error) {
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load credit application right now'));
+          reportCustomerApiError(error, 'Unable to load credit application right now');
         }
         throw error;
       }
@@ -71,7 +70,7 @@ export function useCustomerCreditService() {
       try {
         return await $creditApi.submitApplication(formData);
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to submit credit application right now'));
+        reportCustomerApiError(error, 'Unable to submit credit application right now');
         throw error;
       }
     },
@@ -80,7 +79,7 @@ export function useCustomerCreditService() {
       try {
         return await $creditApi.submitLimitIncrease(formData);
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to submit limit increase request right now'));
+        reportCustomerApiError(error, 'Unable to submit limit increase request right now');
         throw error;
       }
     },
@@ -94,7 +93,7 @@ export function useCustomerCreditService() {
         return parseCreditRequests(response, query?.page, query?.limit);
       } catch (error) {
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load credit requests right now'));
+          reportCustomerApiError(error, 'Unable to load credit requests right now');
         }
         throw error;
       }
@@ -109,7 +108,7 @@ export function useCustomerCreditService() {
         return parseCreditRequestDetail(response);
       } catch (error) {
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load credit request right now'));
+          reportCustomerApiError(error, 'Unable to load credit request right now');
         }
         throw error;
       }
@@ -119,7 +118,7 @@ export function useCustomerCreditService() {
       try {
         return await $creditApi.createRequest(payload);
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to submit credit request right now'));
+        reportCustomerApiError(error, 'Unable to submit credit request right now');
         throw error;
       }
     },
@@ -133,7 +132,7 @@ export function useCustomerCreditService() {
         return parseCreditRepaymentHistory(response, query?.page, query?.limit);
       } catch (error) {
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load repayment history right now'));
+          reportCustomerApiError(error, 'Unable to load repayment history right now');
         }
         throw error;
       }
@@ -148,7 +147,7 @@ export function useCustomerCreditService() {
           return null;
         }
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load credit account right now'));
+          reportCustomerApiError(error, 'Unable to load credit account right now');
         }
         throw error;
       }
@@ -158,7 +157,7 @@ export function useCustomerCreditService() {
       try {
         return await $creditApi.cancelRequest(requestId);
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to cancel credit request right now'));
+        reportCustomerApiError(error, 'Unable to cancel credit request right now');
         throw error;
       }
     },
@@ -167,7 +166,7 @@ export function useCustomerCreditService() {
       try {
         return await $creditApi.makePayment(payload);
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to process credit payment right now'));
+        reportCustomerApiError(error, 'Unable to process credit payment right now');
         throw error;
       }
     },
@@ -178,7 +177,7 @@ export function useCustomerCreditService() {
         return parseUpcomingCreditPayment(response);
       } catch (error) {
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load upcoming payment right now'));
+          reportCustomerApiError(error, 'Unable to load upcoming payment right now');
         }
         throw error;
       }

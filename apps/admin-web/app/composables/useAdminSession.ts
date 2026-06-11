@@ -1,3 +1,5 @@
+import { clearAdminSessionCaches } from '~/composables/clearAdminSessionCaches';
+import { getAdminSessionCacheSignature } from '~/lib/admin-session-cache';
 import type { AdminSessionState } from '~/types/admin-session';
 
 export function useAdminSession() {
@@ -29,7 +31,23 @@ export function useAdminSession() {
     });
   }
 
+  function adoptSession(value: AdminSessionState) {
+    if (import.meta.client) {
+      const previousSignature = getAdminSessionCacheSignature(session.value);
+      const nextSignature = getAdminSessionCacheSignature(value);
+      if (previousSignature !== nextSignature) {
+        clearAdminSessionCaches();
+      }
+    }
+
+    session.value = value;
+  }
+
   function clearSession() {
+    if (import.meta.client) {
+      clearAdminSessionCaches();
+    }
+
     session.value = null;
   }
 
@@ -38,6 +56,7 @@ export function useAdminSession() {
     sessionResolved,
     hasSession,
     whenReady,
+    adoptSession,
     clearSession,
   };
 }

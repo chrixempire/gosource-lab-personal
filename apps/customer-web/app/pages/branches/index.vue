@@ -11,7 +11,7 @@ import BranchEditOverlay from '~/components/branches/BranchEditOverlay.vue';
 import BranchInviteMemberOverlay from '~/components/branches/BranchInviteMemberOverlay.vue';
 import BranchTable from '~/components/branches/BranchTable.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
-import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { usePaginatedListData } from '~/composables/usePaginatedListData';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useCustomerBranchService } from '~/services/branch.service';
 
@@ -68,8 +68,15 @@ const defaultMeta = {
   hasPrevPage: false,
 };
 
-const { data: branchesPayload, pending: loading, refresh: refreshBranches } = await useAuthenticatedAsyncData(
+const branchesListKeyParts = computed(() => [
+  page.value,
+  limit.value,
+  debouncedSearch.value,
+]);
+
+const { data: branchesPayload, pending: loading, refresh: refreshBranches } = await usePaginatedListData(
   'branches-list',
+  branchesListKeyParts,
   async () => {
     const response = await listBranches({
       page: page.value,
@@ -82,7 +89,6 @@ const { data: branchesPayload, pending: loading, refresh: refreshBranches } = aw
     };
   },
   {
-    watch: [page, limit, debouncedSearch],
     default: () => ({
       branches: [] as BranchRecord[],
       meta: { ...defaultMeta },
@@ -283,10 +289,10 @@ function handleBranchDeleted(branchId: string) {
         :branches="sortedBranches"
         :sort-key="sortKey"
         :sort-direction="sortDirection"
-        :page="meta.page"
+        :page="page"
         :total-pages="meta.totalPages"
         :total-items="meta.total"
-        :page-size="meta.limit"
+        :page-size="limit"
         :has-next-page="meta.hasNextPage"
         :has-prev-page="meta.hasPrevPage"
         :loading="loading"
@@ -317,10 +323,10 @@ function handleBranchDeleted(branchId: string) {
         />
         <PaginationBar
           plain
-          :page="meta.page"
+          :page="page"
           :total-pages="meta.totalPages"
           :total-items="meta.total"
-          :page-size="meta.limit"
+          :page-size="limit"
           :has-next-page="meta.hasNextPage"
           :has-prev-page="meta.hasPrevPage"
           @change="setPage"

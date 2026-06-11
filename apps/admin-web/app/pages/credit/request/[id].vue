@@ -11,6 +11,7 @@ import CreditRejectDialog from '~/components/credit/CreditRejectDialog.vue';
 import CreditRequestDetailHeader from '~/components/credit/CreditRequestDetailHeader.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import LoadingState from '~/components/shared/LoadingState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useAdminCapabilities } from '~/composables/useAdminCapabilities';
 import { useCreditMutations } from '~/composables/useCreditMutations';
@@ -40,9 +41,12 @@ onMounted(() => {
 const rejectOpen = ref(false);
 const approveOpen = ref(false);
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/credit/requests/${requestId.value}`,
-  { watch: [requestId] },
+  {
+    watch: [requestId],
+    key: computed(() => `admin-credit-request-detail:${requestId.value}`),
+  },
 );
 
 const credit = computed(() => parseCreditRequestDetail(data.value));

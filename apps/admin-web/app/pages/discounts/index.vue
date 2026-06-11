@@ -10,6 +10,7 @@ import DiscountTable from '~/components/discounts/DiscountTable.vue';
 import DiscountTypeDialog from '~/components/discounts/DiscountTypeDialog.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useDiscountListFilters } from '~/composables/useDiscountListFilters';
@@ -21,6 +22,7 @@ import {
   filterDiscountsByType,
   parseDiscountsListResponse,
 } from '~/lib/discount-api';
+import { withRoutePaginationMeta } from '~/lib/list-pagination-meta';
 import { discountListFiltersToApiQuery } from '~/lib/discount-filters';
 import { slugFromCouponCategory } from '~/lib/discount-routes';
 import type { AdminDiscountListItem } from '~/types/discounts';
@@ -43,7 +45,7 @@ const activeDiscount = ref<AdminDiscountListItem | null>(null);
 
 const apiQuery = computed(() => discountListFiltersToApiQuery(filters.value));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/coupons', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/coupons', {
   query: apiQuery,
   watch: [apiQuery],
 });
@@ -75,7 +77,9 @@ const filteredRows = computed(() => {
 });
 
 const stats = computed(() => computeDiscountStats(parsed.value.rows));
-const meta = computed(() => parsed.value.meta);
+const meta = computed(() =>
+  withRoutePaginationMeta(parsed.value.meta, filters.value.page, filters.value.limit),
+);
 
 watch(
   () => filters.value.coupon,

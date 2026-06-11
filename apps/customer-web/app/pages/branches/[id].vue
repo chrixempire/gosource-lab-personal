@@ -122,6 +122,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [branchId],
     default: () => ({
       branch: null as BranchRecord | null,

@@ -5,6 +5,7 @@ import {
   branchFilterToQueryParam,
   resolvePageListBranchId,
 } from '~/lib/branch-picker';
+import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 
@@ -194,6 +195,33 @@ export function usePageBranchFilter() {
   }
 
   syncViewFromRouteQuery();
+
+  watch(
+    () => getCustomerSessionCacheSignature(session.value),
+    async (next, prev) => {
+      if (!prev || next === prev) {
+        return;
+      }
+
+      viewBranchId.value = ALL_BRANCHES_VALUE;
+      viewingAllBranches.value = false;
+
+      if (!route.query.branchId) {
+        return;
+      }
+
+      const query = { ...route.query };
+      delete query.branchId;
+
+      await navigateTo(
+        {
+          path: route.path,
+          query,
+        },
+        { replace: true },
+      );
+    },
+  );
 
   watch(
     () => ctx.activeBranchId.value,

@@ -2,6 +2,7 @@
 import type { WalletRecord } from '@gosource/api-client';
 import {
   Button,
+  Checkbox,
   Dialog,
   DialogBody,
   DialogClose,
@@ -168,6 +169,9 @@ async function handlePay() {
       return;
     }
 
+    close();
+    await nextTick();
+
     const result = await payWithPaystack({
       amount: effectiveAmountNaira.value,
       metadata: { creditAccountId },
@@ -239,8 +243,8 @@ watch(useCustomAmount, () => {
           </div>
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-grey-700">
-          <input v-model="useCustomAmount" type="checkbox" class="size-4 rounded border-grey-50" />
+        <label class="flex cursor-pointer items-center gap-2 text-sm text-grey-700">
+          <Checkbox v-model="useCustomAmount" />
           Pay a custom amount
         </label>
 
@@ -350,8 +354,8 @@ watch(useCustomAmount, () => {
           </div>
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-grey-700">
-          <input v-model="useCustomAmount" type="checkbox" class="size-4 rounded border-grey-50" />
+        <label class="flex cursor-pointer items-center gap-2 text-sm text-grey-700">
+          <Checkbox v-model="useCustomAmount" />
           Pay a custom amount
         </label>
 

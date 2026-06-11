@@ -8,6 +8,7 @@ import SettingsUserActionDialog from '~/components/settings/SettingsUserActionDi
 import type { SettingsUserActionMode } from '~/components/settings/SettingsUserActionDialog.vue';
 import SettingsUsersTable from '~/components/settings/SettingsUsersTable.vue';
 import SettingsTableToolbarSkeleton from '~/components/settings/skeletons/SettingsTableToolbarSkeleton.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useAdminSession } from '~/composables/useAdminSession';
 import { useSettingsMutations } from '~/composables/useSettingsMutations';
 import { parseAdminRolesList, parseAdminUsersList } from '~/lib/settings-api';
@@ -31,11 +32,11 @@ const actionOpen = ref(false);
 const actionMode = ref<SettingsUserActionMode>('activate');
 const activeUser = ref<AdminUserListItem | null>(null);
 
-const { data: usersData, pending: usersPending, refresh: refreshUsers } = await useFetch<unknown>(
+const { data: usersData, pending: usersPending, refresh: refreshUsers } = await useAdminListFetch<unknown>(
   '/api/admins',
 );
 
-const { data: rolesData } = await useFetch<unknown>('/api/roles');
+const { data: rolesData } = await useAdminListFetch<unknown>('/api/roles');
 
 const allUsers = computed(() => parseAdminUsersList(usersData.value));
 const roles = computed(() => parseAdminRolesList(rolesData.value));

@@ -11,6 +11,7 @@ import PurchaseOrderStatCards from '~/components/purchase-orders/PurchaseOrderSt
 import PurchaseOrderTable from '~/components/purchase-orders/PurchaseOrderTable.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { usePurchaseOrderListFilters } from '~/composables/usePurchaseOrderListFilters';
@@ -24,6 +25,7 @@ import {
   parsePurchaseOrderDetail,
   parsePurchaseOrdersListResponse,
 } from '~/lib/purchase-order-api';
+import { withRoutePaginationMeta } from '~/lib/list-pagination-meta';
 import { purchaseOrderListFiltersToApiQuery } from '~/lib/purchase-order-filters';
 import type { AdminPurchaseOrderListItem } from '~/types/purchase-orders';
 
@@ -59,7 +61,7 @@ const actionLoadingOrderId = ref<string | null>(null);
 
 const apiQuery = computed(() => purchaseOrderListFiltersToApiQuery(filters.value));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/purchase-orders', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/purchase-orders', {
   query: apiQuery,
   watch: [apiQuery],
 });
@@ -68,7 +70,9 @@ const parsed = computed(() =>
   parsePurchaseOrdersListResponse(data.value, filters.value.page, filters.value.limit),
 );
 const orders = computed(() => parsed.value.rows);
-const meta = computed(() => parsed.value.meta);
+const meta = computed(() =>
+  withRoutePaginationMeta(parsed.value.meta, filters.value.page, filters.value.limit),
+);
 const stats = computed(() => parsed.value.stats);
 
 watch(

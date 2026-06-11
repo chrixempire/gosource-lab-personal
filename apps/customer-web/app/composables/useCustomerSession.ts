@@ -1,4 +1,7 @@
 import type { CustomerMeResponse } from '@gosource/api-client';
+import { clearCustomerSessionCaches } from '~/composables/clearCustomerSessionCaches';
+import { resetCustomerUserScopedState } from '~/composables/resetCustomerUserScopedState';
+import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 
 /**
  * Client session bootstrap from /api/auth/session/me (see customer-session-persistence plugins).
@@ -33,10 +36,34 @@ export function useCustomerSession() {
     });
   }
 
+  function adoptSession(value: CustomerMeResponse) {
+    if (import.meta.client) {
+      const previousSignature = getCustomerSessionCacheSignature(session.value);
+      const nextSignature = getCustomerSessionCacheSignature(value);
+      if (previousSignature !== nextSignature) {
+        clearCustomerSessionCaches();
+        resetCustomerUserScopedState();
+      }
+    }
+
+    session.value = value;
+  }
+
+  function clearSession() {
+    if (import.meta.client) {
+      clearCustomerSessionCaches();
+      resetCustomerUserScopedState();
+    }
+
+    session.value = null;
+  }
+
   return {
     session,
     sessionResolved,
     hasSession,
     whenReady,
+    adoptSession,
+    clearSession,
   };
 }
