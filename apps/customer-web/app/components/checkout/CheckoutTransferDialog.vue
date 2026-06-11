@@ -55,19 +55,19 @@ function close() {
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
             Bank
           </p>
-          <p class="mt-2 font-medium text-grey-900">Providus Bank</p>
+          <p class="mt-2 font-medium text-grey-900">PROVIDUS BANK</p>
         </div>
         <div class="rounded-[18px] border border-grey-50 bg-grey-55 px-4 py-4">
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
             Account number
           </p>
-          <p class="mt-2 font-medium text-grey-900">2932505737</p>
+          <p class="mt-2 font-medium text-grey-900">9654219262</p>
         </div>
         <div class="rounded-[18px] border border-grey-50 bg-grey-55 px-4 py-4">
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-grey-300">
             Account name
           </p>
-          <p class="mt-2 font-medium text-grey-900">GoSource Technologies Limited</p>
+          <p class="mt-2 font-medium text-grey-900">GO SOURCE SERVICES-LCO</p>
         </div>
       </DrawerBody>
 
