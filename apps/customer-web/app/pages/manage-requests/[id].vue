@@ -35,16 +35,6 @@ const session = useState<CustomerMeResponse | null>('customer-session', () => nu
 const { sessionResolved } = useCustomerSession();
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
-watch(
-  session,
-  (value) => {
-    if (value && !isBusinessOwnerSession(value)) {
-      void navigateTo('/manage-requests', { replace: true });
-    }
-  },
-  { immediate: true },
-);
-
 const route = useRoute();
 const router = useRouter();
 const requestId = computed(() => String(route.params.id ?? ''));

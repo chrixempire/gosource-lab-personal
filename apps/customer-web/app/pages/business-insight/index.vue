@@ -423,6 +423,7 @@ useHead({ title: 'Business insight' });
       </div>
 
       <OrderTable
+        show-mobile-cards
         hide-actions
         hide-pagination
         :orders="recentOrderItems"

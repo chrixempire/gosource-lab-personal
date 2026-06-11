@@ -1535,22 +1535,33 @@ export function normalizeLegacyOrderListResponse(
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
   const rootMeta = asRecord(root.meta);
   const legacyTotal = Number(rootMeta.total);
+
+  let pageItems = items;
+  if (items.length > safeLimit) {
+    const offset = (safePage - 1) * safeLimit;
+    pageItems = items.slice(offset, offset + safeLimit);
+  }
+
+  const observedMinimum = (safePage - 1) * safeLimit + pageItems.length;
   const total =
-    Number.isFinite(legacyTotal) && legacyTotal >= 0
-      ? legacyTotal
-      : items.length >= safeLimit
-        ? safePage * safeLimit + 1
-        : (safePage - 1) * safeLimit + items.length;
+    query && items.length > safeLimit
+      ? items.length
+      : Number.isFinite(legacyTotal) && legacyTotal >= 0
+        ? Math.max(legacyTotal, observedMinimum)
+        : pageItems.length >= safeLimit
+          ? safePage * safeLimit + 1
+          : observedMinimum;
   const totalPages = Math.max(1, Math.ceil(total / safeLimit));
-  const hasNextPage = safePage < totalPages;
-  const hasPrevPage = safePage > 1;
+  const normalizedPage = Math.min(safePage, totalPages);
+  const hasNextPage = normalizedPage < totalPages;
+  const hasPrevPage = normalizedPage > 1;
 
   return {
     status: true,
     message: toStringValue(root.message) || 'Orders fetched successfully',
-    data: items,
+    data: pageItems,
     meta: {
-      page: safePage,
+      page: normalizedPage,
       limit: safeLimit,
       total,
       totalPages,

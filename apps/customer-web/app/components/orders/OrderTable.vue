@@ -46,11 +46,14 @@ const props = withDefaults(
     periodLabel?: string;
     hideActions?: boolean;
     hidePagination?: boolean;
+    /** When true, renders card layout below the table breakpoint (e.g. business insight). */
+    showMobileCards?: boolean;
   }>(),
   {
     emptyTitle: 'No orders found for the current filters.',
     hideActions: false,
     hidePagination: false,
+    showMobileCards: false,
   },
 );
 
@@ -80,7 +83,7 @@ const showPagination = computed(
 
 <template>
   <div>
-    <div class="space-y-3 lg:hidden">
+    <div v-if="showMobileCards" class="space-y-3 min-[1000px]:hidden">
       <div v-if="loading" class="space-y-3">
         <div
           v-for="index in Math.min(pageSize, 5)"
@@ -122,6 +125,7 @@ const showPagination = computed(
         :total-pages="totalPages"
         :total-items="totalItems"
         :page-size="pageSize"
+        :visible-count="orders.length"
         :has-next-page="hasNextPage"
         :has-prev-page="hasPrevPage"
         @change="emit('page', $event)"
@@ -129,7 +133,8 @@ const showPagination = computed(
       />
     </div>
 
-    <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'hidden overflow-visible lg:block']">
+    <div :class="showMobileCards ? 'hidden min-[1000px]:block' : undefined">
+    <TableShell :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
     <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: tableGridTemplate }"
@@ -252,6 +257,7 @@ const showPagination = computed(
         :total-pages="totalPages"
         :total-items="totalItems"
         :page-size="pageSize"
+        :visible-count="orders.length"
         :has-next-page="hasNextPage"
         :has-prev-page="hasPrevPage"
         @change="emit('page', $event)"
@@ -259,5 +265,6 @@ const showPagination = computed(
       />
     </TableFooter>
   </TableShell>
+    </div>
   </div>
 </template>

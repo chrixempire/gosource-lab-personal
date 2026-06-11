@@ -8,18 +8,6 @@ import type {
 } from '@gosource/api-client';
 import {
   Button,
-  Dialog,
-  DialogBody,
-  DialogClose,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Drawer,
-  DrawerBody,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
   PaginationBar,
   ViewToggle,
   toast,
@@ -31,6 +19,7 @@ import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import RequestCards, { type RequestListItem } from '~/components/requests/RequestCards.vue';
 import RequestCardsSkeleton from '~/components/requests/RequestCardsSkeleton.vue';
 import RequestDetailsPanel from '~/components/requests/RequestDetailsPanel.vue';
+import RequestDetailsSlidePanel from '~/components/requests/RequestDetailsSlidePanel.vue';
 import RequestRejectForm from '~/components/requests/RequestRejectForm.vue';
 import RequestBranchSetupBanner from '~/components/requests/RequestBranchSetupBanner.vue';
 import RequestFilterBar from '~/components/requests/RequestFilterBar.vue';
@@ -810,127 +799,59 @@ async function handleRequestCancel(request: RequestListItem) {
         </div>
       </div>
 
-    <Drawer
+    <RequestDetailsSlidePanel
       v-if="!isSuperAdmin"
-      :open="detailsOpen && isCompactViewport"
-      @update:open="!$event && closeDetails()"
-    >
-      <DrawerContent class="max-h-[92vh] overflow-hidden">
-        <DrawerHeader class="items-center gap-3 border-b border-grey-50 bg-background-on-canvas">
-          <DrawerTitle class="min-w-0 flex-1 text-xl font-semibold text-grey-900">
-            Request details
-          </DrawerTitle>
-          <div
-            v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && isEditingProducts && canEditProducts"
-            class="flex shrink-0 items-center gap-2"
-          >
-            <Button
-              variant="neutral"
-              size="small"
-              class="!w-auto"
-              :disabled="lineMutationLoading"
-              @click="finishEditingProducts(false)"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="small"
-              class="!w-auto"
-              :loading="lineMutationLoading"
-              @click="finishEditingProducts(true)"
-            >
-              Save
-            </Button>
-          </div>
-          <RequestActionsMenu
-            v-else-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton"
-            trigger-variant="icon"
-            :show-view-details="false"
-            :can-cancel="canCancel"
-            :can-edit="canEditProducts"
-            :can-add-more="canAddMoreItems"
-            @edit="startEditingProducts"
-            @add-more="handleAddMoreItems"
-            @cancel="handleCancel"
-          />
-          <DrawerClose class="shrink-0" />
-        </DrawerHeader>
-        <DrawerBody class="bg-background-on-canvas">
-          <RequestDetailsPanel
-            :view="requestDetailsView"
-            :loading="showRequestDetailsSkeleton"
-            :refreshing="isRequestDetailsRefreshing"
-            :editable="productsEditable"
-            :products-editing="lineMutationLoading"
-            :format-currency="formatRequestCurrency"
-            @quantity-change="handleProductQuantityChange"
-            @remove-line="handleProductRemove"
-          />
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
-
-    <Dialog
-      v-if="!isSuperAdmin && !isCompactViewport"
       :open="detailsOpen"
       @update:open="!$event && closeDetails()"
     >
-      <DialogContent class="max-h-[90vh] max-w-3xl overflow-hidden p-0">
-        <DialogHeader class="items-center gap-3 border-b border-grey-50 bg-background-on-canvas px-6 py-5">
-          <DialogTitle class="min-w-0 flex-1 text-[24px] font-semibold text-grey-900">
-            Request details
-          </DialogTitle>
-          <div
-            v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && isEditingProducts && canEditProducts"
-            class="flex shrink-0 items-center gap-2"
+      <template #actions>
+        <div
+          v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && isEditingProducts && canEditProducts"
+          class="flex shrink-0 items-center gap-2"
+        >
+          <Button
+            variant="neutral"
+            size="small"
+            class="!w-auto"
+            :disabled="lineMutationLoading"
+            @click="finishEditingProducts(false)"
           >
-            <Button
-              variant="neutral"
-              size="small"
-              class="!w-auto"
-              :disabled="lineMutationLoading"
-              @click="finishEditingProducts(false)"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="small"
-              class="!w-auto"
-              :loading="lineMutationLoading"
-              @click="finishEditingProducts(true)"
-            >
-              Save
-            </Button>
-          </div>
-          <RequestActionsMenu
-            v-else-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton"
-            trigger-variant="icon"
-            :show-view-details="false"
-            :can-cancel="canCancel"
-            :can-edit="canEditProducts"
-            :can-add-more="canAddMoreItems"
-            @edit="startEditingProducts"
-            @add-more="handleAddMoreItems"
-            @cancel="handleCancel"
-          />
-          <DialogClose class="shrink-0" />
-        </DialogHeader>
-        <DialogBody class="max-h-[70vh] overflow-y-auto bg-background-on-canvas px-6 py-5">
-          <RequestDetailsPanel
-            :view="requestDetailsView"
-            :loading="showRequestDetailsSkeleton"
-            :refreshing="isRequestDetailsRefreshing"
-            :editable="productsEditable"
-            :products-editing="lineMutationLoading"
-            :format-currency="formatRequestCurrency"
-            @quantity-change="handleProductQuantityChange"
-            @remove-line="handleProductRemove"
-          />
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="small"
+            class="!w-auto"
+            :loading="lineMutationLoading"
+            @click="finishEditingProducts(true)"
+          >
+            Save
+          </Button>
+        </div>
+        <RequestActionsMenu
+          v-else-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton"
+          trigger-variant="icon"
+          :show-view-details="false"
+          :can-cancel="canCancel"
+          :can-edit="canEditProducts"
+          :can-add-more="canAddMoreItems"
+          @edit="startEditingProducts"
+          @add-more="handleAddMoreItems"
+          @cancel="handleCancel"
+        />
+      </template>
+
+      <RequestDetailsPanel
+        :view="requestDetailsView"
+        :loading="showRequestDetailsSkeleton"
+        :refreshing="isRequestDetailsRefreshing"
+        :editable="productsEditable"
+        :products-editing="lineMutationLoading"
+        :format-currency="formatRequestCurrency"
+        @quantity-change="handleProductQuantityChange"
+        @remove-line="handleProductRemove"
+      />
+    </RequestDetailsSlidePanel>
 
     <MemberConfirmOverlay
       :open="confirmOpen"
