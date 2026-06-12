@@ -1,9 +1,19 @@
 import { toast } from '@gosource/ui';
+import { ADMIN_LIST_CACHE_URLS } from '~/lib/admin-list-cache-urls';
+import { invalidateAdminListCache } from '~/lib/invalidate-admin-list-cache';
 import type { AdminSessionState } from '~/types/admin-session';
 import type { SettingsProfileFormValues } from '~/types/settings';
 
 export function useSettingsMutations() {
   const busyKey = ref<string | null>(null);
+
+  function invalidateAdminUsersListCache() {
+    invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.admins);
+  }
+
+  function invalidateRolesListCache() {
+    invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.roles);
+  }
 
   async function updateProfile(values: SettingsProfileFormValues) {
     busyKey.value = 'profile';
@@ -53,6 +63,7 @@ export function useSettingsMutations() {
         method: 'POST',
         body,
       });
+      invalidateAdminUsersListCache();
       toast.success(response.message ?? 'User invited successfully');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to invite user';
@@ -73,6 +84,7 @@ export function useSettingsMutations() {
         method: 'PATCH',
         body,
       });
+      invalidateAdminUsersListCache();
       toast.success(response.message ?? 'User updated');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to update user';
@@ -89,6 +101,7 @@ export function useSettingsMutations() {
       const response = await $fetch<{ message?: string }>(`/api/admins/${adminId}/activate`, {
         method: 'PATCH',
       });
+      invalidateAdminUsersListCache();
       toast.success(response.message ?? 'User activated');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to activate user';
@@ -105,6 +118,7 @@ export function useSettingsMutations() {
       const response = await $fetch<{ message?: string }>(`/api/admins/${adminId}/suspend`, {
         method: 'PATCH',
       });
+      invalidateAdminUsersListCache();
       toast.success(response.message ?? 'User suspended');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to suspend user';
@@ -122,6 +136,7 @@ export function useSettingsMutations() {
         method: 'POST',
         body,
       });
+      invalidateAdminUsersListCache();
       toast.success(response.message ?? 'Invite resent');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to resend invite';
@@ -143,6 +158,7 @@ export function useSettingsMutations() {
         method: 'POST',
         body,
       });
+      invalidateRolesListCache();
       toast.success(response.message ?? 'Role created');
       return response;
     } catch (error) {
@@ -164,6 +180,7 @@ export function useSettingsMutations() {
         method: 'PATCH',
         body,
       });
+      invalidateRolesListCache();
       toast.success(response.message ?? 'Role updated');
       return response;
     } catch (error) {
@@ -181,6 +198,7 @@ export function useSettingsMutations() {
       const response = await $fetch<{ message?: string }>(`/api/roles/${roleId}`, {
         method: 'DELETE',
       });
+      invalidateRolesListCache();
       toast.success(response.message ?? 'Role deleted');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to delete role';

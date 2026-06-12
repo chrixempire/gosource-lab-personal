@@ -1,5 +1,17 @@
 import { DISCOUNT_ROUTE_SLUGS } from '~/lib/discount-constants';
+import {
+  formatFormattedNumberInput,
+  formatNairaInputDisplay,
+  nairaToNumber,
+} from '~/lib/credit-money';
+import { unwrapInventoryData } from '~/lib/inventory-api';
+import { resolveCategoryId } from '~/lib/product-details';
+import type { LegacyProductRow } from '~/types/inventory';
 import type { DiscountFormValues, DiscountRouteSlug, LegacyCouponRow } from '~/types/discounts';
+
+function parseDiscountNumber(value: string) {
+  return nairaToNumber(value);
+}
 
 export function createEmptyDiscountFormValues(): DiscountFormValues {
   return {
@@ -42,16 +54,23 @@ function splitDateTime(iso?: string | null) {
 export function mapCouponToFormValues(coupon: LegacyCouponRow): DiscountFormValues {
   const start = splitDateTime(coupon.startDate);
   const end = splitDateTime(coupon.endDate ?? coupon.expiryDate);
+  const isCategoryCoupon = coupon.category === 'amount_off_category';
 
   return {
     code: coupon.code ?? '',
     discountType:
       coupon.type === 'FREE_DELIVERY' ? 'FREE_DELIVERY' : (coupon.type ?? 'FIXED_AMOUNT'),
-    amount: String(coupon.discount ?? ''),
-    categoryId: '',
-    productIds: [...(coupon.applicableItems ?? [])],
-    minOrderAmount: String(coupon.minimumOrderAmount ?? ''),
-    usageLimit: coupon.usageLimit != null ? String(coupon.usageLimit) : '',
+    amount:
+      coupon.type === 'PERCENTAGE'
+        ? String(coupon.discount ?? '')
+        : formatNairaInputDisplay(coupon.discount ?? 0),
+    categoryId: coupon.categoryId ? String(coupon.categoryId) : '',
+    productIds: isCategoryCoupon ? [] : [...(coupon.applicableItems ?? [])],
+    minOrderAmount: formatNairaInputDisplay(coupon.minimumOrderAmount ?? 0),
+    usageLimit:
+      coupon.usageLimit != null
+        ? formatFormattedNumberInput(String(coupon.usageLimit), false)
+        : '',
     target: coupon.target ?? 'all',
     startDate: start.date,
     startTime: start.time,
@@ -59,6 +78,33 @@ export function mapCouponToFormValues(coupon: LegacyCouponRow): DiscountFormValu
     endDate: end.date,
     endTime: end.time,
   };
+}
+
+/** Resolve category for legacy coupons that only stored product ids in applicableItems. */
+export async function resolveDiscountCategoryId(coupon: LegacyCouponRow): Promise<string> {
+  if (coupon.categoryId) {
+    return String(coupon.categoryId);
+  }
+
+  if (coupon.category !== 'amount_off_category') {
+    return '';
+  }
+
+  const productId = coupon.applicableItems?.find((id) => String(id).trim());
+  if (!productId) {
+    return '';
+  }
+
+  try {
+    const payload = await $fetch<unknown>(`/api/products/${productId}`);
+    const product = unwrapInventoryData(payload) as LegacyProductRow | null;
+    if (!product) {
+      return '';
+    }
+    return resolveCategoryId(product.category) ?? '';
+  } catch {
+    return '';
+  }
 }
 
 export function validateDiscountForm(
@@ -78,7 +124,8 @@ export function validateDiscountForm(
   }
 
   if (slug === 'freeDelivery') {
-    if (!values.usageLimit) {
+    const usageLimit = parseDiscountNumber(values.usageLimit);
+    if (!usageLimit || usageLimit <= 0) {
       errors.usageLimit = 'Usage limit is required';
     }
     return errors;
@@ -87,13 +134,15 @@ export function validateDiscountForm(
   if (!values.discountType) {
     errors.discountType = 'Select a discount type';
   }
-  if (!values.amount || Number(values.amount) <= 0) {
+  const amount = parseDiscountNumber(values.amount);
+  if (!amount || amount <= 0) {
     errors.amount = 'Enter a valid amount';
   }
-  if (values.discountType === 'PERCENTAGE' && Number(values.amount) >= 100) {
+  if (values.discountType === 'PERCENTAGE' && amount >= 100) {
     errors.amount = 'Percentage must be less than 100';
   }
-  if (!values.usageLimit) {
+  const usageLimit = parseDiscountNumber(values.usageLimit);
+  if (!usageLimit || usageLimit <= 0) {
     errors.usageLimit = 'Usage limit is required';
   }
 
@@ -121,7 +170,7 @@ export function buildDiscountPayload(
     target: values.target,
     startDate,
     endDate,
-    usageLimit: Number(values.usageLimit),
+    usageLimit: parseDiscountNumber(values.usageLimit),
     category,
   };
 
@@ -130,19 +179,20 @@ export function buildDiscountPayload(
       ...base,
       type: 'FREE_DELIVERY',
       discount: 100,
-      minimumOrderAmount: Number(values.minOrderAmount) || 0,
+      minimumOrderAmount: parseDiscountNumber(values.minOrderAmount),
     };
   }
 
   const type = values.discountType;
-  const discount = Number(values.amount);
+  const discount = parseDiscountNumber(values.amount);
+  const minimumOrderAmount = parseDiscountNumber(values.minOrderAmount);
 
   if (slug === 'amountOffOrder') {
     return {
       ...base,
       type,
       discount,
-      minimumOrderAmount: Number(values.minOrderAmount) || 0,
+      minimumOrderAmount,
     };
   }
 
@@ -160,7 +210,8 @@ export function buildDiscountPayload(
       ...base,
       type,
       discount,
-      category: 'amount_off_items',
+      category: 'amount_off_category',
+      categoryId: values.categoryId,
       applicableItems: productIdsInCategory ?? [],
     };
   }

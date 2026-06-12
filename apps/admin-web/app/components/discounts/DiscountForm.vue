@@ -15,7 +15,9 @@ import {
 } from '@gosource/ui';
 import { useDebounce } from '@vueuse/core';
 import { Check, ChevronDown, RotateCw, TicketPercent, Trash2, Truck } from 'lucide-vue-next';
+import CreditFormattedNumberInput from '~/components/credit/CreditFormattedNumberInput.vue';
 import InventorySearchableSelect from '~/components/inventory/InventorySearchableSelect.vue';
+import { nairaToNumber } from '~/lib/credit-money';
 import {
   DISCOUNT_AMOUNT_TYPE_OPTIONS,
   DISCOUNT_ROUTE_LABELS,
@@ -91,7 +93,7 @@ const amountPreview = computed(() => {
     return 'Free delivery';
   }
 
-  const amount = Number(form.value.amount || 0);
+  const amount = nairaToNumber(form.value.amount);
   if (!amount) {
     return 'Amount off';
   }
@@ -182,13 +184,19 @@ const previewPrimaryLabel = computed(() =>
               <p class="text-sm font-medium text-grey-900">
                 {{ form.discountType === 'PERCENTAGE' ? 'Percentage' : 'Amount' }}
               </p>
-              <Input
+              <CreditFormattedNumberInput
+                v-if="form.discountType === 'FIXED_AMOUNT'"
                 v-model="form.amount"
-                type="text"
-                inputmode="decimal"
-                min="0"
+                placeholder="0"
                 :invalid="Boolean(fieldErrors.amount)"
-                placeholder="Enter value"
+              />
+              <CreditFormattedNumberInput
+                v-else
+                v-model="form.amount"
+                placeholder="0"
+                :allow-decimal="true"
+                inputmode="decimal"
+                :invalid="Boolean(fieldErrors.amount)"
               />
             </div>
           </template>
@@ -312,12 +320,9 @@ const previewPrimaryLabel = computed(() =>
         <div class="mt-4 space-y-4">
           <div v-if="showMinOrder" class="space-y-2">
             <p class="text-sm font-medium text-grey-900">Minimum order amount (optional)</p>
-            <Input
+            <CreditFormattedNumberInput
               v-model="form.minOrderAmount"
-              type="text"
-              inputmode="decimal"
-              min="0"
-              placeholder="Enter amount"
+              placeholder="0"
             />
           </div>
           <p v-if="showMinOrder" class="-mt-2 text-xs text-grey-500">
@@ -325,12 +330,9 @@ const previewPrimaryLabel = computed(() =>
           </p>
           <div class="space-y-2">
             <p class="text-sm font-medium text-grey-900">Usage limit</p>
-            <Input
+            <CreditFormattedNumberInput
               v-model="form.usageLimit"
-              type="text"
-              inputmode="numeric"
-              min="1"
-              placeholder="Enter total usage count"
+              placeholder="0"
               :invalid="Boolean(fieldErrors.usageLimit)"
             />
           </div>
@@ -417,11 +419,11 @@ const previewPrimaryLabel = computed(() =>
                       ? 'Free delivery'
                       : form.discountType === 'PERCENTAGE'
                         ? `${form.amount || 0}%`
-                        : formatDashboardCurrency(Number(form.amount || 0))
+                        : formatDashboardCurrency(nairaToNumber(form.amount))
                   }}
                 </p>
-                <p v-if="showMinOrder && Number(form.minOrderAmount || 0) > 0" class="mt-3 text-xs text-white/80">
-                  For orders above {{ formatDashboardCurrency(Number(form.minOrderAmount)) }}
+                <p v-if="showMinOrder && nairaToNumber(form.minOrderAmount) > 0" class="mt-3 text-xs text-white/80">
+                  For orders above {{ formatDashboardCurrency(nairaToNumber(form.minOrderAmount)) }}
                 </p>
               </div>
               <div class="flex items-center justify-between gap-3">

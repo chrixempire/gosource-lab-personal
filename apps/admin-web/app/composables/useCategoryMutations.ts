@@ -1,14 +1,20 @@
 import { toast } from '@gosource/ui';
+import { ADMIN_LIST_CACHE_URLS } from '~/lib/admin-list-cache-urls';
 import {
   buildCategoryFormData,
   buildCategoryRequestBody,
   type CategoryFormValues,
 } from '~/lib/category-form';
+import { invalidateAdminListCache } from '~/lib/invalidate-admin-list-cache';
 
 export function useCategoryMutations() {
   const updatingCategoryId = ref<string | null>(null);
   const deletingCategoryId = ref<string | null>(null);
   const rearranging = ref(false);
+
+  function invalidateCategoryListCache() {
+    invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.categories);
+  }
 
   async function createCategory(values: CategoryFormValues) {
     updatingCategoryId.value = 'create';
@@ -17,6 +23,7 @@ export function useCategoryMutations() {
         method: 'POST',
         body: buildCategoryFormData(values),
       });
+      invalidateCategoryListCache();
       toast.success('Category created');
       return response;
     } catch (error) {
@@ -42,6 +49,7 @@ export function useCategoryMutations() {
           body: buildCategoryRequestBody(values),
         });
       }
+      invalidateCategoryListCache();
       toast.success('Category updated');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to update category';
@@ -62,6 +70,7 @@ export function useCategoryMutations() {
         method: 'DELETE',
         body: payload,
       });
+      invalidateCategoryListCache();
       toast.success('Category deleted');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to delete category';
@@ -81,6 +90,7 @@ export function useCategoryMutations() {
         method: 'PATCH',
         body: { rearrangedCategories: items },
       });
+      invalidateCategoryListCache();
       toast.success('Categories rearranged');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to rearrange categories';

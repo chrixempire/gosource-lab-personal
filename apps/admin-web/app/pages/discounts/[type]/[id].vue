@@ -10,6 +10,7 @@ import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
 import {
   createEmptyDiscountFormValues,
   mapCouponToFormValues,
+  resolveDiscountCategoryId,
   validateDiscountForm,
 } from '~/lib/discount-form';
 import { parseDiscountDetail } from '~/lib/discount-api';
@@ -39,10 +40,16 @@ const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unkno
 
 watch(
   data,
-  (payload) => {
+  async (payload) => {
     const detail = parseDiscountDetail(payload);
-    if (detail) {
-      Object.assign(form, mapCouponToFormValues(detail));
+    if (!detail) {
+      return;
+    }
+
+    Object.assign(form, mapCouponToFormValues(detail));
+
+    if (slug.value === 'amountOffCategory' && !form.categoryId) {
+      form.categoryId = await resolveDiscountCategoryId(detail);
     }
   },
   { immediate: true },

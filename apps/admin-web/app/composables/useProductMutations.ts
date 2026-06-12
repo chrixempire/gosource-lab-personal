@@ -1,17 +1,24 @@
 import { toast } from '@gosource/ui';
+import { adminApiFetch } from '~/composables/useAdminApiFetch';
+import { ADMIN_LIST_CACHE_URLS } from '~/lib/admin-list-cache-urls';
+import { invalidateAdminListCache } from '~/lib/invalidate-admin-list-cache';
 import {
   buildProductItemFormData,
   type ProductItemFormValues,
 } from '~/lib/product-form';
-import { adminApiFetch } from '~/composables/useAdminApiFetch';
 
 export function useProductMutations() {
   const updatingProductId = ref<string | null>(null);
+
+  function invalidateProductListCache() {
+    invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.products);
+  }
 
   async function activateProduct(productId: string) {
     updatingProductId.value = productId;
     try {
       await adminApiFetch(`/api/products/${productId}/activate`, { method: 'PATCH' });
+      invalidateProductListCache();
       toast.success('Product activated');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to activate product';
@@ -26,6 +33,7 @@ export function useProductMutations() {
     updatingProductId.value = productId;
     try {
       await adminApiFetch(`/api/products/${productId}/deactivate`, { method: 'PATCH' });
+      invalidateProductListCache();
       toast.success('Product deactivated');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to deactivate product';
@@ -40,6 +48,7 @@ export function useProductMutations() {
     updatingProductId.value = productId;
     try {
       await adminApiFetch(`/api/products/${productId}/in-stock`, { method: 'PATCH' });
+      invalidateProductListCache();
       toast.success('Product marked in stock');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to mark product in stock';
@@ -57,6 +66,7 @@ export function useProductMutations() {
         method: 'POST',
         body: buildProductItemFormData(form),
       });
+      invalidateProductListCache();
       toast.success('Item created');
       return response;
     } catch (error) {
@@ -75,6 +85,7 @@ export function useProductMutations() {
         method: 'PATCH',
         body: buildProductItemFormData(form, { isEdit: true }),
       });
+      invalidateProductListCache();
       toast.success('Product updated');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to update product';
@@ -89,6 +100,7 @@ export function useProductMutations() {
     updatingProductId.value = productId;
     try {
       await adminApiFetch(`/api/products/${productId}/out-stock`, { method: 'PATCH' });
+      invalidateProductListCache();
       toast.success('Product marked out of stock');
     } catch (error) {
       const message =
@@ -110,6 +122,7 @@ export function useProductMutations() {
         method: 'PATCH',
         body,
       });
+      invalidateProductListCache();
       toast.success('Stock added successfully');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to add stock';
@@ -130,6 +143,7 @@ export function useProductMutations() {
         method: 'PATCH',
         body,
       });
+      invalidateProductListCache();
       toast.success('Stock removed successfully');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to remove stock';

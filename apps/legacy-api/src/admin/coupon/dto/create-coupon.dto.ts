@@ -46,6 +46,9 @@ export class CreateCouponDto {
   applicableItems?: any[];
 
   @IsOptional()
+  categoryId?: string;
+
+  @IsOptional()
   @IsArray()
   comboItems?: string[];
 
