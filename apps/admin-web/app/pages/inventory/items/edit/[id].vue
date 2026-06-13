@@ -7,7 +7,6 @@ import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useProductMutations } from '~/composables/useProductMutations';
 import {
   ADMIN_PAGE_ROUTES,
-  inventoryItemPath,
 } from '~/lib/admin-routes';
 import { parseCategoryOptions } from '~/lib/category-api';
 import { unwrapInventoryData } from '~/lib/inventory-api';
@@ -21,6 +20,7 @@ import { mapLegacyUnits } from '~/lib/product-details';
 import type { LegacyProductRow } from '~/types/inventory';
 
 const route = useRoute();
+const router = useRouter();
 const productId = computed(() => String(route.params.id ?? ''));
 
 const { updateHeader } = useAdminHeader();
@@ -77,8 +77,8 @@ watch(
 );
 
 function goBack() {
-  if (productId.value) {
-    void navigateTo(inventoryItemPath(productId.value));
+  if (import.meta.client && window.history.length > 1) {
+    router.back();
     return;
   }
   void navigateTo(ADMIN_PAGE_ROUTES.INVENTORY);

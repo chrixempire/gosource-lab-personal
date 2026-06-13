@@ -15,6 +15,10 @@ import { successResponse } from '../../utils/responses';
 import { Product } from '../../product/entities/product.entity';
 import { Order } from 'src/order/entities/order.entity';
 import { Types } from 'mongoose';
+import {
+  computeDiscountedUnitMap,
+  computePercentageDiscountPrice,
+} from '../../utils/promotion-discount.util';
 
 @Injectable()
 export class PromotionService {
@@ -307,55 +311,39 @@ export class PromotionService {
     return result.length > 0 ? result[0].count : 0;
   }
 
-  async applyDiscounts(promotion: any) {
+  async applyDiscounts(
+    promotion: any,
+    options?: { requireActive?: boolean },
+  ) {
+    const requireActive = options?.requireActive ?? true;
+
     if (
-      !promotion.isActive ||
+      (requireActive && !promotion.isActive) ||
       !promotion.products ||
       !promotion.products.length
     ) {
       return;
     }
 
-    for (const productId of promotion.products) {
+    for (const productRef of promotion.products) {
+      const productId = productRef._id || productRef;
       const product = await this.productModel.findById(productId);
       if (product) {
         if (promotion.isPercentageDiscounted && promotion.discountValue > 0) {
           if (product.version === 'v2' && product.unit) {
-            // Handle V2 Products (Multi-unit)
-            try {
-              const units = JSON.parse(product.unit);
-              const discountedUnits = {};
+            const discountedUnits = computeDiscountedUnitMap(
+              product.unit,
+              promotion.discountValue,
+            );
 
-              for (const [unit, price] of Object.entries(units)) {
-                let discountPrice = 0;
-                const numericPrice = Number(price);
-
-                if (!isNaN(numericPrice)) {
-                  discountPrice =
-                    numericPrice -
-                    (numericPrice * promotion.discountValue) / 100;
-                  // Ensure discount price is not negative
-                  discountPrice = Math.max(0, discountPrice);
-                  discountedUnits[unit] = discountPrice;
-                }
-              }
-
+            if (discountedUnits) {
               product.discountedUnit = JSON.stringify(discountedUnits);
-            } catch (error) {
-              console.error(
-                `Error parsing units for product ${product._id}`,
-                error,
-              );
             }
           } else {
-            // Handle V1 Products (Single price)
-            let discountPrice = 0;
-            discountPrice =
-              product.actualPrice -
-              (product.actualPrice * promotion.discountValue) / 100;
-            // Ensure discount price is not negative
-            discountPrice = Math.max(0, discountPrice);
-            product.discountPrice = discountPrice;
+            product.discountPrice = computePercentageDiscountPrice(
+              product.actualPrice,
+              promotion.discountValue,
+            );
           }
         }
 
