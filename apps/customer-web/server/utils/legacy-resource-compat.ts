@@ -1094,6 +1094,34 @@ function resolveLegacyBillableDiscount(input: {
   return input.discount;
 }
 
+/** Matches legacy-api default delivery tiers when fee was zeroed by coupon remove. */
+function estimateLegacyDeliveryFee(subtotal: number): number {
+  const tier1Base = 18000;
+  const tier1Threshold = 1_000_000;
+  if (subtotal < tier1Threshold) {
+    return tier1Base + subtotal * 0.02;
+  }
+  return 33000 + subtotal * 0.01;
+}
+
+function resolveLegacyRequestDeliveryFee(input: {
+  deliveryFee: number;
+  subtotal: number;
+  status: string;
+  coupon: boolean;
+}): number {
+  if (
+    !input.coupon &&
+    input.deliveryFee === 0 &&
+    input.status === 'pending' &&
+    input.subtotal >= 25000
+  ) {
+    return estimateLegacyDeliveryFee(input.subtotal);
+  }
+
+  return input.deliveryFee;
+}
+
 function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const branch =
     typeof data.branch === 'string'
@@ -1103,8 +1131,10 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const directions = toNullableString(address.directions ?? address.direction);
   const initiator = mapLegacyRequestActor(data.initiator);
   const storedSubtotal = Number(data.subtotal ?? 0);
-  const deliveryFee = Number(data.deliveryFee ?? 0);
+  const storedDeliveryFee = Number(data.deliveryFee ?? 0);
   const serviceCharge = Number(data.serviceCharge ?? 0);
+  const requestStatus = toStringValue(data.status) || 'pending';
+  const couponApplied = data.coupon === true;
   const couponDetails = mapLegacyCouponDetails(data.couponDetails);
   const discount = resolveLegacyBillableDiscount({
     discount: Number(data.discount ?? 0),
@@ -1118,6 +1148,12 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const productsSubtotal = products.reduce((sum, line) => sum + line.totalPrice, 0);
   // Legacy API sometimes stored delivery/service inside `subtotal`; prefer line sum when available.
   const subtotal = productsSubtotal > 0 ? productsSubtotal : storedSubtotal;
+  const deliveryFee = resolveLegacyRequestDeliveryFee({
+    deliveryFee: storedDeliveryFee,
+    subtotal,
+    status: requestStatus,
+    coupon: couponApplied,
+  });
   const computedTotal = subtotal + deliveryFee + serviceCharge - discount;
   const storedTotal = Number(data.totalPrice ?? 0);
   const totalPrice =
@@ -1130,7 +1166,7 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
     branchName: toStringValue(branch.branchName),
     branchCode: toNullableString(branch.branchCode),
     reference: toStringValue(data.reference),
-    status: (toStringValue(data.status) || 'pending') as RequestRecord['status'],
+    status: requestStatus as RequestRecord['status'],
     paymentStatus: (toStringValue(data.paymentStatus) || 'pending') as RequestRecord['paymentStatus'],
     paymentMethod: toNullableString(data.paymentMethod),
     initiator: initiator ?? {
@@ -1158,7 +1194,7 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
     serviceCharge,
     discount,
     totalPrice,
-    coupon: data.coupon === true,
+    coupon: couponApplied,
     couponCode: normalizeLegacyCouponCode(data.couponCode) ?? normalizeLegacyCouponCode(toNullableString(data.couponCode)),
     couponDetails,
     approvedAt: toNullableString(data.approvedAt),

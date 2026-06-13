@@ -29,6 +29,7 @@ export const PROXY_ROUTE_RULES: ProxyRouteRule[] = [
   { methods: ['PATCH'], pattern: /^request\/[^/]+$/ },
   { methods: ['PATCH'], pattern: /^request\/[^/]+\/(?:approve|reject|cancel)$/ },
   { methods: ['POST'], pattern: /^admin\/coupon\/apply\/[^/]+\/request$/ },
+  { methods: ['DELETE'], pattern: /^admin\/coupon\/apply\/[^/]+\/request$/ },
   { methods: ['GET'], pattern: /^category$/ },
   { methods: ['GET'], pattern: /^category\/[^/]+$/ },
   { methods: ['GET'], pattern: /^promotion$/ },

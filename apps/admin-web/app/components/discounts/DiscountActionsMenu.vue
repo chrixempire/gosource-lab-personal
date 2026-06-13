@@ -29,10 +29,10 @@ const options = computed(() => {
     return [...base, { key: 'deactivate', label: 'Deactivate', danger: true }];
   }
   if (status === 'deactivated') {
-    return [...base, { key: 'activate', label: 'Re-activate' }];
+    return [...base, { key: 'activate', label: 'Re-activate' }, { key: 'delete', label: 'Delete discount', danger: true }];
   }
   if (status === 'inactive' || status === 'expired') {
-    return base;
+    return [...base, { key: 'delete', label: 'Delete discount', danger: true }];
   }
   if (status === 'used') {
     return [{ key: 'copy', label: 'Copy coupon code' }];

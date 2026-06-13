@@ -189,6 +189,8 @@ export function createRequestApi(api: ApiClient) {
       api.patch<RequestResponse>(`/request/${requestId}`, payload),
     applyCoupon: (requestId: string, payload: ApplyCouponPayload) =>
       api.post<ApplyCouponResponse>(`/admin/coupon/apply/${requestId}/request`, payload),
+    removeCoupon: (requestId: string) =>
+      api.delete<AuthResponse>(`/admin/coupon/apply/${requestId}/request`),
   };
 }
 

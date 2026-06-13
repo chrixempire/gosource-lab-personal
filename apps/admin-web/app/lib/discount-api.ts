@@ -7,6 +7,7 @@ import {
 import { unwrapInventoryData } from '~/lib/inventory-api';
 import type {
   AdminDiscountListItem,
+  DiscountListFilters,
   DiscountStatus,
   LegacyCouponRow,
 } from '~/types/discounts';
@@ -163,6 +164,68 @@ export function filterDiscountsByType(rows: AdminDiscountListItem[], types: stri
     return rows;
   }
   return rows.filter((row) => types.includes(row.type));
+}
+
+export function applyDiscountListClientFilters(
+  rows: AdminDiscountListItem[],
+  filters: Pick<
+    DiscountListFilters,
+    'status' | 'discountType' | 'expiredDateFrom' | 'expiredDateTo'
+  >,
+  options?: { includeStatusFilter?: boolean },
+) {
+  let result = rows;
+  if (options?.includeStatusFilter !== false) {
+    result = filterDiscountsByStatus(result, filters.status);
+  }
+  result = filterDiscountsByType(result, filters.discountType);
+  if (filters.expiredDateFrom || filters.expiredDateTo) {
+    result = result.filter((row) => {
+      if (!row.expiryDate) {
+        return false;
+      }
+      const expiry = new Date(row.expiryDate).getTime();
+      if (filters.expiredDateFrom) {
+        const from = new Date(filters.expiredDateFrom).getTime();
+        if (expiry < from) {
+          return false;
+        }
+      }
+      if (filters.expiredDateTo) {
+        const to = new Date(filters.expiredDateTo).getTime();
+        if (expiry > to) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+  return result;
+}
+
+export async function fetchAllDiscountListRows(
+  apiQuery: Record<string, unknown>,
+): Promise<AdminDiscountListItem[]> {
+  const pageSize = 100;
+  let page = 1;
+  let totalPages = 1;
+  const rows: AdminDiscountListItem[] = [];
+
+  do {
+    const payload = await $fetch<unknown>('/api/coupons', {
+      query: {
+        ...apiQuery,
+        page,
+        limit: pageSize,
+      },
+    });
+    const parsed = parseDiscountsListResponse(payload, page, pageSize);
+    rows.push(...parsed.rows);
+    totalPages = parsed.meta.totalPages;
+    page += 1;
+  } while (page <= totalPages);
+
+  return rows;
 }
 
 export function computeDiscountStats(rows: AdminDiscountListItem[]) {

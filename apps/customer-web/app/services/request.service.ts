@@ -114,5 +114,13 @@ export function useCustomerRequestService() {
         throw error;
       }
     },
+    async removeCoupon(requestId: string) {
+      try {
+        return await $requestApi.removeCoupon(requestId);
+      } catch (error) {
+        reportCustomerApiError(error, 'Unable to remove coupon');
+        throw error;
+      }
+    },
   };
 }
