@@ -1121,7 +1121,7 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const computedTotal = subtotal + deliveryFee + serviceCharge - discount;
   const storedTotal = Number(data.totalPrice ?? 0);
   const totalPrice =
-    storedTotal > subtotal ? storedTotal : computedTotal;
+    productsSubtotal > 0 ? computedTotal : storedTotal > 0 ? storedTotal : computedTotal;
 
   return {
     id: toStringValue(data._id ?? data.id),
@@ -1530,8 +1530,9 @@ function mapLegacyOrderRecord(data: Record<string, unknown>): OrderRecord {
       ? productsSubtotal
       : Math.max(0, storedTotal - deliveryFee - serviceCharge + discount);
   const computedTotal = subtotal + deliveryFee + serviceCharge - discount;
-  // Legacy orders often store totalPrice as subtotal only; prefer line-sum + fees when stored total omits delivery.
-  const totalPrice = storedTotal > subtotal ? storedTotal : computedTotal;
+  // Prefer recomputed totals when line items are available — legacy orders may
+  // store totalPrice with delivery counted twice after coupon checkout.
+  const totalPrice = productsSubtotal > 0 ? computedTotal : storedTotal > 0 ? storedTotal : computedTotal;
 
   return {
     id: toStringValue(data._id ?? data.id),

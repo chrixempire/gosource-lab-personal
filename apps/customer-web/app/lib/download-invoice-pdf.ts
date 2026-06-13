@@ -53,9 +53,9 @@ export function downloadInvoicePDF({
         },
         margin: 5,
         autoPaging: 'text',
-        x: 5,
+        x: 0,
         y: 5,
-        width: 180,
+        width: 210,
         windowWidth: 821,
       });
     });

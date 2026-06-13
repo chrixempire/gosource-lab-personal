@@ -4,6 +4,7 @@ import {
   useAdminAuthenticatedAsyncData,
   type AdminAuthenticatedAsyncDataOptions,
 } from '~/composables/useAdminAuthenticatedAsyncData';
+import { useAdminRequestFetch } from '~/composables/useAdminRequestFetch';
 
 type FetchQuery = Record<string, unknown> | undefined;
 
@@ -70,16 +71,18 @@ export function useAdminAuthenticatedFetch<T>(
   const fetchKey = resolveFetchKey(url, keyOption);
   const querySnapshot = query != null ? computed(() => toValue(query) as FetchQuery) : null;
   const extraWatch = querySnapshot ? [querySnapshot] : [];
+  const apiFetch = useAdminRequestFetch();
 
   return useAdminAuthenticatedAsyncData(
     fetchKey,
     async () =>
-      $fetch<T>(resolvedUrl.value, {
+      apiFetch<T>(resolvedUrl.value, {
         query: querySnapshot?.value,
       }),
     {
       fastNav,
       ...rest,
+      server: rest.server ?? (fastNav ? false : undefined),
       getCachedData: getCachedDataOption,
       watch: [...normalizeWatchArray(watchOption), ...extraWatch],
     },

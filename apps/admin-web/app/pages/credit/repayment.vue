@@ -38,7 +38,7 @@ const selectedPaymentId = ref<string | null>(null);
 
 const apiQuery = computed(() => creditRepaymentListFiltersToApiQuery(filters.value));
 
-const { data: customersData } = useAdminListFetch<unknown>('/api/customers', {
+const { data: customersData } = await useAdminListFetch<unknown>('/api/customers', {
   query: { page: 1, limit: 100 },
 });
 
@@ -182,6 +182,8 @@ useHead({ title: 'Credit repayments' });
         :meta="parsed.meta"
         :loading="pending"
         :allow-manage="canManage"
+        empty-title="No repayments found"
+        empty-description="Adjust your filters or check back when payments are recorded."
         @page="setPage"
         @page-size="setLimit"
         @update-status="onUpdateStatus"

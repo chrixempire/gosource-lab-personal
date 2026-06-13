@@ -47,6 +47,22 @@ const stats = computed(() => parseCreditRequestStats(statsData.value));
 
 const rows = computed(() => parsed.value.rows);
 
+const isPendingFilter = computed(
+  () =>
+    activeStat.value === 'pending' ||
+    (filters.value.status.length === 1 && filters.value.status[0] === 'pending'),
+);
+
+const emptyStateTitle = computed(() =>
+  isPendingFilter.value ? 'No pending requests' : 'No credit requests found',
+);
+
+const emptyStateDescription = computed(() =>
+  isPendingFilter.value
+    ? 'New customer requests will appear here when they are submitted.'
+    : 'Adjust your filters or check back when customers submit requests.',
+);
+
 watch(
   () => filters.value.search,
   (value) => {
@@ -132,8 +148,8 @@ useHead({ title: 'Credit requests' });
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !pending && rows.length === 0"
-      title="No credit requests found"
-      description="Adjust your filters or check back when customers submit requests."
+      :title="emptyStateTitle"
+      :description="emptyStateDescription"
     />
 
     <template v-else>
@@ -154,6 +170,8 @@ useHead({ title: 'Credit requests' });
         :rows="rows"
         :meta="parsed.meta"
         :loading="pending"
+        :empty-title="emptyStateTitle"
+        :empty-description="emptyStateDescription"
         @page="setPage"
         @page-size="setLimit"
         @view="onView"

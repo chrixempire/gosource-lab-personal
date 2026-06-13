@@ -19,9 +19,7 @@ export function invalidateAdminListCache(url: string) {
   const sessionSignature = getAdminSessionCacheSignature(session.value);
   const scopedUrl = `${url}:${sessionSignature}`;
 
-  clearNuxtData(
-    (key) => key === scopedUrl || key.startsWith(`${url}:`),
-  );
+  clearNuxtData((key) => key === url || key === scopedUrl || key.startsWith(`${url}:`));
 }
 
 export function invalidateAdminListCaches(urls: readonly string[]) {

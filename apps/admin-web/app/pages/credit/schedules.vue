@@ -274,6 +274,12 @@ useHead(() => ({ title: pageTitle.value }));
         :meta="parsed.meta"
         :loading="pending"
         :show-days-overdue="isOverdueView"
+        :empty-title="isOverdueView ? 'No overdue repayments' : 'No schedules found'"
+        :empty-description="
+          isOverdueView
+            ? 'All repayment schedules are current for the selected filters.'
+            : 'Adjust your filters or check back when installments are generated.'
+        "
         @page="isOverdueView ? setOverduePage($event) : setSchedulePage($event)"
         @page-size="isOverdueView ? setOverdueLimit($event) : setScheduleLimit($event)"
       />

@@ -1,5 +1,5 @@
 import { mapLegacyOrderLineItems } from '../../app/lib/order-details';
-import { resolveOrderSubtotal } from '../../app/lib/order-line-pricing';
+import { resolveOrderSubtotal, resolveOrderTotalPrice } from '../../app/lib/order-line-pricing';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
@@ -89,10 +89,8 @@ export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderI
 
   const deliveryFee = Number(order.deliveryFee ?? 0);
   const serviceCharge = Number(order.serviceCharge ?? 0);
-  const discount = Number(order.discount ?? 0);
-  const storedTotal = Number(order.totalPrice ?? 0);
   const subtotal = resolveOrderSubtotal(order, lineItems);
-  const total = storedTotal > subtotal ? storedTotal : subtotal + deliveryFee + serviceCharge - discount;
+  const total = resolveOrderTotalPrice(order, lineItems);
 
   return {
     referenceLabel: reference ? `#${reference}` : '—',

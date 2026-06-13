@@ -260,8 +260,7 @@ export class CouponService {
       throw new BadRequestException('Coupon does not apply to this request');
     }
 
-    const deliveryFee = request.deliveryFee;
-    request.subtotal = cartSubtotal - discount + deliveryFee;
+    request.subtotal = cartSubtotal;
     request.couponCode = coupon.code;
     request.coupon = true;
     request.couponDetails = coupon;

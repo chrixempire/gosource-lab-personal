@@ -561,28 +561,19 @@ export class RequestService {
         throw new BadRequestException('Request has already been approved');
       }
 
-      let totalPrice: number = request.serviceCharge + request.deliveryFee;
-
       let coupon = false;
       let couponObj: any;
 
-      // Calculate the subtotal price for the request
-      let subtotal;
-
-      if (!request.subtotal || request.subtotal === 0) {
-        subtotal = calculateTotalPrice(request.products, business.id);
-      } else {
-        subtotal = request.subtotal;
-      }
-
-      const deliveryFee = request.deliveryFee;
+      const deliveryFee = Number(request.deliveryFee ?? 0);
+      const discount = this.resolveBillableDiscount(request);
+      const subtotal = calculateTotalPrice(request.products, business.id);
 
       // Validate the coupon if provided
       if (request.coupon) {
         coupon = true;
       }
 
-      totalPrice += subtotal;
+      let totalPrice = subtotal + deliveryFee - discount;
 
       let serviceCharge = 0;
 
@@ -638,9 +629,6 @@ export class RequestService {
       } else if (request.paymentStatus === PaymentStatus.PAID) {
         paymentStatus = PaymentStatus.PAID;
       } else if (requestDetails.paymentMethod === PaymentMethod.WALLET) {
-        paymentStatus = PaymentStatus.PAID;
-      } else if (requestDetails.paymentMethod === PaymentMethod.PAYSTACK) {
-        // Checkout only calls approve after Paystack inline success (same as wallet).
         paymentStatus = PaymentStatus.PAID;
       }
 

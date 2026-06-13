@@ -1,5 +1,25 @@
 import type { OrderDetailRecord } from '@gosource/api-client';
 
+export const ORDER_INVOICE_TIMEZONE = 'Africa/Lagos';
+
+export function formatInvoiceOrderDate(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: ORDER_INVOICE_TIMEZONE,
+  }).format(new Date(value));
+}
+
+export function formatInvoiceOrderTime(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: ORDER_INVOICE_TIMEZONE,
+  }).format(new Date(value));
+}
+
 export type InvoiceOrderProductLine = {
   quantity: number;
   unit: string;

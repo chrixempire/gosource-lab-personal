@@ -6,6 +6,8 @@ export const ADMIN_PAGE_ROUTES = {
   ORDERS: '/orders',
   INVENTORY: '/inventory',
   INVENTORY_ITEM_CREATE: '/inventory/items/create',
+  INVENTORY_STORE_COUNT: '/inventory/items/store-count',
+  INVENTORY_REPORT: '/inventory/items/inventory-report',
   INVENTORY_CATEGORY: '/inventory/category',
   PURCHASE_ORDERS: '/inventory/purchase-orders',
   CREDIT_ANALYTICS: '/credit/analytics',
@@ -73,7 +75,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
 /** Child nav active state — avoids parent + sibling routes sharing `/inventory` prefix. */
 export function isAdminNavChildActive(path: string, childTo: string) {
   if (childTo === ADMIN_PAGE_ROUTES.INVENTORY) {
-    return path === ADMIN_PAGE_ROUTES.INVENTORY || path.startsWith('/inventory/items');
+    return (
+      path === ADMIN_PAGE_ROUTES.INVENTORY ||
+      path.startsWith('/inventory/items') ||
+      path === ADMIN_PAGE_ROUTES.INVENTORY_STORE_COUNT
+    );
   }
 
   if (childTo === ADMIN_PAGE_ROUTES.INVENTORY_CATEGORY) {
@@ -147,6 +153,10 @@ export function inventoryItemPath(id: string) {
 
 export function inventoryItemEditPath(id: string) {
   return `${ADMIN_PAGE_ROUTES.INVENTORY}/items/edit/${id}`;
+}
+
+export function inventoryStoreCountHistoryPath(id: string) {
+  return `${ADMIN_PAGE_ROUTES.INVENTORY_STORE_COUNT}/${id}`;
 }
 
 export function inventoryCategoryPath(id: string) {

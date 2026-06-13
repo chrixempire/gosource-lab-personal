@@ -46,6 +46,22 @@ const rows = computed(() => parsed.value.rows);
 
 const stats = computed(() => computeApplicationStats(rows.value, parsed.value.meta.total));
 
+const isPendingFilter = computed(
+  () =>
+    activeStat.value === 'pending' ||
+    (filters.value.status.length === 1 && filters.value.status[0] === 'pending'),
+);
+
+const emptyStateTitle = computed(() =>
+  isPendingFilter.value ? 'No pending applications' : 'No applications found',
+);
+
+const emptyStateDescription = computed(() =>
+  isPendingFilter.value
+    ? 'New applications will appear here when customers submit them.'
+    : 'Adjust your filters or check back when customers submit applications.',
+);
+
 watch(
   () => filters.value.search,
   (value) => {
@@ -134,8 +150,8 @@ useHead({ title: 'Credit applications' });
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !pending && rows.length === 0"
-      title="No applications found"
-      description="Adjust your filters or check back when customers submit applications."
+      :title="emptyStateTitle"
+      :description="emptyStateDescription"
     />
 
     <template v-else>
@@ -156,6 +172,8 @@ useHead({ title: 'Credit applications' });
         :rows="rows"
         :meta="parsed.meta"
         :loading="pending"
+        :empty-title="emptyStateTitle"
+        :empty-description="emptyStateDescription"
         @page="setPage"
         @page-size="setLimit"
         @view="onView"
