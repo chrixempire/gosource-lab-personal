@@ -1446,10 +1446,17 @@ export class ProductService {
           deductedQuantity: 1,
           closingQuantity: 1,
           isLowStock: {
-            $or: [
-              '$isLowStock',
-              { $lte: ['$closingQuantity', '$lowStockLevel'] },
-            ],
+            $cond: {
+              if: {
+                $and: [
+                  { $ne: [{ $ifNull: ['$trackQuantity', true] }, false] },
+                  { $ne: ['$lowStockLevel', null] },
+                  { $lte: ['$closingQuantity', '$lowStockLevel'] },
+                ],
+              },
+              then: true,
+              else: false,
+            },
           },
           lowStockLevel: 1,
           movements: {
@@ -1499,8 +1506,9 @@ export class ProductService {
             $sum: {
               $cond: [
                 {
-                  $or: [
-                    { $eq: ['$isLowStock', true] },
+                  $and: [
+                    { $ne: [{ $ifNull: ['$trackQuantity', true] }, false] },
+                    { $ne: ['$lowStockLevel', null] },
                     { $lte: ['$closingQuantity', '$lowStockLevel'] },
                   ],
                 },

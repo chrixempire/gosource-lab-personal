@@ -1,4 +1,5 @@
 import { unwrapLegacyPayload } from '~/lib/dashboard-api';
+import { isProductLowStock } from '~/lib/product-details';
 import type {
   InventoryMovementListResult,
   InventoryMovementRow,
@@ -33,7 +34,12 @@ function mapMovementRow(record: Record<string, unknown>): InventoryMovementRow |
     addedQuantity: Number(record.addedQuantity ?? 0),
     deductedQuantity: Number(record.deductedQuantity ?? 0),
     closingQuantity: Number(record.closingQuantity ?? 0),
-    isLowStock: Boolean(record.isLowStock),
+    isLowStock: isProductLowStock({
+      trackQuantity: record.trackQuantity !== false,
+      quantity: Number(record.closingQuantity ?? 0),
+      lowStockLevel:
+        record.lowStockLevel != null ? Number(record.lowStockLevel) : undefined,
+    }),
   };
 }
 

@@ -63,7 +63,7 @@ const emit = defineEmits<{
 
     <div v-else-if="title" class="min-w-0">
       <div class="flex flex-wrap items-center gap-2">
-        <h1 class="text-h5 lg:text-h3">
+        <h1 class="text-h6 lg:text-h4">
           {{ title }}
         </h1>
         <StatusTag
