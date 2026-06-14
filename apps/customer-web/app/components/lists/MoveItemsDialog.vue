@@ -87,11 +87,12 @@ function handleConfirm() {
       </DialogBody>
 
       <DialogFooter class="gap-3">
-        <Button variant="neutral" :disabled="submitting" @click="emit('update:open', false)">
+        <Button variant="neutral" size="medium" :disabled="submitting" @click="emit('update:open', false)">
           Cancel
         </Button>
         <Button
           variant="primary"
+          size="medium"
           :disabled="submitting || !targetListId"
           :loading="submitting"
           @click="handleConfirm"

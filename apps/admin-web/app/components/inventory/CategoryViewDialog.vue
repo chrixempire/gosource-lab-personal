@@ -99,10 +99,10 @@ watch(
     </div>
 
     <template v-if="details && !loadPending" #footer>
-      <Button type="button" variant="destructive" size="small" @click="emit('delete')">
+      <Button type="button" variant="destructive" size="medium" @click="emit('delete')">
         Delete
       </Button>
-      <Button type="button" size="small" :left-icon="Pencil" @click="emit('edit')">
+      <Button type="button" size="medium" :left-icon="Pencil" @click="emit('edit')">
         Edit
       </Button>
     </template>

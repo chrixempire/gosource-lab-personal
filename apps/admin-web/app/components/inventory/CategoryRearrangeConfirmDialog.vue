@@ -27,7 +27,7 @@ const emit = defineEmits<{
       <Button
         type="button"
         variant="outline"
-        size="small"
+        size="medium"
         :disabled="loading"
         @click="open = false"
       >
@@ -35,7 +35,7 @@ const emit = defineEmits<{
       </Button>
       <Button
         type="button"
-        size="small"
+        size="medium"
         :loading="loading"
         :disabled="loading"
         @click="emit('confirm')"

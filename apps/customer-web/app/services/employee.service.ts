@@ -25,6 +25,14 @@ export function useCustomerEmployeeService() {
         throw error;
       }
     },
+    async listBusinessMembers(query?: { page?: number; limit?: number; search?: string }) {
+      try {
+        return (await $employeeApi.listBusinessMembers(query)) as BranchMembersResponse;
+      } catch (error) {
+        reportCustomerApiError(error, 'Unable to load members right now');
+        throw error;
+      }
+    },
     async listBranchMembers(branchId: string, query?: { page?: number; limit?: number; search?: string }) {
       try {
         return (await $employeeApi.listBranchMembers(branchId, query)) as BranchMembersResponse;

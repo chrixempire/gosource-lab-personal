@@ -17,14 +17,21 @@ import {
   TableRow,
   TableShell,
   TableSkeleton,
+  toast,
 } from '@gosource/ui';
 import { useDebounceFn, useMediaQuery } from '@vueuse/core';
-import { ChevronDown, ChevronLeft, Pencil, Power, Trash2, UserPlus } from 'lucide-vue-next';
+import { ChevronDown, ChevronLeft, Landmark, Pencil, Power, Trash2, UserPlus } from 'lucide-vue-next';
 import BranchDeactivateOverlay from '~/components/branches/BranchDeactivateOverlay.vue';
 import BranchDeleteOverlay from '~/components/branches/BranchDeleteOverlay.vue';
 import BranchEditOverlay from '~/components/branches/BranchEditOverlay.vue';
 import BranchInviteMemberOverlay from '~/components/branches/BranchInviteMemberOverlay.vue';
+import BranchMakeHeadquarterOverlay from '~/components/branches/BranchMakeHeadquarterOverlay.vue';
 import AddIcon from '~/components/icons/AddIcon.vue';
+import MemberActionsMenu from '~/components/members/MemberActionsMenu.vue';
+import MemberConfirmOverlay from '~/components/members/MemberConfirmOverlay.vue';
+import MemberDetailsOverlay from '~/components/members/MemberDetailsOverlay.vue';
+import MemberEditOverlay from '~/components/members/MemberEditOverlay.vue';
+import MemberResendInviteOverlay from '~/components/members/MemberResendInviteOverlay.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
@@ -38,7 +45,8 @@ const isEmployeeSession = computed(() => session.value?.user_type === 'employee'
 
 const route = useRoute();
 const { getBranch, listBranches } = useCustomerBranchService();
-const { listBranchMembers } = useCustomerEmployeeService();
+const { listBranchMembers, cancelEmployeeInvite, deactivateEmployee, reactivateEmployee, deleteEmployee } =
+  useCustomerEmployeeService();
 
 const branchId = computed(() => String(route.params.id ?? ''));
 const branch = ref<BranchRecord | null>(null);
@@ -47,6 +55,24 @@ const editOpen = ref(false);
 const deactivateOpen = ref(false);
 const deleteOpen = ref(false);
 const inviteOpen = ref(false);
+const headquarterOpen = ref(false);
+const detailsOpen = ref(false);
+const detailsEmployeeId = ref<string | null>(null);
+const memberEditOpen = ref(false);
+const editEmployeeId = ref<string | null>(null);
+const resendInviteOpen = ref(false);
+const resendInvitationId = ref('');
+const resendInitialEmail = ref('');
+const resendInitialRole = ref('');
+const resendMode = ref<'resend' | 'refresh'>('resend');
+const confirmOpen = ref(false);
+const confirmTitle = ref('');
+const confirmDescription = ref('');
+const confirmMessage = ref('');
+const confirmLabel = ref('');
+const confirmDestructive = ref(true);
+const confirmLoading = ref(false);
+let confirmAction: (() => Promise<void>) | null = null;
 const membersLoading = ref(true);
 const memberRows = ref<BranchMemberRecord[]>([]);
 const defaultMemberMeta = {
@@ -60,7 +86,11 @@ const defaultMemberMeta = {
 const memberMeta = ref({
   ...defaultMemberMeta,
 });
-const membersGridTemplate = 'minmax(0,2.2fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,0.9fr)';
+const membersGridTemplate = computed(() =>
+  isEmployeeSession.value
+    ? 'minmax(0,2.2fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,0.9fr)'
+    : 'minmax(0,2.2fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,0.9fr) minmax(0,3.25rem)',
+);
 const isCompactViewport = useMediaQuery('(max-width: 999px)');
 const membersSearchValue = ref('');
 const debouncedMembersSearch = ref('');
@@ -74,12 +104,13 @@ watch(membersSearchValue, (value) => {
 
 const membersSearchActive = computed(() => debouncedMembersSearch.value.trim().length > 0);
 
-const membersSkeletonColumns = [
+const membersSkeletonColumns = computed(() => [
   { kind: 'stack' as const, avatar: true, lineClass: 'w-full', sublineClass: 'w-4/5' },
   { kind: 'line' as const, lineClass: 'w-full' },
   { kind: 'line' as const, lineClass: 'w-full' },
   { kind: 'line' as const, lineClass: 'h-7 w-24 rounded-full' },
-];
+  ...(isEmployeeSession.value ? [] : [{ kind: 'action' as const }]),
+]);
 
 const {
   data: branchDetailPayload,
@@ -244,6 +275,21 @@ function handleBranchDeactivated(nextBranch: BranchRecord) {
   };
 }
 
+function handleBranchHeadquarterUpdated(nextBranch: BranchRecord) {
+  const targetId = String(nextBranch.id || branchId.value).trim();
+
+  branch.value = {
+    ...nextBranch,
+    id: targetId,
+    isHeadquarter: true,
+  };
+
+  allBranches.value = allBranches.value.map((item) => ({
+    ...item,
+    isHeadquarter: item.id === targetId,
+  }));
+}
+
 async function handleBranchDeleted() {
   await navigateTo('/branches');
 }
@@ -261,6 +307,174 @@ function setMembersLimit(limit: number) {
 
 function handleMemberInvited(_invite: EmployeeInviteResponse['data']) {
   void fetchMembers();
+}
+
+function memberDisplayName(member: BranchMemberRecord) {
+  const fullName = [member.firstName, member.lastName].filter(Boolean).join(' ').trim();
+  return fullName || member.email;
+}
+
+function openMemberDetails(member: BranchMemberRecord) {
+  if (member.kind !== 'member') {
+    return;
+  }
+
+  detailsEmployeeId.value = member.id;
+  detailsOpen.value = true;
+}
+
+function onMemberRowActivate(member: BranchMemberRecord) {
+  if (member.kind !== 'member') {
+    return;
+  }
+
+  openMemberDetails(member);
+}
+
+function tableRowClass(member: BranchMemberRecord) {
+  if (member.kind === 'member') {
+    return 'cursor-pointer transition-colors hover:bg-primary-50/55 active:bg-primary-50/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary-500/35';
+  }
+
+  return 'cursor-default transition-colors hover:bg-grey-55/30';
+}
+
+function openMemberEdit(member: BranchMemberRecord) {
+  if (member.kind !== 'member') {
+    return;
+  }
+
+  editEmployeeId.value = member.id;
+  memberEditOpen.value = true;
+}
+
+function openConfirm(opts: {
+  title: string;
+  description?: string;
+  message: string;
+  confirmLabel: string;
+  destructive?: boolean;
+  action: () => Promise<void>;
+}) {
+  confirmTitle.value = opts.title;
+  confirmDescription.value = opts.description ?? '';
+  confirmMessage.value = opts.message;
+  confirmLabel.value = opts.confirmLabel;
+  confirmDestructive.value = opts.destructive !== false;
+  confirmAction = opts.action;
+  confirmOpen.value = true;
+}
+
+function closeConfirm() {
+  confirmOpen.value = false;
+  confirmAction = null;
+  confirmLoading.value = false;
+}
+
+function onConfirmOverlayOpen(value: boolean) {
+  confirmOpen.value = value;
+  if (!value) {
+    confirmAction = null;
+  }
+}
+
+async function handleConfirm() {
+  if (!confirmAction) {
+    return;
+  }
+
+  confirmLoading.value = true;
+  try {
+    await confirmAction();
+    closeConfirm();
+    await fetchMembers();
+    toast.success('Changes saved');
+  } catch {
+    // API services already surface errors via toast
+  } finally {
+    confirmLoading.value = false;
+  }
+}
+
+function confirmDeactivateMember(member: BranchMemberRecord) {
+  const label = memberDisplayName(member);
+  openConfirm({
+    title: 'Deactivate member',
+    description: 'They will lose access until reactivated.',
+    message: `Deactivate ${label}? They can no longer sign in until you activate them again.`,
+    confirmLabel: 'Deactivate',
+    destructive: true,
+    action: async () => {
+      await deactivateEmployee(member.id);
+    },
+  });
+}
+
+function confirmReactivateMember(member: BranchMemberRecord) {
+  const label = memberDisplayName(member);
+  openConfirm({
+    title: 'Activate member',
+    message: `Restore access for ${label}?`,
+    confirmLabel: 'Activate',
+    destructive: false,
+    action: async () => {
+      await reactivateEmployee(member.id);
+    },
+  });
+}
+
+function confirmDeleteMember(member: BranchMemberRecord) {
+  const label = memberDisplayName(member);
+  openConfirm({
+    title: 'Delete member',
+    description: 'This cannot be undone.',
+    message: `Permanently remove ${label} from your team? Their account and sessions will be deleted.`,
+    confirmLabel: 'Delete member',
+    destructive: true,
+    action: async () => {
+      await deleteEmployee(member.id);
+    },
+  });
+}
+
+function confirmCancelInvite(member: BranchMemberRecord) {
+  openConfirm({
+    title: 'Delete invite',
+    description: 'The pending invitation will be removed.',
+    message: `Remove the invite sent to ${member.email}?`,
+    confirmLabel: 'Delete invite',
+    destructive: true,
+    action: async () => {
+      await cancelEmployeeInvite(member.id);
+    },
+  });
+}
+
+function openResendInvite(member: BranchMemberRecord) {
+  resendMode.value = 'resend';
+  resendInvitationId.value = member.id;
+  resendInitialEmail.value = member.email;
+  resendInitialRole.value = member.role;
+  resendInviteOpen.value = true;
+}
+
+function openRefreshInviteLink(member: BranchMemberRecord) {
+  resendMode.value = 'refresh';
+  resendInvitationId.value = member.id;
+  resendInitialEmail.value = member.email;
+  resendInitialRole.value = member.role;
+  resendInviteOpen.value = true;
+}
+
+const cardArticleBaseClass =
+  'rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)] transition-[background-color,box-shadow,border-color] duration-150';
+
+function cardArticleClass(member: BranchMemberRecord) {
+  if (member.kind === 'member') {
+    return `${cardArticleBaseClass} cursor-pointer hover:border-primary-100 hover:bg-primary-50/50 hover:shadow-[0_22px_48px_-28px_rgba(16,24,40,0.2)] active:bg-primary-50/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500/35`;
+  }
+
+  return `${cardArticleBaseClass} cursor-default hover:border-grey-100 hover:bg-grey-55/20`;
 }
 
 const formattedMembers = computed(() =>
@@ -328,6 +542,14 @@ const formattedMembers = computed(() =>
           <DropdownMenuItem class="gap-2.5" @select="inviteOpen = true">
             <UserPlus class="size-4" />
             Invite member
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            v-if="!branch.isHeadquarter"
+            class="gap-2.5"
+            @select="headquarterOpen = true"
+          >
+            <Landmark class="size-4" />
+            Make headquarter
           </DropdownMenuItem>
           <DropdownMenuItem
             :class="
@@ -401,6 +623,7 @@ const formattedMembers = computed(() =>
               <TableCell>Position</TableCell>
               <TableCell>Role</TableCell>
               <TableCell>Status</TableCell>
+              <TableCell v-if="!isEmployeeSession" class="sr-only">Actions</TableCell>
             </TableHeadRow>
           </TableHeader>
 
@@ -575,7 +798,12 @@ const formattedMembers = computed(() =>
             <article
               v-for="member in formattedMembers"
               :key="member.id"
-              class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-4 shadow-[0_18px_40px_-28px_rgba(16,24,40,0.16)]"
+              :class="cardArticleClass(member)"
+              :role="member.kind === 'member' ? 'button' : undefined"
+              :tabindex="member.kind === 'member' ? 0 : undefined"
+              @click="onMemberRowActivate(member)"
+              @keydown.enter="onMemberRowActivate(member)"
+              @keydown.space.prevent="onMemberRowActivate(member)"
             >
               <div class="flex items-start gap-3">
                 <Avatar size="md" :fallback="member.fallback" />
@@ -587,13 +815,27 @@ const formattedMembers = computed(() =>
                     {{ member.email }}
                   </p>
                 </div>
-                <StatusTag
-                  :variant="member.statusVariant"
-                  size="medium"
-                  class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold normal-case"
-                >
-                  {{ member.statusLabel }}
-                </StatusTag>
+                <div class="flex shrink-0 items-start gap-2">
+                  <StatusTag
+                    :variant="member.statusVariant"
+                    size="medium"
+                    class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
+                  >
+                    {{ member.statusLabel }}
+                  </StatusTag>
+                  <MemberActionsMenu
+                    v-if="!isEmployeeSession"
+                    :member="member"
+                    @view-details="openMemberDetails(member)"
+                    @edit="openMemberEdit(member)"
+                    @deactivate="confirmDeactivateMember(member)"
+                    @activate="confirmReactivateMember(member)"
+                    @delete-member="confirmDeleteMember(member)"
+                    @delete-invite="confirmCancelInvite(member)"
+                    @resend-invite="openResendInvite(member)"
+                    @refresh-invite="openRefreshInviteLink(member)"
+                  />
+                </div>
               </div>
 
               <div class="mt-4 grid grid-cols-2 gap-3">
@@ -654,6 +896,7 @@ const formattedMembers = computed(() =>
               <TableCell>Position</TableCell>
               <TableCell>Role</TableCell>
               <TableCell>Status</TableCell>
+              <TableCell v-if="!isEmployeeSession" class="sr-only">Actions</TableCell>
             </TableHeadRow>
           </TableHeader>
 
@@ -669,7 +912,8 @@ const formattedMembers = computed(() =>
               v-for="member in formattedMembers"
               :key="member.id"
               :style="{ gridTemplateColumns: membersGridTemplate }"
-              class="hover:bg-grey-55/35"
+              :class="tableRowClass(member)"
+              @click="onMemberRowActivate(member)"
             >
               <TableCell class="flex items-center gap-3">
                 <Avatar size="sm" :fallback="member.fallback" />
@@ -703,6 +947,20 @@ const formattedMembers = computed(() =>
                 >
                   {{ member.statusLabel }}
                 </StatusTag>
+              </TableCell>
+
+              <TableCell v-if="!isEmployeeSession" class="flex justify-end">
+                <MemberActionsMenu
+                  :member="member"
+                  @view-details="openMemberDetails(member)"
+                  @edit="openMemberEdit(member)"
+                  @deactivate="confirmDeactivateMember(member)"
+                  @activate="confirmReactivateMember(member)"
+                  @delete-member="confirmDeleteMember(member)"
+                  @delete-invite="confirmCancelInvite(member)"
+                  @resend-invite="openResendInvite(member)"
+                  @refresh-invite="openRefreshInviteLink(member)"
+                />
               </TableCell>
             </TableRow>
           </TableBody>
@@ -766,6 +1024,44 @@ const formattedMembers = computed(() =>
       :branch="branch"
       :branches="allBranches"
       @invited="handleMemberInvited"
+    />
+    <BranchMakeHeadquarterOverlay
+      v-model:open="headquarterOpen"
+      :branch="branch"
+      @updated="handleBranchHeadquarterUpdated"
+    />
+
+    <MemberDetailsOverlay
+      v-model:open="detailsOpen"
+      :employee-id="detailsEmployeeId"
+    />
+
+    <MemberEditOverlay
+      v-model:open="memberEditOpen"
+      :employee-id="editEmployeeId"
+      :branches="allBranches"
+      @saved="fetchMembers"
+    />
+
+    <MemberResendInviteOverlay
+      v-model:open="resendInviteOpen"
+      :invitation-id="resendInvitationId"
+      :initial-email="resendInitialEmail"
+      :initial-role="resendInitialRole"
+      :mode="resendMode"
+      @resent="fetchMembers"
+    />
+
+    <MemberConfirmOverlay
+      :open="confirmOpen"
+      :title="confirmTitle"
+      :description="confirmDescription || undefined"
+      :message="confirmMessage"
+      :confirm-label="confirmLabel"
+      :destructive="confirmDestructive"
+      :loading="confirmLoading"
+      @update:open="onConfirmOverlayOpen"
+      @confirm="handleConfirm"
     />
   </div>
 </template>

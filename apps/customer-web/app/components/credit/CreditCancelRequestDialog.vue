@@ -71,8 +71,8 @@ async function submit() {
         </p>
       </DrawerBody>
       <DrawerFooter class="gap-3">
-        <Button variant="neutral" class="w-full" :disabled="submitting" @click="close">Keep request</Button>
-        <Button variant="destructive" class="w-full" :loading="submitting" @click="submit">
+        <Button variant="neutral" size="medium" class="w-full" :disabled="submitting" @click="close">Keep request</Button>
+        <Button variant="destructive" size="medium" class="w-full" :loading="submitting" @click="submit">
           Cancel request
         </Button>
       </DrawerFooter>
@@ -97,8 +97,8 @@ async function submit() {
         </p>
       </DialogBody>
       <DialogFooter class="gap-3">
-        <Button variant="neutral" :disabled="submitting" @click="close">Keep request</Button>
-        <Button variant="destructive" :loading="submitting" @click="submit">Cancel request</Button>
+        <Button variant="neutral" size="medium" :disabled="submitting" @click="close">Keep request</Button>
+        <Button variant="destructive" size="medium" :loading="submitting" @click="submit">Cancel request</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

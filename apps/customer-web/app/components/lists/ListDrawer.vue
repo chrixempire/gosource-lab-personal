@@ -31,14 +31,20 @@ import {
   shoppingListSubtotal,
 } from '~/lib/shopping-list';
 
-const props = defineProps<{
-  open: boolean;
-  list: ShoppingListRecord | null;
-  itemsLoading?: boolean;
-  savingItemId?: string | null;
-  moveSubmitting?: boolean;
-  clearSubmitting?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    open: boolean;
+    list: ShoppingListRecord | null;
+    itemsLoading?: boolean;
+    savingItemId?: string | null;
+    moveSubmitting?: boolean;
+    clearSubmitting?: boolean;
+    mode?: 'view' | 'move';
+  }>(),
+  {
+    mode: 'view',
+  },
+);
 
 const emit = defineEmits<{
   'update:open': [value: boolean];
@@ -47,9 +53,11 @@ const emit = defineEmits<{
   deleteItem: [itemId: string];
   clearItems: [];
   moveToCart: [itemIds: string[]];
+  moveSelected: [itemIds: string[]];
 }>();
 
 const isMobile = useMediaQuery('(max-width: 600px)');
+const isMoveMode = computed(() => props.mode === 'move');
 
 const selectedItemIds = ref<string[]>([]);
 
@@ -94,6 +102,18 @@ const showItems = computed(
 const moveToCartDisabled = computed(
   () => props.itemsLoading || !hasSelectedItems.value || Boolean(props.moveSubmitting),
 );
+
+const moveSelectedDisabled = computed(
+  () => props.itemsLoading || !hasSelectedItems.value || Boolean(props.moveSubmitting),
+);
+
+const drawerTitle = computed(() => {
+  if (isMoveMode.value) {
+    return 'Move list items';
+  }
+
+  return props.list?.name ?? 'List details';
+});
 
 const moveToCartButtonClass = computed(() =>
   !hasSelectedItems.value && !props.moveSubmitting
@@ -155,6 +175,14 @@ function handleMoveToCart() {
 
   emit('moveToCart', [...selectedItemIds.value]);
 }
+
+function handleMoveSelected() {
+  if (!hasSelectedItems.value) {
+    return;
+  }
+
+  emit('moveSelected', [...selectedItemIds.value]);
+}
 </script>
 
 <template>
@@ -162,9 +190,12 @@ function handleMoveToCart() {
     <DrawerContent class="max-h-[94vh]">
       <DrawerHeader class="text-left">
         <DrawerTitle class="text-xl font-semibold text-grey-900">
-          {{ list?.name ?? 'List details' }}
+          {{ drawerTitle }}
         </DrawerTitle>
-        <p v-if="list?.description" class="text-sm text-grey-300">
+        <p v-if="isMoveMode && list?.name" class="text-sm text-grey-300">
+          {{ list.name }}
+        </p>
+        <p v-else-if="list?.description" class="text-sm text-grey-300">
           {{ list.description }}
         </p>
       </DrawerHeader>
@@ -183,7 +214,12 @@ function handleMoveToCart() {
               Select all
             </label>
             <p class="text-sm font-medium text-grey-900">
-              Subtotal {{ formatShoppingListCurrency(subtotal) }}
+              <template v-if="isMoveMode">
+                {{ selectedItemIds.length }} selected
+              </template>
+              <template v-else>
+                Subtotal {{ formatShoppingListCurrency(subtotal) }}
+              </template>
             </p>
           </div>
 
@@ -233,7 +269,7 @@ function handleMoveToCart() {
                   </div>
                 </div>
 
-                <div class="mt-2 flex items-center justify-between gap-2">
+                <div v-if="!isMoveMode" class="mt-2 flex items-center justify-between gap-2">
                   <div class="w-full max-w-[7.5rem]">
                     <Button
                       v-if="!item.inStock"
@@ -285,25 +321,39 @@ function handleMoveToCart() {
       </DrawerBody>
 
       <DrawerFooter class="gap-3 border-t border-grey-50">
-        <Button
-          variant="neutral"
-          size="medium"
-          :disabled="itemsLoading || !list?.items.length || clearSubmitting"
-          :loading="clearSubmitting"
-          @click="emit('clearItems')"
-        >
-          Clear all
-        </Button>
-        <Button
-          variant="primary"
-          size="medium"
-          :disabled="moveToCartDisabled"
-          :class="moveToCartButtonClass"
-          :loading="moveSubmitting"
-          @click="handleMoveToCart"
-        >
-          Move to cart
-        </Button>
+        <template v-if="isMoveMode">
+          <Button
+            variant="primary"
+            size="medium"
+            class="w-full"
+            :disabled="moveSelectedDisabled"
+            :loading="moveSubmitting"
+            @click="handleMoveSelected"
+          >
+            Move to list
+          </Button>
+        </template>
+        <template v-else>
+          <Button
+            variant="neutral"
+            size="medium"
+            :disabled="itemsLoading || !list?.items.length || clearSubmitting"
+            :loading="clearSubmitting"
+            @click="emit('clearItems')"
+          >
+            Clear all
+          </Button>
+          <Button
+            variant="primary"
+            size="medium"
+            :disabled="moveToCartDisabled"
+            :class="moveToCartButtonClass"
+            :loading="moveSubmitting"
+            @click="handleMoveToCart"
+          >
+            Move to cart
+          </Button>
+        </template>
       </DrawerFooter>
     </DrawerContent>
   </Drawer>
@@ -313,9 +363,12 @@ function handleMoveToCart() {
       <DialogHeader class="shrink-0 border-b border-grey-50 px-6 py-5">
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
           <DialogTitle class="text-xl font-semibold text-grey-900">
-            {{ list?.name ?? 'List details' }}
+            {{ drawerTitle }}
           </DialogTitle>
-          <DialogDescription v-if="list?.description" class="text-sm text-grey-300">
+          <DialogDescription v-if="isMoveMode && list?.name" class="text-sm text-grey-300">
+            {{ list.name }}
+          </DialogDescription>
+          <DialogDescription v-else-if="list?.description" class="text-sm text-grey-300">
             {{ list.description }}
           </DialogDescription>
         </div>
@@ -336,7 +389,12 @@ function handleMoveToCart() {
               Select all
             </label>
             <p class="text-sm font-medium text-grey-900">
-              Subtotal {{ formatShoppingListCurrency(subtotal) }}
+              <template v-if="isMoveMode">
+                {{ selectedItemIds.length }} selected
+              </template>
+              <template v-else>
+                Subtotal {{ formatShoppingListCurrency(subtotal) }}
+              </template>
             </p>
           </div>
 
@@ -386,7 +444,7 @@ function handleMoveToCart() {
                   </div>
                 </div>
 
-                <div class="mt-2 flex items-center justify-between gap-2">
+                <div v-if="!isMoveMode" class="mt-2 flex items-center justify-between gap-2">
                   <div class="w-full max-w-[7.5rem]">
                     <Button
                       v-if="!item.inStock"
@@ -438,25 +496,39 @@ function handleMoveToCart() {
       </DialogBody>
 
       <DialogFooter class="shrink-0 gap-3 border-t border-grey-50 px-6 py-4">
-        <Button
-          variant="neutral"
-          size="medium"
-          :disabled="itemsLoading || !list?.items.length || clearSubmitting"
-          :loading="clearSubmitting"
-          @click="emit('clearItems')"
-        >
-          Clear all
-        </Button>
-        <Button
-          variant="primary"
-          size="medium"
-          :disabled="moveToCartDisabled"
-          :class="moveToCartButtonClass"
-          :loading="moveSubmitting"
-          @click="handleMoveToCart"
-        >
-          Move to cart
-        </Button>
+        <template v-if="isMoveMode">
+          <Button
+            variant="primary"
+            size="medium"
+            class="w-full"
+            :disabled="moveSelectedDisabled"
+            :loading="moveSubmitting"
+            @click="handleMoveSelected"
+          >
+            Move to list
+          </Button>
+        </template>
+        <template v-else>
+          <Button
+            variant="neutral"
+            size="medium"
+            :disabled="itemsLoading || !list?.items.length || clearSubmitting"
+            :loading="clearSubmitting"
+            @click="emit('clearItems')"
+          >
+            Clear all
+          </Button>
+          <Button
+            variant="primary"
+            size="medium"
+            :disabled="moveToCartDisabled"
+            :class="moveToCartButtonClass"
+            :loading="moveSubmitting"
+            @click="handleMoveToCart"
+          >
+            Move to cart
+          </Button>
+        </template>
       </DialogFooter>
     </DialogContent>
   </Dialog>

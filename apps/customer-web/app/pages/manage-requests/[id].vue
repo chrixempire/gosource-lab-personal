@@ -8,7 +8,7 @@ import MemberConfirmOverlay from '~/components/members/MemberConfirmOverlay.vue'
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import RequestBranchRequestsSection from '~/components/requests/RequestBranchRequestsSection.vue';
 import RequestDetailsPanel from '~/components/requests/RequestDetailsPanel.vue';
-import RequestRejectForm from '~/components/requests/RequestRejectForm.vue';
+import RequestRejectOverlay from '~/components/requests/RequestRejectOverlay.vue';
 import type { RequestListItem } from '~/components/requests/RequestCards.vue';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import {
@@ -61,8 +61,9 @@ const {
 const relatedLoading = ref(false);
 const request = ref<RequestRecord | null>(null);
 const relatedRequests = ref<RequestListItem[]>([]);
-const isRejecting = ref(false);
+const rejectOpen = ref(false);
 const rejectReason = ref('');
+const rejectLoading = ref(false);
 const confirmLoading = ref(false);
 
 const confirmOpen = ref(false);
@@ -72,16 +73,6 @@ const confirmMessage = ref('');
 const confirmLabel = ref('');
 const confirmDestructive = ref(true);
 let confirmAction: (() => Promise<void>) | null = null;
-
-watch(
-  () => route.query.reject,
-  (value) => {
-    if (value === '1' || value === 'true') {
-      isRejecting.value = true;
-    }
-  },
-  { immediate: true },
-);
 
 watch(
   () => route.query.edit,
@@ -256,7 +247,7 @@ async function fetchRequest() {
 
 watch(requestId, () => {
   clearActiveRequest();
-  isRejecting.value = false;
+  rejectOpen.value = false;
   rejectReason.value = '';
   cancelProductEdit();
 }, { immediate: true });
@@ -384,11 +375,21 @@ async function handleReopenRequest() {
   }
 
   const next = await reopenRejected(request.value.id);
-  if (next) {
-    request.value = next;
-    isRejecting.value = false;
-    startEditingProducts();
+  if (!next) {
+    return;
   }
+
+  request.value = next;
+  if (requestDetailPayload.value?.requestKey === requestId.value) {
+    requestDetailPayload.value = {
+      ...requestDetailPayload.value,
+      request: next,
+    };
+  }
+
+  rejectOpen.value = false;
+  startEditingProducts();
+  await refreshRelatedRequests(next);
 }
 
 const canReopenRejected = computed(() =>
@@ -458,29 +459,34 @@ function handleCancel() {
       const response = await cancelRequest(request.value!.id);
       if (response.data) {
         request.value = response.data;
-        isRejecting.value = false;
+        rejectOpen.value = false;
         await refreshRelatedRequests(response.data);
       }
     },
   });
 }
 
-async function submitReject() {
-  if (!request.value) return;
-  const reason = rejectReason.value.trim();
-  if (!reason) return;
+function openRejectModal() {
+  rejectReason.value = '';
+  rejectOpen.value = true;
+}
 
-  confirmLoading.value = true;
+async function submitReject(reason: string) {
+  if (!request.value) {
+    return;
+  }
+
+  rejectLoading.value = true;
   try {
-    const response = await rejectRequest(request.value.id, { reason });
+    const response = await rejectRequest(request.value.id, { rejectionReasons: reason });
     if (response.data) {
       request.value = response.data;
-      isRejecting.value = false;
+      rejectOpen.value = false;
       rejectReason.value = '';
       await refreshRelatedRequests(response.data);
     }
   } finally {
-    confirmLoading.value = false;
+    rejectLoading.value = false;
   }
 }
 
@@ -547,7 +553,7 @@ function openRelatedRequest(item: RequestListItem) {
           @edit="startEditingProducts"
           @add-more="handleAddMoreItems"
           @reopen="handleReopenRequest"
-          @reject="isRejecting = true"
+          @reject="openRejectModal"
           @cancel="handleCancel"
         />
       </div>
@@ -623,36 +629,6 @@ function openRelatedRequest(item: RequestListItem) {
             @quantity-change="handleProductQuantityChange"
             @remove-line="handleProductRemove"
           />
-          <RequestRejectForm
-            v-if="isRejecting && requestDetailsView"
-            v-model:reason="rejectReason"
-            class="mt-5"
-          />
-        </div>
-
-        <div
-          v-if="isRejecting && requestDetailsView"
-          class="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-grey-50 pt-5"
-        >
-          <Button
-            variant="neutral"
-            size="medium"
-            class="!w-auto min-w-[9rem]"
-            :disabled="confirmLoading"
-            @click="isRejecting = false"
-          >
-            Back
-          </Button>
-          <Button
-            variant="destructive"
-            size="medium"
-            class="!w-auto min-w-[9rem]"
-            :loading="confirmLoading"
-            :disabled="!rejectReason.trim()"
-            @click="submitReject"
-          >
-            Reject request
-          </Button>
         </div>
 
       </section>
@@ -683,6 +659,14 @@ function openRelatedRequest(item: RequestListItem) {
       :loading="confirmLoading"
       @update:open="confirmOpen = $event"
       @confirm="runConfirmAction"
+    />
+
+    <RequestRejectOverlay
+      v-model:open="rejectOpen"
+      v-model:reason="rejectReason"
+      :request-reference="request?.reference"
+      :loading="rejectLoading"
+      @confirm="submitReject"
     />
   </div>
 </template>

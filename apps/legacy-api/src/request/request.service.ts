@@ -484,6 +484,7 @@ export class RequestService {
     const update = await this.requestModel.findByIdAndUpdate(
       requestId,
       requestDetails,
+      { new: true },
     );
 
     if (update) {

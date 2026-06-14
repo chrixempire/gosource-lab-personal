@@ -56,6 +56,7 @@ import {
   normalizeLegacyShoppingListResponse,
   toLegacyCreateRequestBody,
   toLegacyOrderListQuery,
+  toLegacyRejectRequestBody,
   toLegacyRequestListQuery,
 } from '../../utils/legacy-resource-compat';
 
@@ -232,6 +233,16 @@ export default defineEventHandler(async (event) => {
         (targetPathSegments.length === 3 && targetPathSegments[1] === 'shopping-list'))
     ) {
       parsedBody = toLegacyCreateRequestBody(parsedBody);
+      headers.set('content-type', 'application/json');
+    }
+
+    if (
+      method === 'PATCH' &&
+      targetPathSegments[0] === 'request' &&
+      targetPathSegments[2] === 'reject' &&
+      parsedBody
+    ) {
+      parsedBody = toLegacyRejectRequestBody(parsedBody);
       headers.set('content-type', 'application/json');
     }
   }
@@ -660,6 +671,43 @@ export default defineEventHandler(async (event) => {
     }
 
     if (targetPathSegments[0] === 'employee') {
+      if (method === 'GET' && targetPathSegments.length === 1) {
+        const canReadPendingInvites = sessionSnapshot?.user_type !== 'employee';
+        let invitesPayload: unknown = { data: [] };
+
+        if (canReadPendingInvites) {
+          const invitesUrl = buildTargetUrl(targetBaseUrl, ['employee', 'business-pending-invites'], {});
+          const invitesResponse = await $fetch.raw(invitesUrl, {
+            method: 'GET',
+            headers,
+            ignoreResponseError: true,
+          });
+
+          if (invitesResponse.status < 400) {
+            invitesPayload = invitesResponse._data;
+          } else if (invitesResponse.status !== 401 && invitesResponse.status !== 403) {
+            const payload = invitesResponse._data as Record<string, unknown> | string | null;
+            return forwardApiError(
+              event,
+              {
+                statusCode: invitesResponse.status,
+                statusMessage: invitesResponse.statusText || 'Proxy request failed',
+                data: payload,
+              },
+              'Proxy request failed',
+            );
+          }
+        }
+
+        return normalizeLegacyBranchMembersResponse(
+          legacyData,
+          invitesPayload,
+          Number(query.page ?? 1),
+          Number(query.limit ?? 10),
+          typeof query.search === 'string' ? query.search : undefined,
+        );
+      }
+
       if (method === 'GET' && targetPathSegments[1] === 'branch' && targetPathSegments[2]) {
         const canReadPendingInvites = sessionSnapshot?.user_type !== 'employee';
         let invitesPayload: unknown = { data: [] };

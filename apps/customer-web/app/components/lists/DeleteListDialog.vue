@@ -35,10 +35,10 @@ const emit = defineEmits<{
       </DialogBody>
 
       <DialogFooter class="gap-3">
-        <Button variant="neutral" :disabled="submitting" @click="emit('update:open', false)">
+        <Button variant="neutral" size="medium" :disabled="submitting" @click="emit('update:open', false)">
           Cancel
         </Button>
-        <Button variant="destructive" :loading="submitting" @click="emit('confirm')">
+        <Button variant="destructive" size="medium" :loading="submitting" @click="emit('confirm')">
           Delete list
         </Button>
       </DialogFooter>

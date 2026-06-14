@@ -52,8 +52,8 @@ function onSubmit() {
         </label>
       </DialogBody>
       <DialogFooter class="gap-2">
-        <Button type="button" variant="outline" size="small" @click="open = false">Cancel</Button>
-        <Button type="button" variant="primary" size="small" @click="onSubmit">Send request</Button>
+        <Button type="button" variant="outline" size="medium" @click="open = false">Cancel</Button>
+        <Button type="button" variant="primary" size="medium" @click="onSubmit">Send request</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

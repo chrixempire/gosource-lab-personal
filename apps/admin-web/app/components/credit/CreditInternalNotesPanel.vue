@@ -130,7 +130,7 @@ async function submitNote(options?: { closeOverlay?: boolean }) {
       <Button
         type="button"
         variant="secondary"
-        size="small"
+        size="medium"
         class="w-full sm:w-auto"
         :loading="busyId === targetId"
         @click="submitNote({ closeOverlay: true })"

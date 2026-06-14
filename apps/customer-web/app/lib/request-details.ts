@@ -74,6 +74,7 @@ export function buildRequestDetailsView(request: RequestRecord): RequestDetailsV
   return {
     id: request.id,
     reference: request.reference,
+    status: request.status,
     branchName: request.branchName,
     branchCode: request.branchCode,
     branchOrderLabel: request.branchCode ?? request.branchName,

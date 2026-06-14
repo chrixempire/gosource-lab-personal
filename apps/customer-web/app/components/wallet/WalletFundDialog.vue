@@ -384,19 +384,19 @@ watch(transferDialogOpen, (isOpen) => {
 
       <DialogFooter class="gap-2">
         <template v-if="step === 'amount'">
-          <Button variant="neutral" size="small" class="!w-auto" :disabled="isBusy" @click="closeAmountDialog">
+          <Button variant="neutral" size="medium" class="!w-auto" :disabled="isBusy" @click="closeAmountDialog">
             Cancel
           </Button>
-          <Button size="small" class="!w-auto" :disabled="isBusy" @click="continueToMethodStep">
+          <Button size="medium" class="!w-auto" :disabled="isBusy" @click="continueToMethodStep">
             Continue
           </Button>
         </template>
         <template v-else>
-          <Button variant="neutral" size="small" class="!w-auto" :disabled="isBusy" @click="backToAmountStep">
+          <Button variant="neutral" size="medium" class="!w-auto" :disabled="isBusy" @click="backToAmountStep">
             Back
           </Button>
           <Button
-            size="small"
+            size="medium"
             class="!w-auto"
             :disabled="isBusy || !selectedMethod || (selectedMethod === 'transfer' && !transferAvailable)"
             @click="onContinueWithSelectedMethod"

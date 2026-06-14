@@ -736,8 +736,20 @@ export function normalizeLegacyBranchListResponse(
   };
 }
 
+function resolveLegacyMemberBranch(raw: unknown) {
+  const branch = asRecord(raw);
+  const branchId = toStringValue(branch._id) || toStringValue(branch.id);
+  const branchName = toNullableString(branch.branchName);
+
+  return {
+    branchId: branchId || null,
+    branchName,
+  };
+}
+
 function normalizeLegacyInviteMember(raw: unknown): BranchMemberRecord {
   const invite = asRecord(raw);
+  const branch = resolveLegacyMemberBranch(invite.branchId);
   return {
     id: toStringValue(invite._id) || toStringValue(invite.invitationId),
     kind: 'invite',
@@ -748,11 +760,14 @@ function normalizeLegacyInviteMember(raw: unknown): BranchMemberRecord {
     role: normalizeEmployeeRole(invite.role),
     status: 'pending',
     createdAt: toStringValue(invite.createdAt),
+    branchId: branch.branchId,
+    branchName: branch.branchName,
   };
 }
 
 function normalizeLegacyEmployeeMember(raw: unknown): BranchMemberRecord {
   const employee = asRecord(raw);
+  const branch = resolveLegacyMemberBranch(employee.branchId);
   return {
     id: toStringValue(employee._id) || toStringValue(employee.id),
     kind: 'member',
@@ -763,6 +778,8 @@ function normalizeLegacyEmployeeMember(raw: unknown): BranchMemberRecord {
     role: normalizeEmployeeRole(employee.role),
     status: toBoolean(employee.isDeactivated) ? 'inactive' : 'active',
     createdAt: toStringValue(employee.createdAt),
+    branchId: branch.branchId,
+    branchName: branch.branchName,
   };
 }
 
@@ -899,6 +916,20 @@ export function toLegacyRequestListQuery(query: Record<string, unknown>): Record
 
 export function toLegacyOrderListQuery(query: Record<string, unknown>): Record<string, unknown> {
   return { ...query };
+}
+
+export function toLegacyRejectRequestBody(body: Record<string, unknown>): Record<string, unknown> {
+  if (typeof body.rejectionReasons === 'string') {
+    return body;
+  }
+
+  const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
+  if (!reason) {
+    return body;
+  }
+
+  const { reason: _removed, ...rest } = body;
+  return { ...rest, rejectionReasons: reason };
 }
 
 export function toLegacyCreateRequestBody(body: Record<string, unknown>): Record<string, unknown> {
