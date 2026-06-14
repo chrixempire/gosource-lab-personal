@@ -50,7 +50,7 @@ import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncDa
 import { usePaginatedListData } from '~/composables/usePaginatedListData';
 import { buildCollectionListKey } from '~/lib/collection-list-key';
 import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
-import { useReorderProducts } from '~/composables/useReorderProducts';
+import { useReorderProducts, REORDER_THEN_MARKET_OPTIONS } from '~/composables/useReorderProducts';
 import { useCustomerOrderService } from '~/services/order.service';
 import { useCustomerAnalyticsService } from '~/services/analytics.service';
 
@@ -440,7 +440,7 @@ async function handleReorder(orderId: string) {
   reorderLoadingOrderId.value = orderId;
 
   try {
-    await reorderProducts(record.products);
+    await reorderProducts(record.products, REORDER_THEN_MARKET_OPTIONS);
   } finally {
     reorderLoadingOrderId.value = null;
   }

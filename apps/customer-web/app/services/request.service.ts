@@ -51,12 +51,7 @@ export function useCustomerRequestService() {
       }
     },
     async approveRequest(requestId: string, payload?: ApproveRequestPayload) {
-      try {
-        return (await $requestApi.approveRequest(requestId, payload)) as ApproveRequestResponse;
-      } catch (error) {
-        reportCustomerApiError(error, 'Unable to approve request right now');
-        throw error;
-      }
+      return (await $requestApi.approveRequest(requestId, payload)) as ApproveRequestResponse;
     },
     async rejectRequest(requestId: string, payload: RejectRequestPayload) {
       try {

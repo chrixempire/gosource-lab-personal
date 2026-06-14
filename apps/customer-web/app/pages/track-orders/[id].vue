@@ -10,7 +10,7 @@ import {
 } from '~/lib/order-details';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useDownloadOrderInvoice } from '~/composables/useDownloadOrderInvoice';
-import { useReorderProducts } from '~/composables/useReorderProducts';
+import { useReorderProducts, REORDER_THEN_MARKET_OPTIONS } from '~/composables/useReorderProducts';
 import { useCustomerOrderService } from '~/services/order.service';
 
 const { reorderProducts, reordering } = useReorderProducts();
@@ -109,7 +109,7 @@ async function handleReorder() {
     return;
   }
 
-  await reorderProducts(order.value.products);
+  await reorderProducts(order.value.products, REORDER_THEN_MARKET_OPTIONS);
 }
 </script>
 
