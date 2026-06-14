@@ -15,6 +15,8 @@ import {
 export type SetCartQuantityOptions = {
   silent?: boolean;
   product?: MarketProduct;
+  /** Skip GET /cart after each mutation; caller should reload once when batching adds. */
+  deferCartReload?: boolean;
 };
 
 export type CartLineMutationDirection = 'increase' | 'decrease';
@@ -666,7 +668,9 @@ export function useMarketplaceCart() {
           quantity: next,
         });
       }
-      await loadCart(true);
+      if (!options?.deferCartReload) {
+        await loadCart(true);
+      }
 
       if (!options?.silent) {
         if (!existing) {
@@ -680,7 +684,9 @@ export function useMarketplaceCart() {
 
       return true;
     } catch (error) {
-      await loadCart(true);
+      if (!options?.deferCartReload) {
+        await loadCart(true);
+      }
       if (isProductOutOfStockError(error)) {
         return false;
       }

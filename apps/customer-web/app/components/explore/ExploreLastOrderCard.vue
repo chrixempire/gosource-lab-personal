@@ -3,7 +3,7 @@ import type { OrderRecord } from '@gosource/api-client';
 import { Button } from '@gosource/ui';
 import { Plus } from 'lucide-vue-next';
 import { useExploreProcurementInsight } from '~/composables/useExploreProcurementInsight';
-import { useReorderProducts } from '~/composables/useReorderProducts';
+import { useReorderProducts, REORDER_THEN_MARKET_OPTIONS } from '~/composables/useReorderProducts';
 import { formatNaira } from '~/composables/useMarketplaceCart';
 import {
   buildExploreLastOrderDraftLines,
@@ -38,6 +38,7 @@ async function onAddAll() {
       quantity: line.quantity,
       productName: line.productName,
     })),
+    REORDER_THEN_MARKET_OPTIONS,
   );
 
   if (result.ok) {

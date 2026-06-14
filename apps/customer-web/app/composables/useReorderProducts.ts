@@ -19,8 +19,13 @@ export type ReorderProductLine = Pick<
 export type ReorderProductsOptions = {
   /** @default true */
   openDrawer?: boolean;
-  /** Navigate to /market when not already there so users can add more items. @default true */
+  /** Navigate to /market and open the cart drawer when not already on market. @default false */
   navigateToMarket?: boolean;
+};
+
+/** Reorder then land on market with the cart drawer open (business insight, order details). */
+export const REORDER_THEN_MARKET_OPTIONS: ReorderProductsOptions = {
+  navigateToMarket: true,
 };
 
 export type ReorderProductsResult = {
@@ -40,10 +45,9 @@ function resolveUnit(productId: string, unit: string | null | undefined) {
 }
 
 export function useReorderProducts() {
-  const route = useRoute();
   const reordering = ref(false);
   const { setCartQuantityForUnit, getCartQtyForUnit, loadCart } = useMarketplaceCart();
-  const { cartDrawerOpen } = useMarketplaceUi();
+  const { cartDrawerOpen, navigateToMarketAndOpenCart } = useMarketplaceUi();
   const { ensureBranchForAction } = useMarketBranchGate();
   const { isAddingToRequest } = useRequestAddItemsMode();
 
@@ -52,7 +56,7 @@ export function useReorderProducts() {
     options: ReorderProductsOptions = {},
   ): Promise<ReorderProductsResult> {
     const openDrawer = options.openDrawer !== false;
-    const navigateToMarket = options.navigateToMarket !== false;
+    const navigateToMarket = options.navigateToMarket === true;
 
     if (reordering.value) {
       return { ok: false, added: 0, skipped: [] };
@@ -100,7 +104,10 @@ export function useReorderProducts() {
 
         const current = getCartQtyForUnit(productId, unit);
         const next = Math.min(999, current + line.quantity);
-        const success = await setCartQuantityForUnit(productId, unit, next, { silent: true });
+        const success = await setCartQuantityForUnit(productId, unit, next, {
+          silent: true,
+          deferCartReload: true,
+        });
 
         if (!success) {
           skipped.push(label);
@@ -123,12 +130,9 @@ export function useReorderProducts() {
         return { ok: false, added, skipped };
       }
 
-      if (navigateToMarket && !route.path.startsWith('/market')) {
-        await navigateTo('/market');
-        await nextTick();
-      }
-
-      if (openDrawer) {
+      if (navigateToMarket) {
+        await navigateToMarketAndOpenCart();
+      } else if (openDrawer) {
         cartDrawerOpen.value = true;
       }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'customer-market' });
 
-import type { CustomerMeResponse, RequestRecord } from '@gosource/api-client';
+import type { ApproveRequestResponse, CustomerMeResponse, RequestRecord } from '@gosource/api-client';
 import { Button, StatusTag, toast } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
 import CheckoutDeliveryDetails from '~/components/checkout/CheckoutDeliveryDetails.vue';
@@ -16,6 +16,8 @@ import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useDownloadOrderInvoice } from '~/composables/useDownloadOrderInvoice';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { usePaystack } from '~/composables/usePaystack';
+import { useProcessCheckoutPayment } from '~/composables/useProcessCheckoutPayment';
+import { extractPaystackPaymentReference } from '~/lib/wallet-paystack';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import {
   hasCheckoutCouponApplied,
@@ -40,7 +42,8 @@ const router = useRouter();
 const requestId = computed(() => String(route.params.id ?? ''));
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
-const { getRequest, approveRequest } = useCustomerRequestService();
+const { getRequest } = useCustomerRequestService();
+const { processPayment, submitting } = useProcessCheckoutPayment();
 const { resetCartState, loadCart } = useMarketplaceCart();
 const { getWallet } = useCustomerWalletService();
 const { getBusinessAccount } = useCustomerProfileService();
@@ -48,7 +51,6 @@ const { downloadingInvoice, downloadOrderInvoice } = useDownloadOrderInvoice();
 const { getCreditAccount } = useCustomerCreditService();
 
 const loading = ref(true);
-const submitting = ref(false);
 const request = ref<RequestRecord | null>(null);
 const approvedRequest = ref<RequestRecord | null>(null);
 const approvedOrderId = ref<string | null>(null);
@@ -246,8 +248,11 @@ async function submitCheckout() {
         requestId: request.value.id,
         reference: request.value.reference ?? '',
       },
-      onSuccess: async () => {
-        await processApproval('Paystack');
+      onSuccess: async (event) => {
+        await processApproval('Paystack', {
+          paystackCharged: true,
+          paystackReference: extractPaystackPaymentReference(event),
+        });
       },
     });
     return;
@@ -256,29 +261,28 @@ async function submitCheckout() {
   await processApproval(selectedMethod.value);
 }
 
-async function processApproval(method: CheckoutPaymentMethodValue) {
-  if (!request.value || submitting.value) {
+function applyApprovedCheckout(response: ApproveRequestResponse) {
+  approvedRequest.value = response.data;
+  approvedOrderId.value = response.orderId ?? null;
+  request.value = response.data;
+  resetCartState();
+  void loadCart(true);
+  successDialogOpen.value = true;
+}
+
+async function processApproval(
+  method: CheckoutPaymentMethodValue,
+  options?: { paystackCharged?: boolean; paystackReference?: string },
+) {
+  if (!request.value) {
     return;
   }
 
-  submitting.value = true;
-  try {
-    const response = await approveRequest(request.value.id, {
-      paymentMethod: method,
-    });
+  const response = await processPayment(request.value.id, method, options);
+  transferDialogOpen.value = false;
 
-    if (response.data) {
-      approvedRequest.value = response.data;
-      approvedOrderId.value = response.orderId ?? null;
-      request.value = response.data;
-      resetCartState();
-      await loadCart(true);
-      successDialogOpen.value = true;
-      toast.success('Payment successful!');
-    }
-  } finally {
-    submitting.value = false;
-    transferDialogOpen.value = false;
+  if (response?.data) {
+    applyApprovedCheckout(response);
   }
 }
 
