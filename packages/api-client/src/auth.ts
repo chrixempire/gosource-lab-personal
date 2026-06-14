@@ -19,6 +19,8 @@ import type {
   EmployeeMemberResponse,
   EmployeeSetupAccountResponse,
   AddRequestProductPayload,
+  ApplyCouponPayload,
+  ApplyCouponResponse,
   ApproveRequestPayload,
   ApproveRequestResponse,
   CreateRequestPayload,
@@ -185,6 +187,8 @@ export function createRequestApi(api: ApiClient) {
       api.patch<RequestResponse>(`/request/add-product/${requestId}`, payload),
     updateRequest: (requestId: string, payload: UpdateRequestPayload) =>
       api.patch<RequestResponse>(`/request/${requestId}`, payload),
+    applyCoupon: (requestId: string, payload: ApplyCouponPayload) =>
+      api.post<ApplyCouponResponse>(`/admin/coupon/apply/${requestId}/request`, payload),
   };
 }
 

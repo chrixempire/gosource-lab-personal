@@ -12,6 +12,7 @@ import {
 import { Roles } from '../auth/decorator/role.decorator';
 import { AdminAuth } from '../auth/decorator/admin-auth.decorator';
 import { AdminRoles } from '../auth/enum/admin.enum';
+import { AuthGuard } from '../../auth/auth.guard';
 import { QueryParamsDto } from '../../analytics/dto/query-param.dto';
 import { CouponService } from './coupon.service';
 import { ApplyCouponDto, CreateCouponDto } from './dto/create-coupon.dto';
@@ -21,11 +22,11 @@ import { RequiredPermission } from '../role/enum/required-permission';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
 
 @Controller('admin/coupon')
-@AdminAuth()
 export class CouponController {
   constructor(private couponService: CouponService) {}
 
   @Post()
+  @AdminAuth()
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CREATE_UPDATE_DISCOUNT)
   @UseGuards(AdminRolesGuard)
   async createCoupon(@Body() couponDetails: CreateCouponDto) {
@@ -33,6 +34,7 @@ export class CouponController {
   }
 
   @Get()
+  @AdminAuth()
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.VIEW_DISCOUNTS)
   @UseGuards(AdminRolesGuard)
   async getCategories(@Query() queryParams: QueryParamsDto) {
@@ -40,6 +42,7 @@ export class CouponController {
   }
 
   @Patch(':id/deactivate')
+  @AdminAuth()
   @Roles(
     AdminRoles.SUPER_ADMIN,
     RequiredPermission.ACTIVATE_DEACTIVATE_DISCOUNT,
@@ -50,6 +53,7 @@ export class CouponController {
   }
 
   @Patch(':id/activate')
+  @AdminAuth()
   @Roles(
     AdminRoles.SUPER_ADMIN,
     RequiredPermission.ACTIVATE_DEACTIVATE_DISCOUNT,
@@ -60,6 +64,7 @@ export class CouponController {
   }
 
   @Get(':id')
+  @AdminAuth()
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.VIEW_DISCOUNTS)
   @UseGuards(AdminRolesGuard)
   async getSingleCoupon(@Param('id') couponId: string) {
@@ -67,6 +72,7 @@ export class CouponController {
   }
 
   @Patch(':id')
+  @AdminAuth()
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CREATE_UPDATE_DISCOUNT)
   @UseGuards(AdminRolesGuard)
   async updateCoupon(
@@ -77,6 +83,7 @@ export class CouponController {
   }
 
   @Delete(':id')
+  @AdminAuth()
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.DELETE_DISCOUNT)
   @UseGuards(AdminRolesGuard)
   async deleteCoupon(@Param('id') couponId: string) {
@@ -84,6 +91,7 @@ export class CouponController {
   }
 
   @Post('apply/:id/request')
+  @UseGuards(AuthGuard)
   async applyCoupon(
     @Param('id') requestId: string,
     @Body() couponDetails: ApplyCouponDto,

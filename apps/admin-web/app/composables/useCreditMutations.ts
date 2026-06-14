@@ -2,6 +2,11 @@ import { extractApiErrorMessage } from '@gosource/api-client';
 import { h } from 'vue';
 import CreditRepaymentInvoicePreview from '~/components/credit/CreditRepaymentInvoicePreview.vue';
 import {
+  invalidateCreditApplicationLists,
+  invalidateCreditRepaymentLists,
+  invalidateCreditRequestLists,
+} from '~/lib/invalidate-admin-list-cache';
+import {
   buildCreditRepaymentInvoicePreview,
   creditRepaymentInvoiceFileName,
   CREDIT_REPAYMENT_INVOICE_ELEMENT_ID,
@@ -20,6 +25,7 @@ export function useCreditMutations() {
         method: 'PATCH',
         body: { approvedAmount },
       });
+      invalidateCreditApplicationLists();
       toast.success('Credit application approved successfully');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to approve application'));
@@ -36,6 +42,7 @@ export function useCreditMutations() {
         method: 'PATCH',
         body: { rejectionReason },
       });
+      invalidateCreditApplicationLists();
       toast.success('Credit application rejected successfully');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to reject application'));
@@ -52,6 +59,7 @@ export function useCreditMutations() {
         method: 'PATCH',
         body: { reason },
       });
+      invalidateCreditApplicationLists();
       toast.success('Application status updated');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to update application status'));
@@ -68,6 +76,7 @@ export function useCreditMutations() {
         method: 'PATCH',
         body,
       });
+      invalidateCreditRequestLists();
       toast.success('Credit request approved successfully');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to approve credit request'));
@@ -84,6 +93,7 @@ export function useCreditMutations() {
         method: 'PATCH',
         body: { rejectionReason },
       });
+      invalidateCreditRequestLists();
       toast.success('Credit request rejected successfully');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to reject credit request'));
@@ -100,6 +110,7 @@ export function useCreditMutations() {
         method: 'PATCH',
         body: { amount, approvalNote },
       });
+      invalidateCreditRepaymentLists();
       toast.success('Payment confirmed successfully');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to confirm payment'));
@@ -116,6 +127,7 @@ export function useCreditMutations() {
         method: 'PATCH',
         body: {},
       });
+      invalidateCreditRepaymentLists();
       toast.success('Payment rejected');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to reject payment'));
@@ -148,6 +160,7 @@ export function useCreditMutations() {
         method: 'POST',
         body: { documents },
       });
+      invalidateCreditApplicationLists();
       toast.success('Checklist initialised successfully');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to initialise checklist'));
@@ -168,6 +181,7 @@ export function useCreditMutations() {
         method: 'PATCH',
         body: { documentName, verified },
       });
+      invalidateCreditApplicationLists();
       toast.success('Checklist updated successfully');
     } catch (error) {
       toast.error(extractApiErrorMessage(error, 'Unable to update checklist'));
@@ -186,6 +200,7 @@ export function useCreditMutations() {
         method: 'POST',
         body: formData,
       });
+      invalidateCreditApplicationLists();
       toast.success('Documents uploaded successfully');
       return response;
     } catch (error) {
@@ -220,6 +235,7 @@ export function useCreditMutations() {
         `/api/credit/applications/${applicationId}/additional-docs/${encodeURIComponent(docKey)}`,
         { method: 'DELETE' },
       );
+      invalidateCreditApplicationLists();
       toast.success('Document deleted successfully');
       return response;
     } catch (error) {

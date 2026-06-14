@@ -65,6 +65,9 @@ export class Coupon {
   @Prop({ type: [String], default: [] })
   applicableItems: string[];
 
+  @Prop({ required: false })
+  categoryId: string;
+
   @Prop()
   comboItems: string[];
 }

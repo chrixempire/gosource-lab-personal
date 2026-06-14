@@ -1,9 +1,15 @@
 import { toast } from '@gosource/ui';
+import { ADMIN_LIST_CACHE_URLS } from '~/lib/admin-list-cache-urls';
 import { buildDiscountPayload } from '~/lib/discount-form';
+import { invalidateAdminListCache } from '~/lib/invalidate-admin-list-cache';
 import type { DiscountFormValues, DiscountRouteSlug } from '~/types/discounts';
 
 export function useDiscountMutations() {
   const busyDiscountId = ref<string | null>(null);
+
+  function invalidateDiscountsListCache() {
+    invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.coupons);
+  }
 
   async function createDiscount(
     slug: DiscountRouteSlug,
@@ -14,6 +20,7 @@ export function useDiscountMutations() {
     try {
       const body = buildDiscountPayload(values, slug, productIdsInCategory);
       const response = await $fetch<unknown>('/api/coupons', { method: 'POST', body });
+      invalidateDiscountsListCache();
       toast.success('Discount created');
       return response;
     } catch (error) {
@@ -34,6 +41,7 @@ export function useDiscountMutations() {
     try {
       const body = buildDiscountPayload(values, slug, productIdsInCategory);
       const response = await $fetch<unknown>(`/api/coupons/${id}`, { method: 'PATCH', body });
+      invalidateDiscountsListCache();
       toast.success('Discount updated');
       return response;
     } catch (error) {
@@ -48,6 +56,7 @@ export function useDiscountMutations() {
     busyDiscountId.value = id;
     try {
       await $fetch(`/api/coupons/${id}/activate`, { method: 'PATCH', body: {} });
+      invalidateDiscountsListCache();
       toast.success('Discount activated');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to activate discount');
@@ -61,6 +70,7 @@ export function useDiscountMutations() {
     busyDiscountId.value = id;
     try {
       await $fetch(`/api/coupons/${id}/deactivate`, { method: 'PATCH', body: {} });
+      invalidateDiscountsListCache();
       toast.success('Discount deactivated');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to deactivate discount');
@@ -74,6 +84,7 @@ export function useDiscountMutations() {
     busyDiscountId.value = id;
     try {
       await $fetch(`/api/coupons/${id}`, { method: 'DELETE', body: {} });
+      invalidateDiscountsListCache();
       toast.success('Discount deleted');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to delete discount');

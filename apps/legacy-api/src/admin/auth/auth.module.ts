@@ -12,6 +12,7 @@ import { EmailService } from '../../notification/email/email.service';
 import { JwtModule } from '@nestjs/jwt';
 import { AdminOtp, AdminOtpSchema } from './schema/otp.schema';
 import { Role, RoleSchema } from '../role/entities/role.entity';
+import { AdminRolesGuard } from './guard/adminRole.guard';
 
 @Global()
 @Module({
@@ -29,8 +30,8 @@ import { Role, RoleSchema } from '../role/entities/role.entity';
       signOptions: { expiresIn: '5000h' },
     }),
   ],
-  providers: [AuthService, EmailService],
+  providers: [AuthService, EmailService, AdminRolesGuard],
   controllers: [AuthController],
-  exports: [MongooseModule, AuthService],
+  exports: [MongooseModule, AuthService, AdminRolesGuard],
 })
 export class AdminAuthModule {}

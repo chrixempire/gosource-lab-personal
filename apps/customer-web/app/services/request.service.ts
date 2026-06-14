@@ -1,5 +1,7 @@
 import type {
   AddRequestProductPayload,
+  ApplyCouponPayload,
+  ApplyCouponResponse,
   ApproveRequestPayload,
   ApproveRequestResponse,
   CreateRequestPayload,
@@ -101,6 +103,14 @@ export function useCustomerRequestService() {
         return (await $requestApi.updateRequest(requestId, payload)) as RequestResponse;
       } catch (error) {
         reportCustomerApiError(error, 'Unable to update request');
+        throw error;
+      }
+    },
+    async applyCoupon(requestId: string, payload: ApplyCouponPayload) {
+      try {
+        return (await $requestApi.applyCoupon(requestId, payload)) as ApplyCouponResponse;
+      } catch (error) {
+        reportCustomerApiError(error, 'Unable to apply coupon');
         throw error;
       }
     },

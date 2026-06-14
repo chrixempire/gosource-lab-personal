@@ -17,7 +17,15 @@ import { useDownloadOrderInvoice } from '~/composables/useDownloadOrderInvoice';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { usePaystack } from '~/composables/usePaystack';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
+import {
+  hasCheckoutCouponApplied,
+  resolveCheckoutCouponLabel,
+} from '~/lib/checkout-coupon';
 import { formatRequestCurrency } from '~/lib/request-details';
+import {
+  resolveBillableDiscount,
+  resolveRequestTotalPrice,
+} from '~/lib/request-pricing';
 import { resolveCheckoutCreditEligibility } from '~/lib/checkout-credit';
 import { useCustomerCreditService } from '~/services/credit.service';
 import { useCustomerProfileService } from '~/services/profile.service';
@@ -74,7 +82,13 @@ watch(
 
 const requestSubtotal = computed(() => request.value?.subtotal ?? 0);
 const requestDeliveryFee = computed(() => request.value?.deliveryFee ?? 0);
-const requestDiscount = computed(() => request.value?.discount ?? 0);
+const requestDiscount = computed(() =>
+  request.value ? resolveBillableDiscount(request.value) : 0,
+);
+const checkoutCouponApplied = computed(() =>
+  request.value ? hasCheckoutCouponApplied(request.value) : false,
+);
+const checkoutCouponLabel = computed(() => resolveCheckoutCouponLabel(request.value));
 
 const computedServiceCharge = computed(() => {
   if (!request.value) {
@@ -88,13 +102,19 @@ const computedServiceCharge = computed(() => {
   return request.value.serviceCharge ?? 0;
 });
 
-const computedTotal = computed(
-  () =>
-    requestSubtotal.value +
-    requestDeliveryFee.value +
-    computedServiceCharge.value -
-    requestDiscount.value,
-);
+const computedTotal = computed(() => {
+  if (!request.value) {
+    return 0;
+  }
+
+  return resolveRequestTotalPrice({
+    subtotal: requestSubtotal.value,
+    deliveryFee: requestDeliveryFee.value,
+    serviceCharge: computedServiceCharge.value,
+    discount: request.value.discount ?? 0,
+    couponDetails: request.value.couponDetails,
+  });
+});
 
 const checkoutCreditEligibility = computed(() =>
   resolveCheckoutCreditEligibility({
@@ -133,16 +153,24 @@ async function loadWalletBalance() {
   }
 }
 
-async function loadRequest() {
+async function fetchCheckoutRequest(options?: { showPageLoading?: boolean }) {
   if (!requestId.value) {
-    loading.value = false;
+    if (options?.showPageLoading) {
+      loading.value = false;
+    }
     return;
   }
 
-  loading.value = true;
+  if (options?.showPageLoading) {
+    loading.value = true;
+  }
+
   try {
     await runWhenSessionReady(async () => {
-      await Promise.all([loadWalletBalance(), loadCheckoutCreditContext()]);
+      if (options?.showPageLoading) {
+        await Promise.all([loadWalletBalance(), loadCheckoutCreditContext()]);
+      }
+
       const response = await getRequest(requestId.value);
       const record = response.data ?? null;
 
@@ -152,18 +180,30 @@ async function loadRequest() {
         return;
       }
 
-      if (record.status !== 'pending') {
+      if (options?.showPageLoading && record.status !== 'pending') {
         toast.error('Only pending requests can be checked out.');
         await navigateTo(`/manage-requests/${record.id}`, { replace: true });
         return;
       }
 
       request.value = record;
-      selectedMethod.value = null;
+      if (options?.showPageLoading) {
+        selectedMethod.value = null;
+      }
     });
   } finally {
-    loading.value = false;
+    if (options?.showPageLoading) {
+      loading.value = false;
+    }
   }
+}
+
+async function loadRequest() {
+  await fetchCheckoutRequest({ showPageLoading: true });
+}
+
+async function handleCouponApplied() {
+  await fetchCheckoutRequest();
 }
 
 async function submitCheckout() {
@@ -269,7 +309,8 @@ async function downloadApprovedInvoice() {
 function trackApprovedOrder() {
   successDialogOpen.value = false;
   if (approvedOrderId.value) {
-    void navigateTo(`/track-orders/${approvedOrderId.value}`);
+    // Replace checkout in history so browser back from order detail does not return here.
+    void navigateTo(`/track-orders/${approvedOrderId.value}`, { replace: true });
     return;
   }
 
@@ -397,16 +438,20 @@ watch(requestId, () => {
         />
 
         <CheckoutPaymentSummary
+          :request-id="request.id"
           :subtotal="requestSubtotal"
           :delivery-fee="requestDeliveryFee"
           :service-charge="computedServiceCharge"
           :discount="requestDiscount"
           :total="computedTotal"
           :format-currency="formatRequestCurrency"
+          :coupon-applied="checkoutCouponApplied"
+          :coupon-label="checkoutCouponLabel"
           :submitting="submitting"
           :can-submit="canSubmitCheckout"
           :submit-label="checkoutCtaLabel"
           @submit="submitCheckout"
+          @coupon-applied="handleCouponApplied"
         />
       </div>
 

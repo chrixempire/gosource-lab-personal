@@ -32,6 +32,7 @@ import {
 } from './enum/request.enum';
 import { Order, OrderDocument } from '../order/entities/order.entity';
 import { ORDER_STATUS } from '../order/interface/order.interface';
+import { CouponType } from '../admin/coupon/coupon.enum';
 import { QueryParamsDto } from '../analytics/dto/query-param.dto';
 import { NewEmailInterface } from '../notification/email/email.interface';
 import { EmailService } from '../notification/email/email.service';
@@ -659,7 +660,7 @@ export class RequestService {
         totalPrice,
         approver: business.id,
         paymentStatus,
-        discount: request.coupon ?? 0,
+        discount: Number(request.discount ?? 0),
         paymentCount:
           requestDetails.paymentMethod === PaymentMethod.TRANSFER ? 0 : 1,
       };
@@ -1476,6 +1477,18 @@ export class RequestService {
    * Subtotal = sum of product line prices only.
    * Total = subtotal + delivery + service charge − discount.
    */
+  private resolveBillableDiscount(request: any): number {
+    const couponType = request.couponDetails?.type;
+    if (
+      couponType === CouponType.FREE_DELIVERY ||
+      couponType === 'free_delivery'
+    ) {
+      return 0;
+    }
+
+    return Number(request.discount ?? 0);
+  }
+
   private resolveRequestMoneyTotals(request: any, businessId: string) {
     const productsSubtotal =
       request.status === RequestStatus.PENDING
@@ -1484,7 +1497,7 @@ export class RequestService {
 
     const deliveryFee = Number(request.deliveryFee ?? 0);
     const serviceCharge = Number(request.serviceCharge ?? 0);
-    const discount = Number(request.discount ?? 0);
+    const discount = this.resolveBillableDiscount(request);
     const totalPrice = productsSubtotal + deliveryFee + serviceCharge - discount;
 
     return {

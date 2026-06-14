@@ -2,7 +2,9 @@ import { extractApiErrorMessage } from '@gosource/api-client';
 import { toast } from '@gosource/ui';
 import { h } from 'vue';
 import PurchaseOrderInvoicePreview from '~/components/purchase-orders/PurchaseOrderInvoicePreview.vue';
+import { ADMIN_LIST_CACHE_URLS } from '~/lib/admin-list-cache-urls';
 import { downloadInvoicePdf, INVOICE_PREVIEW_ELEMENT_ID } from '~/lib/download-invoice-pdf';
+import { invalidateAdminListCaches } from '~/lib/invalidate-admin-list-cache';
 import {
   buildPurchaseOrderInvoicePreview,
   parsePurchaseOrderDetail,
@@ -28,6 +30,17 @@ function buildPurchaseOrderPayload(values: PurchaseOrderFormValues) {
 export function usePurchaseOrderMutations() {
   const busyOrderId = ref<string | null>(null);
 
+  function invalidatePurchaseOrderListCache() {
+    invalidateAdminListCaches([ADMIN_LIST_CACHE_URLS.purchaseOrders]);
+  }
+
+  function invalidatePurchaseOrderAndInventoryCaches() {
+    invalidateAdminListCaches([
+      ADMIN_LIST_CACHE_URLS.purchaseOrders,
+      ADMIN_LIST_CACHE_URLS.products,
+    ]);
+  }
+
   async function createPurchaseOrder(values: PurchaseOrderFormValues) {
     busyOrderId.value = 'create';
     try {
@@ -35,6 +48,7 @@ export function usePurchaseOrderMutations() {
         method: 'POST',
         body: buildPurchaseOrderPayload(values),
       });
+      invalidatePurchaseOrderListCache();
       toast.success('Purchase order created');
       return response;
     } catch (error) {
@@ -54,6 +68,7 @@ export function usePurchaseOrderMutations() {
         method: 'PATCH',
         body: buildPurchaseOrderPayload(values),
       });
+      invalidatePurchaseOrderListCache();
       toast.success('Purchase order updated');
       return response;
     } catch (error) {
@@ -73,6 +88,7 @@ export function usePurchaseOrderMutations() {
         method: 'DELETE',
         body: {},
       });
+      invalidatePurchaseOrderListCache();
       toast.success('Purchase order deleted');
     } catch (error) {
       const message =
@@ -91,6 +107,7 @@ export function usePurchaseOrderMutations() {
         method: 'POST',
         body: {},
       });
+      invalidatePurchaseOrderListCache();
       toast.success('Remaining items cancelled');
     } catch (error) {
       const message =
@@ -112,6 +129,7 @@ export function usePurchaseOrderMutations() {
         method: 'POST',
         body: { receivedItems },
       });
+      invalidatePurchaseOrderAndInventoryCaches();
       toast.success('Items received');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to receive items';
@@ -129,6 +147,7 @@ export function usePurchaseOrderMutations() {
         method: 'PATCH',
         body: {},
       });
+      invalidatePurchaseOrderAndInventoryCaches();
       toast.success('All items marked as received');
     } catch (error) {
       const message =

@@ -1045,6 +1045,55 @@ function mapLegacyRequestProducts(
   return applySubtotalFallbackToRequestProducts(lines, context?.subtotal ?? 0);
 }
 
+function normalizeLegacyCouponCode(value: unknown) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || ['false', 'true', 'null', 'undefined'].includes(trimmed.toLowerCase())) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+function mapLegacyCouponDetails(data: unknown): RequestRecord['couponDetails'] {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+
+  const record = data as Record<string, unknown>;
+  const code = normalizeLegacyCouponCode(record.code) ?? normalizeLegacyCouponCode(toStringValue(record.code));
+  if (!code) {
+    return null;
+  }
+
+  const type = toStringValue(record.type);
+  return {
+    code,
+    type: (type || 'FIXED_AMOUNT') as NonNullable<RequestRecord['couponDetails']>['type'],
+    discount: Number(record.discount ?? 0),
+  };
+}
+
+function isFreeDeliveryCouponDetails(
+  couponDetails: RequestRecord['couponDetails'],
+): boolean {
+  return couponDetails?.type === 'FREE_DELIVERY';
+}
+
+function resolveLegacyBillableDiscount(input: {
+  discount: number;
+  couponDetails: RequestRecord['couponDetails'];
+}): number {
+  if (isFreeDeliveryCouponDetails(input.couponDetails)) {
+    return 0;
+  }
+
+  return input.discount;
+}
+
 function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const branch =
     typeof data.branch === 'string'
@@ -1056,7 +1105,11 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const storedSubtotal = Number(data.subtotal ?? 0);
   const deliveryFee = Number(data.deliveryFee ?? 0);
   const serviceCharge = Number(data.serviceCharge ?? 0);
-  const discount = Number(data.discount ?? 0);
+  const couponDetails = mapLegacyCouponDetails(data.couponDetails);
+  const discount = resolveLegacyBillableDiscount({
+    discount: Number(data.discount ?? 0),
+    couponDetails,
+  });
   const businessId = toStringValue(branch.businessId ?? data.businessId);
   const products = mapLegacyRequestProducts(data.products, {
     businessId,
@@ -1105,6 +1158,9 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
     serviceCharge,
     discount,
     totalPrice,
+    coupon: data.coupon === true,
+    couponCode: normalizeLegacyCouponCode(data.couponCode) ?? normalizeLegacyCouponCode(toNullableString(data.couponCode)),
+    couponDetails,
     approvedAt: toNullableString(data.approvedAt),
     rejectedAt: toNullableString(data.rejectedAt),
     cancelledAt: toNullableString(data.cancelledAt),
@@ -1423,6 +1479,31 @@ function mapLegacyTimelineRecord(item: Record<string, unknown>): OrderTimelineRe
   };
 }
 
+function resolveLegacyOrderDiscount(
+  data: Record<string, unknown>,
+  request: Record<string, unknown>,
+): number {
+  const couponDetails = mapLegacyCouponDetails(request.couponDetails);
+  if (isFreeDeliveryCouponDetails(couponDetails)) {
+    return 0;
+  }
+
+  const orderDiscount = toNumber(data.discount);
+  const couponApplied =
+    data.coupon === true || data.coupon === 1 || data.coupon === 'true';
+  const requestDiscount = resolveLegacyBillableDiscount({
+    discount: toNumber(request.discount),
+    couponDetails,
+  });
+
+  // Older orders stored the coupon flag (true) in discount; Mongoose coerced it to 1.
+  if (couponApplied && orderDiscount <= 1 && requestDiscount > orderDiscount) {
+    return requestDiscount;
+  }
+
+  return orderDiscount;
+}
+
 function mapLegacyOrderRecord(data: Record<string, unknown>): OrderRecord {
   const branch =
     typeof data.branch === 'string'
@@ -1443,7 +1524,7 @@ function mapLegacyOrderRecord(data: Record<string, unknown>): OrderRecord {
   const productsSubtotal = products.reduce((sum, line) => sum + line.totalPrice, 0);
   const deliveryFee = toNumber(data.deliveryFee);
   const serviceCharge = toNumber(data.serviceCharge);
-  const discount = toNumber(data.discount);
+  const discount = resolveLegacyOrderDiscount(data, request);
   const subtotal =
     productsSubtotal > 0
       ? productsSubtotal

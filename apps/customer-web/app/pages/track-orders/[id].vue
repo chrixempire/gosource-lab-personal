@@ -17,7 +17,6 @@ const { reorderProducts, reordering } = useReorderProducts();
 const { downloadingInvoice, downloadOrderInvoice } = useDownloadOrderInvoice();
 
 const route = useRoute();
-const router = useRouter();
 const orderId = computed(() => String(route.params.id ?? ''));
 
 const { getOrder, getOrderTimeline } = useCustomerOrderService();
@@ -91,11 +90,6 @@ useHead({
 });
 
 function goBack() {
-  if (import.meta.client && window.history.length > 1) {
-    router.back();
-    return;
-  }
-
   void navigateTo('/track-orders');
 }
 
