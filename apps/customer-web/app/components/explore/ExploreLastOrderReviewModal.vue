@@ -241,6 +241,7 @@ async function onAddToCart() {
         <Button
           type="button"
           variant="neutral"
+          size="medium"
           class="!rounded-full sm:min-w-[7rem]"
           :disabled="adding"
           @click="close"
@@ -250,6 +251,7 @@ async function onAddToCart() {
         <Button
           type="button"
           variant="primary"
+          size="medium"
           class="!rounded-full sm:min-w-[9rem]"
           :loading="adding"
           :disabled="visibleLines.length === 0"

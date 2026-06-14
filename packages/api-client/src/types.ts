@@ -233,6 +233,8 @@ export interface BranchMemberRecord {
   role: string;
   status: string;
   createdAt: string;
+  branchId?: string | null;
+  branchName?: string | null;
 }
 
 export interface BranchMembersResponse extends AuthResponse<BranchMemberRecord[]> {
@@ -488,7 +490,7 @@ export interface FundWalletPayload {
 }
 
 export interface RejectRequestPayload {
-  reason: string;
+  rejectionReasons: string;
 }
 
 export interface AdminLoginPayload {

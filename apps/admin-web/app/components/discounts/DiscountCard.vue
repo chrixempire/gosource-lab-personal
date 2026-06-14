@@ -20,6 +20,7 @@ const emit = defineEmits<{
   edit: [];
   activate: [];
   deactivate: [];
+  delete: [];
 }>();
 </script>
 
@@ -60,6 +61,7 @@ const emit = defineEmits<{
         @edit="emit('edit')"
         @activate="emit('activate')"
         @deactivate="emit('deactivate')"
+        @delete="emit('delete')"
       />
     </div>
 

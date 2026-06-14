@@ -92,6 +92,8 @@ export function createBranchApi(api: ApiClient) {
       api.patch<BranchResponse>(`/branch/${branchId}/activate`),
     deactivateBranch: (branchId: string) =>
       api.patch<BranchResponse>(`/branch/${branchId}/deactivate`),
+    makeBranchHeadquarter: (branchId: string) =>
+      api.patch<BranchResponse>(`/branch/${branchId}/headquarter`, {}),
     deleteBranch: (branchId: string) =>
       api.delete<BranchDeleteResponse>(`/branch/${branchId}`),
   };
@@ -101,6 +103,17 @@ export function createEmployeeApi(api: ApiClient) {
   return {
     inviteEmployee: (payload: InviteEmployeePayload) =>
       api.post<EmployeeInviteResponse>('/employee/invite', payload),
+    listBusinessMembers: (query?: { page?: number; limit?: number; search?: string }) => {
+      const params = new URLSearchParams();
+      params.set('page', String(query?.page ?? 1));
+      params.set('limit', String(query?.limit ?? 10));
+      const search = query?.search?.trim();
+      if (search) {
+        params.set('search', search);
+      }
+
+      return api.get<BranchMembersResponse>(`/employee?${params.toString()}`);
+    },
     listBranchMembers: (branchId: string, query?: { page?: number; limit?: number; search?: string }) => {
       const params = new URLSearchParams();
       params.set('page', String(query?.page ?? 1));
@@ -189,6 +202,8 @@ export function createRequestApi(api: ApiClient) {
       api.patch<RequestResponse>(`/request/${requestId}`, payload),
     applyCoupon: (requestId: string, payload: ApplyCouponPayload) =>
       api.post<ApplyCouponResponse>(`/admin/coupon/apply/${requestId}/request`, payload),
+    removeCoupon: (requestId: string) =>
+      api.delete<AuthResponse>(`/admin/coupon/apply/${requestId}/request`),
   };
 }
 

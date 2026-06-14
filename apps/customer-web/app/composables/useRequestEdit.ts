@@ -210,11 +210,21 @@ export function useRequestEdit() {
   }
 
   async function reopenRejected(requestId: string) {
-    return applyRequestMutation(
+    const updated = await applyRequestMutation(
       requestId,
       () => updateRequest(requestId, { status: 'pending' }),
       { successMessage: 'Request reopened for editing' },
     );
+
+    if (!updated) {
+      return null;
+    }
+
+    if (updated.status === 'pending') {
+      return updated;
+    }
+
+    return (await refreshRequest(requestId)) ?? { ...updated, status: 'pending' as const };
   }
 
   return {

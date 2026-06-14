@@ -47,6 +47,11 @@ import {
   QueryFilterDto,
 } from './dto/create-stock-count.dto';
 import { createMoney } from '../../utils/money';
+import {
+  buildExpectedPromotionDiscount,
+  buildPromotionDiscountPatch,
+} from '../../utils/promotion-discount.util';
+import { buildLowStockPatch } from '../../utils/low-stock.util';
 
 @Injectable()
 export class ProductService {
@@ -418,13 +423,14 @@ export class ProductService {
     await this.activityLogModel.create(activityLog);
 
     if (updatedProduct) {
-      await this.cacheManager.del('all_products_sorted');
-      await this.cacheManager.del('categories_with_products');
+      const syncedProduct = await this.syncProductDerivedFieldsAfterSave(updatedProduct);
+
+      await this.invalidateProductListCaches();
 
       return {
         status: true,
         message: 'Product updated successfully',
-        data: updatedProduct,
+        data: syncedProduct,
       };
     }
   }
@@ -546,6 +552,65 @@ export class ProductService {
     return null;
   }
 
+  private async repairProductDerivedFieldsIfStale<T extends Record<string, any>>(
+    products: T[],
+  ): Promise<T[]> {
+    if (products.length === 0) {
+      return products;
+    }
+
+    let repairedAny = false;
+
+    const repairs = await Promise.all(
+      products.map(async (product) => {
+        const patch = {
+          ...buildPromotionDiscountPatch(product),
+          ...buildLowStockPatch(product),
+        };
+
+        if (Object.keys(patch).length === 0) {
+          return product;
+        }
+
+        repairedAny = true;
+        await this.productModel.findByIdAndUpdate(product._id, patch);
+        return { ...product, ...patch };
+      }),
+    );
+
+    if (repairedAny) {
+      await this.invalidateProductListCaches();
+    }
+
+    return repairs;
+  }
+
+  private async syncProductDerivedFieldsAfterSave(
+    product: ProductDocument,
+  ): Promise<ProductDocument> {
+    const patch = {
+      ...buildExpectedPromotionDiscount(product),
+      ...buildLowStockPatch(product),
+    };
+
+    if (Object.keys(patch).length === 0) {
+      return product;
+    }
+
+    const updatedProduct = await this.productModel.findByIdAndUpdate(
+      product._id,
+      patch,
+      { new: true },
+    );
+
+    return updatedProduct ?? product;
+  }
+
+  private async invalidateProductListCaches() {
+    await this.cacheManager.del('all_products_sorted');
+    await this.cacheManager.del('categories_with_products');
+  }
+
   /**
    * Get filtered orders with pagination
    */
@@ -610,12 +675,13 @@ export class ProductService {
     ]);
 
     await this.enrichProductCategories(products);
+    const repairedProducts = await this.repairProductDerivedFieldsIfStale(products);
 
     return {
       status: true,
       message: 'Products fetched successfully',
       data: {
-        products,
+        products: repairedProducts,
         meta: {
           totalDocuments: total,
           page: Number(page),
@@ -641,10 +707,12 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
-    await this.enrichProductCategories([product]);
+    const [repairedProduct] = await this.repairProductDerivedFieldsIfStale([product]);
 
-    if (product.version === 'v2') {
-      product.unit = JSON.parse(product.unit);
+    await this.enrichProductCategories([repairedProduct]);
+
+    if (repairedProduct.version === 'v2') {
+      repairedProduct.unit = JSON.parse(repairedProduct.unit);
     }
 
     const productActivities = await this.activityLogModel
@@ -657,7 +725,7 @@ export class ProductService {
     return {
       status: true,
       message: 'Product fetched succesfully',
-      data: { ...product, activities: productActivities },
+      data: { ...repairedProduct, activities: productActivities },
     };
   }
 
@@ -1378,10 +1446,17 @@ export class ProductService {
           deductedQuantity: 1,
           closingQuantity: 1,
           isLowStock: {
-            $or: [
-              '$isLowStock',
-              { $lte: ['$closingQuantity', '$lowStockLevel'] },
-            ],
+            $cond: {
+              if: {
+                $and: [
+                  { $ne: [{ $ifNull: ['$trackQuantity', true] }, false] },
+                  { $ne: ['$lowStockLevel', null] },
+                  { $lte: ['$closingQuantity', '$lowStockLevel'] },
+                ],
+              },
+              then: true,
+              else: false,
+            },
           },
           lowStockLevel: 1,
           movements: {
@@ -1431,8 +1506,9 @@ export class ProductService {
             $sum: {
               $cond: [
                 {
-                  $or: [
-                    { $eq: ['$isLowStock', true] },
+                  $and: [
+                    { $ne: [{ $ifNull: ['$trackQuantity', true] }, false] },
+                    { $ne: ['$lowStockLevel', null] },
                     { $lte: ['$closingQuantity', '$lowStockLevel'] },
                   ],
                 },

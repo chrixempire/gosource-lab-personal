@@ -91,7 +91,7 @@ const emit = defineEmits<{
         Order reference
       </p>
       <div class="mt-1 flex flex-wrap items-center gap-2">
-        <h1 class="text-h5 lg:text-h3">
+        <h1 class="text-h6 lg:text-h4">
           {{ view.referenceLabel }}
         </h1>
         <StatusTag

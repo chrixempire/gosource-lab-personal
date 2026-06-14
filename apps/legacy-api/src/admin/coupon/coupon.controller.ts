@@ -103,4 +103,13 @@ export class CouponController {
       business,
     );
   }
+
+  @Delete('apply/:id/request')
+  @UseGuards(AuthGuard)
+  async removeCouponFromRequest(
+    @Param('id') requestId: string,
+    @Business() business: any,
+  ) {
+    return await this.couponService.removeCouponFromRequest(requestId, business);
+  }
 }

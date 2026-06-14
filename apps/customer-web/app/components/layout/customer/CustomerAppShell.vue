@@ -253,7 +253,7 @@ async function confirmLogout() {
           </div>
 
           <div
-            class="hidden min-w-0 shrink-0 items-center lg:flex lg:w-[270px] lg:px-6"
+            class="hidden min-w-0 shrink-0 items-center lg:flex lg:w-[250px] lg:px-6"
           >
             <BrandLogo class="h-auto w-[128px] max-w-none" />
           </div>
@@ -319,7 +319,7 @@ async function confirmLogout() {
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
           <Sidebar
             class="hidden h-[calc(100vh-72px)] border-r border-grey-50 bg-background-on-canvas lg:flex"
-            width="271px"
+            width="251px"
             collapsed-width="0rem"
           >
             <CustomerSidebar

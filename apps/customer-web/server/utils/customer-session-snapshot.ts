@@ -5,7 +5,10 @@ import type {
 } from '@gosource/api-client';
 
 type SessionBootstrap = {
+  /** UX hint for branch-setup banner; branch list APIs remain source of truth. */
   hasBranch?: boolean;
+  /** Epoch ms when hasBranch was last verified against GET /branch. */
+  checkedAt?: number;
 };
 
 type CustomerCookieSessionData = {

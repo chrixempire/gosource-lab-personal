@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Button } from '@gosource/ui';
-import { Tag } from 'lucide-vue-next';
+import { Button, toast } from '@gosource/ui';
+import { Loader2, Tag, Trash2 } from 'lucide-vue-next';
 import CheckoutApplyCoupon from '~/components/checkout/CheckoutApplyCoupon.vue';
 import { checkoutCouponDisplayLabel } from '~/lib/checkout-coupon';
+import { useCustomerRequestService } from '~/services/request.service';
 
 const props = defineProps<{
   requestId: string;
@@ -22,9 +23,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   submit: [];
   'coupon-applied': [];
+  'coupon-removed': [];
 }>();
 
+const { removeCoupon } = useCustomerRequestService();
 const showCouponInput = ref(false);
+const removingCoupon = ref(false);
 
 const couponDisplayLabel = computed(() =>
   checkoutCouponDisplayLabel(props.couponLabel, props.couponApplied),
@@ -38,6 +42,23 @@ watch(
     }
   },
 );
+
+async function handleRemoveCoupon() {
+  if (!props.couponApplied || removingCoupon.value || props.submitting) {
+    return;
+  }
+
+  removingCoupon.value = true;
+  try {
+    await removeCoupon(props.requestId);
+    toast.success('Coupon removed');
+    emit('coupon-removed');
+  } catch {
+    // Error toast handled in service.
+  } finally {
+    removingCoupon.value = false;
+  }
+}
 </script>
 
 <template>
@@ -57,8 +78,19 @@ watch(
             {{ couponDisplayLabel }}
           </p>
         </div>
+        <button
+          v-if="couponApplied"
+          type="button"
+          class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-negative-500 transition hover:bg-negative-50 hover:text-negative-600 disabled:cursor-not-allowed disabled:opacity-35"
+          :disabled="submitting || removingCoupon"
+          aria-label="Remove coupon"
+          @click="handleRemoveCoupon"
+        >
+          <Loader2 v-if="removingCoupon" class="size-4 animate-spin" aria-hidden="true" />
+          <Trash2 v-else class="size-4" aria-hidden="true" />
+        </button>
         <Button
-          v-if="!couponApplied && !showCouponInput"
+          v-else-if="!showCouponInput"
           type="button"
           variant="secondary"
           size="small"

@@ -54,6 +54,10 @@ export function resolveAdminPageDescription(path: string): string | null {
     return 'Update images, stock settings, pricing, and special prices.';
   }
 
+  if (/^\/promotions\/[^/]+$/.test(pathname) && pathname !== '/promotions/create') {
+    return 'Update promotion details, discount settings, and linked items.';
+  }
+
   if (pathname.startsWith(`${ADMIN_PAGE_ROUTES.SETTINGS_ROLES}/`) && pathname.endsWith('/edit')) {
     return 'Update role permissions and access for admin users.';
   }

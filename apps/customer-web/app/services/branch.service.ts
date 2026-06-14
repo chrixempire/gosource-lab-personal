@@ -67,5 +67,13 @@ export function useCustomerBranchService() {
         throw error;
       }
     },
+    async makeBranchHeadquarter(branchId: string) {
+      try {
+        return (await $branchApi.makeBranchHeadquarter(branchId)) as BranchResponse;
+      } catch (error) {
+        reportCustomerApiError(error, 'Unable to update headquarter right now');
+        throw error;
+      }
+    },
   };
 }

@@ -109,3 +109,28 @@ export function hasActiveRequestFilters(input: {
 
   return false;
 }
+
+export function requestMatchesListFilters(
+  request: Pick<RequestRecord, 'status' | 'branchId' | 'totalPrice'>,
+  filters: RequestListFilters,
+  options?: { branchId?: string },
+) {
+  if (filters.status.length > 0 && !filters.status.includes(request.status)) {
+    return false;
+  }
+
+  const branchId = options?.branchId?.trim();
+  if (branchId && request.branchId !== branchId) {
+    return false;
+  }
+
+  if (filters.amountMin != null && request.totalPrice < filters.amountMin) {
+    return false;
+  }
+
+  if (filters.amountMax != null && request.totalPrice > filters.amountMax) {
+    return false;
+  }
+
+  return true;
+}

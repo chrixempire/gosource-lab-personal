@@ -14,7 +14,7 @@ import { useProductActionConfirm } from '~/composables/useProductActionConfirm';
 import { useProductStockDialog } from '~/composables/useProductStockDialog';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
-import PageHeader from '~/components/shared/PageHeader.vue';
+import InventoryItemsHeaderActions from '~/components/inventory/InventoryItemsHeaderActions.vue';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useProductListFilters } from '~/composables/useProductListFilters';
 import { useProductMutations } from '~/composables/useProductMutations';
@@ -71,8 +71,8 @@ const debouncedSearch = useDebounce(searchQuery, 500);
 const apiQuery = computed(() => productListFiltersToApiQuery(filters.value));
 
 const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/products/filtered', {
+  key: 'inventory-products',
   query: apiQuery,
-  watch: [apiQuery],
 });
 
 const { data: categoriesPayload } = await useAdminListFetch<unknown>('/api/categories', {
@@ -222,23 +222,14 @@ function onCreateItem() {
 }
 
 updateHeader({
-  title: 'Inventory',
+  title: 'Items',
 });
 </script>
 
 <template>
   <div class="flex min-w-0 flex-col gap-4">
-    <div class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-start min-[900px]:justify-between">
-      <PageHeader title="Items" />
-      <Button
-        type="button"
-        size="small"
-        class="!w-fit shrink-0 self-start"
-        :left-icon="Plus"
-        @click="onCreateItem"
-      >
-        Add item
-      </Button>
+    <div class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-end">
+      <InventoryItemsHeaderActions />
     </div>
 
     <div class="flex flex-col gap-4">

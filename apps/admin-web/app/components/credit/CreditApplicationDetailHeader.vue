@@ -84,7 +84,7 @@ const emit = defineEmits<{
     </div>
 
     <div v-else class="flex flex-wrap items-center gap-2">
-      <h1 class="text-h5 lg:text-h3">
+      <h1 class="text-h6 lg:text-h4">
         {{ referenceLabel }}
       </h1>
       <StatusTag

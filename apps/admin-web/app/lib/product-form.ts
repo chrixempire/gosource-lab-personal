@@ -395,7 +395,7 @@ export function mapLegacyProductToFormValues(
     marketPrice: formatCurrencyFieldValue(product.marketPrice),
     quantity: formatIntegerFieldValue(product.quantity),
     totalPrice: formatCurrencyFieldValue(product.totalPrice ?? product.marketPrice),
-    setLowStockLevel: product.isLowStock === true,
+    setLowStockLevel: product.lowStockLevel != null,
     stockLevel: formatIntegerFieldValue(
       product.lowStockLevel != null ? Number(product.lowStockLevel) : undefined,
     ),

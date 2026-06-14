@@ -116,12 +116,12 @@ async function onConfirm() {
         </div>
       </DialogBody>
       <DialogFooter class="gap-2">
-        <Button type="button" variant="secondary" size="small" @click="open = false">
+        <Button type="button" variant="secondary" size="medium" @click="open = false">
           Cancel
         </Button>
         <Button
           type="button"
-          size="small"
+          size="medium"
           :loading="busyKey === 'invite'"
           @click="onConfirm"
         >

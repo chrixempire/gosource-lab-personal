@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@gosource/ui';
-import { Ellipsis, Eye, Pencil, Power, Trash2, UserPlus } from 'lucide-vue-next';
+import { Ellipsis, Eye, Landmark, Pencil, Power, Trash2, UserPlus } from 'lucide-vue-next';
 
 defineProps<{
   isDeactivated?: boolean;
+  isHeadquarter?: boolean;
   hidden?: boolean;
 }>();
 
@@ -11,6 +12,7 @@ defineEmits<{
   view: [];
   invite: [];
   edit: [];
+  makeHeadquarter: [];
   activate: [];
   deactivate: [];
   delete: [];
@@ -38,6 +40,14 @@ defineEmits<{
         <DropdownMenuItem class="gap-2.5" @select="$emit('invite')">
           <UserPlus class="size-4" />
           Invite member
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="!isHeadquarter"
+          class="gap-2.5"
+          @select="$emit('makeHeadquarter')"
+        >
+          <Landmark class="size-4" />
+          Make headquarter
         </DropdownMenuItem>
         <DropdownMenuItem
           v-if="!isDeactivated"

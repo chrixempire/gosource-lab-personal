@@ -9,6 +9,7 @@ import BranchDeactivateOverlay from '~/components/branches/BranchDeactivateOverl
 import BranchDeleteOverlay from '~/components/branches/BranchDeleteOverlay.vue';
 import BranchEditOverlay from '~/components/branches/BranchEditOverlay.vue';
 import BranchInviteMemberOverlay from '~/components/branches/BranchInviteMemberOverlay.vue';
+import BranchMakeHeadquarterOverlay from '~/components/branches/BranchMakeHeadquarterOverlay.vue';
 import BranchTable from '~/components/branches/BranchTable.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
 import { usePaginatedListData } from '~/composables/usePaginatedListData';
@@ -36,6 +37,7 @@ const searchValue = ref('');
 const createOpen = ref(false);
 const editOpen = ref(false);
 const deactivateOpen = ref(false);
+const headquarterOpen = ref(false);
 const deleteOpen = ref(false);
 const inviteOpen = ref(false);
 const branches = ref<BranchRecord[]>([]);
@@ -201,6 +203,11 @@ function handleDeleteBranch(branch: BranchListItem) {
   deleteOpen.value = true;
 }
 
+function handleMakeHeadquarterBranch(branch: BranchListItem) {
+  selectedBranchId.value = branch.id;
+  headquarterOpen.value = true;
+}
+
 function handleBranchUpdated(branch?: BranchRecord) {
   if (!branch) {
     return;
@@ -248,6 +255,35 @@ function handleBranchDeactivated(branch?: BranchRecord) {
 function handleBranchDeleted(branchId: string) {
   selectedBranchId.value = branchId;
   void refreshBranches();
+}
+
+function handleBranchHeadquarterUpdated(branch?: BranchRecord) {
+  if (!branch) {
+    void refreshBranches();
+    return;
+  }
+
+  const targetId = String(branch.id || selectedBranchId.value || '').trim();
+  branches.value = branches.value.map((item) => ({
+    ...item,
+    isHeadquarter: item.id === targetId,
+  }));
+
+  if (targetId) {
+    branches.value = branches.value.map((item) =>
+      item.id === targetId
+        ? {
+            ...item,
+            ...branch,
+            id: targetId,
+            isHeadquarter: true,
+          }
+        : {
+            ...item,
+            isHeadquarter: false,
+          },
+    );
+  }
 }
 </script>
 
@@ -306,6 +342,7 @@ function handleBranchDeleted(branchId: string) {
         @edit="handleEditBranch"
         @activate="handleActivateBranch"
         @deactivate="handleDeactivateBranch"
+        @make-headquarter="handleMakeHeadquarterBranch"
         @delete="handleDeleteBranch"
       />
 
@@ -319,6 +356,7 @@ function handleBranchDeleted(branchId: string) {
           @edit="handleEditBranch"
           @activate="handleActivateBranch"
           @deactivate="handleDeactivateBranch"
+          @make-headquarter="handleMakeHeadquarterBranch"
           @delete="handleDeleteBranch"
         />
         <PaginationBar
@@ -386,6 +424,11 @@ function handleBranchDeleted(branchId: string) {
       v-model:open="deactivateOpen"
       :branch="selectedBranch"
       @deactivated="handleBranchDeactivated"
+    />
+    <BranchMakeHeadquarterOverlay
+      v-model:open="headquarterOpen"
+      :branch="selectedBranch"
+      @updated="handleBranchHeadquarterUpdated"
     />
     <BranchDeleteOverlay
       v-model:open="deleteOpen"

@@ -49,8 +49,8 @@ function onConfirm() {
         </label>
       </DialogBody>
       <DialogFooter class="gap-2">
-        <Button type="button" variant="outline" size="small" @click="open = false">Cancel</Button>
-        <Button type="button" variant="primary" size="small" :loading="loading" @click="onConfirm">
+        <Button type="button" variant="outline" size="medium" @click="open = false">Cancel</Button>
+        <Button type="button" variant="primary" size="medium" :loading="loading" @click="onConfirm">
           Confirm payment
         </Button>
       </DialogFooter>

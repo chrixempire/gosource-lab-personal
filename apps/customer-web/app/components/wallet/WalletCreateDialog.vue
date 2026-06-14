@@ -272,7 +272,7 @@ watch(
         <Button
           v-if="step !== 'intro'"
           variant="neutral"
-          size="small"
+          size="medium"
           class="!w-auto"
           :disabled="loading || verifying"
           @click="backStep"
@@ -282,7 +282,7 @@ watch(
         <Button
           v-else
           variant="neutral"
-          size="small"
+          size="medium"
           class="!w-auto"
           :disabled="loading"
           @click="goBack"
@@ -292,7 +292,7 @@ watch(
 
         <Button
           v-if="step === 'intro'"
-          size="small"
+          size="medium"
           class="!w-auto"
           :disabled="!hasPhoneOnProfile"
           @click="startBvnStep"
@@ -301,7 +301,7 @@ watch(
         </Button>
         <Button
           v-else-if="step === 'bvn'"
-          size="small"
+          size="medium"
           class="!w-auto"
           :loading="verifying"
           :disabled="loading"
@@ -311,7 +311,7 @@ watch(
         </Button>
         <Button
           v-else
-          size="small"
+          size="medium"
           class="!w-auto"
           :loading="loading"
           :disabled="verifying || otp.length !== otpLength"

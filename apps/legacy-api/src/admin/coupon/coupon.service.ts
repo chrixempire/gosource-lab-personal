@@ -10,10 +10,11 @@ import { Model } from 'mongoose';
 import { QueryParamsDto } from '../../analytics/dto/query-param.dto';
 import { ApplyCouponDto, CreateCouponDto } from './dto/create-coupon.dto';
 import { RequestDocument, Request } from '../../request/schema/request.schema';
-import { CouponType } from './coupon.enum';
+import { CouponType, CouponCategory } from './coupon.enum';
 import { Order } from '../../order/entities/order.entity';
-import { calculateTotalPrice } from '../../utils/helpers';
+import { calculateTotalPrice, calculateDeliveryFee, calculateFrozenDeliveryFee } from '../../utils/helpers';
 import { successResponse } from '../../utils/responses';
+import { RequestStatus } from '../../request/enum/request.enum';
 import {
   assertCouponCanBeApplied,
   computeDiscountAmount,
@@ -260,8 +261,7 @@ export class CouponService {
       throw new BadRequestException('Coupon does not apply to this request');
     }
 
-    const deliveryFee = request.deliveryFee;
-    request.subtotal = cartSubtotal - discount + deliveryFee;
+    request.subtotal = cartSubtotal;
     request.couponCode = coupon.code;
     request.coupon = true;
     request.couponDetails = coupon;
@@ -274,6 +274,71 @@ export class CouponService {
       message: 'Coupon Applied successfully',
       data: coupon,
     };
+  }
+
+  async removeCouponFromRequest(
+    requestId: string,
+    businessDetails: any,
+  ): Promise<any> {
+    const request: RequestDocument = await this.requestModel
+      .findById(requestId)
+      .populate('branch')
+      .populate('couponDetails');
+
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+
+    if (!request.coupon) {
+      throw new BadRequestException('No coupon is applied to this request');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException(
+        'Coupon can only be removed from a pending request',
+      );
+    }
+
+    const businessId = String(businessDetails.id);
+    const cartSubtotal = calculateTotalPrice(request.products, businessId);
+
+    let couponDocument =
+      request.couponDetails &&
+      typeof request.couponDetails === 'object' &&
+      ('type' in request.couponDetails || 'category' in request.couponDetails)
+        ? (request.couponDetails as CouponDocument)
+        : null;
+
+    if (!couponDocument && request.couponCode) {
+      couponDocument = await this.couponModel.findOne({ code: request.couponCode });
+    }
+
+    const isFreeDelivery =
+      couponDocument?.type === CouponType.FREE_DELIVERY ||
+      couponDocument?.category === CouponCategory.FREE_DELIVERY ||
+      String(couponDocument?.category ?? '') === 'free_delivery';
+
+    if (isFreeDelivery || request.deliveryFee === 0) {
+      const frozenFee = calculateFrozenDeliveryFee(request.products, cartSubtotal);
+      request.deliveryFee =
+        frozenFee > 0 ? frozenFee : calculateDeliveryFee(cartSubtotal);
+    }
+
+    request.subtotal = cartSubtotal;
+    request.coupon = false;
+    request.couponCode = '';
+    request.discount = 0;
+    request.couponDetails = null;
+    await request.save();
+
+    if (couponDocument?._id) {
+      await this.couponModel.updateOne(
+        { _id: couponDocument._id, usageCount: { $gt: 0 } },
+        { $inc: { usageCount: -1 } },
+      );
+    }
+
+    return successResponse('Coupon removed successfully');
   }
 
   /**

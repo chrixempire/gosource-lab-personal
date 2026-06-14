@@ -736,8 +736,20 @@ export function normalizeLegacyBranchListResponse(
   };
 }
 
+function resolveLegacyMemberBranch(raw: unknown) {
+  const branch = asRecord(raw);
+  const branchId = toStringValue(branch._id) || toStringValue(branch.id);
+  const branchName = toNullableString(branch.branchName);
+
+  return {
+    branchId: branchId || null,
+    branchName,
+  };
+}
+
 function normalizeLegacyInviteMember(raw: unknown): BranchMemberRecord {
   const invite = asRecord(raw);
+  const branch = resolveLegacyMemberBranch(invite.branchId);
   return {
     id: toStringValue(invite._id) || toStringValue(invite.invitationId),
     kind: 'invite',
@@ -748,11 +760,14 @@ function normalizeLegacyInviteMember(raw: unknown): BranchMemberRecord {
     role: normalizeEmployeeRole(invite.role),
     status: 'pending',
     createdAt: toStringValue(invite.createdAt),
+    branchId: branch.branchId,
+    branchName: branch.branchName,
   };
 }
 
 function normalizeLegacyEmployeeMember(raw: unknown): BranchMemberRecord {
   const employee = asRecord(raw);
+  const branch = resolveLegacyMemberBranch(employee.branchId);
   return {
     id: toStringValue(employee._id) || toStringValue(employee.id),
     kind: 'member',
@@ -763,6 +778,8 @@ function normalizeLegacyEmployeeMember(raw: unknown): BranchMemberRecord {
     role: normalizeEmployeeRole(employee.role),
     status: toBoolean(employee.isDeactivated) ? 'inactive' : 'active',
     createdAt: toStringValue(employee.createdAt),
+    branchId: branch.branchId,
+    branchName: branch.branchName,
   };
 }
 
@@ -899,6 +916,20 @@ export function toLegacyRequestListQuery(query: Record<string, unknown>): Record
 
 export function toLegacyOrderListQuery(query: Record<string, unknown>): Record<string, unknown> {
   return { ...query };
+}
+
+export function toLegacyRejectRequestBody(body: Record<string, unknown>): Record<string, unknown> {
+  if (typeof body.rejectionReasons === 'string') {
+    return body;
+  }
+
+  const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
+  if (!reason) {
+    return body;
+  }
+
+  const { reason: _removed, ...rest } = body;
+  return { ...rest, rejectionReasons: reason };
 }
 
 export function toLegacyCreateRequestBody(body: Record<string, unknown>): Record<string, unknown> {
@@ -1094,6 +1125,34 @@ function resolveLegacyBillableDiscount(input: {
   return input.discount;
 }
 
+/** Matches legacy-api default delivery tiers when fee was zeroed by coupon remove. */
+function estimateLegacyDeliveryFee(subtotal: number): number {
+  const tier1Base = 18000;
+  const tier1Threshold = 1_000_000;
+  if (subtotal < tier1Threshold) {
+    return tier1Base + subtotal * 0.02;
+  }
+  return 33000 + subtotal * 0.01;
+}
+
+function resolveLegacyRequestDeliveryFee(input: {
+  deliveryFee: number;
+  subtotal: number;
+  status: string;
+  coupon: boolean;
+}): number {
+  if (
+    !input.coupon &&
+    input.deliveryFee === 0 &&
+    input.status === 'pending' &&
+    input.subtotal >= 25000
+  ) {
+    return estimateLegacyDeliveryFee(input.subtotal);
+  }
+
+  return input.deliveryFee;
+}
+
 function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const branch =
     typeof data.branch === 'string'
@@ -1103,8 +1162,10 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const directions = toNullableString(address.directions ?? address.direction);
   const initiator = mapLegacyRequestActor(data.initiator);
   const storedSubtotal = Number(data.subtotal ?? 0);
-  const deliveryFee = Number(data.deliveryFee ?? 0);
+  const storedDeliveryFee = Number(data.deliveryFee ?? 0);
   const serviceCharge = Number(data.serviceCharge ?? 0);
+  const requestStatus = toStringValue(data.status) || 'pending';
+  const couponApplied = data.coupon === true;
   const couponDetails = mapLegacyCouponDetails(data.couponDetails);
   const discount = resolveLegacyBillableDiscount({
     discount: Number(data.discount ?? 0),
@@ -1118,10 +1179,16 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const productsSubtotal = products.reduce((sum, line) => sum + line.totalPrice, 0);
   // Legacy API sometimes stored delivery/service inside `subtotal`; prefer line sum when available.
   const subtotal = productsSubtotal > 0 ? productsSubtotal : storedSubtotal;
+  const deliveryFee = resolveLegacyRequestDeliveryFee({
+    deliveryFee: storedDeliveryFee,
+    subtotal,
+    status: requestStatus,
+    coupon: couponApplied,
+  });
   const computedTotal = subtotal + deliveryFee + serviceCharge - discount;
   const storedTotal = Number(data.totalPrice ?? 0);
   const totalPrice =
-    storedTotal > subtotal ? storedTotal : computedTotal;
+    productsSubtotal > 0 ? computedTotal : storedTotal > 0 ? storedTotal : computedTotal;
 
   return {
     id: toStringValue(data._id ?? data.id),
@@ -1130,7 +1197,7 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
     branchName: toStringValue(branch.branchName),
     branchCode: toNullableString(branch.branchCode),
     reference: toStringValue(data.reference),
-    status: (toStringValue(data.status) || 'pending') as RequestRecord['status'],
+    status: requestStatus as RequestRecord['status'],
     paymentStatus: (toStringValue(data.paymentStatus) || 'pending') as RequestRecord['paymentStatus'],
     paymentMethod: toNullableString(data.paymentMethod),
     initiator: initiator ?? {
@@ -1158,7 +1225,7 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
     serviceCharge,
     discount,
     totalPrice,
-    coupon: data.coupon === true,
+    coupon: couponApplied,
     couponCode: normalizeLegacyCouponCode(data.couponCode) ?? normalizeLegacyCouponCode(toNullableString(data.couponCode)),
     couponDetails,
     approvedAt: toNullableString(data.approvedAt),
@@ -1530,8 +1597,9 @@ function mapLegacyOrderRecord(data: Record<string, unknown>): OrderRecord {
       ? productsSubtotal
       : Math.max(0, storedTotal - deliveryFee - serviceCharge + discount);
   const computedTotal = subtotal + deliveryFee + serviceCharge - discount;
-  // Legacy orders often store totalPrice as subtotal only; prefer line-sum + fees when stored total omits delivery.
-  const totalPrice = storedTotal > subtotal ? storedTotal : computedTotal;
+  // Prefer recomputed totals when line items are available — legacy orders may
+  // store totalPrice with delivery counted twice after coupon checkout.
+  const totalPrice = productsSubtotal > 0 ? computedTotal : storedTotal > 0 ? storedTotal : computedTotal;
 
   return {
     id: toStringValue(data._id ?? data.id),

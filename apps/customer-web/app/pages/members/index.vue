@@ -42,6 +42,7 @@ import {
   ALL_BRANCHES_VALUE,
   branchFilterFromQueryParam,
 } from '~/lib/branch-picker';
+import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { usePaginatedListData } from '~/composables/usePaginatedListData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
@@ -69,11 +70,15 @@ const {
   apiBranchId,
   branches,
   branchesLoading,
+  showAllBranchesOption,
+  viewingAllBranches,
+  isOwner,
   setPageBranchFilter,
   ensureBranchesLoaded,
   activeBranchId,
 } = pageBranch;
 const {
+  listBusinessMembers,
   listBranchMembers,
   cancelEmployeeInvite,
   deactivateEmployee,
@@ -198,6 +203,32 @@ const selectedBranch = computed(
   () => branches.value.find((branch) => branch.id === selectedBranchId.value) ?? null,
 );
 
+const inviteBranch = computed(() => {
+  if (selectedBranch.value) {
+    return selectedBranch.value;
+  }
+
+  const fallbackId = activeBranchId.value
+    ?? branches.value.find((branch) => branch.isHeadquarter)?.id
+    ?? branches.value[0]?.id
+    ?? '';
+
+  return branches.value.find((branch) => branch.id === fallbackId) ?? null;
+});
+
+function branchLabelForMember(member: BranchMemberRecord) {
+  if (member.branchName) {
+    return member.branchName;
+  }
+
+  const branchId = member.branchId ?? '';
+  if (branchId) {
+    return branches.value.find((branch) => branch.id === branchId)?.branchName ?? '—';
+  }
+
+  return selectedBranch.value?.branchName ?? '—';
+}
+
 function resolveBranchId(branch: BranchRecord & { _id?: string }) {
   const fromId = typeof branch.id === 'string' ? branch.id.trim() : '';
   if (fromId) {
@@ -226,7 +257,7 @@ function normalizeBranches(rows: BranchRecord[]) {
   });
 }
 
-function resolveMembersBranchId(nextBranches: BranchRecord[]): string {
+function resolveMembersBranchId(nextBranches: BranchRecord[]): string | null {
   const branchIds = nextBranches.map((branch) => branch.id);
 
   if (isEmployeeSession.value && employeeBranchId.value && branchIds.includes(employeeBranchId.value)) {
@@ -234,6 +265,15 @@ function resolveMembersBranchId(nextBranches: BranchRecord[]): string {
   }
 
   const fromRoute = branchFilterFromQueryParam(route.query.branchId);
+  if (fromRoute === ALL_BRANCHES_VALUE || selectedBranchId.value === ALL_BRANCHES_VALUE) {
+    return null;
+  }
+
+  // Reference parity: owners see company-wide members unless a branch is filtered.
+  if (isOwner.value && fromRoute === null) {
+    return null;
+  }
+
   if (fromRoute !== null && fromRoute !== ALL_BRANCHES_VALUE && branchIds.includes(fromRoute)) {
     return fromRoute;
   }
@@ -249,7 +289,7 @@ function resolveMembersBranchId(nextBranches: BranchRecord[]): string {
     return activeId;
   }
 
-  return nextBranches.find((branch) => branch.isHeadquarter)?.id ?? nextBranches[0]?.id ?? '';
+  return nextBranches.find((branch) => branch.isHeadquarter)?.id ?? nextBranches[0]?.id ?? null;
 }
 
 async function fetchMembers() {
@@ -282,19 +322,18 @@ const { data: membersPayload, pending: membersPayloadPending, refresh: refreshMe
       const nextBranches = normalizeBranches(branches.value ?? []);
       const resolvedBranchId = resolveMembersBranchId(nextBranches);
 
-      if (!resolvedBranchId) {
-        return {
-          members: [] as BranchMemberRecord[],
-          meta: { ...defaultMeta },
-        };
-      }
-
       const membersResponse = await runWhenSessionReady(() =>
-        listBranchMembers(resolvedBranchId, {
-          page: page.value,
-          limit: limit.value,
-          search: debouncedSearch.value.trim() || undefined,
-        }),
+        resolvedBranchId
+          ? listBranchMembers(resolvedBranchId, {
+              page: page.value,
+              limit: limit.value,
+              search: debouncedSearch.value.trim() || undefined,
+            })
+          : listBusinessMembers({
+              page: page.value,
+              limit: limit.value,
+              search: debouncedSearch.value.trim() || undefined,
+            }),
       );
 
       return {
@@ -309,6 +348,26 @@ const { data: membersPayload, pending: membersPayloadPending, refresh: refreshMe
       }),
     },
   );
+
+watch(
+  () => [isOwner.value, branchesLoading.value, route.query.branchId] as const,
+  ([owner, loadingBranches, branchQuery]) => {
+    if (!owner || loadingBranches) {
+      return;
+    }
+
+    if (branchFilterFromQueryParam(branchQuery) !== null) {
+      return;
+    }
+
+    if (selectedBranchId.value === ALL_BRANCHES_VALUE) {
+      return;
+    }
+
+    setPageBranchFilter(ALL_BRANCHES_VALUE, { resetPage: true });
+  },
+  { immediate: true },
+);
 
 watch(
   membersPayload,
@@ -375,7 +434,7 @@ const formattedMembers = computed(() =>
       ...member,
       fullName,
       fallback,
-      branchLabel: selectedBranch.value?.branchName ?? '—',
+      branchLabel: branchLabelForMember(member),
       positionLabel: member.kind === 'invite' ? 'Pending invite' : member.position || 'Not set',
       roleLabel: member.role.charAt(0).toUpperCase() + member.role.slice(1),
       statusLabel,
@@ -389,7 +448,7 @@ function handleMemberInvited(_invite: EmployeeInviteResponse['data']) {
 }
 
 function openInvite() {
-  if (selectedBranch.value) {
+  if (inviteBranch.value) {
     inviteOpen.value = true;
   }
 }
@@ -567,6 +626,7 @@ function cardArticleClass(member: BranchMemberRecord) {
             :model-value="selectedBranchId"
             :branches="branches"
             :loading="branchesLoading"
+            :show-all-branches-option="showAllBranchesOption"
             @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
           />
 
@@ -610,7 +670,7 @@ function cardArticleClass(member: BranchMemberRecord) {
             :left-icon="AddIcon"
             size="medium"
             class="!w-auto"
-            :disabled="!selectedBranch || membersListLoading"
+            :disabled="!inviteBranch || membersListLoading"
             @click="openInvite"
           >
             Invite members
@@ -794,6 +854,12 @@ function cardArticleClass(member: BranchMemberRecord) {
                   <p class="truncate text-sm text-grey-300">
                     {{ member.email }}
                   </p>
+                  <p
+                    v-if="showMemberBranchLabels"
+                    class="truncate text-xs text-grey-300"
+                  >
+                    {{ member.branchLabel }}
+                  </p>
                 </div>
               </div>
               <div class="flex shrink-0 items-start gap-2">
@@ -916,7 +982,7 @@ function cardArticleClass(member: BranchMemberRecord) {
 
     <BranchInviteMemberOverlay
       v-model:open="inviteOpen"
-      :branch="selectedBranch"
+      :branch="inviteBranch"
       :branches="branches"
       @invited="handleMemberInvited"
     />

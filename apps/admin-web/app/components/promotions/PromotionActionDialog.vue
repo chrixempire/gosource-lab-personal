@@ -69,9 +69,10 @@ const copy = computed(() => {
         <p class="text-sm text-grey-700">{{ copy.body }}</p>
       </DialogBody>
       <DialogFooter>
-        <Button type="button" variant="secondary" @click="open = false">Cancel</Button>
+        <Button type="button" variant="secondary" size="medium" @click="open = false">Cancel</Button>
         <Button
           type="button"
+          size="medium"
           :variant="copy.destructive ? 'destructive' : 'primary'"
           :loading="loading"
           @click="emit('confirm')"

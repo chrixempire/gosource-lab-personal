@@ -1,6 +1,9 @@
 <template>
-  <div id="invoice-temp" style="width: 821px; background: #ffffff; color: #101928">
-    <table>
+  <div
+    id="invoice-temp"
+    style="--invoice-soft-green: #edf5ef; width: 821px; background: #ffffff; color: #101928"
+  >
+    <table class="invoice-edge-section">
       <thead>
         <tr>
           <td class="logo" colspan="2">
@@ -86,35 +89,36 @@
       </tbody>
     </table>
 
-    <table style="margin-top: 48px" class="orders">
+    <div class="orders-wrap">
+      <table class="orders">
       <thead>
         <tr>
           <td
-            style="padding: 10px; background-color: #f7f9fc"
+            style="padding: 10px; background-color: var(--invoice-soft-green)"
             class="table-head"
           >
             No.
           </td>
           <td
-            style="padding: 10px; background-color: #f7f9fc"
+            style="padding: 10px; background-color: var(--invoice-soft-green)"
             class="table-head"
           >
             Item
           </td>
           <td
-            style="padding: 10px; background-color: #f7f9fc"
+            style="padding: 10px; background-color: var(--invoice-soft-green)"
             class="table-head"
           >
             Qty
           </td>
           <td
-            style="padding: 10px; background-color: #f7f9fc"
+            style="padding: 10px; background-color: var(--invoice-soft-green)"
             class="table-head"
           >
             Rate
           </td>
           <td
-            style="padding: 10px; background-color: #f7f9fc"
+            style="padding: 10px; background-color: var(--invoice-soft-green)"
             class="table-head"
           >
             Price
@@ -158,12 +162,13 @@
         </tr>
       </tbody>
     </table>
+    </div>
 
-    <table style="max-width: 90%; width: 100%; margin-top: 16px">
+    <table class="receipt-outer">
       <tbody>
         <tr>
           <td class="receipt-wrap">
-            <table class="receipt" style="background: none">
+            <table class="receipt">
               <tbody>
                 <tr>
                   <td
@@ -279,7 +284,7 @@
         padding-bottom: 32px;
         background-color: #f9fafb;
       "
-      class="footer"
+      class="footer invoice-edge-section"
     >
       <tbody>
         <tr>
@@ -361,24 +366,19 @@
 
 <script setup lang="ts">
 import type { InvoiceOrderPayload, InvoiceOrderProductLine } from '~/lib/order-invoice-payload';
+import {
+  formatInvoiceOrderDate,
+  formatInvoiceOrderTime,
+} from '~/lib/order-invoice-payload';
 
 defineProps<{ orders: InvoiceOrderPayload }>();
 
 function formatDates(dateTimeString: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(dateTimeString));
+  return formatInvoiceOrderDate(dateTimeString);
 }
 
 function formatTimeWithAMPM(isoString: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'UTC',
-  }).format(new Date(isoString));
+  return formatInvoiceOrderTime(isoString);
 }
 
 function roundToTwoDecimalPlaces(num: number | undefined) {
@@ -549,18 +549,38 @@ a {
 }
 
 .user-details {
-  max-width: 90%;
-  width: 100%;
-  margin: 0 auto;
+  width: 90%;
+  margin-left: 5%;
+  margin-right: 5%;
 }
 
 .user-details td {
   word-wrap: break-word;
 }
 
+.invoice-edge-section {
+  width: 90%;
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+.orders-wrap {
+  width: 90%;
+  margin: 48px 5% 0;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.receipt-outer {
+  width: 90%;
+  margin: 16px 5% 0;
+}
+
 .orders {
-  max-width: 90%;
   width: 100%;
+  margin: 0;
   border-collapse: collapse;
 }
 
@@ -570,7 +590,9 @@ a {
 }
 
 .receipt {
+  width: 100%;
   border-collapse: collapse;
+  background: var(--invoice-soft-green);
 }
 
 .receipt td {
@@ -585,11 +607,10 @@ a {
 }
 
 .receipt-wrap {
-  max-width: 90%;
   width: 100%;
   border-radius: 12px;
   border: 1px solid #e4e7ec;
-  background: #f7f9fc;
+  background: var(--invoice-soft-green);
   padding: 8px 12px;
 }
 

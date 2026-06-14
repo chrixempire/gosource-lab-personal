@@ -84,6 +84,7 @@ async function onAddToCart() {
       />
       <Button
         variant="primary"
+        size="medium"
         :class="[
           '!rounded-full',
           expandAddButton

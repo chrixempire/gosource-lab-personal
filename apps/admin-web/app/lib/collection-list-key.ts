@@ -21,8 +21,16 @@ export function buildAdminFetchKey(
   }
 
   const sorted = Object.keys(query)
+    .filter((key) => {
+      const value = query[key];
+      return value !== undefined && value !== null && value !== '';
+    })
     .sort()
     .map((key) => [key, query[key]] as const);
+
+  if (sorted.length === 0) {
+    return url;
+  }
 
   return `${url}:${JSON.stringify(sorted)}`;
 }

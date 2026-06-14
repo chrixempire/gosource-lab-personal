@@ -34,10 +34,10 @@ const emit = defineEmits<{ confirm: [] }>();
         </p>
       </DialogBody>
       <DialogFooter class="gap-2">
-        <Button type="button" variant="secondary" size="small" @click="open = false">
+        <Button type="button" variant="secondary" size="medium" @click="open = false">
           Cancel
         </Button>
-        <Button type="button" variant="destructive" size="small" :loading="loading" @click="emit('confirm')">
+        <Button type="button" variant="destructive" size="medium" :loading="loading" @click="emit('confirm')">
           Delete role
         </Button>
       </DialogFooter>

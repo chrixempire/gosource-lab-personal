@@ -2,6 +2,7 @@ import type { AsyncDataOptions, KeysOf } from '#app/composables/asyncData';
 import { isRef, toValue, type MaybeRefOrGetter } from 'vue';
 import { useAdminSession } from '~/composables/useAdminSession';
 import { getAdminSessionCacheSignature } from '~/lib/admin-session-cache';
+import { resolveAdminLoadErrorStatus } from '~/utils/load-error-message';
 
 export type AdminAuthenticatedAsyncDataOptions<
   ResT,
@@ -37,7 +38,7 @@ export function useAdminAuthenticatedAsyncData<
   handler: () => Promise<ResT>,
   options?: AdminAuthenticatedAsyncDataOptions<ResT, DataT, PickKeys, DefaultT>,
 ) {
-  const { whenReady, session } = useAdminSession();
+  const { whenReady, session, sessionResolved } = useAdminSession();
   const {
     revalidateOnMount = false,
     staleAfterMs,
@@ -81,6 +82,7 @@ export function useAdminAuthenticatedAsyncData<
     },
     {
       ...asyncDataOptions,
+      server: asyncDataOptions.server ?? (fastNav ? false : undefined),
       watch: watchOption,
       lazy: lazyOption ?? fastNav,
       getCachedData:
@@ -88,6 +90,22 @@ export function useAdminAuthenticatedAsyncData<
         (enableRouteCache ? (cacheKey) => readAdminAuthenticatedAsyncCache(cacheKey) : undefined),
     },
   );
+
+  if (import.meta.client) {
+    watch(
+      sessionResolved,
+      async (resolved) => {
+        if (!resolved || !result.error.value) {
+          return;
+        }
+
+        if (resolveAdminLoadErrorStatus(result.error.value) === 401) {
+          await result.refresh();
+        }
+      },
+      { immediate: true },
+    );
+  }
 
   if (import.meta.client && (revalidateOnMount || typeof staleAfterMs === 'number')) {
     onMounted(async () => {

@@ -185,8 +185,8 @@ const formBody = computed(() => ({
         </CreditApplySelectField>
       </DrawerBody>
       <DrawerFooter class="gap-3">
-        <Button variant="neutral" class="w-full" :disabled="submitting" @click="close">Cancel</Button>
-        <Button variant="primary" class="w-full" :loading="submitting" @click="submit">{{ title }}</Button>
+        <Button variant="neutral" size="medium" class="w-full" :disabled="submitting" @click="close">Cancel</Button>
+        <Button variant="primary" size="medium" class="w-full" :loading="submitting" @click="submit">{{ title }}</Button>
       </DrawerFooter>
     </DrawerContent>
   </Drawer>
@@ -248,8 +248,8 @@ const formBody = computed(() => ({
         </CreditApplySelectField>
       </DialogBody>
       <DialogFooter class="gap-3">
-        <Button variant="neutral" :disabled="submitting" @click="close">Cancel</Button>
-        <Button variant="primary" :loading="submitting" @click="submit">{{ title }}</Button>
+        <Button variant="neutral" size="medium" :disabled="submitting" @click="close">Cancel</Button>
+        <Button variant="primary" size="medium" :loading="submitting" @click="submit">{{ title }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

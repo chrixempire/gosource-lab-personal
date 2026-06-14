@@ -206,6 +206,10 @@ async function handleCouponApplied() {
   await fetchCheckoutRequest();
 }
 
+async function handleCouponRemoved() {
+  await fetchCheckoutRequest();
+}
+
 async function submitCheckout() {
   if (!request.value || !selectedMethod.value || submitting.value) {
     return;
@@ -452,6 +456,7 @@ watch(requestId, () => {
           :submit-label="checkoutCtaLabel"
           @submit="submitCheckout"
           @coupon-applied="handleCouponApplied"
+          @coupon-removed="handleCouponRemoved"
         />
       </div>
 

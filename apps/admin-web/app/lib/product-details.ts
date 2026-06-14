@@ -218,12 +218,31 @@ export function formatProductUnitCountLabel(product: LegacyProductRow) {
   return '1 Unit';
 }
 
+export function isProductLowStock(product: LegacyProductRow) {
+  if (product.trackQuantity === false) {
+    return false;
+  }
+
+  if (product.lowStockLevel == null) {
+    return false;
+  }
+
+  const quantity = Number(product.quantity ?? 0);
+  const level = Number(product.lowStockLevel);
+
+  if (!Number.isFinite(quantity) || !Number.isFinite(level)) {
+    return false;
+  }
+
+  return quantity <= level;
+}
+
 export function getProductStockAlert(product: LegacyProductRow) {
   if (product.inStock === false) {
     return { label: 'Out Of Stock!', variant: 'negative' as const };
   }
 
-  if (product.isLowStock === true) {
+  if (isProductLowStock(product)) {
     return { label: 'Low stock', variant: 'warning' as const };
   }
 

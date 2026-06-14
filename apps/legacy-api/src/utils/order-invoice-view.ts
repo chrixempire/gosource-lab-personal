@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Cart } from '../cart/entities/cart.entity';
 import { Product } from '../product/entities/product.entity';
+import { getDashboardTimezone } from './dashboard-timezone';
 
 export type OrderInvoiceLineItem = {
   no: number;
@@ -52,10 +53,12 @@ function formatOrderDate(value?: Date | string): string {
   }
 
   const date = value instanceof Date ? value : new Date(value);
+  const timeZone = getDashboardTimezone();
   return date.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    timeZone,
   });
 }
 
@@ -69,7 +72,7 @@ function formatOrderTime(value?: Date | string): string {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-    timeZone: 'UTC',
+    timeZone: getDashboardTimezone(),
   });
 }
 

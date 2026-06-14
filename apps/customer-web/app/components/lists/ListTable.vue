@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import {
   Checkbox,
+  PaginationBar,
   TableBody,
   TableCell,
+  TableFooter,
   TableHeadRow,
   TableHeader,
   TableRow,
@@ -22,6 +24,12 @@ import { formatShoppingListCurrency, formatShoppingListDate } from '~/lib/shoppi
 
 const props = withDefaults(defineProps<{
   lists: ShoppingListListItem[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
   loading?: boolean;
   showBranchColumn?: boolean;
   emptyTitle?: string;
@@ -32,6 +40,8 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
+  page: [page: number];
+  pageSize: [pageSize: number];
   rowClick: [list: ShoppingListListItem];
   view: [list: ShoppingListListItem];
   move: [list: ShoppingListListItem];
@@ -121,6 +131,11 @@ function toggleRowSelection(listId: string) {
 }
 
 const showEmpty = computed(() => !props.loading && props.lists.length === 0);
+const showPagination = computed(
+  () => !props.loading && (props.lists.length > 0 || props.totalItems > 0),
+);
+const hasNextPage = computed(() => props.hasNextPage ?? props.page < props.totalPages);
+const hasPrevPage = computed(() => props.hasPrevPage ?? props.page > 1);
 </script>
 
 <template>
@@ -209,5 +224,20 @@ const showEmpty = computed(() => !props.loading && props.lists.length === 0);
         </p>
       </div>
     </TableBody>
+
+    <TableFooter v-if="showPagination">
+      <PaginationBar
+        :page="page"
+        :total-pages="totalPages"
+        :total-items="totalItems"
+        :page-size="pageSize"
+        :visible-count="lists.length"
+        :has-next-page="hasNextPage"
+        :has-prev-page="hasPrevPage"
+        :disabled="loading"
+        @change="emit('page', $event)"
+        @page-size-change="emit('pageSize', $event)"
+      />
+    </TableFooter>
   </TableShell>
 </template>

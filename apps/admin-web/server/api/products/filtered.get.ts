@@ -48,6 +48,16 @@ export default defineEventHandler(async (event) => {
         }
         return undefined;
       })(),
+      trackQuantity: (() => {
+        const value = readQueryValue(query, 'trackQuantity');
+        if (value === 'true') {
+          return true;
+        }
+        if (value === 'false') {
+          return false;
+        }
+        return undefined;
+      })(),
     },
     fallbackMessage: 'Unable to load products',
   });

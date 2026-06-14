@@ -12,6 +12,7 @@ import {
 } from '@gosource/ui';
 import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
 import CreditRepaymentScheduleMobileList from '~/components/credit/CreditRepaymentScheduleMobileList.vue';
+import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
 import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
 import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
@@ -82,7 +83,13 @@ const isCompactViewport = useAdminCompactViewport();
         />
       </div>
 
-      <TableBody v-else-if="parsed.rows.length" class="!max-h-none !overflow-visible">
+      <CreditTableEmptyBody
+        v-else-if="!parsed.rows.length"
+        title="No repayment schedule yet"
+        description="Installments will appear here once a repayment plan is set up."
+      />
+
+      <TableBody v-else class="!max-h-none !overflow-visible">
         <TableRow
           v-for="row in parsed.rows"
           :key="row.id"
@@ -121,8 +128,6 @@ const isCompactViewport = useAdminCompactViewport();
           </TableCell>
         </TableRow>
       </TableBody>
-
-      <p v-else class="py-6 text-center text-sm text-grey-500">No repayment schedule yet.</p>
 
       <TableFooter v-if="!pending && parsed.meta.total > 0">
         <CreditTablePagination

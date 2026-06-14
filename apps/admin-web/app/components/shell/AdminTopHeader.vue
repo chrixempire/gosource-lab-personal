@@ -59,7 +59,7 @@ const pageDescription = computed(() => {
       </button>
 
       <div v-if="header.title" class="flex min-w-0 flex-1 items-center gap-0.5">
-        <h1 class="min-w-0 truncate text-h5 lg:text-h3">
+        <h1 class="min-w-0 truncate text-h6 lg:text-h4">
           {{ header.title }}
         </h1>
         <AdminPageTitleInfo

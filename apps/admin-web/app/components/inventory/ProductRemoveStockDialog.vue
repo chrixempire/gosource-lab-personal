@@ -163,13 +163,13 @@ function onSubmit() {
       </DialogBody>
 
       <DialogFooter class="gap-2">
-        <Button type="button" variant="outline" size="small" @click="open = false">
+        <Button type="button" variant="outline" size="medium" @click="open = false">
           Cancel
         </Button>
         <Button
           type="button"
           variant="destructive"
-          size="small"
+          size="medium"
           :loading="loading"
           :disabled="!productId"
           @click="onSubmit"

@@ -41,6 +41,7 @@ test('allows customer credit routes', () => {
 
 test('allows coupon apply route for checkout', () => {
   assert.ok(getProxyRouteRule('POST', ['admin', 'coupon', 'apply', 'req_123', 'request']));
+  assert.ok(getProxyRouteRule('DELETE', ['admin', 'coupon', 'apply', 'req_123', 'request']));
 });
 
 test('rejects routes outside the explicit allowlist', () => {

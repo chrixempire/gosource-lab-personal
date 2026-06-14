@@ -106,10 +106,10 @@ function onDone() {
       </DialogBody>
 
       <DialogFooter class="gap-2">
-        <Button variant="neutral" size="small" class="!w-auto" @click="close">
+        <Button variant="neutral" size="medium" class="!w-auto" @click="close">
           Close
         </Button>
-        <Button size="small" class="!w-auto" @click="onDone">
+        <Button size="medium" class="!w-auto" @click="onDone">
           I have made the transfer
         </Button>
       </DialogFooter>

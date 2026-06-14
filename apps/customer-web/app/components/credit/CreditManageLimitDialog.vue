@@ -114,8 +114,8 @@ async function submit() {
         </CreditFileUploadField>
       </DrawerBody>
       <DrawerFooter class="gap-3">
-        <Button variant="neutral" class="w-full" :disabled="submitting" @click="close">Cancel</Button>
-        <Button variant="primary" class="w-full" :loading="submitting" @click="submit">
+        <Button variant="neutral" size="medium" class="w-full" :disabled="submitting" @click="close">Cancel</Button>
+        <Button variant="primary" size="medium" class="w-full" :loading="submitting" @click="submit">
           Submit request
         </Button>
       </DrawerFooter>
@@ -155,8 +155,8 @@ async function submit() {
         </CreditFileUploadField>
       </DialogBody>
       <DialogFooter class="gap-3">
-        <Button variant="neutral" :disabled="submitting" @click="close">Cancel</Button>
-        <Button variant="primary" :loading="submitting" @click="submit">Submit request</Button>
+        <Button variant="neutral" size="medium" :disabled="submitting" @click="close">Cancel</Button>
+        <Button variant="primary" size="medium" :loading="submitting" @click="submit">Submit request</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

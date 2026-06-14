@@ -194,3 +194,21 @@ export function resolveOrderSubtotal(
 
   return Math.max(0, storedTotal - deliveryFee - serviceCharge + discount);
 }
+
+export function resolveOrderTotalPrice(
+  order: Record<string, unknown>,
+  lineItems: Array<{ lineTotal: number }>,
+) {
+  const subtotal = resolveOrderSubtotal(order, lineItems);
+  const deliveryFee = toNumber(order.deliveryFee);
+  const serviceCharge = toNumber(order.serviceCharge);
+  const discount = toNumber(order.discount);
+  const computedTotal = subtotal + deliveryFee + serviceCharge - discount;
+
+  if (lineItems.length > 0) {
+    return computedTotal;
+  }
+
+  const storedTotal = toNumber(order.totalPrice);
+  return storedTotal > 0 ? storedTotal : computedTotal;
+}

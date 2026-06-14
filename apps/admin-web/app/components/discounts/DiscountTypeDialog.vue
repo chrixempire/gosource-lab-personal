@@ -67,8 +67,8 @@ function onConfirm() {
         </RadioGroup>
       </DialogBody>
       <DialogFooter>
-        <Button type="button" variant="secondary" @click="open = false">Cancel</Button>
-        <Button type="button" :disabled="!selected" @click="onConfirm">Continue</Button>
+        <Button type="button" variant="secondary" size="medium" @click="open = false">Cancel</Button>
+        <Button type="button" size="medium" :disabled="!selected" @click="onConfirm">Continue</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

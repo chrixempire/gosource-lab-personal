@@ -80,13 +80,13 @@ function onConfirm() {
         </label>
       </DialogBody>
       <DialogFooter class="gap-2">
-        <Button type="button" variant="outline" size="small" @click="open = false">
+        <Button type="button" variant="outline" size="medium" @click="open = false">
           Cancel
         </Button>
         <Button
           type="button"
           variant="primary"
-          size="small"
+          size="medium"
           :loading="loading"
           @click="onConfirm"
         >

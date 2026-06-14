@@ -16,6 +16,7 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import CreditTableActionsTrigger from '~/components/credit/CreditTableActionsTrigger.vue';
+import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
 import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
 import { creditStatusVariant } from '~/lib/credit-constants';
 import { CREDIT_APPLICATION_TABLE_GRID, CREDIT_LIST_PANEL_CLASS } from '~/lib/credit-table-layout';
@@ -26,6 +27,8 @@ const props = defineProps<{
   rows: AdminCreditApplicationListItem[];
   meta: InventoryTableMeta;
   loading?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }>();
 
 const selectedIds = defineModel<string[]>('selectedIds', { default: () => [] });
@@ -95,6 +98,12 @@ function toggleRow(id: string, checked: boolean | 'indeterminate') {
         :row-count="10"
       />
     </div>
+
+    <CreditTableEmptyBody
+      v-else-if="rows.length === 0"
+      :title="emptyTitle ?? 'No applications found'"
+      :description="emptyDescription"
+    />
 
     <TableBody v-else class="!max-h-none !overflow-visible">
       <TableRow

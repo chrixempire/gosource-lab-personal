@@ -131,11 +131,12 @@ function handleSubmit() {
       </DrawerBody>
 
       <DrawerFooter class="gap-3">
-        <Button variant="neutral" class="w-full" :disabled="submitting" @click="handleOpenChange(false)">
+        <Button variant="neutral" size="medium" class="w-full" :disabled="submitting" @click="handleOpenChange(false)">
           Cancel
         </Button>
         <Button
           variant="primary"
+          size="medium"
           class="w-full"
           :disabled="submitting || !canSubmit"
           :loading="submitting"
@@ -183,11 +184,12 @@ function handleSubmit() {
       </DialogBody>
 
       <DialogFooter class="gap-3">
-        <Button variant="neutral" :disabled="submitting" @click="handleOpenChange(false)">
+        <Button variant="neutral" size="medium" :disabled="submitting" @click="handleOpenChange(false)">
           Cancel
         </Button>
         <Button
           variant="primary"
+          size="medium"
           :disabled="submitting || !canSubmit"
           :loading="submitting"
           @click="handleSubmit"

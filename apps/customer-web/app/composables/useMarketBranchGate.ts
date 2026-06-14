@@ -32,11 +32,29 @@ export function useMarketBranchGate() {
       return Boolean(sessionBranchId.value);
     }
 
+    // Loaded branch list overrides the session cookie hint.
+    if (branchFetchInitialized.value) {
+      return Boolean(branches.value?.length);
+    }
+
     if (typeof session.value?.bootstrap?.hasBranch === 'boolean') {
       return session.value.bootstrap.hasBranch;
     }
 
-    return Boolean(branches.value?.length);
+    return false;
+  });
+
+  /** Show branch-setup UX only when we know (or strongly hint) there is no branch yet. */
+  const needsBranchSetup = computed(() => {
+    if (isEmployeeSession.value || hasBranch.value) {
+      return false;
+    }
+
+    if (branchFetchInitialized.value) {
+      return true;
+    }
+
+    return session.value?.bootstrap?.hasBranch === false;
   });
 
   async function fetchBranchesInBackground(force = false) {
@@ -101,6 +119,7 @@ export function useMarketBranchGate() {
     branches,
     activeBranchId,
     hasBranch,
+    needsBranchSetup,
     hasSession,
     branchFetchLoading,
     branchFetchInitialized,

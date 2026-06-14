@@ -8,6 +8,7 @@ import RequestProductLinesEditor from '~/components/requests/RequestProductLines
 export type RequestDetailsView = {
   id: string;
   reference: string;
+  status: RequestRecord['status'];
   branchName: string;
   branchCode: string | null;
   branchOrderLabel: string;
@@ -355,7 +356,7 @@ const emit = defineEmits<{
     </div>
 
     <div
-      v-if="view.rejectedReasons"
+      v-if="view.status === 'rejected' && view.rejectedReasons"
       class="rounded-[18px] border border-negative-200 bg-negative-50 p-4"
     >
       <p class="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-negative-500">

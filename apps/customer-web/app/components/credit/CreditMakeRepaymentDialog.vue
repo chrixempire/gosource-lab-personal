@@ -306,7 +306,7 @@ watch(useCustomAmount, () => {
         </RadioGroup>
       </DrawerBody>
       <DrawerFooter>
-        <Button variant="primary" class="w-full" :loading="submitting" :disabled="!canSubmit()" @click="handlePay">
+        <Button variant="primary" size="medium" class="w-full" :loading="submitting" :disabled="!canSubmit()" @click="handlePay">
           Make payment
         </Button>
       </DrawerFooter>
@@ -417,7 +417,7 @@ watch(useCustomAmount, () => {
         </RadioGroup>
       </DialogBody>
       <DialogFooter>
-        <Button variant="primary" :loading="submitting" :disabled="!canSubmit()" @click="handlePay">
+        <Button variant="primary" size="medium" :loading="submitting" :disabled="!canSubmit()" @click="handlePay">
           Make payment
         </Button>
       </DialogFooter>
