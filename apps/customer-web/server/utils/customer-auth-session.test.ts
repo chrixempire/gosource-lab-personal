@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hasCachedBranchBootstrap } from './customer-auth-session.ts';
+import {
+  BRANCH_BOOTSTRAP_STALE_MS,
+  hasCachedBranchBootstrap,
+  isBranchBootstrapStale,
+} from './customer-auth-session.ts';
 import {
   deserializeCustomerSessionSnapshot,
   serializeCustomerSessionSnapshot,
@@ -36,6 +40,16 @@ test('hasCachedBranchBootstrap is true only when hasBranch is already known', ()
       ...session,
       bootstrap: { hasBranch: false },
     }),
+    true,
+  );
+});
+
+test('isBranchBootstrapStale treats missing or old checkedAt as stale', () => {
+  assert.equal(isBranchBootstrapStale(undefined), true);
+  assert.equal(isBranchBootstrapStale(Number.NaN), true);
+  assert.equal(isBranchBootstrapStale(Date.now()), false);
+  assert.equal(
+    isBranchBootstrapStale(Date.now() - BRANCH_BOOTSTRAP_STALE_MS - 1),
     true,
   );
 });

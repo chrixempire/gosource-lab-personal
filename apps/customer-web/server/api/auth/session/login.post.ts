@@ -1,6 +1,11 @@
 import type { CustomerAuthResponse, CustomerLoginPayload, CustomerMeResponse } from '@gosource/api-client';
 import { createError, readBody } from 'h3';
-import { attachBranchBootstrap, setCustomerAuthCookies, toClientCustomerSession } from '../../../utils/customer-auth-session';
+import {
+  attachBranchBootstrap,
+  setCustomerAuthCookies,
+  shouldForceBranchBootstrapOnLogin,
+  toClientCustomerSession,
+} from '../../../utils/customer-auth-session';
 import { getCustomerApiBaseUrl, isLegacyCustomerApiMode } from '../../../utils/customer-api-mode';
 import { forwardApiError } from '../../../utils/forward-api-error';
 import { extractLegacyAccessToken, normalizeLegacyCustomerSession } from '../../../utils/legacy-customer-auth';
@@ -51,11 +56,16 @@ export default defineEventHandler(async (event): Promise<CustomerMeResponse> => 
     });
   }
 
-  const nextSession = await attachBranchBootstrap(event, toClientCustomerSession({
-    message: result.message,
-    data: result.data,
-    user_type: result.user_type,
-  }), result.access_token);
+  const nextSession = await attachBranchBootstrap(
+    event,
+    toClientCustomerSession({
+      message: result.message,
+      data: result.data,
+      user_type: result.user_type,
+    }),
+    result.access_token,
+    { force: shouldForceBranchBootstrapOnLogin(event) },
+  );
 
   setCustomerAuthCookies(event, {
     accessToken: result.access_token,

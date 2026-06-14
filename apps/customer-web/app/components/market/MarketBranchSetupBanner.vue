@@ -4,29 +4,10 @@ import { Building2, X } from 'lucide-vue-next';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 
-const session = useState<{
-  user_type?: 'customer' | 'employee';
-  bootstrap?: { hasBranch?: boolean };
-} | null>('customer-session', () => null);
-
-const { hasBranch, openBranchGate } = useMarketBranchGate();
+const { needsBranchSetup, openBranchGate } = useMarketBranchGate();
 const { dismissed, dismiss } = useMarketBranchSetupDismissal();
 
-const shouldShow = computed(() => {
-  if (dismissed.value) {
-    return false;
-  }
-
-  if (session.value?.user_type !== 'customer') {
-    return false;
-  }
-
-  if (hasBranch.value) {
-    return false;
-  }
-
-  return session.value?.bootstrap?.hasBranch === false;
-});
+const shouldShow = computed(() => !dismissed.value && needsBranchSetup.value);
 
 function dismissBanner() {
   dismiss();

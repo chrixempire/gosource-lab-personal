@@ -18,6 +18,8 @@ const REFRESH_COOKIE_NAME = 'gosource_customer_refresh';
 const SESSION_COOKIE_NAME = 'gosource_customer_session';
 const ACCESS_MAX_AGE_SECONDS = 60 * 15;
 const REFRESH_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
+/** Re-verify cached branch bootstrap on login when older than this. */
+export const BRANCH_BOOTSTRAP_STALE_MS = 24 * 60 * 60 * 1000;
 
 function shouldUseSecureCookies() {
   return process.env.NODE_ENV === 'production';
@@ -112,6 +114,24 @@ export function hasCachedBranchBootstrap(session: CustomerSessionState): boolean
   return typeof session.bootstrap?.hasBranch === 'boolean';
 }
 
+export function isBranchBootstrapStale(checkedAt?: number): boolean {
+  if (typeof checkedAt !== 'number' || !Number.isFinite(checkedAt)) {
+    return true;
+  }
+
+  return Date.now() - checkedAt > BRANCH_BOOTSTRAP_STALE_MS;
+}
+
+export function shouldForceBranchBootstrapOnLogin(event: H3Event): boolean {
+  const snapshot = getCustomerSessionSnapshot(event);
+
+  if (!snapshot || snapshot.user_type !== 'customer' || !hasCachedBranchBootstrap(snapshot)) {
+    return false;
+  }
+
+  return isBranchBootstrapStale(snapshot.bootstrap?.checkedAt);
+}
+
 export function patchCustomerSessionBootstrap(
   event: H3Event,
   bootstrap: NonNullable<CustomerSessionState['bootstrap']>,
@@ -126,6 +146,7 @@ export function patchCustomerSessionBootstrap(
     bootstrap: {
       ...(session.bootstrap ?? {}),
       ...bootstrap,
+      checkedAt: Date.now(),
     },
   };
 
@@ -173,11 +194,32 @@ export async function attachBranchBootstrap(
       ...session,
       bootstrap: {
         hasBranch: items.length > 0,
+        checkedAt: Date.now(),
       },
     };
   } catch {
     return session;
   }
+}
+
+export async function syncCustomerBranchBootstrapFromApi(event: H3Event): Promise<void> {
+  const session = getCustomerSessionSnapshot(event);
+  const accessToken = getAccessTokenCookie(event) ?? getRefreshTokenCookie(event);
+
+  if (!session || !accessToken || session.user_type !== 'customer') {
+    return;
+  }
+
+  const synced = await attachBranchBootstrap(event, session, accessToken, { force: true });
+
+  setCustomerAuthCookies(
+    event,
+    {
+      accessToken,
+      refreshToken: getRefreshTokenCookie(event) ?? accessToken,
+    },
+    synced,
+  );
 }
 
 export async function refreshCustomerSession(event: H3Event) {

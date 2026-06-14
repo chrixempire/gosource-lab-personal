@@ -15,6 +15,7 @@ import {
   getCustomerSessionSnapshot,
   patchCustomerSessionBootstrap,
   refreshCustomerSession,
+  syncCustomerBranchBootstrapFromApi,
 } from '../../utils/customer-auth-session';
 import { getCustomerApiBaseUrl, isLegacyCustomerApiMode } from '../../utils/customer-api-mode';
 import {
@@ -416,6 +417,7 @@ export default defineEventHandler(async (event) => {
       }
 
       if (method === 'DELETE' && targetPathSegments[1]) {
+        await syncCustomerBranchBootstrapFromApi(event);
         return normalizeLegacyBranchDeleteResponse(legacyData, targetPathSegments[1]);
       }
 
