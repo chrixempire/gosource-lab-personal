@@ -13,6 +13,7 @@ import {
   getAccessTokenCookie,
   getRefreshTokenCookie,
   getCustomerSessionSnapshot,
+  patchCustomerSessionBootstrap,
   refreshCustomerSession,
 } from '../../utils/customer-auth-session';
 import { getCustomerApiBaseUrl, isLegacyCustomerApiMode } from '../../utils/customer-api-mode';
@@ -416,6 +417,10 @@ export default defineEventHandler(async (event) => {
 
       if (method === 'DELETE' && targetPathSegments[1]) {
         return normalizeLegacyBranchDeleteResponse(legacyData, targetPathSegments[1]);
+      }
+
+      if (method === 'POST') {
+        patchCustomerSessionBootstrap(event, { hasBranch: true });
       }
 
       return normalizeLegacyBranchResponse(

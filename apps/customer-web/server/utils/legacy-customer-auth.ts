@@ -129,6 +129,7 @@ export function normalizeLegacySessionFromProfile(
         role: normalizeEmployeeRole(toStringOrFallback(root.role, data.role)),
         status: toBoolean(root.isDeactivated) ? 'inactive' : normalizeLegacyStatus(root.status),
       },
+      bootstrap: snapshot.bootstrap,
     };
   }
 
@@ -147,6 +148,7 @@ export function normalizeLegacySessionFromProfile(
       status: normalizeLegacyStatus(root.status),
       onboardingStep: toNumberOrUndefined(root.onboardingStep) ?? ('onboardingStep' in data ? data.onboardingStep : undefined),
     },
+    bootstrap: snapshot.bootstrap,
   };
 }
 

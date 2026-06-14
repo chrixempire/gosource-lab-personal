@@ -108,12 +108,55 @@ export function toClientCustomerSession(
   };
 }
 
+export function hasCachedBranchBootstrap(session: CustomerSessionState): boolean {
+  return typeof session.bootstrap?.hasBranch === 'boolean';
+}
+
+export function patchCustomerSessionBootstrap(
+  event: H3Event,
+  bootstrap: NonNullable<CustomerSessionState['bootstrap']>,
+): CustomerSessionState | null {
+  const session = getCustomerSessionSnapshot(event);
+  if (!session) {
+    return null;
+  }
+
+  const nextSession: CustomerSessionState = {
+    ...session,
+    bootstrap: {
+      ...(session.bootstrap ?? {}),
+      ...bootstrap,
+    },
+  };
+
+  const accessToken = getAccessTokenCookie(event);
+  if (!accessToken) {
+    return nextSession;
+  }
+
+  setCustomerAuthCookies(
+    event,
+    {
+      accessToken,
+      refreshToken: getRefreshTokenCookie(event) ?? accessToken,
+    },
+    nextSession,
+  );
+
+  return nextSession;
+}
+
 export async function attachBranchBootstrap(
   event: H3Event,
   session: CustomerSessionState,
   accessToken: string | null | undefined,
+  options?: { force?: boolean },
 ): Promise<CustomerSessionState> {
   if (!accessToken || session.user_type !== 'customer' || !session.data?.businessId) {
+    return session;
+  }
+
+  if (!options?.force && hasCachedBranchBootstrap(session)) {
     return session;
   }
 
@@ -187,11 +230,14 @@ export async function refreshCustomerSession(event: H3Event) {
       });
     }
 
-    const nextSession = await attachBranchBootstrap(event, toClientCustomerSession({
+    const snapshot = getCustomerSessionSnapshot(event);
+    const baseSession = toClientCustomerSession({
       message: refreshed.message,
       data: refreshed.data,
       user_type: refreshed.user_type,
-    }), refreshed.access_token);
+      bootstrap: snapshot?.bootstrap,
+    });
+    const nextSession = await attachBranchBootstrap(event, baseSession, refreshed.access_token);
 
     setCustomerAuthCookies(event, {
       accessToken: refreshed.access_token,
