@@ -163,6 +163,14 @@ export function useCreditMutations() {
       invalidateCreditApplicationLists();
       toast.success('Checklist initialised successfully');
     } catch (error) {
+      const statusCode =
+        (error as { statusCode?: number })?.statusCode
+        ?? (error as { data?: { statusCode?: number } })?.data?.statusCode;
+
+      if (statusCode === 409) {
+        return;
+      }
+
       toast.error(extractApiErrorMessage(error, 'Unable to initialise checklist'));
       throw error;
     } finally {

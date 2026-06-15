@@ -41,6 +41,19 @@ export function createEmptyCreditPagePayload(): CreditPagePayload {
   };
 }
 
+/** Placeholder default from useAsyncData — must not replace a loaded dashboard. */
+export function isEmptyCreditPagePayload(payload: CreditPagePayload) {
+  return (
+    payload.loadError === null &&
+    payload.canBuyOnCredit === null &&
+    payload.account === null &&
+    payload.applications.length === 0 &&
+    payload.creditRequests.length === 0 &&
+    payload.repayments.length === 0 &&
+    payload.upcomingPayment === null
+  );
+}
+
 export async function fetchCreditPagePayload(): Promise<CreditPagePayload> {
   const { $creditApi, $apiClient } = useNuxtApp();
   const session = useState<CustomerMeResponse | null>('customer-session', () => null);

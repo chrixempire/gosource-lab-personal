@@ -46,6 +46,7 @@ import {
   REAPPLICATION_COOLDOWN_DAYS,
   ADMIN_EMAILS,
 } from './helpers/constants';
+import { CreditRepaymentService } from '../credit-repayment/credit-repayment.service';
 
 @Injectable()
 export class CreditService {
@@ -66,6 +67,7 @@ export class CreditService {
     @InjectModel(BusinessCustomer.name)
     private businessModel: Model<BusinessCustomer>,
     private emailService: EmailService,
+    private creditRepaymentService: CreditRepaymentService,
   ) {}
 
   /**
@@ -641,6 +643,14 @@ export class CreditService {
     const account = await this.creditAccountModel.findOne({
       business: businessId,
     });
+
+    if (account) {
+      try {
+        await this.creditRepaymentService.syncCreditAccountBalances(account);
+      } catch {
+        // Best-effort reconcile on read; avoid surfacing transient write conflicts.
+      }
+    }
 
     return successResponse('Credit account fetched successfully', account);
   }

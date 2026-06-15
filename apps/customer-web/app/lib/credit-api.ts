@@ -138,6 +138,7 @@ function mapRequest(row: Record<string, unknown>): CustomerCreditRequest {
     status: (row.status ?? 'pending') as CreditWorkflowStatus,
     requestType: (row.requestType ?? 'initial') as CreditRequestType,
     requestedAmountKobo: Number(row.requestedAmountKobo) || 0,
+    approvedAmountKobo: Number(row.approvedAmountKobo) || 0,
     repaidAmountKobo: Number(row.repaidAmountKobo) || 0,
     reference: id ? id.slice(-5).toUpperCase() : '',
     requestedRepaymentFrequency: row.requestedRepaymentFrequency

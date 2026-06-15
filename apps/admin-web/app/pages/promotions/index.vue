@@ -7,6 +7,7 @@ import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import PromotionActionDialog from '~/components/promotions/PromotionActionDialog.vue';
 import PromotionCardsGrid from '~/components/promotions/PromotionCardsGrid.vue';
 import PromotionFilterBar from '~/components/promotions/PromotionFilterBar.vue';
+import PromotionMarketplaceBannersSection from '~/components/promotions/PromotionMarketplaceBannersSection.vue';
 import PromotionStatCards from '~/components/promotions/PromotionStatCards.vue';
 import PromotionTable from '~/components/promotions/PromotionTable.vue';
 import { useAdminListFetch } from '~/composables/useAdminListFetch';
@@ -137,6 +138,8 @@ updateHeader({ title: 'Promotions' });
     </div>
 
     <PromotionStatCards :filters="filters" :stats="stats" @filter-status="onFilterStatus" />
+
+    <PromotionMarketplaceBannersSection />
 
     <div
       class="flex flex-col gap-4 min-[1000px]:flex-row min-[1000px]:items-end min-[1000px]:justify-between"

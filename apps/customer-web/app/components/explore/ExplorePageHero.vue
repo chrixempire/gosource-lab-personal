@@ -2,6 +2,7 @@
 import { useNow } from '@vueuse/core';
 import ExploreMarketBannerCarousel from '~/components/explore/ExploreMarketBannerCarousel.vue';
 import ExplorePageHeroGreetingSkeleton from '~/components/explore/ExplorePageHeroGreetingSkeleton.vue';
+import { useMarketplaceBanners } from '~/composables/useMarketplaceBanners';
 import { getCustomerTimeGreeting } from '~/lib/customer-time-of-day';
 
 defineProps<{
@@ -9,6 +10,7 @@ defineProps<{
   sessionLoading?: boolean;
 }>();
 
+const { banners: marketplaceBanners } = useMarketplaceBanners();
 const now = useNow({ interval: 60_000 });
 const timeGreeting = computed(() => getCustomerTimeGreeting(now.value));
 </script>
@@ -27,7 +29,7 @@ const timeGreeting = computed(() => getCustomerTimeGreeting(now.value));
     </div>
 
     <div class="mt-1 w-full min-w-0 sm:mt-4">
-      <ExploreMarketBannerCarousel />
+      <ExploreMarketBannerCarousel :image-banners="marketplaceBanners" />
     </div>
   </header>
 </template>

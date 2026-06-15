@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  canReapplyCreditRequest,
+  creditRepaymentPaymentMethodLabel,
+  creditRepaymentStatusLabel,
   creditRequestStatusLabel,
   creditRequestTypeLabel,
   creditWorkflowStatusLabel,
@@ -20,4 +23,19 @@ test('creditRequestStatusLabel maps approved to Ongoing and completed to Repaid'
 test('creditWorkflowStatusLabel keeps approved as Approved for non-history contexts', () => {
   assert.equal(creditWorkflowStatusLabel('approved'), 'Approved');
   assert.equal(creditWorkflowStatusLabel('completed'), 'Repaid');
+});
+
+test('canReapplyCreditRequest matches gosource-web-app actions', () => {
+  assert.equal(canReapplyCreditRequest('rejected'), true);
+  assert.equal(canReapplyCreditRequest('cancelled'), true);
+  assert.equal(canReapplyCreditRequest('approved'), false);
+});
+
+test('creditRepaymentPaymentMethodLabel formats enum values', () => {
+  assert.equal(creditRepaymentPaymentMethodLabel('BANK_TRANSFER'), 'BANK TRANSFER');
+  assert.equal(creditRepaymentPaymentMethodLabel('CARD'), 'CARD');
+});
+
+test('creditRepaymentStatusLabel maps completed repayments', () => {
+  assert.equal(creditRepaymentStatusLabel('COMPLETED'), 'Completed');
 });

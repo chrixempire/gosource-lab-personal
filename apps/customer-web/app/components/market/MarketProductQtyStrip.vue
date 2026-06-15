@@ -56,19 +56,38 @@ const qty = computed(() => {
 });
 
 const draftQty = ref(String(Math.max(1, qty.value || 1)));
+const isQtyInputFocused = ref(false);
 
-watch(
-  qty,
-  (q) => {
-    draftQty.value = String(Math.max(1, q || 1));
-  },
-  { immediate: true },
-);
+function parseDraftQuantity(): number | null {
+  const trimmed = draftQty.value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function syncDraftFromQty() {
+  if (isQtyInputFocused.value) {
+    return;
+  }
+
+  draftQty.value = String(Math.max(1, qty.value || 1));
+}
+
+watch(qty, () => {
+  syncDraftFromQty();
+}, { immediate: true });
 
 watch(
   () => props.unit,
   () => {
-    draftQty.value = String(Math.max(1, qty.value || 1));
+    syncDraftFromQty();
   },
 );
 
@@ -81,13 +100,7 @@ async function commitControlled(parsed: number) {
   emit('update:modelValue', parsed);
 }
 
-async function commitDraft() {
-  const parsed = Number.parseInt(draftQty.value, 10);
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    draftQty.value = String(Math.max(1, qty.value));
-    return;
-  }
-
+async function commitQuantity(parsed: number) {
   if (isControlled.value) {
     await commitControlled(parsed);
     return;
@@ -103,6 +116,29 @@ async function commitDraft() {
   }
 
   await setQuantityForUnit(props.productId, props.unit, parsed, cartOptions.value);
+}
+
+async function commitDraft() {
+  const parsed = parseDraftQuantity();
+  if (parsed === null || parsed < 1) {
+    return;
+  }
+
+  await commitQuantity(parsed);
+}
+
+async function normalizeDraftOnLeave() {
+  cancelDebouncedCommit();
+
+  const parsed = parseDraftQuantity();
+  if (parsed === null || parsed < 1) {
+    draftQty.value = '1';
+    await commitQuantity(1);
+    return;
+  }
+
+  draftQty.value = String(parsed);
+  await commitQuantity(parsed);
 }
 
 const debouncedCommitDraft = useDebounceFn(commitDraft, QTY_INPUT_DEBOUNCE_MS);
@@ -121,17 +157,23 @@ function onQtyInput() {
   if (props.disabled) {
     return;
   }
+
+  const parsed = parseDraftQuantity();
+  if (parsed === null || parsed < 1) {
+    cancelDebouncedCommit();
+    return;
+  }
+
   debouncedCommitDraft();
 }
 
 function onDraftQtyUpdate(value: string) {
-  draftQty.value = value;
+  draftQty.value = value.replace(/[^\d]/g, '');
   onQtyInput();
 }
 
-async function flushDebounceAndCommit() {
-  cancelDebouncedCommit();
-  await commitDraft();
+function onQtyFocus() {
+  isQtyInputFocused.value = true;
 }
 
 async function onQtyBlur() {
@@ -139,11 +181,14 @@ async function onQtyBlur() {
     return;
   }
 
+  isQtyInputFocused.value = false;
+
   if (skipNextBlurCommit.value) {
     skipNextBlurCommit.value = false;
     return;
   }
-  await flushDebounceAndCommit();
+
+  await normalizeDraftOnLeave();
 }
 
 async function onQtyEnter(e: KeyboardEvent) {
@@ -151,7 +196,8 @@ async function onQtyEnter(e: KeyboardEvent) {
     return;
   }
 
-  await flushDebounceAndCommit();
+  isQtyInputFocused.value = false;
+  await normalizeDraftOnLeave();
   skipNextBlurCommit.value = true;
   (e.target as HTMLInputElement | null)?.blur();
 }
@@ -372,6 +418,7 @@ const iconSizeClass = computed(() =>
         :class="stripInputClass"
         aria-label="Quantity"
         @update:model-value="onDraftQtyUpdate"
+        @focus="onQtyFocus"
         @blur="onQtyBlur"
         @keydown.enter.prevent="onQtyEnter"
       />

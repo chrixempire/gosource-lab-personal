@@ -109,12 +109,13 @@ export function useMarketplaceCart() {
     Object.fromEntries(lines.value.map((line) => [line.lineKey, line.quantity])),
   );
 
+  /** Distinct cart lines (products), not sum of quantities — used on header/floating cart badges. */
   const totalItemCount = computed(() => {
     if (requestAddMode.isAddingToRequest.value) {
       return requestAddMode.totalItemCount.value;
     }
 
-    return lines.value.reduce((sum, line) => sum + line.quantity, 0);
+    return lines.value.length;
   });
 
   const subtotalNaira = computed(() => {

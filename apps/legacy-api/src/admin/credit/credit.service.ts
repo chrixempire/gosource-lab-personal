@@ -238,15 +238,36 @@ export class CreditService {
       throw new BadRequestException('Credit request not found');
     }
 
-    const initCreditApplication = await this.creditModel.findOne({
-      _id: request.business._id,
-      status: CreditStatus.APPROVED,
-      applicationType: CreditApplicationTypeT.INITIAL,
-    });
-
-    request.application = initCreditApplication;
+    const businessId = request.business?._id ?? request.business;
+    request.application =
+      await this.findInitialCreditApplicationForBusiness(businessId);
 
     return successResponse('Credit request retrieved successfully', request);
+  }
+
+  private async findInitialCreditApplicationForBusiness(
+    businessId: Types.ObjectId | string,
+  ): Promise<CreditDocument | null> {
+    const businessObjectId = new Types.ObjectId(String(businessId));
+
+    const approvedApplication = await this.creditModel
+      .findOne({
+        business: businessObjectId,
+        applicationType: CreditApplicationTypeT.INITIAL,
+        status: CreditStatus.APPROVED,
+      })
+      .sort({ createdAt: -1 });
+
+    if (approvedApplication) {
+      return approvedApplication;
+    }
+
+    return this.creditModel
+      .findOne({
+        business: businessObjectId,
+        applicationType: CreditApplicationTypeT.INITIAL,
+      })
+      .sort({ createdAt: -1 });
   }
 
   async getCreditRequestStats(): Promise<any> {

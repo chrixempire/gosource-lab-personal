@@ -34,6 +34,8 @@ import {
   formatNairaAmountInput,
   parseNairaAmountInput,
 } from '~/lib/wallet-display';
+import { buildCreditPaystackMetadata } from '~/lib/credit-paystack-metadata';
+import { extractPaystackPaymentReference } from '~/lib/wallet-paystack';
 import type { CreditPaymentMethod, CustomerCreditAccount, CustomerUpcomingCreditPayment } from '~/types/credit';
 import { useCustomerCreditService } from '~/services/credit.service';
 import { useCustomerWalletService } from '~/services/wallet.service';
@@ -50,17 +52,24 @@ const emit = defineEmits<{
 }>();
 
 const isMobile = useMediaQuery('(max-width: 600px)');
-const { makePayment } = useCustomerCreditService();
+const { makePayment, devConfirmRepayment } = useCustomerCreditService();
 const { getWallet } = useCustomerWalletService();
 const { mutate: payWithPaystack } = usePaystack();
 
 const submitting = ref(false);
 const transferOpen = ref(false);
+const paystackInProgress = ref(false);
+const recordingPaymentReference = ref<string | null>(null);
 const paymentMethod = ref<CreditPaymentMethod | null>(null);
 const useCustomAmount = ref(false);
 const customAmount = ref('');
 const customAmountError = ref('');
 const wallet = ref<WalletRecord | null>(null);
+
+type RepaymentCheckout = {
+  method: CreditPaymentMethod;
+  amountNaira: number;
+};
 
 const totalDueNaira = computed(() => koboToNaira(props.upcoming?.totalNextPaymentKobo ?? 0));
 
@@ -82,12 +91,21 @@ watch(
   () => props.open,
   (open) => {
     if (!open) {
+      if (!paystackInProgress.value) {
+        paymentMethod.value = null;
+        useCustomAmount.value = false;
+        customAmount.value = '';
+        customAmountError.value = '';
+        recordingPaymentReference.value = null;
+      }
       return;
     }
+
     paymentMethod.value = null;
     useCustomAmount.value = false;
     customAmount.value = '';
     customAmountError.value = '';
+    recordingPaymentReference.value = null;
     void loadWallet();
   },
 );
@@ -130,20 +148,42 @@ function canSubmit() {
   return effectiveAmountNaira.value > 0;
 }
 
-async function submitPayment(transactionReference?: string) {
-  if (!paymentMethod.value) {
+async function submitPayment(
+  checkout: RepaymentCheckout,
+  transactionReference?: string,
+) {
+  if (
+    transactionReference &&
+    recordingPaymentReference.value === transactionReference
+  ) {
     return;
+  }
+
+  if (transactionReference) {
+    recordingPaymentReference.value = transactionReference;
   }
 
   submitting.value = true;
   try {
     await makePayment({
-      paymentAmount: effectiveAmountNaira.value,
-      paymentMethod: paymentMethod.value,
+      paymentAmount: checkout.amountNaira,
+      paymentMethod: checkout.method,
       ...(transactionReference ? { transactionReference } : {}),
     });
+
+    if (checkout.method === 'BANK_TRANSFER') {
+      toast.success('Payment submitted. Please wait for admin approval.');
+    } else {
+      toast.success('Repayment successful');
+    }
+
     emit('success');
     close();
+  } catch (error) {
+    if (transactionReference) {
+      recordingPaymentReference.value = null;
+    }
+    throw error;
   } finally {
     submitting.value = false;
   }
@@ -162,35 +202,83 @@ async function handlePay() {
     return;
   }
 
-  if (paymentMethod.value === 'CARD') {
+  const checkout: RepaymentCheckout = {
+    method: paymentMethod.value,
+    amountNaira: effectiveAmountNaira.value,
+  };
+
+  if (checkout.method === 'CARD') {
     const creditAccountId = props.account?.id;
     if (!creditAccountId) {
       toast.error('Credit account not found');
       return;
     }
 
+    paystackInProgress.value = true;
     close();
     await nextTick();
 
-    const result = await payWithPaystack({
-      amount: effectiveAmountNaira.value,
-      metadata: { creditAccountId },
-      onSuccess: (event) => {
-        const reference =
-          event && typeof event === 'object' && 'reference' in event
-            ? String((event as { reference?: string }).reference ?? '')
-            : '';
-        void submitPayment(reference || undefined);
-      },
-    });
+    try {
+      const result = await payWithPaystack({
+        amount: checkout.amountNaira,
+        metadata: buildCreditPaystackMetadata(creditAccountId),
+        onSuccess: async (event) => {
+          paystackInProgress.value = false;
 
-    if (result === 'cancelled') {
-      return;
+          const reference = extractPaystackPaymentReference(event);
+          if (!reference) {
+            toast.error('Paystack did not return a payment reference.');
+            throw new Error('missing-reference');
+          }
+
+          if (recordingPaymentReference.value === reference) {
+            return;
+          }
+
+          const processingToast = toast.loading('Recording your repayment…');
+
+          try {
+            if (import.meta.dev) {
+              await devConfirmRepayment({
+                paymentReference: reference,
+                amountNaira: checkout.amountNaira,
+                creditAccountId,
+              });
+            }
+
+            await submitPayment(checkout, reference);
+          } finally {
+            toast.dismiss(processingToast);
+          }
+        },
+      });
+
+      if (result === 'cancelled') {
+        toast.message('Payment cancelled.');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'missing-reference') {
+        return;
+      }
+      toast.error('Something went wrong while opening Paystack. Please try again.');
+    } finally {
+      paystackInProgress.value = false;
     }
     return;
   }
 
-  await submitPayment();
+  await submitPayment(checkout);
+}
+
+function confirmBankTransfer() {
+  if (!paymentMethod.value) {
+    return;
+  }
+
+  void submitPayment({
+    method: paymentMethod.value,
+    amountNaira: effectiveAmountNaira.value,
+  });
 }
 
 function onCustomAmountInput(value: string) {
@@ -428,6 +516,6 @@ watch(useCustomAmount, () => {
     :open="transferOpen"
     :loading="submitting"
     @update:open="transferOpen = $event"
-    @confirm="submitPayment()"
+    @confirm="confirmBankTransfer"
   />
 </template>

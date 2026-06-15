@@ -42,7 +42,19 @@ const skeletonColumns = computed(() =>
     : CREDIT_REPAYMENT_HISTORY_SKELETON_COLUMNS,
 );
 
-const showActionsColumn = computed(() => props.variant === 'credit');
+const creditHeaders = ['Reference', 'Amount', 'Request type', 'Date', 'Status', 'Approved amount', 'Actions'];
+const repaymentHeaders = [
+  'Reference',
+  'Amount',
+  'Date',
+  'Repayment method',
+  'Status',
+  'Actions',
+];
+
+const tableHeaders = computed(() =>
+  props.variant === 'credit' ? creditHeaders : repaymentHeaders,
+);
 </script>
 
 <template>
@@ -52,12 +64,9 @@ const showActionsColumn = computed(() => props.variant === 'credit');
         :style="{ gridTemplateColumns: gridTemplate }"
         class="pointer-events-none opacity-60"
       >
-        <TableCell>Reference</TableCell>
-        <TableCell>Amount</TableCell>
-        <TableCell>Request type</TableCell>
-        <TableCell>Date</TableCell>
-        <TableCell>Status</TableCell>
-        <TableCell v-if="showActionsColumn" class="sr-only">Actions</TableCell>
+        <TableCell v-for="header in tableHeaders" :key="header" :class="header === 'Actions' ? 'sr-only' : undefined">
+          {{ header }}
+        </TableCell>
       </TableHeadRow>
     </TableHeader>
 

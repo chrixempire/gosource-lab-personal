@@ -4,6 +4,7 @@ import { formatCreditFromKobo } from '~/lib/credit-money';
 
 const props = defineProps<{
   account: CustomerCreditAccount | null;
+  amountDueKobo?: number;
 }>();
 
 const stats = computed(
@@ -43,7 +44,7 @@ const stats = computed(
     <div class="customer-surface-card rounded-lg p-5">
       <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-grey-400">Amount due</p>
       <h3>
-        {{ formatCreditFromKobo(stats.outstandingKobo) }}
+        {{ formatCreditFromKobo(props.amountDueKobo ?? stats.outstandingKobo) }}
       </h3>
     </div>
   </div>

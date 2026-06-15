@@ -37,8 +37,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  funded: [paymentReference?: string];
-  refresh: [];
+  funded: [];
   'update:open': [value: boolean];
 }>();
 
@@ -119,30 +118,27 @@ function backToAmountStep() {
 
 async function confirmFunding(paymentReference: string, numericAmount: number) {
   confirming.value = true;
-  toast.message('Payment received. Confirming your wallet balance…');
-
-  if (import.meta.dev) {
-    void devConfirmFunding({
-      paymentReference,
-      amount: numericAmount,
-    });
-  }
+  const processingToast = toast.loading('Confirming your wallet balance…');
 
   try {
+    if (import.meta.dev) {
+      await devConfirmFunding({
+        paymentReference,
+        amount: numericAmount,
+      });
+    }
+
     const outcome = await waitForWalletFundingConfirmation({
       paymentReference,
       listTransactions: (query) => listTransactions(query, { silent: true }),
-      onPoll: () => {
-        emit('refresh');
-      },
+      intervalMs: 800,
+      maxAttempts: 20,
     });
-
-    emit('refresh');
 
     if (outcome === 'successful') {
       toast.success('Wallet funded successfully');
       resetForm();
-      emit('funded', paymentReference);
+      emit('funded');
       emit('update:open', false);
       return;
     }
@@ -157,10 +153,11 @@ async function confirmFunding(paymentReference: string, numericAmount: number) {
         ? 'Payment recorded. If your balance is still ₦0, restart legacy-api and try again, or configure Paystack webhooks to your local server.'
         : 'Payment received but confirmation is taking longer than expected. Your balance will update shortly — refresh this page in a moment.',
     );
-    emit('funded', paymentReference);
+    emit('funded');
     emit('update:open', false);
     resetForm();
   } finally {
+    toast.dismiss(processingToast);
     confirming.value = false;
   }
 }
@@ -195,7 +192,6 @@ async function continueWithPaystack() {
           transactionReference: reference,
         });
 
-        emit('refresh');
         await confirmFunding(reference, numericAmount);
       },
     });
@@ -239,7 +235,6 @@ function onContinueWithSelectedMethod() {
 function onTransferDone() {
   transferDialogOpen.value = false;
   resetForm();
-  emit('refresh');
   toast.message('When your transfer is confirmed, your wallet balance will update automatically.');
 }
 
