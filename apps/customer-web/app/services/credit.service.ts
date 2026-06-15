@@ -171,6 +171,25 @@ export function useCustomerCreditService() {
       }
     },
 
+    async devConfirmRepayment(payload: {
+      paymentReference: string;
+      amountNaira: number;
+      creditAccountId: string;
+    }) {
+      if (!import.meta.dev) {
+        return;
+      }
+
+      try {
+        await $fetch('/api/credit/dev-confirm-repayment', {
+          method: 'POST',
+          body: payload,
+        });
+      } catch (error) {
+        console.warn('[credit] devConfirmRepayment failed', error);
+      }
+    },
+
     async getUpcomingPayment(options?: { silent?: boolean }): Promise<CustomerUpcomingCreditPayment> {
       try {
         const response = await $creditApi.getUpcomingPayment();

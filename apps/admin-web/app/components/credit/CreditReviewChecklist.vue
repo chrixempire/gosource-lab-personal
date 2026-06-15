@@ -41,14 +41,23 @@ const checklistBusy = computed(
 watch(
   items,
   async (list) => {
-    if (list.length > 0 || initialising.value || status.value === 'pending') return;
+    if (
+      !props.editable
+      || list.length > 0
+      || initialising.value
+      || status.value === 'pending'
+      || status.value === 'idle'
+    ) {
+      return;
+    }
+
     initialising.value = true;
     try {
       await initialiseChecklist(props.applicationId, [...CREDIT_DEFAULT_CHECKLIST_ITEMS]);
       await refresh();
       emit('refreshed');
     } catch {
-      // toast in composable
+      await refresh();
     } finally {
       initialising.value = false;
     }
@@ -81,6 +90,9 @@ function viewOrderHistory() {
   <CreditPanelCard title="Review checklist">
     <div v-if="status === 'pending' && items.length === 0" class="text-sm text-grey-500">
       Loading checklist…
+    </div>
+    <div v-else-if="items.length === 0" class="text-sm text-grey-500">
+      No review checklist items.
     </div>
     <div v-else class="space-y-4">
       <div

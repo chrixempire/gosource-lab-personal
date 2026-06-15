@@ -2,9 +2,13 @@
 import { StatusTag } from '@gosource/ui';
 import CreditRequestActionsMenu from '~/components/credit/CreditRequestActionsMenu.vue';
 import {
+  canReapplyCreditRequest,
   creditRequestStatusLabel,
   creditRequestStatusVariant,
   creditRequestTypeLabel,
+  creditRepaymentPaymentMethodLabel,
+  creditRepaymentStatusLabel,
+  creditRepaymentStatusVariant,
 } from '~/lib/credit-constants';
 import { creditRequestPath } from '~/lib/credit-routes';
 import { formatCreditFromKobo } from '~/lib/credit-money';
@@ -56,7 +60,7 @@ const cardArticleClass =
           </StatusTag>
           <CreditRequestActionsMenu
             :can-cancel="row.status === 'pending'"
-            :can-reapply="row.status === 'rejected'"
+            :can-reapply="canReapplyCreditRequest(row.status)"
             @view-details="navigateTo(creditRequestPath(row.id))"
             @cancel="emit('cancel', row)"
             @reapply="emit('reapply', row)"
@@ -67,6 +71,12 @@ const cardArticleClass =
         <div>
           <dt class="text-grey-300">Amount</dt>
           <dd class="font-medium text-grey-900">{{ formatCreditFromKobo(row.requestedAmountKobo) }}</dd>
+        </div>
+        <div>
+          <dt class="text-grey-300">Approved</dt>
+          <dd class="font-medium text-grey-900">
+            {{ row.approvedAmountKobo > 0 ? formatCreditFromKobo(row.approvedAmountKobo) : '—' }}
+          </dd>
         </div>
         <div>
           <dt class="text-grey-300">Date</dt>

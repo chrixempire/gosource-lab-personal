@@ -327,7 +327,8 @@ export class WalletService {
     businessId: string,
     amount: number,
   ): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 7000));
+    const confirmDelayMs = process.env.NODE_ENV === 'production' ? 7000 : 300;
+    await new Promise((resolve) => setTimeout(resolve, confirmDelayMs));
     const session: ClientSession = await this.connection.startSession();
     session.startTransaction();
 

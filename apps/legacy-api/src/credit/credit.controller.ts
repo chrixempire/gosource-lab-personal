@@ -10,6 +10,8 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreditService } from './credit.service';
 import {
@@ -36,6 +38,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateRepaymentDto } from './dto/repayment.dto';
 import { CreditRepaymentService } from '../credit-repayment/credit-repayment.service';
+import { successResponse } from '../utils/responses';
 
 @Controller('credit')
 @ApiTags('credit')
@@ -174,6 +177,10 @@ export class CreditController {
     const { data: creditAccount } =
       await this.creditService.getBusinessCreditAccount(business);
 
+    if (!creditAccount) {
+      throw new BadRequestException('Credit account not found');
+    }
+
     return await this.repaymentsService.makePayment(
       { ...data, creditAccountId: creditAccount._id.toString() },
       creditAccount,
@@ -184,6 +191,52 @@ export class CreditController {
   @UseGuards(AuthGuard)
   async getUpcomingPayment(@Business() business: any) {
     return await this.creditService.getUpcomingPayment(business);
+  }
+
+  @Post('dev-confirm-card-repayment')
+  @UseGuards(AuthGuard, SuperAdminGuard)
+  async devConfirmCardRepayment(
+    @Body()
+    body: {
+      paymentReference?: string;
+      amountNaira?: number;
+      creditAccountId?: string;
+    },
+    @Business() business: any,
+  ) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new NotFoundException();
+    }
+
+    const paymentReference = String(body.paymentReference ?? '').trim();
+    const amountNaira = Number(body.amountNaira);
+    const creditAccountId = String(body.creditAccountId ?? '').trim();
+
+    if (
+      !paymentReference ||
+      !creditAccountId ||
+      !Number.isFinite(amountNaira) ||
+      amountNaira <= 0
+    ) {
+      throw new BadRequestException(
+        'Invalid development repayment confirmation payload',
+      );
+    }
+
+    const { data: creditAccount } =
+      await this.creditService.getBusinessCreditAccount(business);
+
+    if (String(creditAccount._id) !== creditAccountId) {
+      throw new BadRequestException('Credit account mismatch');
+    }
+
+    await this.repaymentsService.initiateCreditRepaymentWebhook({
+      creditAccountId: creditAccount._id.toString(),
+      amount: Math.round(amountNaira * 100),
+      paymentReference,
+    });
+
+    return successResponse('Credit repayment confirmed (development)', null);
   }
 
   @Get(':creditId')

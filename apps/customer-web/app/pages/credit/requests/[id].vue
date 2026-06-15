@@ -27,6 +27,7 @@ import {
   creditRequestStatusVariant,
 } from '~/lib/credit-constants';
 import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
+import { invalidateCreditPageCache } from '~/lib/invalidate-customer-list-cache';
 import { formatCreditFromKobo } from '~/lib/credit-money';
 import { CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID } from '~/lib/credit-history-table-layout';
 import { formatRequestDate } from '~/lib/request-details';
@@ -111,11 +112,13 @@ async function loadRequest() {
 }
 
 function onCancelSuccess() {
+  invalidateCreditPageCache();
   void navigateTo(CREDIT_PAGE_ROUTES.HOME);
 }
 
 function onReapplySuccess() {
   reapplyOpen.value = false;
+  invalidateCreditPageCache();
   void navigateTo(CREDIT_PAGE_ROUTES.HOME);
 }
 

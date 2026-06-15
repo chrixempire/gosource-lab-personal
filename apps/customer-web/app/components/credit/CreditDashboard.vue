@@ -67,10 +67,22 @@ const hasPendingRequest = computed(() =>
   props.creditRequests.some((item) => item.status === 'pending'),
 );
 
-const showMakeRepayment = computed(() => (props.account?.outstandingKobo ?? 0) > 0);
+const showMakeRepayment = computed(
+  () =>
+    (props.account?.outstandingKobo ?? 0) > 0 ||
+    (props.upcomingPayment?.totalNextPaymentKobo ?? 0) > 0,
+);
 
 const showUpcomingBanner = computed(
   () => (props.upcomingPayment?.totalNextPaymentKobo ?? 0) > 0,
+);
+
+/** Next installment (principal + interest), not principal-only outstanding. */
+const amountDueKobo = computed(() =>
+  Math.max(
+    props.upcomingPayment?.totalNextPaymentKobo ?? 0,
+    props.account?.outstandingKobo ?? 0,
+  ),
 );
 
 /** Match gosource-web-app: disable primary actions while under review or not eligible. */
@@ -88,6 +100,11 @@ const isMoreActionsDisabled = computed(
 
 /** When true, owner header actions must not be interactive (matches review banner). */
 const lockOwnerCreditActions = computed(() => hasPendingApplication.value);
+
+/** Match gosource-web-app: top up only when principal is still outstanding. */
+const disableTopUpCredit = computed(
+  () => !props.account || (props.account.outstandingKobo ?? 0) === 0,
+);
 
 const disableManageCreditLimit = computed(() => {
   const creditUtil = props.account?.creditUtilization ?? 0;
@@ -195,7 +212,7 @@ function onActionSuccess() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              :disabled="!account || hasPendingRequest"
+              :disabled="disableTopUpCredit || hasPendingRequest"
               @select="openGetCredit('topup')"
             >
               Top up credit
@@ -211,7 +228,7 @@ function onActionSuccess() {
       </div>
     </div>
 
-    <CreditAccountOverview :account="account" />
+    <CreditAccountOverview :account="account" :amount-due-kobo="amountDueKobo" />
 
     <div
       v-if="showRejectedNotice"

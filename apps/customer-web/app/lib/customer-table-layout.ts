@@ -8,11 +8,12 @@ export const CUSTOMER_TABLE_STICKY_HEADER_CLASS =
 /** Page scroll instead of an inner table body scroll region (default TableBody is max-h 560px). */
 export const CUSTOMER_TABLE_BODY_CLASS = '!max-h-none !overflow-visible';
 
-/** Clickable data rows: subtle zebra striping + hover that works in light and dark mode. */
+/** Clickable data rows: white background with green hover in light and dark mode. */
 export const CUSTOMER_TABLE_DATA_ROW_CLASS =
-  'cursor-pointer transition-colors duration-150 hover:bg-primary-50/45 even:bg-grey-55 even:hover:bg-primary-50/45 dark:hover:bg-primary-500/10 dark:even:bg-grey-55 dark:even:hover:bg-primary-500/10';
+  'cursor-pointer bg-white transition-colors duration-150 hover:bg-primary-50/45 dark:bg-white dark:hover:bg-primary-500/10';
 
-/** Non-interactive striped rows (e.g. insight breakdown). */
-export const CUSTOMER_TABLE_STRIPED_ROW_CLASS = 'even:bg-grey-55 dark:even:bg-grey-55';
+/** Non-interactive data rows (e.g. insight breakdown). */
+export const CUSTOMER_TABLE_STRIPED_ROW_CLASS = 'bg-white dark:bg-white';
 
-export const CREDIT_REQUEST_TABLE_GRID_TEMPLATE = '1.2fr 1fr 1fr 1fr 0.8fr auto';
+export const CREDIT_REQUEST_TABLE_GRID_TEMPLATE =
+  '1.2fr 1fr 1fr 1fr 0.8fr 1fr auto';

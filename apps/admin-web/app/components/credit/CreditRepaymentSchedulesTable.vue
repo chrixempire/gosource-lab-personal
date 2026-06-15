@@ -74,7 +74,7 @@ function openRequest(row: AdminRepaymentScheduleListItem) {
       <TableRow
         v-for="row in rows"
         :key="row.id"
-        class="cursor-pointer even:bg-[#FAFBFC]"
+        class="cursor-pointer transition-colors hover:bg-primary-50/45"
         :style="{ gridTemplateColumns: CREDIT_SCHEDULE_LIST_TABLE_GRID }"
         @click="openRequest(row)"
       >

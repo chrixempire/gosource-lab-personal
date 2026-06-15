@@ -112,7 +112,7 @@ function toggleRow(id: string, checked: boolean | 'indeterminate') {
       <TableRow
         v-for="row in rows"
         :key="row.id"
-        class="cursor-pointer even:bg-[#FAFBFC]"
+        class="cursor-pointer transition-colors hover:bg-primary-50/45"
         :style="{ gridTemplateColumns: CREDIT_REQUEST_TABLE_GRID }"
         @click="emit('view', row)"
       >

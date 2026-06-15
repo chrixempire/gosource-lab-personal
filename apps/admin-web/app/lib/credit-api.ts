@@ -186,7 +186,7 @@ function mapRepaymentRow(row: LegacyRepaymentPaymentRow): AdminRepaymentListItem
     referenceCode: row.referenceCode ?? '—',
     businessName,
     paymentDate: row.createdAt ?? '',
-    paymentDateLabel: formatCreditDate(row.createdAt),
+    paymentDateLabel: formatCreditDateTime(row.createdAt),
     amountKobo: row.amountKobo ?? 0,
     paymentMethod: row.paymentMethod ?? '',
     paymentMethodLabel: creditPaymentMethodLabel(row.paymentMethod),

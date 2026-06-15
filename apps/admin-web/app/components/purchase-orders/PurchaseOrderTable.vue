@@ -130,7 +130,7 @@ function toggleRow(orderId: string, checked: boolean | 'indeterminate') {
       <TableRow
         v-for="order in orders"
         :key="order.id"
-        class="cursor-pointer transition-colors hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
+        class="cursor-pointer transition-colors hover:bg-primary-50/45"
         :style="{ gridTemplateColumns: PO_TABLE_GRID_TEMPLATE }"
         @click="emit('rowClick', order)"
       >

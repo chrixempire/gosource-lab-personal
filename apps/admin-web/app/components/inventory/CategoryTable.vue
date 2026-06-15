@@ -158,7 +158,7 @@ function toggleRow(categoryId: string, checked: boolean | 'indeterminate') {
       <template #item="{ element: category }">
         <div
           :style="{ display: 'grid', gridTemplateColumns: tableGridTemplate }"
-          class="items-center gap-3 bg-white px-4 py-3 even:bg-[#FAFBFC]"
+          class="items-center gap-3 bg-white px-4 py-3"
         >
           <div class="flex items-center justify-center">
             <button
@@ -196,7 +196,7 @@ function toggleRow(categoryId: string, checked: boolean | 'indeterminate') {
       <TableRow
         v-for="category in categories"
         :key="category.id"
-        class="cursor-pointer transition-colors hover:bg-primary-50/45 even:bg-[#FAFBFC] even:hover:bg-primary-50/45"
+        class="cursor-pointer transition-colors hover:bg-primary-50/45"
         :style="{ gridTemplateColumns: tableGridTemplate }"
         @click="emit('view', category)"
       >

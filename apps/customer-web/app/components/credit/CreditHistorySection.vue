@@ -13,11 +13,17 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import { useDebounceFn, useMediaQuery } from '@vueuse/core';
+import CreditRepaymentActionsMenu from '~/components/credit/CreditRepaymentActionsMenu.vue';
 import CreditRepaymentHistoryCards from '~/components/credit/CreditRepaymentHistoryCards.vue';
 import CreditRequestActionsMenu from '~/components/credit/CreditRequestActionsMenu.vue';
 import CreditRequestHistoryCards from '~/components/credit/CreditRequestHistoryCards.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
+import { useDownloadCreditRepaymentInvoice } from '~/composables/useDownloadCreditRepaymentInvoice';
 import {
+  canReapplyCreditRequest,
+  creditRepaymentPaymentMethodLabel,
+  creditRepaymentStatusLabel,
+  creditRepaymentStatusVariant,
   creditRequestStatusLabel,
   creditRequestStatusVariant,
   creditRequestTypeLabel,
@@ -95,7 +101,7 @@ const filteredRepayments = computed(() => {
     return props.repayments;
   }
   return props.repayments.filter((row) => {
-    const haystack = `${row.referenceCode} ${row.paymentMethod} ${row.status}`.toLowerCase();
+    const haystack = `${row.referenceCode} ${row.paymentMethod} ${creditRepaymentPaymentMethodLabel(row.paymentMethod)} ${creditRepaymentStatusLabel(row.status)} ${row.status}`.toLowerCase();
     return haystack.includes(debouncedSearch.value);
   });
 });
@@ -115,6 +121,13 @@ const creditSkeletonRowCount = computed(() =>
 const repaymentSkeletonRowCount = computed(() =>
   Math.max(1, Math.min(props.repaymentMeta.limit, 10)),
 );
+
+const { downloadingRepaymentId, downloadCreditRepaymentInvoice } =
+  useDownloadCreditRepaymentInvoice();
+
+function formatApprovedAmountKobo(value: number) {
+  return value > 0 ? formatCreditFromKobo(value) : '—';
+}
 </script>
 
 <template>
@@ -143,6 +156,7 @@ const repaymentSkeletonRowCount = computed(() =>
             <TableCell>Request type</TableCell>
             <TableCell>Date</TableCell>
             <TableCell>Status</TableCell>
+            <TableCell>Approved amount</TableCell>
             <TableCell class="sr-only">Actions</TableCell>
           </TableHeadRow>
         </TableHeader>
@@ -174,10 +188,11 @@ const repaymentSkeletonRowCount = computed(() =>
                 {{ creditRequestStatusLabel(row.status) }}
               </StatusTag>
             </TableCell>
+            <TableCell>{{ formatApprovedAmountKobo(row.approvedAmountKobo) }}</TableCell>
             <TableCell class="flex items-center justify-end">
               <CreditRequestActionsMenu
                 :can-cancel="row.status === 'pending'"
-                :can-reapply="row.status === 'rejected'"
+                :can-reapply="canReapplyCreditRequest(row.status)"
                 @view-details="navigateTo(creditRequestPath(row.id))"
                 @cancel="emit('cancelRequest', row)"
                 @reapply="emit('reapply', row)"
@@ -227,6 +242,8 @@ const repaymentSkeletonRowCount = computed(() =>
         v-if="isCompactViewport"
         :items="filteredRepayments"
         :loading="repaymentLoading"
+        :downloading-id="downloadingRepaymentId"
+        @download-invoice="downloadCreditRepaymentInvoice"
       />
       <TableShell v-else :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
         <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
@@ -237,7 +254,9 @@ const repaymentSkeletonRowCount = computed(() =>
             <TableCell>Reference</TableCell>
             <TableCell>Amount</TableCell>
             <TableCell>Date</TableCell>
+            <TableCell>Repayment method</TableCell>
             <TableCell>Status</TableCell>
+            <TableCell class="sr-only">Actions</TableCell>
           </TableHeadRow>
         </TableHeader>
 
@@ -261,8 +280,17 @@ const repaymentSkeletonRowCount = computed(() =>
             </TableCell>
             <TableCell>{{ formatCreditFromKobo(row.paymentAmountKobo) }}</TableCell>
             <TableCell>{{ formatRequestDate(row.createdAt) }}</TableCell>
+            <TableCell>{{ creditRepaymentPaymentMethodLabel(row.paymentMethod) }}</TableCell>
             <TableCell>
-              <StatusTag variant="default">{{ row.status || '—' }}</StatusTag>
+              <StatusTag :variant="creditRepaymentStatusVariant(row.status)">
+                {{ creditRepaymentStatusLabel(row.status) }}
+              </StatusTag>
+            </TableCell>
+            <TableCell class="flex items-center justify-end">
+              <CreditRepaymentActionsMenu
+                :downloading="downloadingRepaymentId === row.id"
+                @download-invoice="downloadCreditRepaymentInvoice(row)"
+              />
             </TableCell>
           </TableRow>
           <div

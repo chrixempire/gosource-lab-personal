@@ -17,6 +17,7 @@ import {
   type CreditApplyFieldErrors,
 } from '~/lib/credit-apply';
 import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
+import { invalidateCreditPageCache } from '~/lib/invalidate-customer-list-cache';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { useCustomerCreditService } from '~/services/credit.service';
@@ -121,6 +122,7 @@ async function handleContinue() {
   submitting.value = true;
   try {
     await submitApplication(buildCreditApplicationFormData(values.value));
+    invalidateCreditPageCache();
     submitted.value = true;
     toast.success('Credit application submitted successfully');
   } catch (error) {

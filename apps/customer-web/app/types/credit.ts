@@ -49,6 +49,7 @@ export type CustomerCreditRequest = {
   status: CreditWorkflowStatus;
   requestType: CreditRequestType;
   requestedAmountKobo: number;
+  approvedAmountKobo: number;
   repaidAmountKobo: number;
   reference: string;
   requestedRepaymentFrequency?: string;

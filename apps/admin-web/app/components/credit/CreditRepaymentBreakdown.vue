@@ -93,7 +93,7 @@ const isCompactViewport = useAdminCompactViewport();
         <TableRow
           v-for="row in parsed.rows"
           :key="row.id"
-          class="even:bg-[#FAFBFC]"
+          class="bg-white"
           :style="{ gridTemplateColumns: CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID }"
         >
           <TableCell>

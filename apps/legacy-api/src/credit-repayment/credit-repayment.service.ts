@@ -38,10 +38,12 @@ import { PaymentReference } from '../paystack/schema/paymentReference.schema';
 import { CreditStatus } from '../credit/enum/credit.enum';
 import { createMoney } from '../utils/money';
 import { PaystackService } from '../paystack/paystack.service';
+import { resolvePaystackCreditAccountId } from '../paystack/paystack-metadata.helpers';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JOB_NAMES, QUEUE_NAMES } from '../jobs/constants';
 import { AccountingService } from '../accounting/accounting.service';
+import { sumPrincipalRemainingKobo } from './credit-repayment-schedule.helpers';
 
 @Injectable()
 export class CreditRepaymentService {
@@ -218,8 +220,19 @@ export class CreditRepaymentService {
 
       // Fallback: If not in DB, verify with Paystack manually
       if (!pendingPayment) {
-        const paystackData =
-          await this.paystackService.verifyTransaction(transactionReference);
+        let paystackData =
+          await this.paystackService.verifySuccessfulCharge(transactionReference);
+
+        if (!paystackData) {
+          for (let attempt = 0; attempt < 5; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            paystackData =
+              await this.paystackService.verifySuccessfulCharge(transactionReference);
+            if (paystackData) {
+              break;
+            }
+          }
+        }
 
         if (!paystackData) {
           throw new BadRequestException(
@@ -228,7 +241,14 @@ export class CreditRepaymentService {
         }
 
         // Check if this payment actually belongs to this credit account
-        if (paystackData.metadata?.creditAccountId !== creditAccount.id) {
+        const metadataCreditAccountId = resolvePaystackCreditAccountId(
+          paystackData.metadata,
+        );
+        const accountId = String(creditAccount._id);
+        if (
+          metadataCreditAccountId &&
+          metadataCreditAccountId !== accountId
+        ) {
           throw new BadRequestException(
             'Transaction reference mismatch. This payment does not belong to this credit account.',
           );
@@ -263,56 +283,169 @@ export class CreditRepaymentService {
         transactionReference,
       );
     } catch (error: any) {
-      throw new HttpException(
-        error.response || 'An error occurred during payment processing',
-        error.status || 500,
-      );
+      if (transactionReference) {
+        const completed =
+          await this.getCompletedCardPaymentResult(transactionReference);
+        if (completed) {
+          return completed;
+        }
+      }
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      const response =
+        error?.response ??
+        (typeof error?.getResponse === 'function' ? error.getResponse() : undefined);
+      const message = this.resolveCardPaymentErrorMessage(error, response);
+
+      throw new HttpException(message, error?.status ?? error?.getStatus?.() ?? 500);
     }
+  }
+
+  private resolveCardPaymentErrorMessage(
+    error: unknown,
+    response: unknown,
+  ): string {
+    if (typeof response === 'string' && response.trim()) {
+      return response;
+    }
+
+    if (Array.isArray((response as { message?: unknown })?.message)) {
+      return (response as { message: string[] }).message.join(', ');
+    }
+
+    const nestedMessage = (response as { message?: unknown })?.message;
+    if (typeof nestedMessage === 'string' && nestedMessage.trim()) {
+      return nestedMessage;
+    }
+
+    if (this.isMongoWriteConflict(error)) {
+      return 'Payment is still being recorded. Please refresh your credit page in a moment.';
+    }
+
+    const axiosMessage = String((error as { message?: string })?.message ?? '');
+    if (/^Request failed with status code \d+$/i.test(axiosMessage)) {
+      return 'Payment verification failed. Please contact support if you have been debited.';
+    }
+
+    return (
+      axiosMessage || 'An error occurred during payment processing'
+    );
   }
 
   /**
    * Internal helper to process a verified card payment
    */
-  private async internalProcessCardPayment(
-    pendingPayment: any,
+  private isMongoWriteConflict(error: unknown): boolean {
+    const err = error as { code?: number; message?: string };
+    const message = String(err?.message ?? '');
+    return err?.code === 112 || /write conflict/i.test(message);
+  }
+
+  private async getCompletedCardPaymentResult(
     transactionReference: string,
-  ) {
-    const session = await this.connection.startSession();
-    session.startTransaction();
+  ): Promise<IPaymentResult | null> {
+    const completed = await this.paymentReferenceModel.findOne({
+      referenceCode: transactionReference,
+      status: PaymentRefStatus.COMPLETED,
+    });
 
-    try {
-      pendingPayment.status = PaymentRefStatus.COMPLETED;
-      await pendingPayment.save({ session });
-
-      // Process the payment allocation
-      const paymentCompleted = await this.processPaymentCore(
-        {
-          creditAccountId: pendingPayment.creditAccount.toString(),
-          paymentAmount: pendingPayment.amountKobo,
-          paymentMethod: pendingPayment.paymentMethod,
-          transactionReference,
-          paymentNote: pendingPayment.paymentNote,
-        },
-        session,
-      );
-
-      await session.commitTransaction();
-
-      // Send notifications
-      await this.sendRepaymentNotifications(
-        pendingPayment.creditAccount.toString(),
-        pendingPayment.amountKobo,
-        pendingPayment.paymentMethod,
-        transactionReference,
-      );
-
-      return paymentCompleted;
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
+    if (!completed) {
+      return null;
     }
+
+    return {
+      success: true,
+      totalPaid: completed.amountKobo,
+      transactionReference,
+    };
+  }
+
+  private async internalProcessCardPayment(
+    pendingPayment: { _id: Types.ObjectId },
+    transactionReference: string,
+  ): Promise<IPaymentResult> {
+    const maxAttempts = 3;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const session = await this.connection.startSession();
+      session.startTransaction();
+
+      try {
+        const paymentRecord = await this.paymentReferenceModel
+          .findById(pendingPayment._id)
+          .session(session);
+
+        if (!paymentRecord) {
+          throw new NotFoundException('Payment record not found');
+        }
+
+        if (paymentRecord.status === PaymentRefStatus.COMPLETED) {
+          await session.abortTransaction();
+          return {
+            success: true,
+            totalPaid: paymentRecord.amountKobo,
+            transactionReference,
+          };
+        }
+
+        paymentRecord.status = PaymentRefStatus.COMPLETED;
+        await paymentRecord.save({ session });
+
+        const paymentCompleted = await this.processPaymentCore(
+          {
+            creditAccountId: paymentRecord.creditAccount.toString(),
+            paymentAmount: paymentRecord.amountKobo,
+            paymentMethod: paymentRecord.paymentMethod,
+            transactionReference,
+            paymentNote: paymentRecord.paymentNote,
+          },
+          session,
+        );
+
+        await session.commitTransaction();
+
+        await this.sendRepaymentNotifications(
+          paymentRecord.creditAccount.toString(),
+          paymentRecord.amountKobo,
+          paymentRecord.paymentMethod,
+          transactionReference,
+        );
+
+        return paymentCompleted;
+      } catch (error) {
+        await session.abortTransaction();
+
+        const completed =
+          await this.getCompletedCardPaymentResult(transactionReference);
+        if (completed) {
+          return completed;
+        }
+
+        if (this.isMongoWriteConflict(error) && attempt < maxAttempts - 1) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, 150 * (attempt + 1)),
+          );
+          continue;
+        }
+
+        throw error;
+      } finally {
+        session.endSession();
+      }
+    }
+
+    const completed =
+      await this.getCompletedCardPaymentResult(transactionReference);
+    if (completed) {
+      return completed;
+    }
+
+    throw new BadRequestException(
+      'Unable to record card repayment. Please refresh your credit page.',
+    );
   }
 
   /**
@@ -431,6 +564,37 @@ export class CreditRepaymentService {
   }
 
   // Process payment for multiple repayments and update credit account
+  private async findPendingRepaymentSchedules(
+    creditAccount: CreditAccountDocument,
+    session?: ClientSession,
+  ) {
+    const pendingFilter = {
+      status: {
+        $ne: RepaymentStatus.PAID,
+      },
+    };
+
+    const byAccount = await this.repaymentScheduleModel
+      .find({
+        creditAccount: creditAccount._id,
+        ...pendingFilter,
+      })
+      .sort({ dueDate: 1, installmentNumber: 1 })
+      .session(session);
+
+    if (byAccount.length > 0 || !creditAccount.business) {
+      return byAccount;
+    }
+
+    return this.repaymentScheduleModel
+      .find({
+        business: creditAccount.business,
+        ...pendingFilter,
+      })
+      .sort({ dueDate: 1, installmentNumber: 1 })
+      .session(session);
+  }
+
   async processPaymentCore(
     paymentData: {
       creditAccountId: string;
@@ -466,15 +630,7 @@ export class CreditRepaymentService {
       }
 
       const [pendingRepayments, ongoingCreditRequests] = await Promise.all([
-        this.repaymentScheduleModel
-          .find({
-            creditAccount: creditAccountId,
-            status: {
-              $ne: RepaymentStatus.PAID,
-            },
-          })
-          .sort({ dueDate: 1, installmentNumber: 1 })
-          .session(session),
+        this.findPendingRepaymentSchedules(creditAccount, session),
         this.creditRequestModel
           .find({
             creditAccount: creditAccountId,
@@ -486,6 +642,23 @@ export class CreditRepaymentService {
       ]);
 
       if (pendingRepayments.length === 0) {
+        if (transactionReference) {
+          const completedPayment = await this.paymentReferenceModel
+            .findOne({
+              referenceCode: transactionReference,
+              status: PaymentRefStatus.COMPLETED,
+            })
+            .session(session ?? null);
+
+          if (completedPayment) {
+            return {
+              success: true,
+              totalPaid: completedPayment.amountKobo,
+              transactionReference,
+            };
+          }
+        }
+
         throw new BadRequestException('No pending repayments found');
       }
 
@@ -541,7 +714,14 @@ export class CreditRepaymentService {
       if (!session) {
         await dbSession.abortTransaction();
       }
-      throw new HttpException(error.response, error.status);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        error?.message || 'Unable to allocate credit repayment',
+      );
     } finally {
       if (!session) {
         dbSession.endSession();
@@ -657,34 +837,62 @@ export class CreditRepaymentService {
     amount: number,
     session: ClientSession,
   ): Promise<void> {
-    creditAccount.outstandingKobo = Math.max(
-      0,
-      creditAccount.outstandingKobo - amount,
+    if (amount > 0) {
+      creditAccount.totalPaymentsKobo += amount;
+    }
+
+    await this.syncCreditAccountBalances(creditAccount, session);
+  }
+
+  /**
+   * Reconcile principal outstanding from repayment schedules.
+   * Fixes cases where full installment payments (principal + interest) zeroed
+   * outstanding too early.
+   */
+  async syncCreditAccountBalances(
+    creditAccount: CreditAccountDocument | string,
+    session?: ClientSession,
+  ): Promise<CreditAccountDocument | null> {
+    const account =
+      typeof creditAccount === 'string'
+        ? await this.creditAccountModel.findById(creditAccount).session(session ?? null)
+        : creditAccount;
+
+    if (!account) {
+      return null;
+    }
+
+    const unpaidSchedules = await this.repaymentScheduleModel
+      .find({
+        creditAccount: account._id,
+        status: { $ne: RepaymentStatus.PAID },
+      })
+      .session(session ?? null);
+
+    account.outstandingKobo = sumPrincipalRemainingKobo(unpaidSchedules);
+    account.availableKobo = Math.min(
+      account.limitKobo,
+      account.limitKobo - account.outstandingKobo,
     );
-    creditAccount.availableKobo = Math.min(
-      creditAccount.limitKobo,
-      creditAccount.limitKobo - creditAccount.outstandingKobo,
-    );
-    creditAccount.totalPaymentsKobo += amount;
-    creditAccount.creditUtilization =
-      creditAccount.limitKobo > 0
-        ? (creditAccount.outstandingKobo / creditAccount.limitKobo) * 100
+    account.creditUtilization =
+      account.limitKobo > 0
+        ? (account.outstandingKobo / account.limitKobo) * 100
         : 0;
 
-    // Recalculate overdue amount
     const overdueRepayments = await this.repaymentScheduleModel
       .find({
-        creditAccount: creditAccount._id,
+        creditAccount: account._id,
         status: RepaymentStatus.OVERDUE,
       })
-      .session(session);
+      .session(session ?? null);
 
-    creditAccount.totalOverdueKobo = overdueRepayments.reduce(
+    account.totalOverdueKobo = overdueRepayments.reduce(
       (sum, rep) => sum + rep.remainingAmountKobo,
       0,
     );
 
-    await creditAccount.save({ session });
+    await account.save({ session: session ?? undefined });
+    return account;
   }
 
   /**

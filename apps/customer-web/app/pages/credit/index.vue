@@ -6,6 +6,8 @@ import CreditGetStarted from '~/components/credit/CreditGetStarted.vue';
 import CreditNotEligible from '~/components/credit/CreditNotEligible.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useCreditPageData } from '~/composables/useCreditPageData';
+import { isEmptyCreditPagePayload } from '~/lib/credit-page-fetch';
+import { CREDIT_PAGE_CACHE_KEY } from '~/lib/invalidate-customer-list-cache';
 
 const creditPage = useCreditPageData();
 
@@ -30,8 +32,9 @@ const {
   createEmptyCreditPagePayload,
 } = creditPage;
 
-const { data: creditPayload, pending: pagePending } = await useAuthenticatedAsyncData(
-  'credit-page',
+const { data: creditPayload, pending: pagePending } =
+  await useAuthenticatedAsyncData(
+  CREDIT_PAGE_CACHE_KEY,
   () => fetchPayload(),
     {
       fastNav: true,
@@ -44,9 +47,16 @@ const { data: creditPayload, pending: pagePending } = await useAuthenticatedAsyn
 watch(
   creditPayload,
   (payload) => {
-    if (payload) {
-      applyPayload(payload);
+    if (!payload) {
+      return;
     }
+
+    // Cache invalidation resets useAsyncData to the empty default briefly — keep the dashboard visible.
+    if (isEmptyCreditPagePayload(payload) && account.value) {
+      return;
+    }
+
+    applyPayload(payload);
   },
   { immediate: true },
 );
@@ -73,7 +83,16 @@ async function refreshRepaymentHistory(page: number, limit = repaymentMeta.value
 }
 
 async function refreshCreditPage() {
-  await loadPage();
+  creditHistoryLoading.value = true;
+  repaymentHistoryLoading.value = true;
+
+  try {
+    const payload = await loadPage();
+    creditPayload.value = payload;
+  } finally {
+    creditHistoryLoading.value = false;
+    repaymentHistoryLoading.value = false;
+  }
 }
 </script>
 

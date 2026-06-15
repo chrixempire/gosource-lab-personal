@@ -118,7 +118,7 @@ function itemsLabel(count: number) {
       <TableRow
         v-for="promotion in promotions"
         :key="promotion.id"
-        class="even:bg-[#FAFBFC]"
+        class="bg-white"
         :style="{ gridTemplateColumns: PROMOTION_TABLE_GRID_TEMPLATE }"
       >
         <TableCell class="flex items-center" @click.stop>

@@ -1,0 +1,28 @@
+{
+  "banners": [
+    {
+      "id": "banner-1",
+      "imageUrl": "/marketplace-banners/banner-1.jpg",
+      "alt": "Fresh vegetables at a market stall",
+      "linkUrl": "/market"
+    },
+    {
+      "id": "banner-2",
+      "imageUrl": "/marketplace-banners/banner-2.jpg",
+      "alt": "Grocery store produce aisle",
+      "linkUrl": "/market"
+    },
+    {
+      "id": "banner-3",
+      "imageUrl": "/marketplace-banners/banner-3.jpg",
+      "alt": "Supermarket shelves with packaged goods",
+      "linkUrl": "/market"
+    },
+    {
+      "id": "banner-4",
+      "imageUrl": "/marketplace-banners/banner-4.jpg",
+      "alt": "Fresh fruit display at a grocery market",
+      "linkUrl": "/market"
+    }
+  ]
+}

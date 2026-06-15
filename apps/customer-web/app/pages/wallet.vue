@@ -154,7 +154,7 @@ const walletAccountName = computed(() => formatWalletAccountDisplay(wallet.value
 
 const walletListKeyParts = computed(() => [page.value, limit.value]);
 
-const { data: walletPayload, pending: loading, refresh: refreshWalletPayload } =
+const { data: walletPayload, pending: loading, invalidateListCache } =
   await usePaginatedListData(
     'wallet-page',
     walletListKeyParts,
@@ -216,10 +216,13 @@ watch(
   { immediate: true },
 );
 
+const suppressFundingBalanceRefresh = ref(false);
+
 watch(
   () => wallet.value?.balance,
   async (nextBalance, previousBalance) => {
     if (
+      suppressFundingBalanceRefresh.value ||
       !wallet.value ||
       typeof nextBalance !== 'number' ||
       typeof previousBalance !== 'number' ||
@@ -250,18 +253,61 @@ function stopAccountPolling() {
   accountPollAttempts = 0;
 }
 
-async function refreshWalletSilently() {
-  if (!wallet.value) {
+async function fetchWalletPageData() {
+  if (!isOwner.value) {
+    return;
+  }
+
+  const [nextWallet, txResponse] = await Promise.all([
+    getWallet({ silent: true }),
+    listTransactions({ page: page.value, limit: limit.value }, { silent: true }),
+  ]);
+
+  if (nextWallet) {
+    wallet.value = nextWallet;
+  }
+
+  transactions.value = txResponse.data?.transactions ?? [];
+  totalTransactions.value = txResponse.data?.totalTransactions ?? transactions.value.length;
+
+  invalidateListCache();
+}
+
+async function subtleRefreshWallet() {
+  try {
+    await fetchWalletPageData();
+  } catch {
+    // Silent refresh during funding — avoid duplicate error toasts.
+  }
+}
+
+async function refreshWalletOnEnter() {
+  if (!import.meta.client || !isOwner.value) {
     return;
   }
 
   try {
-    const next = await getWallet({ silent: true });
-    if (next) {
-      wallet.value = next;
-    }
+    await fetchWalletPageData();
   } catch {
-    // Ignore polling errors; user can refresh manually.
+    // Avoid duplicate toasts when revisiting the page.
+  }
+}
+
+async function refreshWalletAfterFunding() {
+  suppressFundingBalanceRefresh.value = true;
+
+  try {
+    if (page.value !== 1) {
+      setPage(1);
+      await nextTick();
+    }
+
+    await fetchWalletPageData();
+  } catch {
+    // Errors are surfaced by the fund dialog when needed.
+  } finally {
+    await nextTick();
+    suppressFundingBalanceRefresh.value = false;
   }
 }
 
@@ -272,7 +318,7 @@ function startAccountPolling() {
 
   accountPollTimer = setInterval(async () => {
     accountPollAttempts += 1;
-    await refreshWalletSilently();
+    await subtleRefreshWallet();
 
     if (
       !isWalletVirtualAccountPending(wallet.value) ||
@@ -382,62 +428,12 @@ async function copyText(value: string) {
   }
 }
 
-async function refreshWalletData() {
-  try {
-    await refreshWalletPayload();
-  } catch {
-    // Errors are surfaced by service when not silent.
-  }
+function onFundingInitiated() {
+  void refreshWalletAfterFunding();
 }
 
-function hasFundingTransaction(paymentReference: string) {
-  const normalizedReference = paymentReference.trim();
-  if (!normalizedReference) {
-    return false;
-  }
-
-  return transactions.value.some((row) => {
-    const rowReference = row.reference?.trim?.() ?? '';
-    const rowPaymentReference = row.paymentReference?.trim?.() ?? '';
-    return rowReference === normalizedReference || rowPaymentReference === normalizedReference;
-  });
-}
-
-async function ensureFundingTransactionVisible(paymentReference?: string) {
-  if (!paymentReference) {
-    return;
-  }
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    if (hasFundingTransaction(paymentReference)) {
-      return;
-    }
-
-    await refreshWalletData();
-
-    if (hasFundingTransaction(paymentReference)) {
-      return;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-  }
-}
-
-async function onFunded(paymentReference?: string) {
-  if (page.value !== 1) {
-    setPage(1);
-    await nextTick();
-  }
-
-  await loadWallet();
-  await ensureFundingTransactionVisible(paymentReference);
-}
-
-function onWalletRefresh() {
-  void (async () => {
-    await refreshWalletData();
-    await loadTransactions();
-  })();
+function onFunded() {
+  void refreshWalletAfterFunding();
 }
 
 function onPageChange(nextPage: number) {
@@ -470,6 +466,10 @@ watch(
   },
   { immediate: true },
 );
+
+onMounted(() => {
+  void refreshWalletOnEnter();
+});
 
 onBeforeUnmount(() => {
   stopAccountPolling();
@@ -656,8 +656,8 @@ onBeforeUnmount(() => {
       :wallet="wallet"
       :business-id="businessId"
       @update:open="fundDialogOpen = $event"
+      @funding-initiated="onFundingInitiated"
       @funded="onFunded"
-      @refresh="onWalletRefresh"
     />
 
     <WalletTransactionDetailDialog

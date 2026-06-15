@@ -172,7 +172,7 @@ const initialLoading = computed(() => pending.value);
             v-for="(row, index) in rows"
             :key="getBestSellerRowId(row, index)"
             :style="{ gridTemplateColumns: tableGridTemplate }"
-            class="even:bg-[#FAFBFC]"
+            class="bg-white"
           >
             <TableCell class="text-sm text-grey-300">
               {{ (meta.page - 1) * meta.limit + index + 1 }}

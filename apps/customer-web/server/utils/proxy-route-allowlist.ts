@@ -37,6 +37,7 @@ export const PROXY_ROUTE_RULES: ProxyRouteRule[] = [
   { methods: ['GET'], pattern: /^category\/[^/]+$/ },
   { methods: ['GET'], pattern: /^promotion$/ },
   { methods: ['GET'], pattern: /^promotion\/[^/]+$/ },
+  { methods: ['GET'], pattern: /^marketplace-banners$/ },
   { methods: ['GET'], pattern: /^product\/recent-orders\/[^/]+$/ },
   { methods: ['GET'], pattern: /^product\/[^/]+$/ },
   { methods: ['POST'], pattern: /^cart$/ },
