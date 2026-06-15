@@ -46,3 +46,16 @@ export function invalidateCreditRepaymentLists() {
     ADMIN_LIST_CACHE_URLS.creditRepaymentSchedulesOverdue,
   ]);
 }
+
+/** Invalidate every registered admin paginated list cache namespace. */
+export function invalidateAllAdminPaginatedListCaches() {
+  if (!import.meta.client) {
+    return;
+  }
+
+  const registry = useState<string[]>('paginated-list-cache:registry', () => []);
+
+  for (const url of registry.value) {
+    invalidateAdminListCache(url);
+  }
+}
