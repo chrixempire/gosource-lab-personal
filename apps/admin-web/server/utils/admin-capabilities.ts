@@ -30,17 +30,20 @@ export async function resolveAdminCapabilities(event: H3Event) {
       viewCredits: true,
       viewCreditAnalytics: true,
       manageCredit: true,
+      viewActivityLogs: false, // Feature disabled
     };
   }
 
   const [viewCreditAnalytics, viewCredits] = await Promise.all([
     probeLegacyGet(event, '/admin/credit/requests/stats'),
     probeLegacyGet(event, '/admin/credit/requests', { page: 1, limit: 1 }),
+    // probeLegacyGet(event, '/admin/activity', { page: 1, limit: 1 }),
   ]);
 
   return {
     viewCredits,
     viewCreditAnalytics,
     manageCredit: false,
+    viewActivityLogs: false, // Feature disabled
   };
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Matches @gosource/ui TableHeadRow: bg-primary-50 + text-grey-700 */
+/** Matches @gosource/ui TableHeadRow: white header row + text-grey-700 */
 defineProps<{
   value: number | string;
 }>();

@@ -65,7 +65,7 @@ const isCompactViewport = useAdminCompactViewport();
     />
 
     <TableShell v-else class="overflow-visible border-0 shadow-none">
-      <TableHeader class="border-b border-grey-50 bg-grey-25">
+      <TableHeader class="border-b border-grey-50 bg-white">
         <TableHeadRow :style="{ gridTemplateColumns: CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID }">
           <TableCell>Installments</TableCell>
           <TableCell>Due date</TableCell>

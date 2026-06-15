@@ -29,6 +29,8 @@ const PAGE_DESCRIPTIONS: Record<string, string> = {
     'Create themed product promotions with optional percentage discounts and date windows.',
   [ADMIN_PAGE_ROUTES.CUSTOMERS]:
     'Search and manage business and individual customers, credit access, and account details.',
+  // [ADMIN_PAGE_ROUTES.ACTIVITY_LOG]:
+  //   'Review recorded admin and system actions across products, orders, and operations.',
   [ADMIN_PAGE_ROUTES.SETTINGS]:
     'Manage your profile, security, users, fees, and roles.',
   [ADMIN_PAGE_ROUTES.SETTINGS_SECURITY]:
