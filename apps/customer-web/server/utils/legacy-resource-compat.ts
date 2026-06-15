@@ -1332,7 +1332,7 @@ export function normalizeLegacyRequestListResponse(
         request.initiator.email,
         request.initiator.firstName ?? '',
         request.initiator.lastName ?? '',
-        ...request.products.map((product) => product.productName),
+        ...(request.products ?? []).map((product) => product.productName),
       ]
         .join(' ')
         .toLowerCase()

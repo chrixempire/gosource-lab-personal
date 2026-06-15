@@ -11,7 +11,9 @@ import { useCustomerRequestService } from '~/services/request.service';
 import { customerSignInLocation } from '~/lib/auth-redirect';
 import { reportCustomerApiError } from '~/utils/api-error';
 
+import { invalidateManageRequestsListCache } from '~/lib/invalidate-customer-list-cache';
 import { MIN_ORDER_SUBTOTAL_NAIRA } from '~/lib/market-cart';
+import { resolveRequestRecordId } from '~/lib/request-details';
 
 const MIN_REQUEST_SUBTOTAL_NAIRA = MIN_ORDER_SUBTOTAL_NAIRA;
 
@@ -176,7 +178,7 @@ export function useCartRequestAction() {
       const payload = buildCreateRequestPayload(branchId, branch, phoneNumber);
 
       const response = await createRequest(payload);
-      const createdRequestId = response.data?.id;
+      const createdRequestId = resolveRequestRecordId(response.data);
       const routesToCheckout = Boolean(isBusinessOwner.value && createdRequestId);
 
       closeCartDrawer();
@@ -193,6 +195,8 @@ export function useCartRequestAction() {
       } else {
         await router.push('/manage-requests');
       }
+
+      invalidateManageRequestsListCache();
 
       if (!routesToCheckout) {
         toast.success('Request submitted', { duration: 2000 });

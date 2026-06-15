@@ -128,11 +128,23 @@ export class RequestService {
     });
   }
 
+  private requestProductLines(request: { products?: unknown }): any[] {
+    return Array.isArray(request.products) ? request.products : [];
+  }
+
+  private ensureRequestProductsArray(request: RequestDocument): any[] {
+    if (!Array.isArray(request.products)) {
+      request.products = [];
+    }
+
+    return request.products as any[];
+  }
+
   /** Legacy request lines were stored without ids; mutations require a stable line id. */
   private async ensureRequestProductLineIds(request: RequestDocument) {
     let mutated = false;
 
-    for (const line of request.products as Array<{ _id?: unknown }>) {
+    for (const line of this.ensureRequestProductsArray(request) as Array<{ _id?: unknown }>) {
       if (!line._id) {
         line._id = randomUUID();
         mutated = true;
@@ -983,7 +995,7 @@ export class RequestService {
 
   async getRequestPrice(requestId: string, businessId: string) {
     const request = await this.requestModel.findById(requestId);
-    const subtotal = calculateTotalPrice(request.products, businessId);
+    const subtotal = calculateTotalPrice(this.requestProductLines(request), businessId);
 
     return { subtotal };
   }
@@ -1266,15 +1278,16 @@ export class RequestService {
       // const jsonUnitsCache = new Map();
 
       for (const request of requests) {
+        const productLines = this.requestProductLines(request);
         let totalPrice: number = request.serviceCharge + request.deliveryFee;
-        const totalProducts: number = request.products.length;
+        const totalProducts: number = productLines.length;
         let totalQuantity: number = 0;
 
         // Get branch from cache
         // const branchId = request.branch._id || request.branch;
         // const branch = branchMap.get(branchId.toString());
 
-        totalQuantity += request.products.reduce(
+        totalQuantity += productLines.reduce(
           (acc, item) => acc + item.quantity,
           0,
         );
@@ -1445,21 +1458,28 @@ export class RequestService {
    * @returns The total price of the request
    */
   private getRequestTotalPrice(request: any) {
+    const productLines = this.requestProductLines(request);
+    const businessId = request.branch?.businessId;
+
     if (request.status === RequestStatus.PENDING) {
-      return calculateTotalPrice(request.products, request.branch.businessId);
+      return calculateTotalPrice(productLines, businessId);
     }
 
+    const requestProducts = Array.isArray(request.requestProducts)
+      ? request.requestProducts
+      : [];
+
     // use requestProducts
-    const products = request.products.map((item) => {
+    const products = productLines.map((item) => {
       return {
         ...item,
-        product: request.requestProducts.find(
+        product: requestProducts.find(
           (reqItem) => reqItem._id.toString() === item.product._id.toString(),
         ),
       };
     });
 
-    return calculateTotalPrice(products, request.branch.businessId);
+    return calculateTotalPrice(products, businessId);
   }
 
   /**
@@ -1479,9 +1499,10 @@ export class RequestService {
   }
 
   private resolveRequestMoneyTotals(request: any, businessId: string) {
+    const productLines = this.requestProductLines(request);
     const productsSubtotal =
       request.status === RequestStatus.PENDING
-        ? calculateTotalPrice(request.products, businessId)
+        ? calculateTotalPrice(productLines, businessId)
         : this.getRequestTotalPrice(request);
 
     const deliveryFee = Number(request.deliveryFee ?? 0);

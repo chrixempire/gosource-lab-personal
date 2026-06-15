@@ -214,10 +214,10 @@ const {
       totalSpent,
     };
   },
-  {
-    fastNav: true,
-    default: () => ({ rows: [] }),
-  },
+    {
+      fastNav: true,
+      default: () => ({ rows: [] }),
+    },
 );
 
 const ordersLoading = computed(() => activeTab.value === 'orders' && ordersPending.value);

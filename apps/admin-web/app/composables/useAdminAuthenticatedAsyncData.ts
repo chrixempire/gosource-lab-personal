@@ -1,5 +1,6 @@
 import type { AsyncDataOptions, KeysOf } from '#app/composables/asyncData';
 import { isRef, toValue, type MaybeRefOrGetter } from 'vue';
+import { useClientListRevalidation } from '~/composables/useClientListRevalidation';
 import { useAdminSession } from '~/composables/useAdminSession';
 import { getAdminSessionCacheSignature } from '~/lib/admin-session-cache';
 import { resolveAdminLoadErrorStatus } from '~/utils/load-error-message';
@@ -11,6 +12,7 @@ export type AdminAuthenticatedAsyncDataOptions<
   DefaultT,
 > = AsyncDataOptions<ResT, DataT, PickKeys, DefaultT> & {
   revalidateOnMount?: boolean;
+  revalidateOnFocus?: boolean;
   staleAfterMs?: number;
   /**
    * Non-blocking navigation: render the route immediately, show cached data when
@@ -41,6 +43,7 @@ export function useAdminAuthenticatedAsyncData<
   const { whenReady, session, sessionResolved } = useAdminSession();
   const {
     revalidateOnMount = false,
+    revalidateOnFocus,
     staleAfterMs,
     fastNav = false,
     lazy: lazyOption,
@@ -48,6 +51,7 @@ export function useAdminAuthenticatedAsyncData<
     watch: watchOption,
     ...asyncDataOptions
   } = options ?? {};
+  const resolvedRevalidateOnFocus = revalidateOnFocus ?? fastNav;
   const normalizedKey = computed(() => toValue(key));
   const hasReactiveWatch = Array.isArray(watchOption)
     ? watchOption.length > 0
@@ -107,21 +111,18 @@ export function useAdminAuthenticatedAsyncData<
     );
   }
 
-  if (import.meta.client && (revalidateOnMount || typeof staleAfterMs === 'number')) {
-    onMounted(async () => {
-      await whenReady();
-
-      const resolvedAt = resolvedAtMap.value[routeCacheKey.value];
-      const age = resolvedAt ? Date.now() - resolvedAt : Number.POSITIVE_INFINITY;
-      const shouldRevalidate =
-        revalidateOnMount ||
-        (typeof staleAfterMs === 'number' && age >= staleAfterMs);
-
-      if (shouldRevalidate) {
-        await result.refresh();
-      }
-    });
-  }
+  useClientListRevalidation(
+    {
+      revalidateOnMount,
+      revalidateOnFocus: resolvedRevalidateOnFocus,
+      staleAfterMs,
+    },
+    {
+      whenReady,
+      getLastFetchedAt: () => resolvedAtMap.value[routeCacheKey.value] ?? null,
+      refresh: () => result.refresh(),
+    },
+  );
 
   return result;
 }

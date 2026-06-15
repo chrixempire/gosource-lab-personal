@@ -11,6 +11,7 @@ import {
   paginatedListFilterSignature,
   usePaginatedListCache,
 } from '~/composables/usePaginatedListCache';
+import { useClientListRevalidation } from '~/composables/useClientListRevalidation';
 
 type ListKeyPart = string | number | boolean | null | undefined;
 
@@ -39,6 +40,7 @@ export async function useAdminPaginatedListData<ResT, DataT = ResT>(
   handler: () => Promise<ResT>,
   options?: AdminAuthenticatedAsyncDataOptions<ResT, DataT, never, undefined> & {
     pageCache?: boolean;
+    revalidateOnFocus?: boolean;
   },
 ) {
   const { whenReady, session } = useAdminSession();
@@ -55,6 +57,9 @@ export async function useAdminPaginatedListData<ResT, DataT = ResT>(
 
   const {
     pageCache: pageCacheEnabled = true,
+    revalidateOnMount = true,
+    revalidateOnFocus = true,
+    staleAfterMs,
     getCachedData: getCachedDataOption,
     watch: extraWatch,
     ...rest
@@ -81,9 +86,10 @@ export async function useAdminPaginatedListData<ResT, DataT = ResT>(
     return response;
   }
 
-  const result = await useAdminAuthenticatedAsyncData(baseKey, fetchAndCache, {
+  const result = useAdminAuthenticatedAsyncData(baseKey, fetchAndCache, {
     fastNav: true,
     ...rest,
+    revalidateOnMount: false,
     server: rest.server ?? false,
     watch: [watchSignature, ...extraWatchArray],
     getCachedData:
@@ -101,9 +107,19 @@ export async function useAdminPaginatedListData<ResT, DataT = ResT>(
       }
     }
 
-    onMounted(() => {
-      hydrateFromPageCache();
-    });
+    useClientListRevalidation(
+      {
+        revalidateOnMount,
+        revalidateOnFocus,
+        staleAfterMs,
+      },
+      {
+        whenReady,
+        getLastFetchedAt: () => pageCache.getFetchedAt(watchSignature.value),
+        refresh: () => result.refresh(),
+        hydrate: () => hydrateFromPageCache(),
+      },
+    );
 
     watch(watchSignature, (newSignature, oldSignature) => {
       if (!oldSignature || newSignature === oldSignature) {

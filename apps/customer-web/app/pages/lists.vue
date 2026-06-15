@@ -221,6 +221,7 @@ const { data: listsPayload, pending: listsPending, refresh: refreshListsPayload 
     },
     {
       fastNav: true,
+      revalidateOnMount: true,
       watch: [apiBranchId, employeeBranchId, () => route.query.branchId],
       default: () => ({
         branchId: '',
