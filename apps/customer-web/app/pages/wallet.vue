@@ -281,6 +281,18 @@ async function subtleRefreshWallet() {
   }
 }
 
+async function refreshWalletOnEnter() {
+  if (!import.meta.client || !isOwner.value) {
+    return;
+  }
+
+  try {
+    await fetchWalletPageData();
+  } catch {
+    // Avoid duplicate toasts when revisiting the page.
+  }
+}
+
 async function refreshWalletAfterFunding() {
   suppressFundingBalanceRefresh.value = true;
 
@@ -416,6 +428,10 @@ async function copyText(value: string) {
   }
 }
 
+function onFundingInitiated() {
+  void refreshWalletAfterFunding();
+}
+
 function onFunded() {
   void refreshWalletAfterFunding();
 }
@@ -450,6 +466,10 @@ watch(
   },
   { immediate: true },
 );
+
+onMounted(() => {
+  void refreshWalletOnEnter();
+});
 
 onBeforeUnmount(() => {
   stopAccountPolling();
@@ -636,6 +656,7 @@ onBeforeUnmount(() => {
       :wallet="wallet"
       :business-id="businessId"
       @update:open="fundDialogOpen = $event"
+      @funding-initiated="onFundingInitiated"
       @funded="onFunded"
     />
 

@@ -8,23 +8,13 @@ import {
   CREDIT_REPAYMENT_INVOICE_ELEMENT_ID,
   creditRepaymentInvoiceFileName,
 } from '~/lib/credit-repayment-invoice';
+import { resolveInvoiceBusinessName } from '~/lib/resolve-invoice-business-name';
+import { useCustomerProfileService } from '~/services/profile.service';
 import type { CustomerCreditRepayment } from '~/types/credit';
-
-function resolveBusinessName(session: CustomerMeResponse | null | undefined) {
-  const data = session?.data;
-  if (!data || typeof data !== 'object') {
-    return '';
-  }
-
-  if ('businessName' in data && typeof data.businessName === 'string') {
-    return data.businessName.trim();
-  }
-
-  return '';
-}
 
 export function useDownloadCreditRepaymentInvoice() {
   const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+  const { getBusinessAccount } = useCustomerProfileService();
   const downloadingId = ref<string | null>(null);
 
   async function downloadCreditRepaymentInvoice(row: CustomerCreditRepayment) {
@@ -35,7 +25,9 @@ export function useDownloadCreditRepaymentInvoice() {
     downloadingId.value = row.id;
 
     try {
-      const businessName = resolveBusinessName(session.value);
+      const businessName = await resolveInvoiceBusinessName(session.value, () =>
+        getBusinessAccount({ silent: true }),
+      );
       const preview = buildCreditRepaymentInvoicePreview(row, businessName);
 
       await downloadInvoicePDF({

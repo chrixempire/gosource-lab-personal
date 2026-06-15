@@ -1,10 +1,10 @@
-import { formatCreditFromKobo } from '~/lib/credit-money';
+import { formatCreditAmountForInvoice } from '~/lib/credit-money';
 import { creditRepaymentPaymentMethodLabel } from '~/lib/credit-constants';
 import { formatRequestDate } from '~/lib/request-details';
 import type { CustomerCreditRepayment } from '~/types/credit';
 
-/** Matches reference `RepaymentInvoice` root id for PDF capture. */
-export const CREDIT_REPAYMENT_INVOICE_ELEMENT_ID = 'invoice-temp';
+/** Root element id for jsPDF capture — unique from order invoices (`invoice-temp`). */
+export const CREDIT_REPAYMENT_INVOICE_ELEMENT_ID = 'credit-repayment-invoice-temp';
 
 export type CreditRepaymentInvoicePreview = {
   businessName: string;
@@ -25,7 +25,7 @@ export function buildCreditRepaymentInvoicePreview(
   row: CustomerCreditRepayment,
   businessName: string,
 ): CreditRepaymentInvoicePreview {
-  const amountLabel = formatCreditFromKobo(row.paymentAmountKobo);
+  const amountLabel = formatCreditAmountForInvoice(row.paymentAmountKobo);
   const dateIssuedLabel = formatRequestDate(row.createdAt);
   const paymentMethodLabel = creditRepaymentPaymentMethodLabel(row.paymentMethod);
 

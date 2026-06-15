@@ -116,7 +116,7 @@ function avatarFallbackClass(isInactive: boolean) {
         <TableRow
           v-for="row in filteredRows"
           :key="row.businessId"
-          class="even:bg-[#FAFBFC]"
+          class="bg-white"
           :style="{ gridTemplateColumns: CREDIT_ANALYTICS_TABLE_GRID }"
         >
           <TableCell>

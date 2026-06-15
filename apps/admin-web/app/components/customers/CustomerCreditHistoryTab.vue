@@ -277,7 +277,7 @@ const isCompactViewport = useAdminCompactViewport();
         <TableRow
           v-for="row in parsed.rows"
           :key="row.id"
-          class="cursor-pointer even:bg-[#FAFBFC]"
+          class="cursor-pointer transition-colors hover:bg-primary-50/45"
           :style="{ gridTemplateColumns: CUSTOMER_CREDIT_HISTORY_TABLE_GRID }"
           @click="onViewDetails(row.id)"
         >

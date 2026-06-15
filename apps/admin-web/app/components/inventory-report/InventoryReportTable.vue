@@ -88,7 +88,7 @@ const gridStyle = { gridTemplateColumns: INVENTORY_REPORT_TABLE_GRID };
         <TableRow
           v-for="row in rows"
           :key="row.id"
-          class="even:bg-[#FAFBFC]"
+          class="bg-white"
           :style="gridStyle"
         >
           <TableCell class="font-medium text-header">{{ row.productName }}</TableCell>

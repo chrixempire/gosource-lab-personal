@@ -121,7 +121,6 @@ function toggleRow(id: string, checked: boolean | 'indeterminate') {
       <TableRow
         v-for="discount in discounts"
         :key="discount.id"
-        class="even:bg-[#FAFBFC]"
         :style="{ gridTemplateColumns: DISCOUNT_TABLE_GRID_TEMPLATE }"
       >
         <TableCell class="flex items-center" @click.stop>

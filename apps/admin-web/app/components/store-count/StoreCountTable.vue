@@ -72,7 +72,7 @@ function onCountedQuantityChange(productId: string, quantity: number) {
       <TableRow
         v-for="row in rows"
         :key="row.id"
-        class="even:bg-[#FAFBFC]"
+        class="bg-white"
         :style="gridStyle"
       >
         <TableCell>

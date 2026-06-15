@@ -38,6 +38,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   funded: [];
+  'funding-initiated': [];
   'update:open': [value: boolean];
 }>();
 
@@ -192,6 +193,7 @@ async function continueWithPaystack() {
           transactionReference: reference,
         });
 
+        emit('funding-initiated');
         await confirmFunding(reference, numericAmount);
       },
     });

@@ -82,7 +82,6 @@ function actionVariant(action: string) {
       <TableRow
         v-for="row in rows"
         :key="row.id"
-        class="even:bg-[#FAFBFC]"
         :style="gridStyle"
       >
         <TableCell class="text-sm text-grey-700">{{ row.createdAtLabel }}</TableCell>

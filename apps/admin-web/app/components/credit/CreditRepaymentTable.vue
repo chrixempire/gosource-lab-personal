@@ -80,7 +80,7 @@ const emit = defineEmits<{
       <TableRow
         v-for="row in rows"
         :key="row.id"
-        class="even:bg-[#FAFBFC]"
+        class="bg-white"
         :style="{ gridTemplateColumns: CREDIT_REPAYMENT_TABLE_GRID }"
       >
         <TableCell @click.stop>
