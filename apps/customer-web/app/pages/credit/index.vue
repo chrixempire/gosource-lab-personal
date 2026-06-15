@@ -33,11 +33,12 @@ const {
 const { data: creditPayload, pending: pagePending } = await useAuthenticatedAsyncData(
   'credit-page',
   () => fetchPayload(),
-  {
-    fastNav: true,
-    default: () => createEmptyCreditPagePayload(),
-    staleAfterMs: 60_000,
-  },
+    {
+      fastNav: true,
+      default: () => createEmptyCreditPagePayload(),
+      revalidateOnMount: true,
+      staleAfterMs: 60_000,
+    },
 );
 
 watch(

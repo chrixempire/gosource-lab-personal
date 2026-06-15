@@ -58,8 +58,9 @@ export function scopeRequestListForSnapshot(
   const data = actorId
     ? source.filter((request) => request.initiator.accountId === actorId)
     : [];
-  const limit = Math.max(1, response.meta.limit || 10);
-  const page = Math.max(1, response.meta.page || 1);
+  const responseMeta = response.meta ?? { page: 1, limit: 10 };
+  const limit = Math.max(1, responseMeta.limit || 10);
+  const page = Math.max(1, responseMeta.page || 1);
   const total = data.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -67,7 +68,7 @@ export function scopeRequestListForSnapshot(
     ...response,
     data,
     meta: {
-      ...response.meta,
+      ...responseMeta,
       page,
       limit,
       total,

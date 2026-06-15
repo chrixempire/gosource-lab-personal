@@ -24,6 +24,7 @@ import {
   resolveCheckoutCouponLabel,
 } from '~/lib/checkout-coupon';
 import { formatRequestCurrency } from '~/lib/request-details';
+import { invalidateCheckoutMutationListCaches, invalidateManageRequestsListCache } from '~/lib/invalidate-customer-list-cache';
 import {
   resolveBillableDiscount,
   resolveRequestTotalPrice,
@@ -267,6 +268,7 @@ function applyApprovedCheckout(response: ApproveRequestResponse) {
   request.value = response.data;
   resetCartState();
   void loadCart(true);
+  invalidateCheckoutMutationListCaches();
   successDialogOpen.value = true;
 }
 
@@ -296,6 +298,8 @@ function goBackFromCheckout() {
   if (successDialogOpen.value) {
     successDialogOpen.value = false;
   }
+
+  invalidateManageRequestsListCache();
 
   if (import.meta.client && window.history.length > 1) {
     router.back();

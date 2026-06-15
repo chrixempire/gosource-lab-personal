@@ -1,5 +1,6 @@
 import type { AsyncDataOptions, KeysOf } from '#app/composables/asyncData';
 import { isRef, toValue, type MaybeRefOrGetter } from 'vue';
+import { useClientListRevalidation } from '~/composables/useClientListRevalidation';
 import { useCustomerSession } from '~/composables/useCustomerSession';
 import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 
@@ -10,6 +11,7 @@ export type AuthenticatedAsyncDataOptions<
   DefaultT,
 > = AsyncDataOptions<ResT, DataT, PickKeys, DefaultT> & {
   revalidateOnMount?: boolean;
+  revalidateOnFocus?: boolean;
   staleAfterMs?: number;
   /**
    * Non-blocking navigation: render the route immediately, show cached data when
@@ -40,6 +42,7 @@ export async function useAuthenticatedAsyncData<
   const { whenReady, session } = useCustomerSession();
   const {
     revalidateOnMount = false,
+    revalidateOnFocus,
     staleAfterMs,
     fastNav = false,
     lazy: lazyOption,
@@ -47,6 +50,7 @@ export async function useAuthenticatedAsyncData<
     watch: watchOption,
     ...asyncDataOptions
   } = options ?? {};
+  const resolvedRevalidateOnFocus = revalidateOnFocus ?? fastNav;
   const normalizedKey = computed(() => toValue(key));
   const hasReactiveWatch = Array.isArray(watchOption)
     ? watchOption.length > 0
@@ -89,21 +93,18 @@ export async function useAuthenticatedAsyncData<
     },
   );
 
-  if (import.meta.client && (revalidateOnMount || typeof staleAfterMs === 'number')) {
-    onMounted(async () => {
-      await whenReady();
-
-      const resolvedAt = resolvedAtMap.value[routeCacheKey.value];
-      const age = resolvedAt ? Date.now() - resolvedAt : Number.POSITIVE_INFINITY;
-      const shouldRevalidate =
-        revalidateOnMount ||
-        (typeof staleAfterMs === 'number' && age >= staleAfterMs);
-
-      if (shouldRevalidate) {
-        await result.refresh();
-      }
-    });
-  }
+  useClientListRevalidation(
+    {
+      revalidateOnMount,
+      revalidateOnFocus: resolvedRevalidateOnFocus,
+      staleAfterMs,
+    },
+    {
+      whenReady,
+      getLastFetchedAt: () => resolvedAtMap.value[routeCacheKey.value] ?? null,
+      refresh: () => result.refresh(),
+    },
+  );
 
   return result;
 }
