@@ -10,9 +10,12 @@ defineProps<{
   sessionLoading?: boolean;
 }>();
 
-const { banners: marketplaceBanners } = useMarketplaceBanners();
+const { banners: marketplaceBanners, loaded: marketplaceBannersLoaded } = useMarketplaceBanners();
 const now = useNow({ interval: 60_000 });
 const timeGreeting = computed(() => getCustomerTimeGreeting(now.value));
+const showMarketplaceCarousel = computed(
+  () => marketplaceBannersLoaded.value && marketplaceBanners.value.length > 0,
+);
 </script>
 
 <template>
@@ -28,7 +31,7 @@ const timeGreeting = computed(() => getCustomerTimeGreeting(now.value));
       </h1>
     </div>
 
-    <div class="mt-1 w-full min-w-0 sm:mt-4">
+    <div v-if="showMarketplaceCarousel" class="mt-1 w-full min-w-0 sm:mt-4">
       <ExploreMarketBannerCarousel :image-banners="marketplaceBanners" />
     </div>
   </header>

@@ -47,6 +47,19 @@ export function parseMarketplaceBannerManifest(payload: unknown): MarketplaceBan
     .slice(0, 4);
 }
 
+export function parseMarketplaceBannersApiResponse(payload: unknown): MarketplaceBannerImage[] {
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+
+  const root = payload as { data?: unknown };
+  if (root.data && typeof root.data === 'object') {
+    return parseMarketplaceBannerManifest(root.data);
+  }
+
+  return parseMarketplaceBannerManifest(payload);
+}
+
 export function readMarketplaceBannersFromStorage(): MarketplaceBannerImage[] {
   if (!import.meta.client) {
     return [];

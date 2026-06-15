@@ -4,31 +4,45 @@ import { ImagePlus, Upload } from 'lucide-vue-next';
 import MarketplaceBannerPreviewCarousel from '~/components/promotions/MarketplaceBannerPreviewCarousel.vue';
 import MarketplaceBannerUploadGrid from '~/components/promotions/MarketplaceBannerUploadGrid.vue';
 import {
-  buildMarketplaceBannerPublishPayload,
   createEmptyBannerSlots,
-  MARKETPLACE_BANNER_SAMPLE_URLS,
+  fetchMarketplaceBanners,
+  loadSampleBannerSlots,
+  marketplaceBannerRecordsToDraftSlots,
   MARKETPLACE_BANNER_SLOT_COUNT,
-  readMarketplaceBannerDraftFromStorage,
-  writeMarketplaceBannerDraftToStorage,
+  saveMarketplaceBanners,
   type MarketplaceBannerDraftSlot,
 } from '~/lib/marketplace-banners';
+import { extractApiErrorMessage } from '~/utils/api-error';
 
 const slots = ref<MarketplaceBannerDraftSlot[]>(createEmptyBannerSlots());
 const uploading = ref(false);
+const loading = ref(true);
 
-function hydrateDraft() {
-  const stored = readMarketplaceBannerDraftFromStorage();
-  if (stored.length > 0) {
-    slots.value = stored;
-    return;
+function revokeBlobUrls(items: MarketplaceBannerDraftSlot[]) {
+  items.forEach((slot) => {
+    if (slot.src.startsWith('blob:')) {
+      URL.revokeObjectURL(slot.src);
+    }
+  });
+}
+
+function setSlots(nextSlots: MarketplaceBannerDraftSlot[]) {
+  revokeBlobUrls(slots.value);
+  slots.value = nextSlots;
+}
+
+async function loadBanners() {
+  loading.value = true;
+
+  try {
+    const banners = await fetchMarketplaceBanners();
+    setSlots(marketplaceBannerRecordsToDraftSlots(banners));
+  } catch (error) {
+    toast.error(extractApiErrorMessage(error, 'Unable to load marketplace banners'));
+    setSlots(createEmptyBannerSlots());
+  } finally {
+    loading.value = false;
   }
-
-  slots.value = MARKETPLACE_BANNER_SAMPLE_URLS.map((src, index) => ({
-    id: `banner-${index + 1}`,
-    src,
-    file: null,
-    alt: `Marketplace banner ${index + 1}`,
-  }));
 }
 
 function onAdd(files: File[]) {
@@ -42,6 +56,7 @@ function onAdd(files: File[]) {
       src: URL.createObjectURL(file),
       file,
       alt: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+      linkUrl: '/market',
     });
   }
 }
@@ -73,55 +88,46 @@ function onRemove(index: number) {
   slots.value.splice(index, 1);
 }
 
-function loadSampleBanners() {
-  slots.value.forEach((slot) => {
-    if (slot.src.startsWith('blob:')) {
-      URL.revokeObjectURL(slot.src);
+async function loadSampleBanners() {
+  try {
+    const samples = await loadSampleBannerSlots();
+    if (samples.length === 0) {
+      toast.error('Unable to load sample banner images.');
+      return;
     }
-  });
 
-  slots.value = MARKETPLACE_BANNER_SAMPLE_URLS.map((src, index) => ({
-    id: `banner-${index + 1}`,
-    src,
-    file: null,
-    alt: `Marketplace banner ${index + 1}`,
-  }));
-
-  toast.success('Sample banners loaded');
+    setSlots(samples);
+    toast.success('Sample banners loaded');
+  } catch {
+    toast.error('Unable to load sample banner images.');
+  }
 }
 
 async function publishBanners() {
-  if (slots.value.length === 0) {
-    toast.error('Add at least one banner image before uploading.');
-    return;
-  }
-
   uploading.value = true;
 
   try {
-    const payload = await buildMarketplaceBannerPublishPayload(slots.value);
-    writeMarketplaceBannerDraftToStorage(payload);
+    const saved = await saveMarketplaceBanners(slots.value);
+    setSlots(marketplaceBannerRecordsToDraftSlots(saved));
 
-    toast.success('Banners saved for preview', {
-      description:
-        'UI-only for now — customer marketplace will use the API once backend storage is wired.',
-      duration: 5000,
-    });
-  } catch {
-    toast.error('Unable to prepare banners for upload.');
+    toast.success(
+      saved.length > 0
+        ? 'Marketplace banners saved'
+        : 'Marketplace banners cleared',
+    );
+  } catch (error) {
+    toast.error(extractApiErrorMessage(error, 'Unable to save marketplace banners'));
   } finally {
     uploading.value = false;
   }
 }
 
-onMounted(hydrateDraft);
+onMounted(() => {
+  void loadBanners();
+});
 
 onBeforeUnmount(() => {
-  slots.value.forEach((slot) => {
-    if (slot.src.startsWith('blob:')) {
-      URL.revokeObjectURL(slot.src);
-    }
-  });
+  revokeBlobUrls(slots.value);
 });
 </script>
 
@@ -165,6 +171,7 @@ onBeforeUnmount(() => {
         class="!w-fit shrink-0"
         :left-icon="Upload"
         :loading="uploading"
+        :disabled="loading"
         @click="publishBanners"
       >
         Upload

@@ -1,12 +1,10 @@
 import {
-  MARKETPLACE_BANNER_MANIFEST_PATH,
-  parseMarketplaceBannerManifest,
-  readMarketplaceBannersFromStorage,
+  parseMarketplaceBannersApiResponse,
   type MarketplaceBannerImage,
 } from '~/lib/marketplace-banner-images';
 
 /**
- * Marketplace hero banners — manifest JSON for now; admin uploads will replace via API later.
+ * Marketplace hero banners from the public API.
  */
 export function useMarketplaceBanners() {
   const banners = useState<MarketplaceBannerImage[]>('marketplace-banners', () => []);
@@ -21,23 +19,10 @@ export function useMarketplaceBanners() {
     pending.value = true;
 
     try {
-      const fromStorage = readMarketplaceBannersFromStorage();
-      if (fromStorage.length > 0) {
-        banners.value = fromStorage;
-        return;
-      }
-
-      const response = await fetch(MARKETPLACE_BANNER_MANIFEST_PATH, {
+      const response = await $fetch<unknown>('/api/proxy/marketplace-banners', {
         credentials: 'same-origin',
       });
-
-      if (!response.ok) {
-        banners.value = [];
-        return;
-      }
-
-      const payload = await response.json();
-      banners.value = parseMarketplaceBannerManifest(payload);
+      banners.value = parseMarketplaceBannersApiResponse(response);
     } catch {
       banners.value = [];
     } finally {

@@ -127,13 +127,20 @@ async function commitDraft() {
   await commitQuantity(parsed);
 }
 
+/** Empty or invalid blur restores the last committed qty (cart / request line), else 1. */
+function resolveInvalidDraftQuantity() {
+  const committed = qty.value;
+  return committed > 0 ? committed : 1;
+}
+
 async function normalizeDraftOnLeave() {
   cancelDebouncedCommit();
 
   const parsed = parseDraftQuantity();
   if (parsed === null || parsed < 1) {
-    draftQty.value = '1';
-    await commitQuantity(1);
+    const fallback = resolveInvalidDraftQuantity();
+    draftQty.value = String(fallback);
+    await commitQuantity(fallback);
     return;
   }
 

@@ -280,6 +280,33 @@ export async function patchAdminLegacyMultipart<T>(
   }
 }
 
+export async function putAdminLegacyMultipart<T>(
+  event: H3Event,
+  path: string,
+  formData: FormData,
+  options?: { fallbackMessage?: string },
+): Promise<T> {
+  const baseUrl = getAdminLegacyApiBaseUrl(event);
+
+  try {
+    return await withAdminLegacyAuthRetry(event, (accessToken) =>
+      $fetch(`${baseUrl}${path}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      }) as Promise<T>,
+    );
+  } catch (error) {
+    return forwardApiError(
+      event,
+      error,
+      options?.fallbackMessage ?? 'Legacy admin request failed',
+    ) as never;
+  }
+}
+
 export async function fetchAdminLegacyBinary(
   event: H3Event,
   path: string,

@@ -64,7 +64,7 @@ onUnmounted(stopTimer);
           :key="slot.id"
           class="relative block w-full min-w-0 shrink-0 grow-0 basis-full overflow-hidden"
         >
-          <div class="relative h-[300px] max-h-[300px] w-full bg-grey-55">
+          <div class="relative h-[270px] max-h-[270px] w-full bg-grey-55">
             <img
               :src="slot.src"
               :alt="slot.alt"

@@ -47,6 +47,8 @@ import { RequestLoggerMiddleware } from './request-logger/middleware/request-log
 import { RequestLoggerModule } from './request-logger/request-logger.module';
 import { AdminPromotionModule } from './admin/promotion/promotion.module';
 import { PromotionModule } from './promotion/promotion.module';
+import { MarketplaceBannerModule } from './marketplace-banner/marketplace-banner.module';
+import { AdminMarketplaceBannerModule } from './admin/marketplace-banner/marketplace-banner.module';
 import { SecurityMiddleware } from './middleware/security.middleware';
 import { JobsModule } from './jobs/jobs.module';
 
@@ -101,6 +103,8 @@ dotenv.config();
     RequestLoggerModule,
     AdminPromotionModule,
     PromotionModule,
+    MarketplaceBannerModule,
+    AdminMarketplaceBannerModule,
   ],
   controllers: [AppController],
   providers: [AppService, ExternalService],
