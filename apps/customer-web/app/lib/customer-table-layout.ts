@@ -3,7 +3,7 @@ export const CUSTOMER_TABLE_PANEL_CLASS =
 
 /** Matches CustomerAppShell main padding (py-4 / lg:py-6) so header sticks under the app bar. */
 export const CUSTOMER_TABLE_STICKY_HEADER_CLASS =
-  'sticky -top-4 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-background-on-canvas shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)] lg:-top-6';
+  'sticky -top-4 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)] lg:-top-6';
 
 /** Page scroll instead of an inner table body scroll region (default TableBody is max-h 560px). */
 export const CUSTOMER_TABLE_BODY_CLASS = '!max-h-none !overflow-visible';
@@ -15,4 +15,4 @@ export const CUSTOMER_TABLE_DATA_ROW_CLASS =
 /** Non-interactive striped rows (e.g. insight breakdown). */
 export const CUSTOMER_TABLE_STRIPED_ROW_CLASS = 'even:bg-grey-55 dark:even:bg-grey-55';
 
-export const CREDIT_REQUEST_TABLE_GRID_TEMPLATE = '1.2fr 1fr 1fr 0.8fr auto';
+export const CREDIT_REQUEST_TABLE_GRID_TEMPLATE = '1.2fr 1fr 1fr 1fr 0.8fr auto';

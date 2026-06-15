@@ -19,6 +19,7 @@ export const ADMIN_PAGE_ROUTES = {
   DISCOUNTS: '/discounts',
   PROMOTIONS: '/promotions',
   CUSTOMERS: '/customers',
+  // ACTIVITY_LOG: '/activity-log', // Feature disabled
   SETTINGS: '/settings',
   SETTINGS_SECURITY: '/settings/security',
   SETTINGS_USERS: '/settings/users',
@@ -70,6 +71,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: 'Discounts', icon: 'i-lucide-ticket', to: ADMIN_PAGE_ROUTES.DISCOUNTS },
   { label: 'Promotions', icon: 'i-lucide-megaphone', to: ADMIN_PAGE_ROUTES.PROMOTIONS },
   { label: 'Customers', icon: 'i-lucide-users', to: ADMIN_PAGE_ROUTES.CUSTOMERS },
+  // { label: 'Activity log', icon: 'i-lucide-scroll-text', to: ADMIN_PAGE_ROUTES.ACTIVITY_LOG },
 ];
 
 /** Child nav active state — avoids parent + sibling routes sharing `/inventory` prefix. */

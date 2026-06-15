@@ -1,0 +1,24 @@
+/* Forest green primary — matches customer-web (`customer-theme.css`) */
+@theme inline {
+  --color-primary-50: #e8f3ea;
+  --color-primary-100: #d4ead8;
+  --color-primary-300: #3d8f4a;
+  --color-primary-400: #1f6b2c;
+  --color-primary-500: #0f5c18;
+  --color-primary-600: #0f5c18;
+  --color-primary-700: #0b3d12;
+  --color-primary-800: #0b3d12;
+}
+
+:root {
+  --primary: #0f5c18;
+  --primary-foreground: #ecfdf5;
+  --ring: #0f5c18;
+  --button-primary: #0f5c18;
+  --button-primary-clicked: #0b3d12;
+  --brand-green: #0f5c18;
+  --brand-green-deep: #0b3d12;
+  --brand-green-soft: #e8f3ea;
+  --border-input-active: #0f5c18;
+  --sidebar-primary: #0f5c18;
+}

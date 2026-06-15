@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  TableCell,
   TableFooter,
   TableHeadRow,
   TableHeader,
@@ -49,13 +50,14 @@ const showActionsColumn = computed(() => props.variant === 'credit');
     <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
       <TableHeadRow
         :style="{ gridTemplateColumns: gridTemplate }"
-        class="pointer-events-none gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400 opacity-60"
+        class="pointer-events-none opacity-60"
       >
-        <span>Reference</span>
-        <span>Amount</span>
-        <span>Date</span>
-        <span>Status</span>
-        <span v-if="showActionsColumn" class="sr-only">Actions</span>
+        <TableCell>Reference</TableCell>
+        <TableCell>Amount</TableCell>
+        <TableCell>Request type</TableCell>
+        <TableCell>Date</TableCell>
+        <TableCell>Status</TableCell>
+        <TableCell v-if="showActionsColumn" class="sr-only">Actions</TableCell>
       </TableHeadRow>
     </TableHeader>
 
@@ -64,7 +66,6 @@ const showActionsColumn = computed(() => props.variant === 'credit');
       :grid-template-columns="gridTemplate"
       :row-count="rowCount"
       :body-class="CUSTOMER_TABLE_BODY_CLASS"
-      row-class="min-h-14 gap-3 bg-background-on-canvas px-4 py-3"
     />
 
     <TableFooter v-if="showFooter">

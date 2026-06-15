@@ -1,5 +1,5 @@
 import type { AdminCapabilities } from '~/types/admin-capabilities';
-import { canAccessCreditPath, canManageCredit } from '~/lib/admin-permissions';
+import { canAccessAdminRoute, canManageCredit } from '~/lib/admin-permissions';
 
 export function useAdminCapabilities() {
   const capabilities = useState<AdminCapabilities | null>('admin-capabilities', () => null);
@@ -21,6 +21,7 @@ export function useAdminCapabilities() {
         viewCredits: false,
         viewCreditAnalytics: false,
         manageCredit: false,
+        viewActivityLogs: false,
       };
     } finally {
       resolved.value = true;
@@ -32,7 +33,7 @@ export function useAdminCapabilities() {
   const canManage = computed(() => canManageCredit(capabilities.value));
 
   function canAccessRoute(path: string) {
-    return canAccessCreditPath(path, capabilities.value);
+    return canAccessAdminRoute(path, capabilities.value);
   }
 
   return {
