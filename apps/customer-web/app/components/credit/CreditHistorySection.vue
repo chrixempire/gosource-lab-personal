@@ -18,8 +18,9 @@ import CreditRequestActionsMenu from '~/components/credit/CreditRequestActionsMe
 import CreditRequestHistoryCards from '~/components/credit/CreditRequestHistoryCards.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
 import {
-  creditWorkflowStatusLabel,
-  creditWorkflowStatusVariant,
+  creditRequestStatusLabel,
+  creditRequestStatusVariant,
+  creditRequestTypeLabel,
 } from '~/lib/credit-constants';
 import { creditRequestPath } from '~/lib/credit-routes';
 import { formatCreditFromKobo } from '~/lib/credit-money';
@@ -35,6 +36,7 @@ import {
   CUSTOMER_TABLE_DATA_ROW_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+  CUSTOMER_TABLE_STRIPED_ROW_CLASS,
 } from '~/lib/customer-table-layout';
 import type {
   CustomerCreditRepayment,
@@ -83,7 +85,7 @@ const filteredCreditRequests = computed(() => {
     return props.creditRequests;
   }
   return props.creditRequests.filter((row) => {
-    const haystack = `${row.reference} ${row.requestType} ${row.status}`.toLowerCase();
+    const haystack = `${row.reference} ${creditRequestTypeLabel(row.requestType)} ${row.requestType} ${creditRequestStatusLabel(row.status)} ${row.status}`.toLowerCase();
     return haystack.includes(debouncedSearch.value);
   });
 });
@@ -134,16 +136,14 @@ const repaymentSkeletonRowCount = computed(() =>
         <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
           <TableHeadRow
             :style="{ gridTemplateColumns: CREDIT_REQUEST_TABLE_GRID_TEMPLATE }"
-            :class="[
-              'gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400',
-              creditLoading ? 'pointer-events-none opacity-60' : undefined,
-            ]"
+            :class="creditLoading ? 'pointer-events-none opacity-60' : undefined"
           >
-            <span>Reference</span>
-            <span>Amount</span>
-            <span>Date</span>
-            <span>Status</span>
-            <span class="sr-only">Actions</span>
+            <TableCell>Reference</TableCell>
+            <TableCell>Amount</TableCell>
+            <TableCell>Request type</TableCell>
+            <TableCell>Date</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell class="sr-only">Actions</TableCell>
           </TableHeadRow>
         </TableHeader>
 
@@ -153,27 +153,25 @@ const repaymentSkeletonRowCount = computed(() =>
           :grid-template-columns="CREDIT_REQUEST_TABLE_GRID_TEMPLATE"
           :row-count="creditSkeletonRowCount"
           :body-class="CUSTOMER_TABLE_BODY_CLASS"
-          row-class="min-h-14 gap-3 bg-background-on-canvas px-4 py-3"
         />
 
         <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
           <TableRow
             v-for="row in filteredCreditRequests"
             :key="row.id"
-            :class="[CUSTOMER_TABLE_DATA_ROW_CLASS, 'grid gap-3 px-4 py-3']"
+            :class="CUSTOMER_TABLE_DATA_ROW_CLASS"
             :style="{ gridTemplateColumns: CREDIT_REQUEST_TABLE_GRID_TEMPLATE }"
             @click="navigateTo(creditRequestPath(row.id))"
           >
-            <TableCell class="font-medium text-grey-900">#{{ row.reference }}</TableCell>
+            <TableCell>
+              <p class="truncate text-base font-semibold text-grey-900">#{{ row.reference }}</p>
+            </TableCell>
             <TableCell>{{ formatCreditFromKobo(row.requestedAmountKobo) }}</TableCell>
+            <TableCell>{{ creditRequestTypeLabel(row.requestType) }}</TableCell>
             <TableCell>{{ formatRequestDate(row.createdAt) }}</TableCell>
             <TableCell>
-              <StatusTag
-                :variant="creditWorkflowStatusVariant(row.status)"
-                size="medium"
-                class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
-              >
-                {{ creditWorkflowStatusLabel(row.status) }}
+              <StatusTag :variant="creditRequestStatusVariant(row.status)">
+                {{ creditRequestStatusLabel(row.status) }}
               </StatusTag>
             </TableCell>
             <TableCell class="flex items-center justify-end">
@@ -186,12 +184,12 @@ const repaymentSkeletonRowCount = computed(() =>
               />
             </TableCell>
           </TableRow>
-          <p
+          <div
             v-if="filteredCreditRequests.length === 0"
-            class="px-4 py-8 text-center text-sm text-grey-400"
+            class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center text-sm text-grey-300"
           >
             No credit requests yet.
-          </p>
+          </div>
         </TableBody>
 
         <TableFooter>
@@ -230,19 +228,16 @@ const repaymentSkeletonRowCount = computed(() =>
         :items="filteredRepayments"
         :loading="repaymentLoading"
       />
-      <TableShell v-else :class="CUSTOMER_TABLE_PANEL_CLASS">
+      <TableShell v-else :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
         <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
           <TableHeadRow
             :style="{ gridTemplateColumns: CREDIT_REPAYMENT_TABLE_GRID }"
-            :class="[
-              'gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400',
-              repaymentLoading ? 'pointer-events-none opacity-60' : undefined,
-            ]"
+            :class="repaymentLoading ? 'pointer-events-none opacity-60' : undefined"
           >
-            <span>Reference</span>
-            <span>Amount</span>
-            <span>Date</span>
-            <span>Status</span>
+            <TableCell>Reference</TableCell>
+            <TableCell>Amount</TableCell>
+            <TableCell>Date</TableCell>
+            <TableCell>Status</TableCell>
           </TableHeadRow>
         </TableHeader>
 
@@ -252,29 +247,30 @@ const repaymentSkeletonRowCount = computed(() =>
           :grid-template-columns="CREDIT_REPAYMENT_TABLE_GRID"
           :row-count="repaymentSkeletonRowCount"
           :body-class="CUSTOMER_TABLE_BODY_CLASS"
-          row-class="min-h-14 gap-3 bg-background-on-canvas px-4 py-3"
         />
 
         <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
           <TableRow
             v-for="row in filteredRepayments"
             :key="row.id"
-            :class="`${CUSTOMER_TABLE_DATA_ROW_CLASS} grid gap-3 px-4 py-3`"
+            :class="CUSTOMER_TABLE_STRIPED_ROW_CLASS"
             :style="{ gridTemplateColumns: CREDIT_REPAYMENT_TABLE_GRID }"
           >
-            <TableCell class="font-medium text-grey-900">{{ row.referenceCode }}</TableCell>
+            <TableCell>
+              <p class="truncate text-base font-semibold text-grey-900">{{ row.referenceCode }}</p>
+            </TableCell>
             <TableCell>{{ formatCreditFromKobo(row.paymentAmountKobo) }}</TableCell>
             <TableCell>{{ formatRequestDate(row.createdAt) }}</TableCell>
             <TableCell>
               <StatusTag variant="default">{{ row.status || '—' }}</StatusTag>
             </TableCell>
           </TableRow>
-          <p
+          <div
             v-if="filteredRepayments.length === 0"
-            class="px-4 py-8 text-center text-sm text-grey-400"
+            class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center text-sm text-grey-300"
           >
             No repayments yet.
-          </p>
+          </div>
         </TableBody>
 
         <TableFooter>

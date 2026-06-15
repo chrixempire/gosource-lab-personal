@@ -2,8 +2,9 @@
 import { StatusTag } from '@gosource/ui';
 import CreditRequestActionsMenu from '~/components/credit/CreditRequestActionsMenu.vue';
 import {
-  creditWorkflowStatusLabel,
-  creditWorkflowStatusVariant,
+  creditRequestStatusLabel,
+  creditRequestStatusVariant,
+  creditRequestTypeLabel,
 } from '~/lib/credit-constants';
 import { creditRequestPath } from '~/lib/credit-routes';
 import { formatCreditFromKobo } from '~/lib/credit-money';
@@ -43,15 +44,15 @@ const cardArticleClass =
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">
           <p class="font-semibold text-grey-900">#{{ row.reference }}</p>
-          <p class="mt-0.5 text-xs capitalize text-grey-400">{{ row.requestType }}</p>
+          <p class="mt-0.5 text-xs text-grey-400">{{ creditRequestTypeLabel(row.requestType) }}</p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
           <StatusTag
-            :variant="creditWorkflowStatusVariant(row.status)"
+            :variant="creditRequestStatusVariant(row.status)"
             size="medium"
             class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
           >
-            {{ creditWorkflowStatusLabel(row.status) }}
+            {{ creditRequestStatusLabel(row.status) }}
           </StatusTag>
           <CreditRequestActionsMenu
             :can-cancel="row.status === 'pending'"

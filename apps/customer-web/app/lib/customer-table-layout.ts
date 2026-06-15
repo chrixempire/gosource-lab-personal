@@ -15,4 +15,4 @@ export const CUSTOMER_TABLE_DATA_ROW_CLASS =
 /** Non-interactive striped rows (e.g. insight breakdown). */
 export const CUSTOMER_TABLE_STRIPED_ROW_CLASS = 'even:bg-grey-55 dark:even:bg-grey-55';
 
-export const CREDIT_REQUEST_TABLE_GRID_TEMPLATE = '1.2fr 1fr 1fr 0.8fr auto';
+export const CREDIT_REQUEST_TABLE_GRID_TEMPLATE = '1.2fr 1fr 1fr 1fr 0.8fr auto';
