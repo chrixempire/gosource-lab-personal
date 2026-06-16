@@ -15,6 +15,7 @@ import {
   validatePhoneNumber,
   validateRequiredText,
 } from '~/utils/auth-validation';
+import { useCustomerSession } from '~/composables/useCustomerSession';
 import { extractApiErrorMessage, extractApiResponseMessage } from '~/utils/api-error';
 
 definePageMeta({
@@ -41,7 +42,7 @@ const loadingInvitation = ref(true);
 const loading = ref(false);
 const errorMessage = ref('');
 const inviteData = ref<EmployeeInvitationResponse['data'] | null>(null);
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+const { clearSession } = useCustomerSession();
 
 const form = reactive({
   firstName: '',
@@ -209,7 +210,7 @@ async function submit() {
 
     toast.success(extractApiResponseMessage(result, 'Employee account set up successfully'));
     clearStoredInviteSession();
-    session.value = null;
+    clearSession();
     const nextEmail = inviteData.value?.email ?? '';
     await navigateTo({
       path: '/auth/sign-in',

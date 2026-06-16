@@ -66,6 +66,7 @@ export default defineNuxtPlugin(async () => {
       message: me.message,
       data: me.data,
       user_type: me.user_type,
+      bootstrap: me.bootstrap,
     });
   } catch (error) {
     if (refreshToken && isUnauthorized(error)) {

@@ -94,9 +94,10 @@ const copy = computed(() => {
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button type="button" variant="secondary" @click="open = false">Cancel</Button>
+        <Button type="button" variant="secondary" size="medium" @click="open = false">Cancel</Button>
         <Button
           type="button"
+          size="medium"
           :variant="copy.destructive ? 'destructive' : 'primary'"
           :loading="loading"
           @click="emit('confirm')"

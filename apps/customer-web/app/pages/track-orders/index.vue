@@ -32,7 +32,6 @@ import {
 import { fetchProcurementInsightForBranch } from '~/lib/explore-procurement-insight';
 import { buildProcurementInsightTableRowsFromProcuredItems } from '~/lib/procurement-insight-table';
 import {
-  DEFAULT_TRACK_ORDER_STATUS,
   parseTrackOrderFiltersFromQuery,
   trackOrderFiltersToRouteQuery,
   trackOrderStatusFiltersToApiStatus,
@@ -48,8 +47,10 @@ import {
   type TrackOrdersTab,
 } from '~/lib/track-orders-page';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { usePaginatedListData } from '~/composables/usePaginatedListData';
+import { buildCollectionListKey } from '~/lib/collection-list-key';
 import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
-import { useReorderProducts } from '~/composables/useReorderProducts';
+import { useReorderProducts, REORDER_THEN_MARKET_OPTIONS } from '~/composables/useReorderProducts';
 import { useCustomerOrderService } from '~/services/order.service';
 import { useCustomerAnalyticsService } from '~/services/analytics.service';
 
@@ -125,20 +126,15 @@ watch(searchValue, (value) => {
 
 const listFilters = computed(() => parseTrackOrderFiltersFromQuery(route.query));
 
-const hasDefaultStatusOnly = computed(() => {
-  const { status } = listFilters.value;
-  return status.length === 1 && status[0] === DEFAULT_TRACK_ORDER_STATUS;
-});
-
-const emptyStateStatusLabel = computed(() => {
+const emptyStateTitle = computed(() => {
   const { status } = listFilters.value;
   if (status.length === 0) {
-    return 'matching';
+    return 'No orders';
   }
   if (status.length === 1) {
-    return status[0];
+    return `No ${status[0]} orders`;
   }
-  return 'matching';
+  return 'No matching orders';
 });
 
 watch(debouncedSearch, (next, prev) => {
@@ -147,12 +143,23 @@ watch(debouncedSearch, (next, prev) => {
   }
 });
 
+const ordersListKeyParts = computed(() => [
+  page.value,
+  limit.value,
+  debouncedSearch.value,
+  listFilters.value.amountMin ?? '',
+  listFilters.value.amountMax ?? '',
+  listFilters.value.status.join(','),
+  apiBranchId.value ?? '',
+]);
+
 const {
   data: ordersPayload,
   pending: ordersPending,
   refresh: refreshOrders,
-} = await useAuthenticatedAsyncData(
+} = await usePaginatedListData(
   'track-orders-list',
+  ordersListKeyParts,
   async () => {
     const statusParam = trackOrderStatusFiltersToApiStatus(listFilters.value.status);
 
@@ -172,7 +179,6 @@ const {
     };
   },
   {
-    watch: false,
     default: () => ({
       orders: [] as OrderRecord[],
       meta: { ...defaultMeta },
@@ -185,7 +191,13 @@ const {
   pending: insightPending,
   refresh: refreshInsight,
 } = await useAuthenticatedAsyncData(
-  'track-orders-procurement-insight',
+  computed(() =>
+    buildCollectionListKey('track-orders-procurement-insight', [
+      insightBranchId.value ?? '',
+      insightDateRange.value.startDate,
+      insightDateRange.value.endDate,
+    ]),
+  ),
   async () => {
     if (!insightBranchId.value) {
       return { rows: [] };
@@ -202,10 +214,10 @@ const {
       totalSpent,
     };
   },
-  {
-    watch: false,
-    default: () => ({ rows: [] }),
-  },
+    {
+      fastNav: true,
+      default: () => ({ rows: [] }),
+    },
 );
 
 const ordersLoading = computed(() => activeTab.value === 'orders' && ordersPending.value);
@@ -235,25 +247,6 @@ function replaceRouteQuery(patch: Record<string, string | undefined>) {
 
   router.replace({ query: nextQuery });
 }
-
-watch(
-  [
-    activeTab,
-    page,
-    limit,
-    debouncedSearch,
-    () => listFilters.value.amountMin,
-    () => listFilters.value.amountMax,
-    () => listFilters.value.status.join(','),
-    apiBranchId,
-  ],
-  () => {
-    if (activeTab.value === 'orders') {
-      void refreshOrders();
-    }
-  },
-  { immediate: true },
-);
 
 watch(
   [
@@ -447,7 +440,7 @@ async function handleReorder(orderId: string) {
   reorderLoadingOrderId.value = orderId;
 
   try {
-    await reorderProducts(record.products);
+    await reorderProducts(record.products, REORDER_THEN_MARKET_OPTIONS);
   } finally {
     reorderLoadingOrderId.value = null;
   }
@@ -626,7 +619,6 @@ useHead({
         <TrackOrdersFilterBar
           :filters="listFilters"
           :search="debouncedSearch"
-          :has-default-status-only="hasDefaultStatusOnly"
           @apply="onApplyFilters"
           @clear-all="clearAllFilters"
         />
@@ -634,16 +626,16 @@ useHead({
         <OrderTable
           v-if="effectiveView === 'table'"
           :orders="orderItems"
-          :page="meta.page"
+          :page="page"
           :total-pages="meta.totalPages"
           :total-items="meta.total"
-          :page-size="meta.limit"
+          :page-size="limit"
           :has-next-page="meta.hasNextPage"
           :has-prev-page="meta.hasPrevPage"
           :loading="ordersLoading"
           :reorder-loading="reordering"
           :reorder-loading-order-id="reorderLoadingOrderId"
-          :empty-title="`No ${emptyStateStatusLabel} orders`"
+          :empty-title="emptyStateTitle"
           empty-description="Orders appear here after a request is approved and paid at checkout."
           @page="setPage"
           @page-size="setLimit"
@@ -668,7 +660,7 @@ useHead({
             class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
           >
             <p class="text-base font-medium text-grey-900">
-              No {{ emptyStateStatusLabel }} orders
+              {{ emptyStateTitle }}
             </p>
             <p class="mt-2 text-sm text-grey-300">
               Orders appear here after a request is approved and paid at checkout.
@@ -677,10 +669,11 @@ useHead({
 
           <PaginationBar
             plain
-            :page="meta.page"
+            :page="page"
             :total-pages="meta.totalPages"
             :total-items="meta.total"
-            :page-size="meta.limit"
+            :page-size="limit"
+            :visible-count="orderItems.length"
             :has-next-page="meta.hasNextPage"
             :has-prev-page="meta.hasPrevPage"
             @change="setPage"

@@ -395,7 +395,9 @@ export class ProductFilterUtil extends AmountDateValidation {
     }
 
     // Track quantity filtering
-    if (typeof filters.trackQuantity === 'string') {
+    if (typeof filters.trackQuantity === 'boolean') {
+      query.trackQuantity = filters.trackQuantity;
+    } else if (typeof filters.trackQuantity === 'string') {
       query.trackQuantity = filters.trackQuantity === 'true';
     }
 

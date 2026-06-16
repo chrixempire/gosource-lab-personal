@@ -10,25 +10,39 @@ import {
   TableHeadRow,
   TableRow,
   TableShell,
+  TableSkeleton,
 } from '@gosource/ui';
 import { useDebounceFn, useMediaQuery } from '@vueuse/core';
+import CreditRepaymentActionsMenu from '~/components/credit/CreditRepaymentActionsMenu.vue';
 import CreditRepaymentHistoryCards from '~/components/credit/CreditRepaymentHistoryCards.vue';
 import CreditRequestActionsMenu from '~/components/credit/CreditRequestActionsMenu.vue';
 import CreditRequestHistoryCards from '~/components/credit/CreditRequestHistoryCards.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
+import { useDownloadCreditRepaymentInvoice } from '~/composables/useDownloadCreditRepaymentInvoice';
 import {
-  creditWorkflowStatusLabel,
-  creditWorkflowStatusVariant,
+  canReapplyCreditRequest,
+  creditRepaymentPaymentMethodLabel,
+  creditRepaymentStatusLabel,
+  creditRepaymentStatusVariant,
+  creditRequestStatusLabel,
+  creditRequestStatusVariant,
+  creditRequestTypeLabel,
 } from '~/lib/credit-constants';
 import { creditRequestPath } from '~/lib/credit-routes';
 import { formatCreditFromKobo } from '~/lib/credit-money';
 import { formatRequestDate } from '~/lib/request-details';
 import {
+  CREDIT_REPAYMENT_HISTORY_SKELETON_COLUMNS,
+  CREDIT_REPAYMENT_TABLE_GRID,
+  CREDIT_REQUEST_HISTORY_SKELETON_COLUMNS,
+  CREDIT_REQUEST_TABLE_GRID_TEMPLATE,
+} from '~/lib/credit-history-table-layout';
+import {
   CUSTOMER_TABLE_BODY_CLASS,
   CUSTOMER_TABLE_DATA_ROW_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
-  CREDIT_REQUEST_TABLE_GRID_TEMPLATE,
+  CUSTOMER_TABLE_STRIPED_ROW_CLASS,
 } from '~/lib/customer-table-layout';
 import type {
   CustomerCreditRepayment,
@@ -43,7 +57,6 @@ const props = defineProps<{
   repaymentMeta: CreditListMeta;
   creditLoading?: boolean;
   repaymentLoading?: boolean;
-  isOwner?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -78,7 +91,7 @@ const filteredCreditRequests = computed(() => {
     return props.creditRequests;
   }
   return props.creditRequests.filter((row) => {
-    const haystack = `${row.reference} ${row.requestType} ${row.status}`.toLowerCase();
+    const haystack = `${row.reference} ${creditRequestTypeLabel(row.requestType)} ${row.requestType} ${creditRequestStatusLabel(row.status)} ${row.status}`.toLowerCase();
     return haystack.includes(debouncedSearch.value);
   });
 });
@@ -88,7 +101,7 @@ const filteredRepayments = computed(() => {
     return props.repayments;
   }
   return props.repayments.filter((row) => {
-    const haystack = `${row.referenceCode} ${row.paymentMethod} ${row.status}`.toLowerCase();
+    const haystack = `${row.referenceCode} ${row.paymentMethod} ${creditRepaymentPaymentMethodLabel(row.paymentMethod)} ${creditRepaymentStatusLabel(row.status)} ${row.status}`.toLowerCase();
     return haystack.includes(debouncedSearch.value);
   });
 });
@@ -100,6 +113,21 @@ const creditTotalPages = computed(() =>
 const repaymentTotalPages = computed(() =>
   Math.max(1, Math.ceil(props.repaymentMeta.total / props.repaymentMeta.limit)),
 );
+
+const creditSkeletonRowCount = computed(() =>
+  Math.max(1, Math.min(props.creditMeta.limit, 10)),
+);
+
+const repaymentSkeletonRowCount = computed(() =>
+  Math.max(1, Math.min(props.repaymentMeta.limit, 10)),
+);
+
+const { downloadingRepaymentId, downloadCreditRepaymentInvoice } =
+  useDownloadCreditRepaymentInvoice();
+
+function formatApprovedAmountKobo(value: number) {
+  return value > 0 ? formatCreditFromKobo(value) : '—';
+}
 </script>
 
 <template>
@@ -114,7 +142,6 @@ const repaymentTotalPages = computed(() =>
         v-if="isCompactViewport"
         :items="filteredCreditRequests"
         :loading="creditLoading"
-        :is-owner="isOwner"
         @cancel="emit('cancelRequest', $event)"
         @reapply="emit('reapply', $event)"
       />
@@ -122,52 +149,64 @@ const repaymentTotalPages = computed(() =>
         <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
           <TableHeadRow
             :style="{ gridTemplateColumns: CREDIT_REQUEST_TABLE_GRID_TEMPLATE }"
-            class="gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400"
+            :class="creditLoading ? 'pointer-events-none opacity-60' : undefined"
           >
-            <span>Reference</span>
-            <span>Amount</span>
-            <span>Date</span>
-            <span>Status</span>
-            <span class="sr-only">Actions</span>
+            <TableCell>Reference</TableCell>
+            <TableCell>Amount</TableCell>
+            <TableCell>Request type</TableCell>
+            <TableCell>Date</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell>Approved amount</TableCell>
+            <TableCell class="sr-only">Actions</TableCell>
           </TableHeadRow>
         </TableHeader>
-        <TableBody :class="CUSTOMER_TABLE_BODY_CLASS">
+
+        <TableSkeleton
+          v-if="creditLoading"
+          :columns="CREDIT_REQUEST_HISTORY_SKELETON_COLUMNS"
+          :grid-template-columns="CREDIT_REQUEST_TABLE_GRID_TEMPLATE"
+          :row-count="creditSkeletonRowCount"
+          :body-class="CUSTOMER_TABLE_BODY_CLASS"
+        />
+
+        <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
           <TableRow
             v-for="row in filteredCreditRequests"
             :key="row.id"
-            :class="[CUSTOMER_TABLE_DATA_ROW_CLASS, 'grid gap-3 px-4 py-3']"
+            :class="CUSTOMER_TABLE_DATA_ROW_CLASS"
             :style="{ gridTemplateColumns: CREDIT_REQUEST_TABLE_GRID_TEMPLATE }"
             @click="navigateTo(creditRequestPath(row.id))"
           >
-            <TableCell class="font-medium text-grey-900">#{{ row.reference }}</TableCell>
+            <TableCell>
+              <p class="truncate text-base font-semibold text-grey-900">#{{ row.reference }}</p>
+            </TableCell>
             <TableCell>{{ formatCreditFromKobo(row.requestedAmountKobo) }}</TableCell>
+            <TableCell>{{ creditRequestTypeLabel(row.requestType) }}</TableCell>
             <TableCell>{{ formatRequestDate(row.createdAt) }}</TableCell>
             <TableCell>
-              <StatusTag
-                :variant="creditWorkflowStatusVariant(row.status)"
-                size="medium"
-                class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
-              >
-                {{ creditWorkflowStatusLabel(row.status) }}
+              <StatusTag :variant="creditRequestStatusVariant(row.status)">
+                {{ creditRequestStatusLabel(row.status) }}
               </StatusTag>
             </TableCell>
+            <TableCell>{{ formatApprovedAmountKobo(row.approvedAmountKobo) }}</TableCell>
             <TableCell class="flex items-center justify-end">
               <CreditRequestActionsMenu
-                :can-cancel="isOwner && row.status === 'pending'"
-                :can-reapply="isOwner && row.status === 'rejected'"
+                :can-cancel="row.status === 'pending'"
+                :can-reapply="canReapplyCreditRequest(row.status)"
                 @view-details="navigateTo(creditRequestPath(row.id))"
                 @cancel="emit('cancelRequest', row)"
                 @reapply="emit('reapply', row)"
               />
             </TableCell>
           </TableRow>
-          <p
-            v-if="!creditLoading && filteredCreditRequests.length === 0"
-            class="px-4 py-8 text-center text-sm text-grey-400"
+          <div
+            v-if="filteredCreditRequests.length === 0"
+            class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center text-sm text-grey-300"
           >
             No credit requests yet.
-          </p>
+          </div>
         </TableBody>
+
         <TableFooter>
           <PaginationBar
             :page="creditMeta.page"
@@ -176,8 +215,9 @@ const repaymentTotalPages = computed(() =>
             :page-size="creditMeta.limit"
             :has-next-page="creditMeta.page < creditTotalPages"
             :has-prev-page="creditMeta.page > 1"
-            @update:page="emit('creditPage', $event)"
-            @update:page-size="emit('creditLimit', $event)"
+            :disabled="creditLoading"
+            @change="emit('creditPage', $event)"
+            @page-size-change="emit('creditLimit', $event)"
           />
         </TableFooter>
       </TableShell>
@@ -191,8 +231,9 @@ const repaymentTotalPages = computed(() =>
         :page-size="creditMeta.limit"
         :has-next-page="creditMeta.page < creditTotalPages"
         :has-prev-page="creditMeta.page > 1"
-        @update:page="emit('creditPage', $event)"
-        @update:page-size="emit('creditLimit', $event)"
+        :disabled="creditLoading"
+        @change="emit('creditPage', $event)"
+        @page-size-change="emit('creditLimit', $event)"
       />
     </template>
 
@@ -201,38 +242,65 @@ const repaymentTotalPages = computed(() =>
         v-if="isCompactViewport"
         :items="filteredRepayments"
         :loading="repaymentLoading"
+        :downloading-id="downloadingRepaymentId"
+        @download-invoice="downloadCreditRepaymentInvoice"
       />
-      <TableShell v-else :class="CUSTOMER_TABLE_PANEL_CLASS">
+      <TableShell v-else :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
         <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
           <TableHeadRow
-            class="grid grid-cols-[1.2fr_1fr_1fr_0.8fr] gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400"
+            :style="{ gridTemplateColumns: CREDIT_REPAYMENT_TABLE_GRID }"
+            :class="repaymentLoading ? 'pointer-events-none opacity-60' : undefined"
           >
-            <span>Reference</span>
-            <span>Amount</span>
-            <span>Date</span>
-            <span>Status</span>
+            <TableCell>Reference</TableCell>
+            <TableCell>Amount</TableCell>
+            <TableCell>Date</TableCell>
+            <TableCell>Repayment method</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell class="sr-only">Actions</TableCell>
           </TableHeadRow>
         </TableHeader>
-        <TableBody :class="CUSTOMER_TABLE_BODY_CLASS">
+
+        <TableSkeleton
+          v-if="repaymentLoading"
+          :columns="CREDIT_REPAYMENT_HISTORY_SKELETON_COLUMNS"
+          :grid-template-columns="CREDIT_REPAYMENT_TABLE_GRID"
+          :row-count="repaymentSkeletonRowCount"
+          :body-class="CUSTOMER_TABLE_BODY_CLASS"
+        />
+
+        <TableBody v-else :class="CUSTOMER_TABLE_BODY_CLASS">
           <TableRow
             v-for="row in filteredRepayments"
             :key="row.id"
-            :class="`${CUSTOMER_TABLE_DATA_ROW_CLASS} grid grid-cols-[1.2fr_1fr_1fr_0.8fr] gap-3 px-4 py-3`"
+            :class="CUSTOMER_TABLE_STRIPED_ROW_CLASS"
+            :style="{ gridTemplateColumns: CREDIT_REPAYMENT_TABLE_GRID }"
           >
-            <TableCell class="font-medium text-grey-900">{{ row.referenceCode }}</TableCell>
+            <TableCell>
+              <p class="truncate text-base font-semibold text-grey-900">{{ row.referenceCode }}</p>
+            </TableCell>
             <TableCell>{{ formatCreditFromKobo(row.paymentAmountKobo) }}</TableCell>
             <TableCell>{{ formatRequestDate(row.createdAt) }}</TableCell>
+            <TableCell>{{ creditRepaymentPaymentMethodLabel(row.paymentMethod) }}</TableCell>
             <TableCell>
-              <StatusTag variant="default">{{ row.status || '—' }}</StatusTag>
+              <StatusTag :variant="creditRepaymentStatusVariant(row.status)">
+                {{ creditRepaymentStatusLabel(row.status) }}
+              </StatusTag>
+            </TableCell>
+            <TableCell class="flex items-center justify-end">
+              <CreditRepaymentActionsMenu
+                :downloading="downloadingRepaymentId === row.id"
+                @download-invoice="downloadCreditRepaymentInvoice(row)"
+              />
             </TableCell>
           </TableRow>
-          <p
-            v-if="!repaymentLoading && filteredRepayments.length === 0"
-            class="px-4 py-8 text-center text-sm text-grey-400"
+          <div
+            v-if="filteredRepayments.length === 0"
+            class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center text-sm text-grey-300"
           >
             No repayments yet.
-          </p>
+          </div>
         </TableBody>
+
         <TableFooter>
           <PaginationBar
             :page="repaymentMeta.page"
@@ -241,8 +309,9 @@ const repaymentTotalPages = computed(() =>
             :page-size="repaymentMeta.limit"
             :has-next-page="repaymentMeta.page < repaymentTotalPages"
             :has-prev-page="repaymentMeta.page > 1"
-            @update:page="emit('repaymentPage', $event)"
-            @update:page-size="emit('repaymentLimit', $event)"
+            :disabled="repaymentLoading"
+            @change="emit('repaymentPage', $event)"
+            @page-size-change="emit('repaymentLimit', $event)"
           />
         </TableFooter>
       </TableShell>
@@ -256,8 +325,9 @@ const repaymentTotalPages = computed(() =>
         :page-size="repaymentMeta.limit"
         :has-next-page="repaymentMeta.page < repaymentTotalPages"
         :has-prev-page="repaymentMeta.page > 1"
-        @update:page="emit('repaymentPage', $event)"
-        @update:page-size="emit('repaymentLimit', $event)"
+        :disabled="repaymentLoading"
+        @change="emit('repaymentPage', $event)"
+        @page-size-change="emit('repaymentLimit', $event)"
       />
     </template>
   </div>

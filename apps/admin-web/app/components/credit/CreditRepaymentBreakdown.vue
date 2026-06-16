@@ -12,7 +12,9 @@ import {
 } from '@gosource/ui';
 import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
 import CreditRepaymentScheduleMobileList from '~/components/credit/CreditRepaymentScheduleMobileList.vue';
+import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
 import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { parseCreditRepaymentSchedule } from '~/lib/credit-api';
 import {
@@ -29,9 +31,13 @@ const limit = ref(25);
 
 const query = computed(() => ({ page: page.value, limit: limit.value }));
 
-const { data, pending } = await useFetch<unknown>(
+const { data, pending } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/credit/requests/${props.requestId}/repayment-schedule`,
-  { query, watch: [() => props.requestId, query] },
+  {
+    query,
+    watch: [() => props.requestId, query],
+    key: computed(() => `admin-credit-repayment-schedule:${props.requestId}`),
+  },
 );
 
 const parsed = computed(() =>
@@ -59,7 +65,7 @@ const isCompactViewport = useAdminCompactViewport();
     />
 
     <TableShell v-else class="overflow-visible border-0 shadow-none">
-      <TableHeader class="border-b border-grey-50 bg-grey-25">
+      <TableHeader class="border-b border-grey-50 bg-white">
         <TableHeadRow :style="{ gridTemplateColumns: CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID }">
           <TableCell>Installments</TableCell>
           <TableCell>Due date</TableCell>
@@ -77,11 +83,17 @@ const isCompactViewport = useAdminCompactViewport();
         />
       </div>
 
-      <TableBody v-else-if="parsed.rows.length" class="!max-h-none !overflow-visible">
+      <CreditTableEmptyBody
+        v-else-if="!parsed.rows.length"
+        title="No repayment schedule yet"
+        description="Installments will appear here once a repayment plan is set up."
+      />
+
+      <TableBody v-else class="!max-h-none !overflow-visible">
         <TableRow
           v-for="row in parsed.rows"
           :key="row.id"
-          class="even:bg-[#FAFBFC]"
+          class="bg-white"
           :style="{ gridTemplateColumns: CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID }"
         >
           <TableCell>
@@ -116,8 +128,6 @@ const isCompactViewport = useAdminCompactViewport();
           </TableCell>
         </TableRow>
       </TableBody>
-
-      <p v-else class="py-6 text-center text-sm text-grey-500">No repayment schedule yet.</p>
 
       <TableFooter v-if="!pending && parsed.meta.total > 0">
         <CreditTablePagination

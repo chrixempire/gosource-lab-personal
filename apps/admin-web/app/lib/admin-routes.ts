@@ -6,6 +6,8 @@ export const ADMIN_PAGE_ROUTES = {
   ORDERS: '/orders',
   INVENTORY: '/inventory',
   INVENTORY_ITEM_CREATE: '/inventory/items/create',
+  INVENTORY_STORE_COUNT: '/inventory/items/store-count',
+  INVENTORY_REPORT: '/inventory/items/inventory-report',
   INVENTORY_CATEGORY: '/inventory/category',
   PURCHASE_ORDERS: '/inventory/purchase-orders',
   CREDIT_ANALYTICS: '/credit/analytics',
@@ -17,6 +19,7 @@ export const ADMIN_PAGE_ROUTES = {
   DISCOUNTS: '/discounts',
   PROMOTIONS: '/promotions',
   CUSTOMERS: '/customers',
+  // ACTIVITY_LOG: '/activity-log', // Feature disabled
   SETTINGS: '/settings',
   SETTINGS_SECURITY: '/settings/security',
   SETTINGS_USERS: '/settings/users',
@@ -68,12 +71,17 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: 'Discounts', icon: 'i-lucide-ticket', to: ADMIN_PAGE_ROUTES.DISCOUNTS },
   { label: 'Promotions', icon: 'i-lucide-megaphone', to: ADMIN_PAGE_ROUTES.PROMOTIONS },
   { label: 'Customers', icon: 'i-lucide-users', to: ADMIN_PAGE_ROUTES.CUSTOMERS },
+  // { label: 'Activity log', icon: 'i-lucide-scroll-text', to: ADMIN_PAGE_ROUTES.ACTIVITY_LOG },
 ];
 
 /** Child nav active state — avoids parent + sibling routes sharing `/inventory` prefix. */
 export function isAdminNavChildActive(path: string, childTo: string) {
   if (childTo === ADMIN_PAGE_ROUTES.INVENTORY) {
-    return path === ADMIN_PAGE_ROUTES.INVENTORY || path.startsWith('/inventory/items');
+    return (
+      path === ADMIN_PAGE_ROUTES.INVENTORY ||
+      path.startsWith('/inventory/items') ||
+      path === ADMIN_PAGE_ROUTES.INVENTORY_STORE_COUNT
+    );
   }
 
   if (childTo === ADMIN_PAGE_ROUTES.INVENTORY_CATEGORY) {
@@ -147,6 +155,10 @@ export function inventoryItemPath(id: string) {
 
 export function inventoryItemEditPath(id: string) {
   return `${ADMIN_PAGE_ROUTES.INVENTORY}/items/edit/${id}`;
+}
+
+export function inventoryStoreCountHistoryPath(id: string) {
+  return `${ADMIN_PAGE_ROUTES.INVENTORY_STORE_COUNT}/${id}`;
 }
 
 export function inventoryCategoryPath(id: string) {

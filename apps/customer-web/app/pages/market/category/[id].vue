@@ -46,6 +46,7 @@ const { data: categoryDetailPayload, pending: loading } = await useAuthenticated
     }
   },
   {
+    fastNav: true,
     watch: [categoryId],
     default: () => ({
       category: cachedCategory.value,

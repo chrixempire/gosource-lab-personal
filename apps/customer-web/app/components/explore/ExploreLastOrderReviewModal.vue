@@ -35,9 +35,9 @@ const emit = defineEmits<{
   'update:open': [value: boolean];
 }>();
 
-const route = useRoute();
+
 const { setQuantityForUnit, loadCart } = useMarketplaceCart();
-const { cartDrawerOpen } = useMarketplaceUi();
+const { navigateToMarketAndOpenCart } = useMarketplaceUi();
 const { ensureBranchForAction } = useMarketBranchGate();
 const { refresh: refreshExploreLastOrder } = useExploreLastOrder();
 const { refresh: refreshExploreProcurement } = useExploreProcurementInsight();
@@ -96,6 +96,7 @@ async function onAddToCart() {
       const success = await setQuantityForUnit(line.productId, line.unit, line.quantity, {
         silent: true,
         product: line.product,
+        deferCartReload: true,
       });
 
       if (success) {
@@ -116,12 +117,7 @@ async function onAddToCart() {
     void refreshExploreLastOrder({ force: true });
     void refreshExploreProcurement({ force: true });
 
-    if (!route.path.startsWith('/market')) {
-      await navigateTo('/market');
-      await nextTick();
-    }
-
-    cartDrawerOpen.value = true;
+    await navigateToMarketAndOpenCart();
     close();
   } finally {
     adding.value = false;
@@ -241,6 +237,7 @@ async function onAddToCart() {
         <Button
           type="button"
           variant="neutral"
+          size="medium"
           class="!rounded-full sm:min-w-[7rem]"
           :disabled="adding"
           @click="close"
@@ -250,6 +247,7 @@ async function onAddToCart() {
         <Button
           type="button"
           variant="primary"
+          size="medium"
           class="!rounded-full sm:min-w-[9rem]"
           :loading="adding"
           :disabled="visibleLines.length === 0"

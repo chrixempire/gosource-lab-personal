@@ -39,12 +39,20 @@ const props = withDefaults(defineProps<Props>(), {
           'active:!bg-button-disabled active:!shadow-none active:!translate-y-0',
         ],
         props.disabled &&
-          !props.loading && [
-            'pointer-events-none !cursor-not-allowed select-none',
-            '!border-border-default !bg-button-disabled !text-disabled !shadow-none',
-            'hover:!border-border-default hover:!bg-button-disabled hover:!text-disabled hover:!shadow-none',
-            'active:!translate-y-0 active:!border-border-default active:!bg-button-disabled active:!shadow-none',
-          ],
+          !props.loading &&
+          (props.variant === 'destructive'
+            ? [
+                '!pointer-events-auto !cursor-not-allowed select-none',
+                '!border-0 !bg-button-negative !text-on-solid-bg !shadow-[var(--button-elevated-inner-negative)]',
+                'hover:!cursor-not-allowed hover:!border-0 hover:!bg-button-negative hover:!text-on-solid-bg hover:!shadow-[var(--button-elevated-inner-negative)]',
+                'active:!translate-y-0 active:!border-0 active:!bg-button-negative active:!shadow-[var(--button-elevated-inner-negative)]',
+              ]
+            : [
+                'pointer-events-none !cursor-not-allowed select-none',
+                '!border-border-default !bg-button-disabled !text-disabled !shadow-none',
+                'hover:!border-border-default hover:!bg-button-disabled hover:!text-disabled hover:!shadow-none',
+                'active:!translate-y-0 active:!border-border-default active:!bg-button-disabled active:!shadow-none',
+              ]),
         props.class,
       )
     "

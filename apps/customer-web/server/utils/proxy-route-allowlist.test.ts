@@ -39,6 +39,15 @@ test('allows customer credit routes', () => {
   assert.ok(getProxyRouteRule('GET', ['credit', '507f1f77bcf86cd799439011']));
 });
 
+test('allows coupon apply route for checkout', () => {
+  assert.ok(getProxyRouteRule('POST', ['admin', 'coupon', 'apply', 'req_123', 'request']));
+  assert.ok(getProxyRouteRule('DELETE', ['admin', 'coupon', 'apply', 'req_123', 'request']));
+});
+
+test('allows marketplace banner route', () => {
+  assert.ok(getProxyRouteRule('GET', ['marketplace-banners']));
+});
+
 test('rejects routes outside the explicit allowlist', () => {
   assert.equal(getProxyRouteRule('GET', ['auth', 'login']), null);
   assert.equal(getProxyRouteRule('GET', ['employee', 'branch-pending-invites', 'abc']), null);

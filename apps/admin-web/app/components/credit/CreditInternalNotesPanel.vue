@@ -2,6 +2,7 @@
 import { Button } from '@gosource/ui';
 import AdminResponsiveOverlay from '~/components/shared/AdminResponsiveOverlay.vue';
 import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useCreditMutations } from '~/composables/useCreditMutations';
 import { formatCreditDateTime, parseCreditInternalNotes } from '~/lib/credit-api';
 import { CREDIT_LINK_BUTTON_CLASS } from '~/lib/credit-constants';
@@ -25,9 +26,13 @@ const notesQuery = computed(() => ({
   limit: 50,
 }));
 
-const { data, refresh } = await useFetch<unknown>(
+const { data, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/credit/notes/${targetId.value}`,
-  { query: notesQuery, watch: [targetId, () => props.noteType], lazy: true },
+  {
+    query: notesQuery,
+    watch: [targetId, () => props.noteType],
+    key: computed(() => `admin-credit-notes:${props.noteType}:${targetId.value}`),
+  },
 );
 
 const notes = computed(() => parseCreditInternalNotes(data.value));
@@ -125,7 +130,7 @@ async function submitNote(options?: { closeOverlay?: boolean }) {
       <Button
         type="button"
         variant="secondary"
-        size="small"
+        size="medium"
         class="w-full sm:w-auto"
         :loading="busyId === targetId"
         @click="submitNote({ closeOverlay: true })"

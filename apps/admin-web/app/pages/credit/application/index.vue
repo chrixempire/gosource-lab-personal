@@ -7,7 +7,9 @@ import CreditApplicationStatCards from '~/components/credit/CreditApplicationSta
 import CreditApplicationTable from '~/components/credit/CreditApplicationTable.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
+import { useCreditApplicationListFilters } from '~/composables/useCreditListFilters';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { creditApplicationPath, customerCreditHistoryPath } from '~/lib/admin-routes';
 import { creditApplicationListFiltersToApiQuery } from '~/lib/credit-filters';
@@ -17,20 +19,12 @@ import {
   CREDIT_LIST_TOOLBAR_CLASS,
   CREDIT_LIST_VIEW_TOOLBAR_CLASS,
 } from '~/lib/credit-page-layout';
-import type { CreditApplicationListFilters, CreditWorkflowStatus } from '~/types/credit';
+import type { CreditWorkflowStatus } from '~/types/credit';
 
 const { updateHeader } = useAdminHeader();
 const { routeView, effectiveView, isCompactViewport, setView } = useCollectionRouteState('table');
-
-const filters = ref<CreditApplicationListFilters>({
-  page: 1,
-  limit: 10,
-  search: '',
-  applicationType: [],
-  status: [],
-  startDate: '',
-  endDate: '',
-});
+const { filters, replaceFilters, resetFilters, setPage, setLimit } =
+  useCreditApplicationListFilters();
 
 const searchQuery = ref('');
 const debouncedSearch = useDebounce(searchQuery, 400);
@@ -39,7 +33,7 @@ const activeStat = ref<string | null>(null);
 
 const apiQuery = computed(() => creditApplicationListFiltersToApiQuery(filters.value));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/credit/applications', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/credit/applications', {
   query: apiQuery,
   watch: [apiQuery],
 });
@@ -51,6 +45,22 @@ const parsed = computed(() =>
 const rows = computed(() => parsed.value.rows);
 
 const stats = computed(() => computeApplicationStats(rows.value, parsed.value.meta.total));
+
+const isPendingFilter = computed(
+  () =>
+    activeStat.value === 'pending' ||
+    (filters.value.status.length === 1 && filters.value.status[0] === 'pending'),
+);
+
+const emptyStateTitle = computed(() =>
+  isPendingFilter.value ? 'No pending applications' : 'No applications found',
+);
+
+const emptyStateDescription = computed(() =>
+  isPendingFilter.value
+    ? 'New applications will appear here when customers submit them.'
+    : 'Adjust your filters or check back when customers submit applications.',
+);
 
 watch(
   () => filters.value.search,
@@ -70,20 +80,8 @@ watch(debouncedSearch, (value) => {
   replaceFilters({ search: trimmed, page: 1 });
 });
 
-function replaceFilters(next: Partial<CreditApplicationListFilters>) {
-  filters.value = { ...filters.value, ...next };
-}
-
-function resetFilters() {
-  filters.value = {
-    page: 1,
-    limit: filters.value.limit,
-    search: '',
-    applicationType: [],
-    status: [],
-    startDate: '',
-    endDate: '',
-  };
+function onClearAllFilters() {
+  resetFilters();
   searchQuery.value = '';
   activeStat.value = null;
 }
@@ -138,7 +136,7 @@ useHead({ title: 'Credit applications' });
       <CreditApplicationFilterBar
         :filters="filters"
         @apply="replaceFilters"
-        @clear-all="resetFilters"
+        @clear-all="onClearAllFilters"
       />
     </div>
 
@@ -152,8 +150,8 @@ useHead({ title: 'Credit applications' });
 
     <EmptyState
       v-else-if="effectiveView === 'cards' && !pending && rows.length === 0"
-      title="No applications found"
-      description="Adjust your filters or check back when customers submit applications."
+      :title="emptyStateTitle"
+      :description="emptyStateDescription"
     />
 
     <template v-else>
@@ -163,8 +161,8 @@ useHead({ title: 'Credit applications' });
         :rows="rows"
         :meta="parsed.meta"
         :loading="pending"
-        @page="replaceFilters({ page: $event })"
-        @page-size="replaceFilters({ limit: $event, page: 1 })"
+        @page="setPage"
+        @page-size="setLimit"
         @view="onView"
         @view-credit-history="onViewCreditHistory"
       />
@@ -174,8 +172,10 @@ useHead({ title: 'Credit applications' });
         :rows="rows"
         :meta="parsed.meta"
         :loading="pending"
-        @page="replaceFilters({ page: $event })"
-        @page-size="replaceFilters({ limit: $event, page: 1 })"
+        :empty-title="emptyStateTitle"
+        :empty-description="emptyStateDescription"
+        @page="setPage"
+        @page-size="setLimit"
         @view="onView"
         @view-credit-history="onViewCreditHistory"
       />

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { StatusTag } from '@gosource/ui';
 import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { formatCreditDate, parseCustomerOrdersSummary } from '~/lib/credit-api';
 import { creditStatusVariant, creditWorkflowStatusLabel } from '~/lib/credit-constants';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
@@ -13,9 +14,12 @@ const props = defineProps<{
 
 const businessId = toRef(props, 'businessId');
 
-const { data, pending } = await useFetch<unknown>(
+const { data, pending } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/customers/${businessId.value}/orders-summary`,
-  { watch: [businessId], lazy: true },
+  {
+    watch: [businessId],
+    key: computed(() => `admin-customer-orders-summary:${businessId.value}`),
+  },
 );
 
 const summary = computed(() => parseCustomerOrdersSummary(data.value));

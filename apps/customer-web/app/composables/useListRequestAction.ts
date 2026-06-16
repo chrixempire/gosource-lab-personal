@@ -4,7 +4,9 @@ import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { shoppingListSubtotal } from '~/lib/shopping-list';
 import { useCustomerBranchService } from '~/services/branch.service';
 import { useCustomerRequestService } from '~/services/request.service';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { invalidateManageRequestsListCache } from '~/lib/invalidate-customer-list-cache';
+import { resolveRequestRecordId } from '~/lib/request-details';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 const MIN_REQUEST_SUBTOTAL_NAIRA = 25_000;
 
@@ -83,12 +85,12 @@ export function useListRequestAction() {
       };
 
       const response = await createRequestFromShoppingList(list.id, payload);
-      const createdRequestId = response.data?.id;
+      const createdRequestId = resolveRequestRecordId(response.data);
+      const routesToCheckout = Boolean(isBusinessOwner.value && createdRequestId);
 
-      toast.success('Request created successfully');
-
-      if (isBusinessOwner.value && createdRequestId) {
+      if (routesToCheckout) {
         await router.push(`/checkout/${createdRequestId}`);
+        invalidateManageRequestsListCache();
         return;
       }
 
@@ -97,12 +99,14 @@ export function useListRequestAction() {
           path: '/manage-requests',
           query: { open: createdRequestId },
         });
-        return;
+      } else {
+        await router.push('/manage-requests');
       }
 
-      await router.push('/manage-requests');
+      invalidateManageRequestsListCache();
+      toast.success('Request submitted', { duration: 2000 });
     } catch (error) {
-      toast.error(extractApiErrorMessage(error, 'Unable to create request from list right now'));
+      reportCustomerApiError(error, 'Unable to create request from list right now');
     } finally {
       isSubmitting.value = false;
     }

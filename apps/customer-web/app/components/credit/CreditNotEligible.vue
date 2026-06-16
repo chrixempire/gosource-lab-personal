@@ -17,10 +17,10 @@ import { Lock, ShoppingBag } from 'lucide-vue-next';
           </div>
         </div>
 
-        <h2 class="mt-8 text-2xl font-semibold leading-tight text-grey-900">
+        <h3 class="mt-8">
           Credit isn't available for your business yet
-        </h2>
-        <p class="mt-3 max-w-md text-base leading-6 text-grey-text">
+        </h3>
+        <p class="mt-3 max-w-md text-body-lg text-grey-text">
           Keep placing orders on GoSource and we'll let you know when you're eligible to apply for
           business credit.
         </p>

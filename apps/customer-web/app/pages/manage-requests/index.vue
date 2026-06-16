@@ -1,26 +1,9 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'customer-market' });
 
-import type {
-  BranchRecord,
-  CustomerMeResponse,
-  RequestRecord,
-} from '@gosource/api-client';
+import type { BranchRecord, RequestRecord } from '@gosource/api-client';
 import {
   Button,
-  Dialog,
-  DialogBody,
-  DialogClose,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Drawer,
-  DrawerBody,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  PaginationBar,
   ViewToggle,
   toast,
 } from '@gosource/ui';
@@ -28,10 +11,10 @@ import { useDebounceFn } from '@vueuse/core';
 import BranchPickerDropdown from '~/components/branches/BranchPickerDropdown.vue';
 import MemberConfirmOverlay from '~/components/members/MemberConfirmOverlay.vue';
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
-import RequestCards, { type RequestListItem } from '~/components/requests/RequestCards.vue';
-import RequestCardsSkeleton from '~/components/requests/RequestCardsSkeleton.vue';
+import type { RequestListItem } from '~/components/requests/RequestCards.vue';
 import RequestDetailsPanel from '~/components/requests/RequestDetailsPanel.vue';
-import RequestRejectForm from '~/components/requests/RequestRejectForm.vue';
+import RequestDetailsSlidePanel from '~/components/requests/RequestDetailsSlidePanel.vue';
+import RequestRejectOverlay from '~/components/requests/RequestRejectOverlay.vue';
 import RequestBranchSetupBanner from '~/components/requests/RequestBranchSetupBanner.vue';
 import RequestFilterBar from '~/components/requests/RequestFilterBar.vue';
 import RequestTable from '~/components/requests/RequestTable.vue';
@@ -54,16 +37,19 @@ import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useCustomerBranchService } from '~/services/branch.service';
-import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { useCustomerSession } from '~/composables/useCustomerSession';
+import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
+import { usePaginatedListData } from '~/composables/usePaginatedListData';
 import { useCustomerRequestService } from '~/services/request.service';
 import {
   parseRequestFiltersFromQuery,
   requestFiltersToRouteQuery,
+  requestMatchesListFilters,
   requestStatusFiltersToApiParam,
   type RequestListFilters,
 } from '~/lib/request-list-filters';
 
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+const { session, whenReady } = useCustomerSession();
 const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 const currentActorId = computed(() => {
@@ -81,7 +67,7 @@ const employeeBranchId = computed(() => {
 const { hasBranch, fetchBranchesInBackground } = useMarketBranchGate();
 const { clearDismissalForSession } = useMarketBranchSetupDismissal();
 const { listBranches } = useCustomerBranchService();
-const { listRequests, getRequest, cancelRequest } = useCustomerRequestService();
+const { listRequests, getRequest, cancelRequest, rejectRequest } = useCustomerRequestService();
 const {
   setActiveRequest,
   clearActiveRequest,
@@ -91,6 +77,7 @@ const {
   saveProductEdit,
   updateDraftLineQuantity,
   removeDraftLineLocal,
+  reopenRejected,
   lineMutationLoading,
 } = useRequestEdit();
 const route = useRoute();
@@ -135,7 +122,8 @@ const detailsOpen = ref(false);
 const detailsLoading = ref(false);
 const selectedRequest = ref<RequestRecord | null>(null);
 const isEditingProducts = ref(false);
-const isRejecting = ref(false);
+const rejectOpen = ref(false);
+const rejectLoading = ref(false);
 const rejectReason = ref('');
 
 const confirmOpen = ref(false);
@@ -167,13 +155,24 @@ watch(employeeBranchId, (next) => {
   }
 });
 
+const requestsListKeyParts = computed(() => [
+  page.value,
+  limit.value,
+  debouncedSearch.value,
+  listFilters.value.amountMin ?? '',
+  listFilters.value.amountMax ?? '',
+  listFilters.value.status.join(','),
+  apiBranchId.value ?? '',
+]);
+
 const {
   data: requestsPagePayload,
   pending: requestsLoading,
   status: requestsFetchStatus,
   refresh: refreshRequestsData,
-} = await useAuthenticatedAsyncData(
+} = await usePaginatedListData(
   'manage-requests-index',
+  requestsListKeyParts,
   async () => {
     const branchesResponse = await listBranches({ page: 1, limit: 100 });
     const branchRows = branchesResponse.data ?? [];
@@ -186,12 +185,19 @@ const {
       };
     }
 
+    const requestedBranchId = !isEmployeeSession.value ? apiBranchId.value?.trim() : '';
+    const scopedBranchId =
+      requestedBranchId
+      && (branchRows.length === 0 || branchRows.some((branch) => branch.id === requestedBranchId))
+        ? requestedBranchId
+        : undefined;
+
     const requestsResponse = await listRequests({
       page: page.value,
       limit: limit.value,
       search: debouncedSearch.value.trim() || undefined,
       status: requestStatusFiltersToApiParam(listFilters.value.status),
-      branchId: !isEmployeeSession.value ? apiBranchId.value : undefined,
+      branchId: scopedBranchId,
       amountFrom: listFilters.value.amountMin ?? undefined,
       amountTo: listFilters.value.amountMax ?? undefined,
     });
@@ -207,15 +213,6 @@ const {
     };
   },
   {
-    watch: [
-      page,
-      limit,
-      debouncedSearch,
-      () => listFilters.value.amountMin,
-      () => listFilters.value.amountMax,
-      () => listFilters.value.status.join(','),
-      apiBranchId,
-    ],
     default: () => ({
       branches: [] as BranchRecord[],
       requests: [] as RequestRecord[],
@@ -298,25 +295,11 @@ const showNoBranchSetup = computed(
   () => isSuperAdmin.value && hasFinishedInitialFetch.value && branches.value.length === 0,
 );
 
-const showDesktopTable = computed(
-  () => showNoBranchSetup.value || effectiveView.value === 'table',
-);
-
-const cardSectionClass = computed(() => {
-  if (showNoBranchSetup.value) {
-    return 'block min-[1000px]:hidden';
-  }
-
-  return effectiveView.value === 'table' ? 'block min-[1000px]:hidden' : 'block';
-});
-
-const showCardSkeleton = computed(
-  () => requestsLoading.value || branchesLoading.value || showNoBranchSetup.value,
-);
-
 const tableRequests = computed(() => (showNoBranchSetup.value ? [] : requestItems.value));
 
-const tableLoading = computed(() => requestsLoading.value && !showNoBranchSetup.value);
+const tableLoading = computed(
+  () => requestsLoading.value || branchesLoading.value || showNoBranchSetup.value,
+);
 
 const tableEmptyMessage = computed(() =>
   showNoBranchSetup.value
@@ -366,7 +349,7 @@ function clearAllRequestFilters() {
 
 async function navigateToRequestDetails(
   requestId: string,
-  options?: { reject?: boolean; edit?: boolean },
+  options?: { edit?: boolean },
 ) {
   if (!requestId) {
     return;
@@ -378,9 +361,6 @@ async function navigateToRequestDetails(
   }
 
   const query: Record<string, string> = {};
-  if (options?.reject) {
-    query.reject = '1';
-  }
   if (options?.edit) {
     query.edit = '1';
   }
@@ -393,14 +373,23 @@ async function navigateToRequestDetails(
 
 async function openRequestDetails(
   requestId: string,
-  options?: { reject?: boolean; edit?: boolean },
+  options?: { edit?: boolean },
 ) {
   if (!requestId) {
     return;
   }
 
+  if (import.meta.client) {
+    await whenReady();
+  }
+
+  const activeSession = session.value;
+  if (!activeSession) {
+    return;
+  }
+
   const cached = requests.value.find((item) => item.id === requestId);
-  if (cached && !memberCanViewRequest(session.value, cached)) {
+  if (cached && !memberCanViewRequest(activeSession, cached)) {
     toast.error('You do not have access to this request.');
     return;
   }
@@ -419,7 +408,7 @@ async function openRequestDetails(
   try {
     const response = await getRequest(requestId);
     if (response.data) {
-      if (!memberCanViewRequest(session.value, response.data)) {
+      if (!memberCanViewRequest(activeSession, response.data)) {
         toast.error('You do not have access to this request.');
         closeDetails();
         return;
@@ -505,7 +494,7 @@ async function finishEditingProducts(save: boolean) {
   if (save && selectedRequest.value) {
     const next = await saveProductEdit(selectedRequest.value.id);
     if (next) {
-      replaceRequestInList(next);
+      syncRequestInList(next);
     }
   } else {
     cancelProductEdit();
@@ -514,8 +503,29 @@ async function finishEditingProducts(save: boolean) {
   isEditingProducts.value = false;
 }
 
-function replaceRequestInList(next: RequestRecord) {
-  requests.value = requests.value.map((item) => (item.id === next.id ? next : item));
+function syncRequestInList(next: RequestRecord) {
+  const matches = requestMatchesListFilters(next, listFilters.value, {
+    branchId: apiBranchId.value,
+  });
+  const index = requests.value.findIndex((item) => item.id === next.id);
+
+  if (!matches) {
+    if (index >= 0) {
+      requests.value = requests.value.filter((item) => item.id !== next.id);
+      const total = Math.max(0, meta.value.total - 1);
+      const totalPages = Math.max(1, Math.ceil(total / meta.value.limit) || 1);
+      meta.value = {
+        ...meta.value,
+        total,
+        totalPages,
+        hasNextPage: meta.value.page < totalPages,
+        hasPrevPage: meta.value.page > 1,
+      };
+    }
+  } else if (index >= 0) {
+    requests.value = requests.value.map((item) => (item.id === next.id ? next : item));
+  }
+
   if (selectedRequest.value?.id === next.id) {
     selectedRequest.value = next;
     setActiveRequest(next);
@@ -585,7 +595,7 @@ function handleCancel() {
     action: async () => {
       const response = await cancelRequest(selectedRequest.value!.id);
       if (response.data) {
-        replaceRequestInList(response.data);
+        syncRequestInList(response.data);
         closeDetails();
       }
     },
@@ -654,6 +664,20 @@ async function handleRequestAddMore(request: RequestListItem) {
 }
 
 async function handleRequestReopen(request: RequestListItem) {
+  if (isSuperAdmin.value) {
+    const next = await reopenRejected(request.id);
+    if (!next) {
+      return;
+    }
+
+    syncRequestInList(next);
+    clearNuxtData(
+      `manage-request-detail:${getCustomerSessionCacheSignature(session.value)}:${request.id}`,
+    );
+    await navigateToRequestDetails(request.id, { edit: true });
+    return;
+  }
+
   await navigateToRequestDetails(request.id);
 }
 
@@ -666,20 +690,43 @@ async function handleRequestCheckout(request: RequestListItem) {
 }
 
 async function handleRequestReject(request: RequestListItem) {
-  await navigateToRequestDetails(request.id, { reject: true });
-}
-
-async function handleRequestCancel(request: RequestListItem) {
-  if (isSuperAdmin.value) {
-    await navigateToRequestDetails(request.id);
+  selectRequestForAction(request);
+  if (!selectedRequest.value) {
+    toast.error('Unable to load request.');
     return;
   }
 
+  rejectReason.value = '';
+  rejectOpen.value = true;
+}
+
+async function handleRequestCancel(request: RequestListItem) {
   selectRequestForAction(request);
   if (!selectedRequest.value) {
     await openRequestDetails(request.id);
   }
+
   handleCancel();
+}
+
+async function submitReject(reason: string) {
+  if (!selectedRequest.value) {
+    return;
+  }
+
+  rejectLoading.value = true;
+  try {
+    const response = await rejectRequest(selectedRequest.value.id, {
+      rejectionReasons: reason,
+    });
+    if (response.data) {
+      syncRequestInList(response.data);
+      rejectOpen.value = false;
+      rejectReason.value = '';
+    }
+  } finally {
+    rejectLoading.value = false;
+  }
 }
 
 </script>
@@ -734,203 +781,89 @@ async function handleRequestCancel(request: RequestListItem) {
         :branches-ready="hasFinishedInitialFetch"
       />
 
-      <div v-if="showDesktopTable" class="hidden min-[1000px]:block">
-        <RequestTable
-          :requests="tableRequests"
-          :page="meta.page"
-          :total-pages="meta.totalPages"
-          :total-items="meta.total"
-          :page-size="meta.limit"
-          :has-next-page="meta.hasNextPage"
-          :has-prev-page="meta.hasPrevPage"
-          :loading="tableLoading"
-          :empty-message="tableEmptyMessage"
-          :can-approve-reject="rowCanApproveReject"
-          :can-cancel="rowCanCancel"
-          :can-edit="rowCanEdit"
-          :can-add-more="rowCanAddMore"
-          :can-reopen="rowCanReopen"
-          :can-checkout="rowCanCheckout"
-          @page="setPage"
-          @page-size="setLimit"
-          @row-click="handleRequestClick"
-          @view-details="handleRequestViewDetails"
-          @edit="handleRequestEdit"
-          @add-more="handleRequestAddMore"
-          @reopen="handleRequestReopen"
-          @checkout="handleRequestCheckout"
-          @approve="handleRequestApprove"
-          @reject="handleRequestReject"
-          @cancel="handleRequestCancel"
-        />
-      </div>
+      <RequestTable
+        :requests="tableRequests"
+        :layout="effectiveView"
+        :page="page"
+        :total-pages="meta.totalPages"
+        :total-items="meta.total"
+        :page-size="limit"
+        :has-next-page="meta.hasNextPage"
+        :has-prev-page="meta.hasPrevPage"
+        :loading="tableLoading"
+        :empty-message="tableEmptyMessage"
+        :can-approve-reject="rowCanApproveReject"
+        :can-cancel="rowCanCancel"
+        :can-edit="rowCanEdit"
+        :can-add-more="rowCanAddMore"
+        :can-reopen="rowCanReopen"
+        :can-checkout="rowCanCheckout"
+        @page="setPage"
+        @page-size="setLimit"
+        @row-click="handleRequestClick"
+        @view-details="handleRequestViewDetails"
+        @edit="handleRequestEdit"
+        @add-more="handleRequestAddMore"
+        @reopen="handleRequestReopen"
+        @checkout="handleRequestCheckout"
+        @approve="handleRequestApprove"
+        @reject="handleRequestReject"
+        @cancel="handleRequestCancel"
+      />
 
-      <div :class="cardSectionClass">
-        <RequestCardsSkeleton v-if="showCardSkeleton" />
-
-        <div v-else class="space-y-2">
-          <RequestCards
-            v-if="requestItems.length"
-            :requests="requestItems"
-            :can-approve-reject="rowCanApproveReject"
-            :can-cancel="rowCanCancel"
-            :can-edit="rowCanEdit"
-            :can-add-more="rowCanAddMore"
-            :can-reopen="rowCanReopen"
-            :can-checkout="rowCanCheckout"
-            @click="handleRequestClick"
-            @view-details="handleRequestViewDetails"
-            @edit="handleRequestEdit"
-            @add-more="handleRequestAddMore"
-            @reopen="handleRequestReopen"
-            @checkout="handleRequestCheckout"
-            @approve="handleRequestApprove"
-            @reject="handleRequestReject"
-            @cancel="handleRequestCancel"
-          />
-
-          <div
-            v-else
-            class="rounded-[24px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center text-sm text-grey-300"
-          >
-            No requests found for the current filters.
-          </div>
-
-          <PaginationBar
-            plain
-            :page="meta.page"
-            :total-pages="meta.totalPages"
-            :total-items="meta.total"
-            :page-size="meta.limit"
-            :has-next-page="meta.hasNextPage"
-            :has-prev-page="meta.hasPrevPage"
-            @change="setPage"
-            @page-size-change="setLimit"
-          />
-        </div>
-      </div>
-
-    <Drawer
+    <RequestDetailsSlidePanel
       v-if="!isSuperAdmin"
-      :open="detailsOpen && isCompactViewport"
-      @update:open="!$event && closeDetails()"
-    >
-      <DrawerContent class="max-h-[92vh] overflow-hidden">
-        <DrawerHeader class="items-center gap-3 border-b border-grey-50 bg-background-on-canvas">
-          <DrawerTitle class="min-w-0 flex-1 text-xl font-semibold text-grey-900">
-            Request details
-          </DrawerTitle>
-          <div
-            v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && isEditingProducts && canEditProducts"
-            class="flex shrink-0 items-center gap-2"
-          >
-            <Button
-              variant="neutral"
-              size="small"
-              class="!w-auto"
-              :disabled="lineMutationLoading"
-              @click="finishEditingProducts(false)"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="small"
-              class="!w-auto"
-              :loading="lineMutationLoading"
-              @click="finishEditingProducts(true)"
-            >
-              Save
-            </Button>
-          </div>
-          <RequestActionsMenu
-            v-else-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton"
-            trigger-variant="icon"
-            :show-view-details="false"
-            :can-cancel="canCancel"
-            :can-edit="canEditProducts"
-            :can-add-more="canAddMoreItems"
-            @edit="startEditingProducts"
-            @add-more="handleAddMoreItems"
-            @cancel="handleCancel"
-          />
-          <DrawerClose class="shrink-0" />
-        </DrawerHeader>
-        <DrawerBody class="bg-background-on-canvas">
-          <RequestDetailsPanel
-            :view="requestDetailsView"
-            :loading="showRequestDetailsSkeleton"
-            :refreshing="isRequestDetailsRefreshing"
-            :editable="productsEditable"
-            :products-editing="lineMutationLoading"
-            :format-currency="formatRequestCurrency"
-            @quantity-change="handleProductQuantityChange"
-            @remove-line="handleProductRemove"
-          />
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
-
-    <Dialog
-      v-if="!isSuperAdmin && !isCompactViewport"
       :open="detailsOpen"
       @update:open="!$event && closeDetails()"
     >
-      <DialogContent class="max-h-[90vh] max-w-3xl overflow-hidden p-0">
-        <DialogHeader class="items-center gap-3 border-b border-grey-50 bg-background-on-canvas px-6 py-5">
-          <DialogTitle class="min-w-0 flex-1 text-[24px] font-semibold text-grey-900">
-            Request details
-          </DialogTitle>
-          <div
-            v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && isEditingProducts && canEditProducts"
-            class="flex shrink-0 items-center gap-2"
+      <template #actions>
+        <div
+          v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && isEditingProducts && canEditProducts"
+          class="flex shrink-0 items-center gap-2"
+        >
+          <Button
+            variant="neutral"
+            size="small"
+            class="!w-auto"
+            :disabled="lineMutationLoading"
+            @click="finishEditingProducts(false)"
           >
-            <Button
-              variant="neutral"
-              size="small"
-              class="!w-auto"
-              :disabled="lineMutationLoading"
-              @click="finishEditingProducts(false)"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="small"
-              class="!w-auto"
-              :loading="lineMutationLoading"
-              @click="finishEditingProducts(true)"
-            >
-              Save
-            </Button>
-          </div>
-          <RequestActionsMenu
-            v-else-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton"
-            trigger-variant="icon"
-            :show-view-details="false"
-            :can-cancel="canCancel"
-            :can-edit="canEditProducts"
-            :can-add-more="canAddMoreItems"
-            @edit="startEditingProducts"
-            @add-more="handleAddMoreItems"
-            @cancel="handleCancel"
-          />
-          <DialogClose class="shrink-0" />
-        </DialogHeader>
-        <DialogBody class="max-h-[70vh] overflow-y-auto bg-background-on-canvas px-6 py-5">
-          <RequestDetailsPanel
-            :view="requestDetailsView"
-            :loading="showRequestDetailsSkeleton"
-            :refreshing="isRequestDetailsRefreshing"
-            :editable="productsEditable"
-            :products-editing="lineMutationLoading"
-            :format-currency="formatRequestCurrency"
-            @quantity-change="handleProductQuantityChange"
-            @remove-line="handleProductRemove"
-          />
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="small"
+            class="!w-auto"
+            :loading="lineMutationLoading"
+            @click="finishEditingProducts(true)"
+          >
+            Save
+          </Button>
+        </div>
+        <RequestActionsMenu
+          v-else-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton"
+          trigger-variant="icon"
+          :show-view-details="false"
+          :can-cancel="canCancel"
+          :can-edit="canEditProducts"
+          :can-add-more="canAddMoreItems"
+          @edit="startEditingProducts"
+          @add-more="handleAddMoreItems"
+          @cancel="handleCancel"
+        />
+      </template>
+
+      <RequestDetailsPanel
+        :view="requestDetailsView"
+        :loading="showRequestDetailsSkeleton"
+        :refreshing="isRequestDetailsRefreshing"
+        :editable="productsEditable"
+        :products-editing="lineMutationLoading"
+        :format-currency="formatRequestCurrency"
+        @quantity-change="handleProductQuantityChange"
+        @remove-line="handleProductRemove"
+      />
+    </RequestDetailsSlidePanel>
 
     <MemberConfirmOverlay
       :open="confirmOpen"
@@ -942,6 +875,14 @@ async function handleRequestCancel(request: RequestListItem) {
       :loading="confirmLoading"
       @update:open="confirmOpen = $event"
       @confirm="runConfirmAction"
+    />
+
+    <RequestRejectOverlay
+      v-model:open="rejectOpen"
+      v-model:reason="rejectReason"
+      :request-reference="selectedRequest?.reference"
+      :loading="rejectLoading"
+      @confirm="submitReject"
     />
   </div>
 </template>

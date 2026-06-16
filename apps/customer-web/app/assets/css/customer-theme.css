@@ -1,5 +1,6 @@
 /* Forest green brand — matches business insight banner (#0B3D12 → #0F5C18) */
 @theme inline {
+  --font-libre: 'LibreCaslonCondensed', ui-serif, Georgia, serif;
   --color-primary-50: #e8f3ea;
   --color-primary-100: #d4ead8;
   --color-primary-300: #3d8f4a;
@@ -91,6 +92,10 @@ html.customer-theme-switching *::after {
 }
 
 @layer utilities {
+  .font-libre {
+    font-family: var(--font-libre);
+  }
+
   .customer-shell-bg {
     background: var(--customer-shell-gradient);
   }
@@ -203,8 +208,8 @@ html.customer-theme-switching *::after {
   }
 
   /* Overlays product photos — keep solid contrast in dark mode too. */
-  .customer-image-discount-badge {
-    @apply border-2 border-white bg-primary-500 text-white shadow-[0_4px_12px_rgba(16,24,40,0.22)];
+  .customer-image-discount-ribbon {
+    filter: drop-shadow(0 2px 6px rgba(16, 24, 40, 0.18));
   }
 
   .customer-image-discount-pill {

@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { StatusTag } from '@gosource/ui';
+import { Button, StatusTag } from '@gosource/ui';
+import { Download } from 'lucide-vue-next';
+import {
+  creditRepaymentPaymentMethodLabel,
+  creditRepaymentStatusLabel,
+  creditRepaymentStatusVariant,
+} from '~/lib/credit-constants';
 import { formatCreditFromKobo } from '~/lib/credit-money';
 import { formatRequestDate } from '~/lib/request-details';
 import type { CustomerCreditRepayment } from '~/types/credit';
@@ -7,6 +13,11 @@ import type { CustomerCreditRepayment } from '~/types/credit';
 defineProps<{
   items: CustomerCreditRepayment[];
   loading?: boolean;
+  downloadingId?: string | null;
+}>();
+
+const emit = defineEmits<{
+  downloadInvoice: [repayment: CustomerCreditRepayment];
 }>();
 
 const cardArticleClass =
@@ -26,7 +37,9 @@ const cardArticleClass =
     <article v-for="row in items" :key="row.id" :class="cardArticleClass">
       <div class="flex items-start justify-between gap-2">
         <p class="font-semibold text-grey-900">{{ row.referenceCode }}</p>
-        <StatusTag variant="default">{{ row.status || '—' }}</StatusTag>
+        <StatusTag :variant="creditRepaymentStatusVariant(row.status)">
+          {{ creditRepaymentStatusLabel(row.status) }}
+        </StatusTag>
       </div>
       <dl class="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div>
@@ -34,10 +47,28 @@ const cardArticleClass =
           <dd class="font-medium text-grey-900">{{ formatCreditFromKobo(row.paymentAmountKobo) }}</dd>
         </div>
         <div>
+          <dt class="text-grey-300">Method</dt>
+          <dd class="font-medium text-grey-900">
+            {{ creditRepaymentPaymentMethodLabel(row.paymentMethod) }}
+          </dd>
+        </div>
+        <div>
           <dt class="text-grey-300">Date</dt>
           <dd class="font-medium text-grey-900">{{ formatRequestDate(row.createdAt) }}</dd>
         </div>
       </dl>
+      <Button
+        type="button"
+        variant="outline"
+        size="small"
+        class="mt-4 !w-full"
+        :left-icon="Download"
+        :loading="downloadingId === row.id"
+        :disabled="downloadingId === row.id"
+        @click="emit('downloadInvoice', row)"
+      >
+        Download invoice
+      </Button>
     </article>
   </div>
 </template>

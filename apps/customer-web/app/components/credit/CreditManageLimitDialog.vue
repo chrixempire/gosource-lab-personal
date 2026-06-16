@@ -89,7 +89,7 @@ async function submit() {
   <Drawer v-if="isMobile" :open="open" @update:open="emit('update:open', $event)">
     <DrawerContent class="max-h-[92vh]">
       <DrawerHeader>
-        <DrawerTitle class="text-[24px] font-semibold text-grey-900">Request a credit limit increase</DrawerTitle>
+        <DrawerTitle>Request a credit limit increase</DrawerTitle>
         <DrawerDescription class="text-[12px] leading-5 text-grey-text">
           Share updated revenue and a recent bank statement so we can review your limit.
         </DrawerDescription>
@@ -114,8 +114,8 @@ async function submit() {
         </CreditFileUploadField>
       </DrawerBody>
       <DrawerFooter class="gap-3">
-        <Button variant="neutral" class="w-full" :disabled="submitting" @click="close">Cancel</Button>
-        <Button variant="primary" class="w-full" :loading="submitting" @click="submit">
+        <Button variant="neutral" size="medium" class="w-full" :disabled="submitting" @click="close">Cancel</Button>
+        <Button variant="primary" size="medium" class="w-full" :loading="submitting" @click="submit">
           Submit request
         </Button>
       </DrawerFooter>
@@ -126,7 +126,7 @@ async function submit() {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             Request a credit limit increase
           </DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">
@@ -155,8 +155,8 @@ async function submit() {
         </CreditFileUploadField>
       </DialogBody>
       <DialogFooter class="gap-3">
-        <Button variant="neutral" :disabled="submitting" @click="close">Cancel</Button>
-        <Button variant="primary" :loading="submitting" @click="submit">Submit request</Button>
+        <Button variant="neutral" size="medium" :disabled="submitting" @click="close">Cancel</Button>
+        <Button variant="primary" size="medium" :loading="submitting" @click="submit">Submit request</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

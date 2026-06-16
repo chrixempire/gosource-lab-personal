@@ -2,6 +2,13 @@ import type { RequestActorRecord, RequestRecord } from '@gosource/api-client';
 import type { RequestDetailsView } from '~/components/requests/RequestDetailsPanel.vue';
 import type { RequestListItem } from '~/components/requests/RequestCards.vue';
 
+export function resolveRequestRecordId(
+  record: { id?: string; _id?: string } | null | undefined,
+): string | undefined {
+  const raw = record?.id ?? record?._id;
+  return raw ? String(raw) : undefined;
+}
+
 export function formatRequestCurrency(value: number) {
   return new Intl.NumberFormat('en-NG', {
     style: 'currency',
@@ -74,6 +81,7 @@ export function buildRequestDetailsView(request: RequestRecord): RequestDetailsV
   return {
     id: request.id,
     reference: request.reference,
+    status: request.status,
     branchName: request.branchName,
     branchCode: request.branchCode,
     branchOrderLabel: request.branchCode ?? request.branchName,

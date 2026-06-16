@@ -1,7 +1,6 @@
 import type { BranchRecord, CustomerMeResponse, UpdateEmployeePayload } from '@gosource/api-client';
-import { toast } from '@gosource/ui';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 export type UpdateMyProfilePayload = {
   firstName: string;
@@ -57,7 +56,7 @@ export function useCustomerProfileService() {
         } satisfies BusinessAccountRecord;
       } catch (error) {
         if (!options?.silent) {
-          toast.error(extractApiErrorMessage(error, 'Unable to load business profile'));
+          reportCustomerApiError(error, 'Unable to load business profile');
         }
         throw error;
       }
@@ -86,7 +85,7 @@ export function useCustomerProfileService() {
 
         return await $employeeApi.updateEmployee(employeeId, body);
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to update profile right now'));
+        reportCustomerApiError(error, 'Unable to update profile right now');
         throw error;
       }
     },
@@ -95,7 +94,7 @@ export function useCustomerProfileService() {
       try {
         return await $apiClient.patch<{ message?: string }>('/business/change-password', payload);
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to change password right now'));
+        reportCustomerApiError(error, 'Unable to change password right now');
         throw error;
       }
     },
@@ -104,7 +103,7 @@ export function useCustomerProfileService() {
       try {
         return await $apiClient.post<{ message?: string }>('/business/send-otp', { email });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to send verification code'));
+        reportCustomerApiError(error, 'Unable to send verification code');
         throw error;
       }
     },
@@ -116,7 +115,7 @@ export function useCustomerProfileService() {
           otp,
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to verify email'));
+        reportCustomerApiError(error, 'Unable to verify email');
         throw error;
       }
     },

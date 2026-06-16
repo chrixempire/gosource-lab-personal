@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'customer-market' });
 
-import type { CustomerMeResponse, RequestRecord } from '@gosource/api-client';
+import type { ApproveRequestResponse, CustomerMeResponse, RequestRecord } from '@gosource/api-client';
 import { Button, StatusTag, toast } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
 import CheckoutDeliveryDetails from '~/components/checkout/CheckoutDeliveryDetails.vue';
@@ -13,13 +13,24 @@ import CheckoutRequestItems from '~/components/checkout/CheckoutRequestItems.vue
 import CheckoutSuccessDialog from '~/components/checkout/CheckoutSuccessDialog.vue';
 import CheckoutTransferDialog from '~/components/checkout/CheckoutTransferDialog.vue';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
+import { useDownloadOrderInvoice } from '~/composables/useDownloadOrderInvoice';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { usePaystack } from '~/composables/usePaystack';
+import { useProcessCheckoutPayment } from '~/composables/useProcessCheckoutPayment';
+import { extractPaystackPaymentReference } from '~/lib/wallet-paystack';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
+import {
+  hasCheckoutCouponApplied,
+  resolveCheckoutCouponLabel,
+} from '~/lib/checkout-coupon';
 import { formatRequestCurrency } from '~/lib/request-details';
+import { invalidateCheckoutMutationListCaches, invalidateManageRequestsListCache } from '~/lib/invalidate-customer-list-cache';
+import {
+  resolveBillableDiscount,
+  resolveRequestTotalPrice,
+} from '~/lib/request-pricing';
 import { resolveCheckoutCreditEligibility } from '~/lib/checkout-credit';
 import { useCustomerCreditService } from '~/services/credit.service';
-import { useCustomerOrderService } from '~/services/order.service';
 import { useCustomerProfileService } from '~/services/profile.service';
 import { useCustomerRequestService } from '~/services/request.service';
 import { useCustomerWalletService } from '~/services/wallet.service';
@@ -28,25 +39,25 @@ import type { CustomerCreditAccount } from '~/types/credit';
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const runWhenSessionReady = useAuthenticatedFetch();
 const route = useRoute();
+const router = useRouter();
 const requestId = computed(() => String(route.params.id ?? ''));
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
-const { getRequest, approveRequest } = useCustomerRequestService();
+const { getRequest } = useCustomerRequestService();
+const { processPayment, submitting } = useProcessCheckoutPayment();
 const { resetCartState, loadCart } = useMarketplaceCart();
 const { getWallet } = useCustomerWalletService();
-const { getOrderInvoiceUrl } = useCustomerOrderService();
 const { getBusinessAccount } = useCustomerProfileService();
+const { downloadingInvoice, downloadOrderInvoice } = useDownloadOrderInvoice();
 const { getCreditAccount } = useCustomerCreditService();
 
 const loading = ref(true);
-const submitting = ref(false);
 const request = ref<RequestRecord | null>(null);
 const approvedRequest = ref<RequestRecord | null>(null);
 const approvedOrderId = ref<string | null>(null);
 const selectedMethod = ref<CheckoutPaymentMethodValue | null>(null);
 const transferDialogOpen = ref(false);
 const successDialogOpen = ref(false);
-const downloadingInvoice = ref(false);
 const walletBalance = ref<number | null>(null);
 const canBuyOnCredit = ref<boolean | null>(null);
 const creditAccount = ref<CustomerCreditAccount | null>(null);
@@ -74,7 +85,13 @@ watch(
 
 const requestSubtotal = computed(() => request.value?.subtotal ?? 0);
 const requestDeliveryFee = computed(() => request.value?.deliveryFee ?? 0);
-const requestDiscount = computed(() => request.value?.discount ?? 0);
+const requestDiscount = computed(() =>
+  request.value ? resolveBillableDiscount(request.value) : 0,
+);
+const checkoutCouponApplied = computed(() =>
+  request.value ? hasCheckoutCouponApplied(request.value) : false,
+);
+const checkoutCouponLabel = computed(() => resolveCheckoutCouponLabel(request.value));
 
 const computedServiceCharge = computed(() => {
   if (!request.value) {
@@ -88,13 +105,19 @@ const computedServiceCharge = computed(() => {
   return request.value.serviceCharge ?? 0;
 });
 
-const computedTotal = computed(
-  () =>
-    requestSubtotal.value +
-    requestDeliveryFee.value +
-    computedServiceCharge.value -
-    requestDiscount.value,
-);
+const computedTotal = computed(() => {
+  if (!request.value) {
+    return 0;
+  }
+
+  return resolveRequestTotalPrice({
+    subtotal: requestSubtotal.value,
+    deliveryFee: requestDeliveryFee.value,
+    serviceCharge: computedServiceCharge.value,
+    discount: request.value.discount ?? 0,
+    couponDetails: request.value.couponDetails,
+  });
+});
 
 const checkoutCreditEligibility = computed(() =>
   resolveCheckoutCreditEligibility({
@@ -133,16 +156,24 @@ async function loadWalletBalance() {
   }
 }
 
-async function loadRequest() {
+async function fetchCheckoutRequest(options?: { showPageLoading?: boolean }) {
   if (!requestId.value) {
-    loading.value = false;
+    if (options?.showPageLoading) {
+      loading.value = false;
+    }
     return;
   }
 
-  loading.value = true;
+  if (options?.showPageLoading) {
+    loading.value = true;
+  }
+
   try {
     await runWhenSessionReady(async () => {
-      await Promise.all([loadWalletBalance(), loadCheckoutCreditContext()]);
+      if (options?.showPageLoading) {
+        await Promise.all([loadWalletBalance(), loadCheckoutCreditContext()]);
+      }
+
       const response = await getRequest(requestId.value);
       const record = response.data ?? null;
 
@@ -152,18 +183,34 @@ async function loadRequest() {
         return;
       }
 
-      if (record.status !== 'pending') {
+      if (options?.showPageLoading && record.status !== 'pending') {
         toast.error('Only pending requests can be checked out.');
         await navigateTo(`/manage-requests/${record.id}`, { replace: true });
         return;
       }
 
       request.value = record;
-      selectedMethod.value = null;
+      if (options?.showPageLoading) {
+        selectedMethod.value = null;
+      }
     });
   } finally {
-    loading.value = false;
+    if (options?.showPageLoading) {
+      loading.value = false;
+    }
   }
+}
+
+async function loadRequest() {
+  await fetchCheckoutRequest({ showPageLoading: true });
+}
+
+async function handleCouponApplied() {
+  await fetchCheckoutRequest();
+}
+
+async function handleCouponRemoved() {
+  await fetchCheckoutRequest();
 }
 
 async function submitCheckout() {
@@ -202,8 +249,11 @@ async function submitCheckout() {
         requestId: request.value.id,
         reference: request.value.reference ?? '',
       },
-      onSuccess: async () => {
-        await processApproval('Paystack');
+      onSuccess: async (event) => {
+        await processApproval('Paystack', {
+          paystackCharged: true,
+          paystackReference: extractPaystackPaymentReference(event),
+        });
       },
     });
     return;
@@ -212,29 +262,29 @@ async function submitCheckout() {
   await processApproval(selectedMethod.value);
 }
 
-async function processApproval(method: CheckoutPaymentMethodValue) {
-  if (!request.value || submitting.value) {
+function applyApprovedCheckout(response: ApproveRequestResponse) {
+  approvedRequest.value = response.data;
+  approvedOrderId.value = response.orderId ?? null;
+  request.value = response.data;
+  resetCartState();
+  void loadCart(true);
+  invalidateCheckoutMutationListCaches();
+  successDialogOpen.value = true;
+}
+
+async function processApproval(
+  method: CheckoutPaymentMethodValue,
+  options?: { paystackCharged?: boolean; paystackReference?: string },
+) {
+  if (!request.value) {
     return;
   }
 
-  submitting.value = true;
-  try {
-    const response = await approveRequest(request.value.id, {
-      paymentMethod: method,
-    });
+  const response = await processPayment(request.value.id, method, options);
+  transferDialogOpen.value = false;
 
-    if (response.data) {
-      approvedRequest.value = response.data;
-      approvedOrderId.value = response.orderId ?? null;
-      request.value = response.data;
-      resetCartState();
-      await loadCart(true);
-      successDialogOpen.value = true;
-      toast.success('Payment successful!');
-    }
-  } finally {
-    submitting.value = false;
-    transferDialogOpen.value = false;
+  if (response?.data) {
+    applyApprovedCheckout(response);
   }
 }
 
@@ -244,9 +294,19 @@ function openRequestDetails() {
   void navigateTo(`/manage-requests/${targetId}`);
 }
 
-function goBackToRequests() {
-  successDialogOpen.value = false;
-  void navigateTo('/manage-requests');
+function goBackFromCheckout() {
+  if (successDialogOpen.value) {
+    successDialogOpen.value = false;
+  }
+
+  invalidateManageRequestsListCache();
+
+  if (import.meta.client && window.history.length > 1) {
+    router.back();
+    return;
+  }
+
+  void navigateTo('/market');
 }
 
 async function downloadApprovedInvoice() {
@@ -255,39 +315,14 @@ async function downloadApprovedInvoice() {
     return;
   }
 
-  if (downloadingInvoice.value) {
-    return;
-  }
-
-  downloadingInvoice.value = true;
-
-  try {
-    const response = await fetch(getOrderInvoiceUrl(approvedOrderId.value), {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Invoice download failed');
-    }
-
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = objectUrl;
-    anchor.download = `order_invoice_${approvedRequest.value?.reference ?? approvedOrderId.value}.pdf`;
-    anchor.click();
-    URL.revokeObjectURL(objectUrl);
-  } catch {
-    toast.error('Unable to download invoice right now.');
-  } finally {
-    downloadingInvoice.value = false;
-  }
+  await downloadOrderInvoice(approvedOrderId.value);
 }
 
 function trackApprovedOrder() {
   successDialogOpen.value = false;
   if (approvedOrderId.value) {
-    void navigateTo(`/track-orders/${approvedOrderId.value}`);
+    // Replace checkout in history so browser back from order detail does not return here.
+    void navigateTo(`/track-orders/${approvedOrderId.value}`, { replace: true });
     return;
   }
 
@@ -333,9 +368,9 @@ watch(requestId, () => {
         size="small"
         class="!w-auto"
         :left-icon="ChevronLeft"
-        @click="approvedRequest ? goBackToRequests() : navigateTo(`/manage-requests/${requestId}`)"
+        @click="goBackFromCheckout"
       >
-        {{ approvedRequest ? 'Back to requests' : 'Back to request' }}
+        Back
       </Button>
 
       <StatusTag
@@ -415,16 +450,21 @@ watch(requestId, () => {
         />
 
         <CheckoutPaymentSummary
+          :request-id="request.id"
           :subtotal="requestSubtotal"
           :delivery-fee="requestDeliveryFee"
           :service-charge="computedServiceCharge"
           :discount="requestDiscount"
           :total="computedTotal"
           :format-currency="formatRequestCurrency"
+          :coupon-applied="checkoutCouponApplied"
+          :coupon-label="checkoutCouponLabel"
           :submitting="submitting"
           :can-submit="canSubmitCheckout"
           :submit-label="checkoutCtaLabel"
           @submit="submitCheckout"
+          @coupon-applied="handleCouponApplied"
+          @coupon-removed="handleCouponRemoved"
         />
       </div>
 

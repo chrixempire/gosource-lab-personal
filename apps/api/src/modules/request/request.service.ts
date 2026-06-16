@@ -308,7 +308,7 @@ export class RequestService {
     const updated = await this.repository.updateRequestStatus(requestId, {
       status: 'rejected',
       rejectedBy: actor,
-      rejectedReasons: data.reason.trim(),
+      rejectedReasons: data.rejectionReasons.trim(),
       rejectedAt: new Date(),
       approver: null,
       approvedAt: null,

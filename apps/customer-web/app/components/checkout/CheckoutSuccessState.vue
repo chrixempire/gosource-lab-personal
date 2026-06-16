@@ -20,7 +20,7 @@ const emit = defineEmits<{
       </div>
 
       <div>
-        <h2 class="text-2xl font-semibold text-grey-900">Checkout complete</h2>
+        <h3>Checkout complete</h3>
         <p class="mt-2 max-w-2xl text-sm leading-7 text-grey-text">
           Request <span class="font-semibold text-grey-900">{{ reference }}</span> has been approved successfully. You can return to the request details or go back to the requests list.
         </p>

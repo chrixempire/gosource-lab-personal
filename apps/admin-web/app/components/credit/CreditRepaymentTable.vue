@@ -17,6 +17,7 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import CreditTableActionsTrigger from '~/components/credit/CreditTableActionsTrigger.vue';
+import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
 import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
 import { creditPaymentStatusLabel, creditPaymentStatusVariant } from '~/lib/credit-constants';
 import { formatCreditFromKobo } from '~/lib/credit-money';
@@ -29,6 +30,8 @@ const props = defineProps<{
   meta: InventoryTableMeta;
   loading?: boolean;
   allowManage?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }>();
 
 const emit = defineEmits<{
@@ -67,11 +70,17 @@ const emit = defineEmits<{
       />
     </div>
 
+    <CreditTableEmptyBody
+      v-else-if="rows.length === 0"
+      :title="emptyTitle ?? 'No repayments found'"
+      :description="emptyDescription"
+    />
+
     <TableBody v-else class="!max-h-none !overflow-visible">
       <TableRow
         v-for="row in rows"
         :key="row.id"
-        class="even:bg-[#FAFBFC]"
+        class="bg-white"
         :style="{ gridTemplateColumns: CREDIT_REPAYMENT_TABLE_GRID }"
       >
         <TableCell @click.stop>

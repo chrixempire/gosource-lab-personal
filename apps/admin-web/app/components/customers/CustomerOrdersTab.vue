@@ -18,6 +18,7 @@ import CustomerOrderHistoryFilterBar, {
 } from '~/components/customers/CustomerOrderHistoryFilterBar.vue';
 import CustomerOrdersMobileList from '~/components/customers/CustomerOrdersMobileList.vue';
 import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -55,15 +56,19 @@ const query = computed(() => ({
   ...(filters.value.paymentStatus.length > 0 && { paymentStatus: filters.value.paymentStatus }),
 }));
 
-const { data, pending, error, refresh } = useFetch<unknown>(
+const { data, pending, error, refresh } = useAdminAuthenticatedFetch<unknown>(
   () => `/api/customers/${props.customerId}/orders`,
-  { query, watch: [() => props.customerId, query] },
+  {
+    query,
+    watch: [() => props.customerId, query],
+    key: computed(() => `admin-customer-orders:${props.customerId}`),
+  },
 );
 
 const parsed = computed(() => parseCustomerOrdersResponse(data.value, page.value, limit.value));
 
 const gridTemplate =
-  'minmax(0,0.95fr) minmax(0,0.85fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.75fr) minmax(0,0.75fr)';
+  'minmax(0,0.95fr) minmax(0,0.85fr) minmax(0,0.7fr) minmax(0,0.75fr) minmax(0,0.75fr)';
 
 function applyFilters(next: Partial<CustomerOrderHistoryFilters>) {
   filters.value = { ...filters.value, ...next };
@@ -122,7 +127,6 @@ const isCompactViewport = useAdminCompactViewport();
           <TableHeadRow :style="{ gridTemplateColumns: gridTemplate }">
             <TableCell>Reference</TableCell>
             <TableCell>Date</TableCell>
-            <TableCell>Items</TableCell>
             <TableCell>Total</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Payment</TableCell>
@@ -130,7 +134,7 @@ const isCompactViewport = useAdminCompactViewport();
         </TableHeader>
         <div class="p-4">
           <TableSkeleton
-            :columns="Array(6).fill({ kind: 'line' as const, lineClass: 'w-full' })"
+            :columns="Array(5).fill({ kind: 'line' as const, lineClass: 'w-full' })"
             :grid-template-columns="gridTemplate"
             :row-count="10"
           />
@@ -183,7 +187,6 @@ const isCompactViewport = useAdminCompactViewport();
         <TableHeadRow :style="{ gridTemplateColumns: gridTemplate }">
           <TableCell>Reference</TableCell>
           <TableCell>Date</TableCell>
-          <TableCell>Items</TableCell>
           <TableCell>Total</TableCell>
           <TableCell>Status</TableCell>
           <TableCell>Payment</TableCell>
@@ -195,7 +198,7 @@ const isCompactViewport = useAdminCompactViewport();
           v-if="error && parsed.rows.length === 0"
           :style="{ gridTemplateColumns: gridTemplate }"
         >
-          <TableCell class="col-span-6 py-10">
+          <TableCell class="col-span-5 py-10">
             <LoadErrorState
               compact
               :error="error"
@@ -210,7 +213,7 @@ const isCompactViewport = useAdminCompactViewport();
           v-else-if="parsed.rows.length === 0"
           :style="{ gridTemplateColumns: gridTemplate }"
         >
-          <TableCell class="col-span-6 py-10 text-center text-sm text-grey-500">
+          <TableCell class="col-span-5 py-10 text-center text-sm text-grey-500">
             No orders found
           </TableCell>
         </TableRow>
@@ -225,12 +228,10 @@ const isCompactViewport = useAdminCompactViewport();
           >
             <TableCell>
               <p class="text-sm font-medium text-grey-900">{{ order.referenceLabel }}</p>
+              <p class="text-xs text-grey-500">{{ order.itemCountLabel }}</p>
             </TableCell>
             <TableCell>
               <p class="text-sm text-grey-700">{{ order.createdLabel }}</p>
-            </TableCell>
-            <TableCell>
-              <p class="text-sm text-grey-700">{{ order.itemCountLabel }}</p>
             </TableCell>
             <TableCell>
               <p class="text-sm font-medium text-grey-900">{{ order.totalLabel }}</p>

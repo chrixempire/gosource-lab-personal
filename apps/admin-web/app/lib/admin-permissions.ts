@@ -6,6 +6,7 @@ export const ADMIN_PERMISSION = {
   VIEW_CREDIT_ANALYTICS: 'view_credit_analytics',
   VIEW_CREDITS: 'view_credits',
   MANAGE_CREDIT: 'manage_credit',
+  // VIEW_ACTIVITY_LOGS: 'view_activity_logs',
 } as const;
 
 const SUPER_ADMIN_ROLES = new Set(['super_admin', 'admin', 'super admin']);
@@ -30,6 +31,15 @@ export function canManageCredit(capabilities: AdminCapabilities | null | undefin
   return capabilities.manageCredit;
 }
 
+// export function canViewActivityLogs(capabilities: AdminCapabilities | null | undefined) {
+//   if (!capabilities) return false;
+//   return capabilities.viewActivityLogs;
+// }
+
+// export function canAccessActivityLogPath(capabilities: AdminCapabilities | null | undefined) {
+//   return canViewActivityLogs(capabilities);
+// }
+
 export function canAccessCreditPath(
   path: string,
   capabilities: AdminCapabilities | null | undefined,
@@ -41,12 +51,31 @@ export function canAccessCreditPath(
   return canViewCredits(capabilities);
 }
 
+export function canAccessAdminRoute(
+  path: string,
+  capabilities: AdminCapabilities | null | undefined,
+) {
+  // if (path.startsWith('/activity-log')) {
+  //   return canAccessActivityLogPath(capabilities);
+  // }
+
+  if (path.startsWith('/credit')) {
+    return canAccessCreditPath(path, capabilities);
+  }
+
+  return true;
+}
+
 export function filterAdminNavByCapabilities(
   items: AdminNavItem[],
   capabilities: AdminCapabilities | null | undefined,
 ): AdminNavItem[] {
   return items
     .map((item) => {
+      // if (item.to === '/activity-log' && !canViewActivityLogs(capabilities)) {
+      //   return null;
+      // }
+
       if (item.label !== 'Credit' || !item.children?.length) {
         return item;
       }

@@ -10,6 +10,7 @@ import {
   TableShell,
   TableSkeleton,
 } from '@gosource/ui';
+import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
 import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
 import { creditRepaymentScheduleStatusVariant } from '~/lib/credit-constants';
 import { creditRequestPath } from '~/lib/admin-routes';
@@ -22,6 +23,8 @@ const props = defineProps<{
   meta: InventoryTableMeta;
   loading?: boolean;
   showDaysOverdue?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }>();
 
 const emit = defineEmits<{
@@ -61,11 +64,17 @@ function openRequest(row: AdminRepaymentScheduleListItem) {
       />
     </div>
 
+    <CreditTableEmptyBody
+      v-else-if="rows.length === 0"
+      :title="emptyTitle ?? 'No schedules found'"
+      :description="emptyDescription"
+    />
+
     <TableBody v-else class="!max-h-none !overflow-visible">
       <TableRow
         v-for="row in rows"
         :key="row.id"
-        class="cursor-pointer even:bg-[#FAFBFC]"
+        class="cursor-pointer transition-colors hover:bg-primary-50/45"
         :style="{ gridTemplateColumns: CREDIT_SCHEDULE_LIST_TABLE_GRID }"
         @click="openRequest(row)"
       >

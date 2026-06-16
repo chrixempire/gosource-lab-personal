@@ -158,6 +158,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [
       apiBranchId,
       () => insightDateRange.value.startDate,
@@ -238,6 +239,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [
       apiBranchId,
       viewingAllBranches,
@@ -423,6 +425,7 @@ useHead({ title: 'Business insight' });
       </div>
 
       <OrderTable
+        show-mobile-cards
         hide-actions
         hide-pagination
         :orders="recentOrderItems"

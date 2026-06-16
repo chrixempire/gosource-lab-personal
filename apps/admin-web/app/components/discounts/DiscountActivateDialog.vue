@@ -40,9 +40,10 @@ const emit = defineEmits<{ confirm: [] }>();
         </p>
       </DialogBody>
       <DialogFooter>
-        <Button type="button" variant="secondary" @click="open = false">Cancel</Button>
+        <Button type="button" variant="secondary" size="medium" @click="open = false">Cancel</Button>
         <Button
           type="button"
+          size="medium"
           :variant="mode === 'deactivate' ? 'destructive' : 'primary'"
           :loading="loading"
           @click="emit('confirm')"

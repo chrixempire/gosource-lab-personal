@@ -3,6 +3,7 @@ import { Button } from '@gosource/ui';
 import { ArrowLeft } from 'lucide-vue-next';
 import PurchaseOrderForm from '~/components/purchase-orders/PurchaseOrderForm.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { usePurchaseOrderMutations } from '~/composables/usePurchaseOrderMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -28,10 +29,11 @@ const submitting = computed(() => busyOrderId.value === orderId.value);
 const initialBillToById = ref<Record<string, { name: string; email: string }>>({});
 const initialOrderedByLabel = ref('');
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/purchase-orders/${orderId.value}`,
   {
     watch: [orderId],
+    key: computed(() => `admin-purchase-order-detail:${orderId.value}`),
   },
 );
 

@@ -3,6 +3,7 @@ import {
   applySubtotalFallbackToOrderLines,
   resolveOrderLinePricing,
   resolveOrderSubtotal,
+  resolveOrderTotalPrice,
 } from '~/lib/order-line-pricing';
 import {
   displayOrDash,
@@ -120,7 +121,8 @@ export function mapLegacyOrderToListItem(order: LegacyOrderRow): AdminOrderListI
   const status = normalizeOrderStatus(order.status);
   const paymentStatus = normalizeOrderPaymentStatus(order.paymentStatus);
   const reference = order.reference ?? '';
-  const totalPrice = Number(order.totalPrice ?? 0);
+  const lineItems = mapLegacyOrderLineItems(order as Record<string, unknown>);
+  const totalPrice = resolveOrderTotalPrice(order as Record<string, unknown>, lineItems);
 
   return {
     id: order._id,
@@ -318,6 +320,6 @@ export function mapLegacyOrderToDetailsView(order: Record<string, unknown>): Adm
     deliveryFee: Number(order.deliveryFee ?? 0),
     serviceCharge: Number(order.serviceCharge ?? 0),
     discount: Number(order.discount ?? 0),
-    totalPrice: Number(order.totalPrice ?? 0),
+    totalPrice: resolveOrderTotalPrice(order, lineItems),
   };
 }

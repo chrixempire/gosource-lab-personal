@@ -4,6 +4,7 @@ import { Plus } from 'lucide-vue-next';
 import SettingsDeleteRoleDialog from '~/components/settings/SettingsDeleteRoleDialog.vue';
 import SettingsRolesTable from '~/components/settings/SettingsRolesTable.vue';
 import SettingsTableToolbarSkeleton from '~/components/settings/skeletons/SettingsTableToolbarSkeleton.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useSettingsMutations } from '~/composables/useSettingsMutations';
 import {
   ADMIN_PAGE_ROUTES,
@@ -20,7 +21,7 @@ const searchQuery = ref('');
 const deleteOpen = ref(false);
 const activeRole = ref<AdminRoleListItem | null>(null);
 
-const { data, pending, refresh } = await useFetch<unknown>('/api/roles');
+const { data, pending, refresh } = await useAdminListFetch<unknown>('/api/roles');
 
 const roles = computed(() => parseAdminRolesList(data.value));
 

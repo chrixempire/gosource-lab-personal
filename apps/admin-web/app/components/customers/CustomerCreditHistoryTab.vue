@@ -23,6 +23,7 @@ import CustomerCreditHistoryFilterBar from '~/components/customers/CustomerCredi
 import CustomerCreditHistoryMobileList from '~/components/customers/CustomerCreditHistoryMobileList.vue';
 import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { creditRequestPath } from '~/lib/admin-routes';
 import {
@@ -63,14 +64,21 @@ const debouncedSearch = useDebounce(searchQuery, 400);
 
 const apiQuery = computed(() => customerCreditHistoryFiltersToApiQuery(filters.value));
 
-const { data: summaryData, pending: summaryPending } = useFetch<unknown>(
+const { data: summaryData, pending: summaryPending } = useAdminAuthenticatedFetch<unknown>(
   () => `/api/customers/${customerId.value}/credit-summary`,
-  { watch: [customerId] },
+  {
+    watch: [customerId],
+    key: computed(() => `admin-customer-credit-summary:${customerId.value}`),
+  },
 );
 
-const { data, pending, error, refresh } = useFetch<unknown>(
+const { data, pending, error, refresh } = useAdminAuthenticatedFetch<unknown>(
   () => `/api/customers/${customerId.value}/credit-history`,
-  { query: apiQuery, watch: [apiQuery, customerId] },
+  {
+    query: apiQuery,
+    watch: [apiQuery, customerId],
+    key: computed(() => `admin-customer-credit-history:${customerId.value}`),
+  },
 );
 
 const showInitialSkeleton = computed(
@@ -269,7 +277,7 @@ const isCompactViewport = useAdminCompactViewport();
         <TableRow
           v-for="row in parsed.rows"
           :key="row.id"
-          class="cursor-pointer even:bg-[#FAFBFC]"
+          class="cursor-pointer transition-colors hover:bg-primary-50/45"
           :style="{ gridTemplateColumns: CUSTOMER_CREDIT_HISTORY_TABLE_GRID }"
           @click="onViewDetails(row.id)"
         >

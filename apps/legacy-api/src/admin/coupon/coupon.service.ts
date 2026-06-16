@@ -10,10 +10,17 @@ import { Model } from 'mongoose';
 import { QueryParamsDto } from '../../analytics/dto/query-param.dto';
 import { ApplyCouponDto, CreateCouponDto } from './dto/create-coupon.dto';
 import { RequestDocument, Request } from '../../request/schema/request.schema';
-import { CouponType } from './coupon.enum';
+import { CouponType, CouponCategory } from './coupon.enum';
 import { Order } from '../../order/entities/order.entity';
-import { calculateTotalPrice } from '../../utils/helpers';
+import { calculateTotalPrice, calculateDeliveryFee, calculateFrozenDeliveryFee } from '../../utils/helpers';
 import { successResponse } from '../../utils/responses';
+import { RequestStatus } from '../../request/enum/request.enum';
+import {
+  assertCouponCanBeApplied,
+  computeDiscountAmount,
+  isScopedItemCoupon,
+  resolveEligibleSubtotal,
+} from './coupon-apply.helpers';
 
 @Injectable()
 export class CouponService {
@@ -154,6 +161,23 @@ export class CouponService {
     };
   }
 
+  private async getBusinessOrderCount(businessId: string): Promise<number> {
+    return this.orderModel.countDocuments({
+      $or: [{ business: businessId }, { customerId: businessId }],
+    });
+  }
+
+  private rejectCouponRule(message: string): never {
+    throw new BadRequestException(message);
+  }
+
+  private async markCouponUsed(coupon: CouponDocument): Promise<void> {
+    await this.couponModel.updateOne(
+      { _id: coupon._id },
+      { $inc: { usageCount: 1 } },
+    );
+  }
+
   /**
    * Apply coupon to request.
    *
@@ -173,10 +197,6 @@ export class CouponService {
       throw new NotFoundException('Coupon not found');
     }
 
-    if (coupon.expiryDate && coupon.expiryDate < new Date()) {
-      throw new BadRequestException('Coupon has expired');
-    }
-
     const request: RequestDocument = await this.requestModel
       .findById(requestId)
       .populate('branch');
@@ -191,67 +211,63 @@ export class CouponService {
       );
     }
 
+    const businessId = String(businessDetails.id);
+    const cartSubtotal = calculateTotalPrice(request.products, businessId);
+    const orderCount = await this.getBusinessOrderCount(
+      String(request.branch?.businessId ?? businessId),
+    );
+
+    try {
+      assertCouponCanBeApplied(coupon, {
+        orderCount,
+        cartSubtotal,
+      });
+    } catch (error) {
+      this.rejectCouponRule(
+        error instanceof Error ? error.message : 'Coupon cannot be applied',
+      );
+    }
+
     if (coupon.type === CouponType.FREE_DELIVERY) {
       request.deliveryFee = 0;
-
       request.couponCode = coupon.code;
       request.coupon = true;
       request.couponDetails = coupon;
-      request.discount = request.deliveryFee;
+      request.discount = 0;
       await request.save();
-    } else {
-      // Check if first time user
-      const orders = await this.orderModel.find({
-        customerId: request.branch.businessId,
-      });
+      await this.markCouponUsed(coupon);
 
-      if (
-        couponDetail.code === 'EASTER5' ||
-        couponDetail.code === 'EASTER10' ||
-        couponDetail.code === 'WELCOME5'
-      ) {
-        if (orders.length > 0) {
-          throw new BadRequestException(
-            'Coupon can only be used by first time users',
-          );
-        }
-      }
-
-      if (
-        couponDetail.code === 'GoSource5' ||
-        couponDetail.code === 'Gosource5'
-      ) {
-        if (orders.length > 0) {
-          throw new BadRequestException(
-            'Coupon can only be used by first time users',
-          );
-        }
-      }
-
-      const subtotal = calculateTotalPrice(
-        request.products,
-        businessDetails.id,
-      );
-
-      if (coupon.type === CouponType.FIXED_AMOUNT) {
-        request.subtotal = subtotal - coupon.discount;
-      } else if (coupon.type === CouponType.PERCENTAGE) {
-        request.subtotal = subtotal - (coupon.discount / 100) * subtotal;
-      }
-
-      const deliveryFee = request.deliveryFee;
-      request.subtotal += deliveryFee;
-
-      const discount = CouponType.FIXED_AMOUNT
-        ? coupon.discount
-        : (coupon.discount / 100) * subtotal;
-
-      request.couponCode = coupon.code;
-      request.coupon = true;
-      request.couponDetails = coupon;
-      request.discount = discount;
-      await request.save();
+      return {
+        status: true,
+        message: 'Coupon Applied successfully',
+        data: coupon,
+      };
     }
+
+    const eligibleSubtotal = resolveEligibleSubtotal(
+      coupon,
+      request.products,
+      businessId,
+    );
+
+    if (isScopedItemCoupon(coupon) && eligibleSubtotal <= 0) {
+      throw new BadRequestException(
+        'This coupon does not apply to any items in your request',
+      );
+    }
+
+    const discount = computeDiscountAmount(coupon, eligibleSubtotal);
+    if (discount <= 0) {
+      throw new BadRequestException('Coupon does not apply to this request');
+    }
+
+    request.subtotal = cartSubtotal;
+    request.couponCode = coupon.code;
+    request.coupon = true;
+    request.couponDetails = coupon;
+    request.discount = discount;
+    await request.save();
+    await this.markCouponUsed(coupon);
 
     return {
       status: true,
@@ -259,6 +275,72 @@ export class CouponService {
       data: coupon,
     };
   }
+
+  async removeCouponFromRequest(
+    requestId: string,
+    businessDetails: any,
+  ): Promise<any> {
+    const request: RequestDocument = await this.requestModel
+      .findById(requestId)
+      .populate('branch')
+      .populate('couponDetails');
+
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+
+    if (!request.coupon) {
+      throw new BadRequestException('No coupon is applied to this request');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException(
+        'Coupon can only be removed from a pending request',
+      );
+    }
+
+    const businessId = String(businessDetails.id);
+    const cartSubtotal = calculateTotalPrice(request.products, businessId);
+
+    let couponDocument =
+      request.couponDetails &&
+      typeof request.couponDetails === 'object' &&
+      ('type' in request.couponDetails || 'category' in request.couponDetails)
+        ? (request.couponDetails as CouponDocument)
+        : null;
+
+    if (!couponDocument && request.couponCode) {
+      couponDocument = await this.couponModel.findOne({ code: request.couponCode });
+    }
+
+    const isFreeDelivery =
+      couponDocument?.type === CouponType.FREE_DELIVERY ||
+      couponDocument?.category === CouponCategory.FREE_DELIVERY ||
+      String(couponDocument?.category ?? '') === 'free_delivery';
+
+    if (isFreeDelivery || request.deliveryFee === 0) {
+      const frozenFee = calculateFrozenDeliveryFee(request.products, cartSubtotal);
+      request.deliveryFee =
+        frozenFee > 0 ? frozenFee : calculateDeliveryFee(cartSubtotal);
+    }
+
+    request.subtotal = cartSubtotal;
+    request.coupon = false;
+    request.couponCode = '';
+    request.discount = 0;
+    request.couponDetails = null;
+    await request.save();
+
+    if (couponDocument?._id) {
+      await this.couponModel.updateOne(
+        { _id: couponDocument._id, usageCount: { $gt: 0 } },
+        { $inc: { usageCount: -1 } },
+      );
+    }
+
+    return successResponse('Coupon removed successfully');
+  }
+
   /**
    * Deactivate discount.
    *

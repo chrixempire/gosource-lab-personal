@@ -51,8 +51,9 @@ export function useRequestAddItemsMode() {
   const requestReference = computed(() => displayRequest.value?.reference ?? '');
   const requestId = computed(() => activeRequest.value?.id ?? routeRequestId.value);
 
-  const totalItemCount = computed(() =>
-    (displayRequest.value?.products ?? []).reduce((sum, line) => sum + line.quantity, 0),
+  /** Distinct request product lines for cart badge (not sum of quantities). */
+  const totalItemCount = computed(
+    () => (displayRequest.value?.products ?? []).filter((line) => line.quantity > 0).length,
   );
 
   const requestSubtotal = computed(() => displayRequest.value?.subtotal ?? 0);

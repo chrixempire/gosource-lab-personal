@@ -52,12 +52,12 @@ const copy = computed(() =>
       </DialogBody>
 
       <DialogFooter class="gap-2">
-        <Button type="button" variant="outline" size="small" @click="open = false">
+        <Button type="button" variant="outline" size="medium" @click="open = false">
           Cancel
         </Button>
         <Button
           type="button"
-          size="small"
+          size="medium"
           :variant="copy?.destructive ? 'destructive' : 'default'"
           :loading="loading"
           :disabled="!action"

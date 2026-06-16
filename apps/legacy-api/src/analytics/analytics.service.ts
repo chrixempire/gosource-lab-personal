@@ -379,9 +379,9 @@ export class AnalyticsService {
     branchId: string,
     queryParams: QueryParamsDto,
   ): Promise<any> {
-    const { sortBy = 'quantity' } = queryParams;
+    const sortBy =
+      queryParams.sortBy === 'totalCost' ? 'totalCost' : 'quantity';
 
-    // Fetch orders for the given period
     const orders = await this.orderModel
       .find({
         branch: branchId,
@@ -402,50 +402,72 @@ export class AnalyticsService {
       };
     }
 
-    const itemProcurementSummary = {};
+    const itemProcurementSummary: Record<
+      string,
+      { quantity: number; totalCost: number }
+    > = {};
 
-    orders.forEach((order) => {
-      order.products.forEach((cartItem) => {
-        let total: number = 0;
-        let product: ProductDocument;
+    for (const order of orders) {
+      for (const cartItem of order.products ?? []) {
+        const product = (cartItem.cartProduct ?? cartItem.product) as
+          | ProductDocument
+          | null
+          | undefined;
 
-        if (!cartItem.cartProduct) {
-          product = cartItem.product;
-        } else {
-          product = cartItem.cartProduct;
+        if (!product?.name) {
+          continue;
         }
-        if (product.version === 'v2') {
-          const unit = JSON.parse(product.unit);
-          const price = unit[cartItem.unit];
-          if (isNaN(price)) {
-            total += product.discountPrice * cartItem.quantity;
+
+        const quantity = Number(cartItem.quantity ?? 0);
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          continue;
+        }
+
+        let lineTotal = 0;
+
+        try {
+          if (product.version === 'v2') {
+            let unitPrices: Record<string, number> = {};
+
+            if (typeof product.unit === 'string' && product.unit.trim()) {
+              unitPrices = JSON.parse(product.unit);
+            } else if (product.unit && typeof product.unit === 'object') {
+              unitPrices = product.unit as Record<string, number>;
+            }
+
+            const price = Number(unitPrices[cartItem.unit]);
+            lineTotal = Number.isFinite(price)
+              ? price * quantity
+              : Number(product.discountPrice ?? 0) * quantity;
           } else {
-            total += price * cartItem.quantity;
+            const specialPrices = product.specialPrices ?? [];
+            const specialPrice = specialPrices.find(
+              (sp) => sp.customerId === order.business?.toString(),
+            );
+            const price = Number(
+              specialPrice?.price ?? product.discountPrice ?? 0,
+            );
+            lineTotal = (Number.isFinite(price) ? price : 0) * quantity;
           }
-        } else {
-          const specialPrice = product.specialPrices.find(
-            (sp) => sp.customerId === order.business.toString(),
-          );
-          const price = specialPrice
-            ? specialPrice.price
-            : product.discountPrice;
-          const itemTotal = price * cartItem.quantity;
-          total += itemTotal;
+        } catch {
+          lineTotal = Number(product.discountPrice ?? 0) * quantity;
+        }
+
+        if (!Number.isFinite(lineTotal) || lineTotal < 0) {
+          lineTotal = 0;
         }
 
         const productName = product.name;
-        const amountSpent = total;
 
         if (!itemProcurementSummary[productName]) {
           itemProcurementSummary[productName] = { quantity: 0, totalCost: 0 };
         }
 
-        itemProcurementSummary[productName].quantity += cartItem.quantity;
-        itemProcurementSummary[productName].totalCost += amountSpent;
-      });
-    });
+        itemProcurementSummary[productName].quantity += quantity;
+        itemProcurementSummary[productName].totalCost += lineTotal;
+      }
+    }
 
-    // Convert summary object to an array for sorting
     const itemArray = Object.entries(itemProcurementSummary).map(
       ([name, summary]) => ({
         name,
@@ -453,15 +475,12 @@ export class AnalyticsService {
       }),
     );
 
-    // Sort items based on the specified criteria
-    itemArray.sort((a, b) => b[sortBy] - a[sortBy]);
-
-    const top10Items = itemArray.slice(0, 10);
+    itemArray.sort((a, b) => b.summary[sortBy] - a.summary[sortBy]);
 
     return {
       status: true,
       message: 'Items fetched successfully',
-      data: top10Items,
+      data: itemArray.slice(0, 10),
     };
   }
 

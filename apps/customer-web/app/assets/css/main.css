@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import '@gosource/shared/styles/typography.css';
 @import 'tw-animate-css';
 @import '@gosource/shared/styles/main.css';
+@import '../fonts/librecalson/libre.css' layer(base);
 @import './customer-theme.css';

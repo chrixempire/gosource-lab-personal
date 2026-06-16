@@ -1,3 +1,4 @@
+import type { CustomerMeResponse } from '@gosource/api-client';
 import {
   parseCreditAccount,
   parseCreditApplications,
@@ -40,15 +41,34 @@ export function createEmptyCreditPagePayload(): CreditPagePayload {
   };
 }
 
+/** Placeholder default from useAsyncData — must not replace a loaded dashboard. */
+export function isEmptyCreditPagePayload(payload: CreditPagePayload) {
+  return (
+    payload.loadError === null &&
+    payload.canBuyOnCredit === null &&
+    payload.account === null &&
+    payload.applications.length === 0 &&
+    payload.creditRequests.length === 0 &&
+    payload.repayments.length === 0 &&
+    payload.upcomingPayment === null
+  );
+}
+
 export async function fetchCreditPagePayload(): Promise<CreditPagePayload> {
   const { $creditApi, $apiClient } = useNuxtApp();
+  const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+  const isEmployeeSession = session.value?.user_type === 'employee';
 
   try {
+    const businessRequest = isEmployeeSession
+      ? Promise.resolve(null)
+      : $apiClient
+          .get<{ data?: Record<string, unknown> }>('/business')
+          .catch(() => null);
+
     const [businessResponse, applicationsResponse, accountResponse, requestsResponse, repaymentsResponse, upcomingResponse] =
       await Promise.all([
-        $apiClient
-          .get<{ data?: Record<string, unknown> }>('/business')
-          .catch(() => null),
+        businessRequest,
         $creditApi.listApplications({ page: 1, limit: 200 }).catch(() => null),
         $creditApi.getCreditAccount().catch(() => null),
         $creditApi.listRequests({ page: 1, limit: 10 }).catch(() => null),

@@ -200,13 +200,13 @@ function onSubmit() {
     </div>
 
     <template #footer>
-      <Button type="button" variant="outline" size="small" class="!w-auto" @click="open = false">
+      <Button type="button" variant="outline" size="medium" class="!w-auto" @click="open = false">
         Cancel
       </Button>
       <Button
         type="button"
         variant="primary"
-        size="small"
+        size="medium"
         class="!w-auto"
         :loading="loading"
         :disabled="!repaymentFrequency"

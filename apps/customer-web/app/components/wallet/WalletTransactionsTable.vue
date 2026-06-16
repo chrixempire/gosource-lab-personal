@@ -174,14 +174,14 @@ watch(
         </TableCell>
         <TableCell>{{ formatRequestDate(row.createdAt) }}</TableCell>
       </TableRow>
-    </TableBody>
 
-    <div
-      v-if="!loading && !transactions.length"
-      class="py-10 text-center text-sm text-grey-300"
-    >
-      No transactions found for the current filter.
-    </div>
+      <div
+        v-if="!loading && !transactions.length"
+        class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center text-sm text-grey-300"
+      >
+        No transactions found for the current filter.
+      </div>
+    </TableBody>
 
     <TableFooter v-if="totalItems > 0">
       <PaginationBar

@@ -64,7 +64,7 @@ function onDone() {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             Bank transfer
           </DialogTitle>
           <DialogDescription class="text-[12px] leading-5 text-grey-text">
@@ -106,10 +106,10 @@ function onDone() {
       </DialogBody>
 
       <DialogFooter class="gap-2">
-        <Button variant="neutral" size="small" class="!w-auto" @click="close">
+        <Button variant="neutral" size="medium" class="!w-auto" @click="close">
           Close
         </Button>
-        <Button size="small" class="!w-auto" @click="onDone">
+        <Button size="medium" class="!w-auto" @click="onDone">
           I have made the transfer
         </Button>
       </DialogFooter>

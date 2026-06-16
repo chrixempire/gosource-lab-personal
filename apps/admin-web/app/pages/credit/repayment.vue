@@ -8,7 +8,9 @@ import CreditRepaymentStatCards from '~/components/credit/CreditRepaymentStatCar
 import CreditRepaymentTable from '~/components/credit/CreditRepaymentTable.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
+import { useCreditRepaymentListFilters } from '~/composables/useCreditListFilters';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useAdminCapabilities } from '~/composables/useAdminCapabilities';
 import { useCreditMutations } from '~/composables/useCreditMutations';
@@ -19,27 +21,15 @@ import {
   CREDIT_LIST_SEARCH_CLASS,
   CREDIT_LIST_VIEW_TOOLBAR_CLASS,
 } from '~/lib/credit-page-layout';
-import type {
-  AdminRepaymentListItem,
-  CreditPaymentStatus,
-  CreditRepaymentListFilters,
-} from '~/types/credit';
+import type { AdminRepaymentListItem, CreditPaymentStatus } from '~/types/credit';
 
 const { updateHeader } = useAdminHeader();
 const { canManage } = useAdminCapabilities();
 const { busyId, confirmBankTransfer, rejectBankTransfer, downloadRepaymentInvoice } =
   useCreditMutations();
 const { routeView, effectiveView, isCompactViewport, setView } = useCollectionRouteState('table');
-
-const filters = ref<CreditRepaymentListFilters>({
-  page: 1,
-  limit: 10,
-  search: '',
-  businessIds: [],
-  paymentMethod: [],
-  startDate: '',
-  endDate: '',
-});
+const { filters, replaceFilters, resetFilters, setPage, setLimit } =
+  useCreditRepaymentListFilters();
 
 const searchQuery = ref('');
 const debouncedSearch = useDebounce(searchQuery, 400);
@@ -48,7 +38,7 @@ const selectedPaymentId = ref<string | null>(null);
 
 const apiQuery = computed(() => creditRepaymentListFiltersToApiQuery(filters.value));
 
-const { data: customersData } = useFetch<unknown>('/api/customers', {
+const { data: customersData } = await useAdminListFetch<unknown>('/api/customers', {
   query: { page: 1, limit: 100 },
 });
 
@@ -59,7 +49,7 @@ const businessFilterOptions = computed(() =>
   })),
 );
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>(
   '/api/credit/repayments/payment-history',
   {
     query: apiQuery,
@@ -91,20 +81,8 @@ watch(debouncedSearch, (value) => {
   replaceFilters({ search: trimmed, page: 1 });
 });
 
-function replaceFilters(next: Partial<CreditRepaymentListFilters>) {
-  filters.value = { ...filters.value, ...next };
-}
-
-function resetFilters() {
-  filters.value = {
-    page: 1,
-    limit: filters.value.limit,
-    search: '',
-    businessIds: [],
-    paymentMethod: [],
-    startDate: '',
-    endDate: '',
-  };
+function onClearAllFilters() {
+  resetFilters();
   searchQuery.value = '';
 }
 
@@ -168,7 +146,7 @@ useHead({ title: 'Credit repayments' });
         :filters="filters"
         :business-options="businessFilterOptions"
         @apply="replaceFilters"
-        @clear-all="resetFilters"
+        @clear-all="onClearAllFilters"
       />
     </div>
 
@@ -193,8 +171,8 @@ useHead({ title: 'Credit repayments' });
         :meta="parsed.meta"
         :loading="pending"
         :allow-manage="canManage"
-        @page="replaceFilters({ page: $event })"
-        @page-size="replaceFilters({ limit: $event, page: 1 })"
+        @page="setPage"
+        @page-size="setLimit"
         @update-status="onUpdateStatus"
         @download-invoice="onDownloadInvoice"
       />
@@ -204,8 +182,10 @@ useHead({ title: 'Credit repayments' });
         :meta="parsed.meta"
         :loading="pending"
         :allow-manage="canManage"
-        @page="replaceFilters({ page: $event })"
-        @page-size="replaceFilters({ limit: $event, page: 1 })"
+        empty-title="No repayments found"
+        empty-description="Adjust your filters or check back when payments are recorded."
+        @page="setPage"
+        @page-size="setLimit"
         @update-status="onUpdateStatus"
         @download-invoice="onDownloadInvoice"
       />

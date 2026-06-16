@@ -5,7 +5,10 @@ import type {
 } from '@gosource/api-client';
 
 type SessionBootstrap = {
+  /** UX hint for branch-setup banner; branch list APIs remain source of truth. */
   hasBranch?: boolean;
+  /** Epoch ms when hasBranch was last verified against GET /branch. */
+  checkedAt?: number;
 };
 
 type CustomerCookieSessionData = {
@@ -31,6 +34,7 @@ type EmployeeCookieSessionData = {
   position: string | null;
   role: string;
   status: string;
+  businessName?: string | null;
 };
 
 export type CustomerSessionState = Omit<CustomerMeResponse, 'data'> & {
@@ -66,6 +70,7 @@ export function serializeCustomerSessionSnapshot(session: CustomerSessionState):
         position: data.position ?? null,
         role: data.role,
         status: data.status,
+        businessName: data.businessName ?? null,
       },
       bootstrap: session.bootstrap,
     };
@@ -116,6 +121,7 @@ export function deserializeCustomerSessionSnapshot(
         position: data.position ?? '',
         role: data.role ?? 'employee',
         status: data.status ?? 'active',
+        businessName: data.businessName ?? null,
       },
       bootstrap: snapshot.bootstrap,
     };

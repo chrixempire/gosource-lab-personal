@@ -1,15 +1,27 @@
 <script setup lang="ts">
 import { SidebarRail, SidebarTrigger } from '@gosource/ui';
 import { Menu } from 'lucide-vue-next';
+import AdminPageTitleInfo from '~/components/shell/AdminPageTitleInfo.vue';
 import type { AdminHeaderOptions } from '~/composables/useAdminHeader';
+import { resolveAdminPageDescription } from '~/lib/admin-page-descriptions';
 
-defineProps<{
+const props = defineProps<{
   header: AdminHeaderOptions;
 }>();
 
 const emit = defineEmits<{
   openMobileNav: [];
 }>();
+
+const route = useRoute();
+
+const pageDescription = computed(() => {
+  if (props.header.description !== undefined) {
+    return props.header.description;
+  }
+
+  return resolveAdminPageDescription(route.path);
+});
 </script>
 
 <template>
@@ -46,9 +58,16 @@ const emit = defineEmits<{
         <Icon name="i-lucide-arrow-left" class="h-5 w-5" />
       </button>
 
-      <h1 v-if="header.title" class="min-w-0 flex-1 truncate text-lg font-semibold text-grey-900">
-        {{ header.title }}
-      </h1>
+      <div v-if="header.title" class="flex min-w-0 flex-1 items-center gap-0.5">
+        <h1 class="min-w-0 truncate text-h6 lg:text-h4">
+          {{ header.title }}
+        </h1>
+        <AdminPageTitleInfo
+          v-if="pageDescription"
+          :description="pageDescription"
+          class="shrink-0"
+        />
+      </div>
 
       <component :is="header.rightComponent" v-if="header.rightComponent" />
     </div>

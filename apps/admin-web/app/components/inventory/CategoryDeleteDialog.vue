@@ -128,13 +128,13 @@ function onConfirm() {
     </div>
 
     <template #footer>
-      <Button type="button" variant="outline" size="small" @click="open = false">
+      <Button type="button" variant="outline" size="medium" @click="open = false">
         Cancel
       </Button>
       <Button
         type="button"
         variant="destructive"
-        size="small"
+        size="medium"
         :loading="loading"
         :disabled="hasProducts && deleteMode === 'transfer' && !targetCategoryId"
         @click="onConfirm"

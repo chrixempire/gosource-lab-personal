@@ -12,7 +12,6 @@ import type { OrderStatusFilter } from '~/lib/order-status';
 const props = defineProps<{
   filters: TrackOrderListFilters;
   search: string;
-  hasDefaultStatusOnly: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -90,13 +89,12 @@ function clearStatus() {
 const amountActive = computed(
   () => props.filters.amountMin != null || props.filters.amountMax != null,
 );
-const statusActive = computed(() => !props.hasDefaultStatusOnly);
+const statusActive = computed(() => props.filters.status.length > 0);
 const selectedStatusCount = computed(() => props.filters.status.length);
 const showClearAll = computed(() =>
   hasActiveTrackOrderFilters({
     filters: props.filters,
     search: props.search,
-    hasDefaultStatusOnly: props.hasDefaultStatusOnly,
   }),
 );
 </script>

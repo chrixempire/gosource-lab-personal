@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Button } from '@gosource/ui';
 import { Lock } from 'lucide-vue-next';
-import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
+import { useCreditApplyAccess } from '~/composables/useCreditApplyAccess';
+
+const { checkingAccess, openCreditApply } = useCreditApplyAccess();
 </script>
 
 <template>
@@ -20,23 +22,25 @@ import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
           </div>
         </div>
 
-        <h2 class="mt-8 text-2xl font-semibold leading-tight text-grey-900">
+        <h3 class="mt-8">
           Access the credit you need, when you need it
-        </h2>
-        <p class="mt-3 max-w-md text-base leading-6 text-grey-text">
+        </h3>
+        <p class="mt-3 max-w-md text-body-lg text-grey-text">
           Apply in minutes, share your business details, and start shopping with GoSource credit—no
           long queues, no delays.
         </p>
 
         <Button
-          size="small"
-          class="mt-8 !w-auto"
-          @click="navigateTo(CREDIT_PAGE_ROUTES.APPLY)"
+          size="medium"
+          class="mt-8 w-full"
+          :loading="checkingAccess"
+          :disabled="checkingAccess"
+          @click="openCreditApply()"
         >
           Get started
         </Button>
 
-        <div class="mt-6 flex max-w-sm items-start gap-2 text-left text-xs leading-5 text-grey-400">
+        <div class="mt-6 flex w-full items-start gap-2 text-left text-xs leading-5 text-grey-400">
           <Lock class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <span>
             GoSource uses your business data and KYC details to determine your credit eligibility.

@@ -47,6 +47,7 @@ const emit = defineEmits<{
   edit: [branch: BranchListItem];
   activate: [branch: BranchListItem];
   deactivate: [branch: BranchListItem];
+  makeHeadquarter: [branch: BranchListItem];
   delete: [branch: BranchListItem];
 }>();
 
@@ -261,9 +262,11 @@ function formatCurrency(amount: number) {
             <BranchActionsMenu
               :hidden="false"
               :is-deactivated="branch.isDeactivated"
+              :is-headquarter="branch.isHeadquarter"
               @view="emit('view', branch)"
               @invite="emit('invite', branch)"
               @edit="emit('edit', branch)"
+              @make-headquarter="emit('makeHeadquarter', branch)"
               @activate="emit('activate', branch)"
               @deactivate="emit('deactivate', branch)"
               @delete="emit('delete', branch)"

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import {
   Checkbox,
+  PaginationBar,
   TableBody,
   TableCell,
+  TableFooter,
   TableHeadRow,
   TableHeader,
   TableRow,
@@ -20,13 +22,26 @@ import {
 import type { ShoppingListListItem } from '~/lib/shopping-list';
 import { formatShoppingListCurrency, formatShoppingListDate } from '~/lib/shopping-list';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   lists: ShoppingListListItem[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
   loading?: boolean;
   showBranchColumn?: boolean;
-}>();
+  emptyTitle?: string;
+  emptyDescription?: string;
+}>(), {
+  emptyTitle: 'No lists yet',
+  emptyDescription: 'Create a list to save products your branch orders often.',
+});
 
 const emit = defineEmits<{
+  page: [page: number];
+  pageSize: [pageSize: number];
   rowClick: [list: ShoppingListListItem];
   view: [list: ShoppingListListItem];
   move: [list: ShoppingListListItem];
@@ -114,6 +129,13 @@ function toggleRowSelection(listId: string) {
 
   emit('selectionChange', [...selectedIds.value]);
 }
+
+const showEmpty = computed(() => !props.loading && props.lists.length === 0);
+const showPagination = computed(
+  () => !props.loading && (props.lists.length > 0 || props.totalItems > 0),
+);
+const hasNextPage = computed(() => props.hasNextPage ?? props.page < props.totalPages);
+const hasPrevPage = computed(() => props.hasPrevPage ?? props.page > 1);
 </script>
 
 <template>
@@ -191,6 +213,31 @@ function toggleRowSelection(listId: string) {
           />
         </TableCell>
       </TableRow>
+
+      <div
+        v-if="showEmpty"
+        class="flex min-h-[220px] flex-col items-center justify-center px-6 py-12 text-center"
+      >
+        <p class="text-base font-medium text-grey-900">{{ emptyTitle }}</p>
+        <p v-if="emptyDescription" class="mt-2 text-sm text-grey-300">
+          {{ emptyDescription }}
+        </p>
+      </div>
     </TableBody>
+
+    <TableFooter v-if="showPagination">
+      <PaginationBar
+        :page="page"
+        :total-pages="totalPages"
+        :total-items="totalItems"
+        :page-size="pageSize"
+        :visible-count="lists.length"
+        :has-next-page="hasNextPage"
+        :has-prev-page="hasPrevPage"
+        :disabled="loading"
+        @change="emit('page', $event)"
+        @page-size-change="emit('pageSize', $event)"
+      />
+    </TableFooter>
   </TableShell>
 </template>

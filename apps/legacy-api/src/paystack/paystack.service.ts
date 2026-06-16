@@ -74,28 +74,45 @@ export class PaystackService {
   }
 
   /**
-   * Verify transaction reference from webhook.
-   *
-   * @param {*} reference
-   * @returns Boolean
+   * Verify a Paystack charge for wallet/order webhooks (dedupes wallet references).
    */
   async verifyTransaction(reference: string) {
-    const url = `${process.env.PAYSTACK_BASE_URL}/transaction/verify/${reference}`;
-    const transaction = await this.externalService.get(url, this.config);
-    if (transaction) {
-      const status = transaction.data.status;
-      if (status === 'success') {
-        const checkDuplicate = await this.paymentReferenceModel.findOne({
-          reference,
-        });
-
-        if (checkDuplicate) {
-          return false;
-        }
-        return transaction.data;
-      }
-
+    const charge = await this.fetchPaystackCharge(reference);
+    if (!charge || charge.status !== 'success') {
       return false;
+    }
+
+    const checkDuplicate = await this.paymentReferenceModel.findOne({
+      data: reference,
+    });
+
+    if (checkDuplicate) {
+      return false;
+    }
+
+    return charge;
+  }
+
+  /**
+   * Verify a Paystack charge for credit repayment (no wallet dedupe gate).
+   */
+  async verifySuccessfulCharge(reference: string) {
+    const charge = await this.fetchPaystackCharge(reference);
+    if (!charge || charge.status !== 'success') {
+      return null;
+    }
+
+    return charge;
+  }
+
+  private async fetchPaystackCharge(reference: string) {
+    const url = `${process.env.PAYSTACK_BASE_URL}/transaction/verify/${reference}`;
+
+    try {
+      const transaction = await this.externalService.get(url, this.config);
+      return transaction?.data ?? null;
+    } catch {
+      return null;
     }
   }
 

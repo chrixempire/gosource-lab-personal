@@ -2,6 +2,7 @@
 import { Button, Checkbox } from '@gosource/ui';
 import { LoaderCircle } from 'lucide-vue-next';
 import CreditPanelCard from '~/components/credit/CreditPanelCard.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useCreditMutations } from '~/composables/useCreditMutations';
 import { customerDetailPath } from '~/lib/admin-routes';
 import { parseCreditChecklist } from '~/lib/credit-api';
@@ -21,9 +22,12 @@ const { busyId, initialiseChecklist, updateChecklistItem } = useCreditMutations(
 
 const applicationId = toRef(props, 'applicationId');
 
-const { data, refresh, status } = await useFetch<unknown>(
+const { data, refresh, status } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/credit/applications/${applicationId.value}/checklist`,
-  { watch: [applicationId], lazy: true },
+  {
+    watch: [applicationId],
+    key: computed(() => `admin-credit-checklist:${applicationId.value}`),
+  },
 );
 
 const items = computed(() => parseCreditChecklist(data.value));
@@ -37,14 +41,23 @@ const checklistBusy = computed(
 watch(
   items,
   async (list) => {
-    if (list.length > 0 || initialising.value || status.value === 'pending') return;
+    if (
+      !props.editable
+      || list.length > 0
+      || initialising.value
+      || status.value === 'pending'
+      || status.value === 'idle'
+    ) {
+      return;
+    }
+
     initialising.value = true;
     try {
       await initialiseChecklist(props.applicationId, [...CREDIT_DEFAULT_CHECKLIST_ITEMS]);
       await refresh();
       emit('refreshed');
     } catch {
-      // toast in composable
+      await refresh();
     } finally {
       initialising.value = false;
     }
@@ -77,6 +90,9 @@ function viewOrderHistory() {
   <CreditPanelCard title="Review checklist">
     <div v-if="status === 'pending' && items.length === 0" class="text-sm text-grey-500">
       Loading checklist…
+    </div>
+    <div v-else-if="items.length === 0" class="text-sm text-grey-500">
+      No review checklist items.
     </div>
     <div v-else class="space-y-4">
       <div

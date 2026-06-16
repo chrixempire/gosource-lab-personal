@@ -6,6 +6,7 @@ import AdminOrderTimeline from '~/components/orders/AdminOrderTimeline.vue';
 import OrderCancelDialog from '~/components/orders/OrderCancelDialog.vue';
 import OrderInvoiceDrawer from '~/components/orders/OrderInvoiceDrawer.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useOrderMutations } from '~/composables/useOrderMutations';
 import { unwrapLegacyPayload } from '~/lib/dashboard-api';
 import { isOrderCancellable } from '~/lib/order-constants';
@@ -37,9 +38,12 @@ const {
   downloadOrderInvoiceFromPreview,
 } = useOrderMutations();
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/orders/${orderId.value}`,
-  { watch: [orderId] },
+  {
+    watch: [orderId],
+    key: computed(() => `admin-order-detail:${orderId.value}`),
+  },
 );
 
 const rawOrder = computed(() => unwrapLegacyPayload(data.value));

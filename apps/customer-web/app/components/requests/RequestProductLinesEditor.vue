@@ -23,9 +23,12 @@ const props = withDefaults(defineProps<{
   editable?: boolean;
   /** No outer table border — use inside a parent card. */
   embedded?: boolean;
+  /** Compact horizontal rows (request details slide panel). */
+  listStyle?: boolean;
 }>(), {
   editable: false,
   embedded: false,
+  listStyle: false,
 });
 
 const tableShellClass = computed(() =>
@@ -135,7 +138,119 @@ const removeConfirmMessage = computed(() => {
       whole request if you no longer need it.
     </p>
 
-    <div class="hidden md:block">
+    <div v-if="listStyle && loading" class="space-y-0 divide-y divide-grey-50">
+      <div
+        v-for="index in 3"
+        :key="index"
+        class="flex items-center gap-3 py-3"
+      >
+        <div class="size-10 shrink-0 animate-pulse rounded-lg bg-grey-55" />
+        <div class="min-w-0 flex-1 space-y-2">
+          <div class="h-4 w-40 max-w-full animate-pulse rounded bg-grey-55" />
+          <div class="h-5 w-16 animate-pulse rounded-full bg-grey-55" />
+        </div>
+        <div class="h-4 w-20 shrink-0 animate-pulse rounded bg-grey-55" />
+      </div>
+    </div>
+
+    <ul
+      v-else-if="listStyle && products.length > 0"
+      class="divide-y divide-grey-50"
+    >
+      <li
+        v-for="(product, index) in products"
+        :key="lineKey(product, index)"
+        class="py-3 first:pt-0 last:pb-0"
+      >
+        <div class="flex items-start gap-3">
+          <div
+            v-if="product.imageUrl"
+            class="relative size-10 shrink-0 overflow-hidden rounded-lg bg-grey-55"
+          >
+            <MarketProductImage
+              :src="product.imageUrl"
+              :alt="product.productName"
+              logo-class="w-[70%] max-w-[1.75rem]"
+              :class="{ grayscale: product.inStock === false }"
+            />
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
+                  <p class="truncate text-sm font-medium text-grey-900">
+                    {{ product.productName }}
+                  </p>
+                  <span
+                    class="shrink-0 rounded-full border border-grey-50 px-2 py-0.5 text-xs font-medium text-grey-300"
+                  >
+                    {{ product.unit || 'Standard pack' }}
+                  </span>
+                </div>
+                <p
+                  v-if="!product.cartLineId"
+                  class="mt-1 text-xs text-grey-300"
+                >
+                  This line cannot be edited yet. Close and reopen this request, then try again.
+                </p>
+                <p
+                  v-else-if="product.inStock === false"
+                  class="mt-1 text-xs text-negative-500"
+                >
+                  Out of stock — remove this item to continue.
+                </p>
+              </div>
+
+              <p class="shrink-0 text-sm font-semibold tabular-nums text-grey-900">
+                {{ formatCurrency(product.totalPrice) }}
+              </p>
+            </div>
+
+            <div
+              v-if="editable && canEditLine(product)"
+              class="mt-2 flex items-center justify-between gap-2"
+            >
+              <div class="w-full max-w-[7.5rem]">
+                <MarketProductQtyStrip
+                  variant="cart"
+                  :model-value="product.quantity"
+                  :disabled="lineControlsDisabled"
+                  :allow-remove-at-min="canRemoveLine"
+                  @update:model-value="onQuantityChange(product, $event)"
+                  @remove="promptRemove(product)"
+                />
+              </div>
+              <button
+                type="button"
+                class="flex size-8 shrink-0 items-center justify-center rounded-full text-negative-500 transition hover:bg-negative-50 hover:text-negative-600 disabled:cursor-not-allowed disabled:opacity-35"
+                :disabled="lineControlsDisabled || !canRemoveLine"
+                title="Remove from request"
+                aria-label="Remove line from request"
+                @click="promptRemove(product)"
+              >
+                <Trash2 class="size-4" />
+              </button>
+            </div>
+            <p
+              v-else-if="!editable"
+              class="mt-1 text-xs text-grey-300"
+            >
+              Qty {{ product.quantity }} · {{ formatCurrency(product.unitPrice) }} each
+            </p>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <div
+      v-else-if="listStyle"
+      class="py-8 text-center text-sm text-grey-300"
+    >
+      No products have been added to this request yet.
+    </div>
+
+    <div v-else class="hidden md:block">
       <TableShell :class="tableShellClass">
         <TableHeader>
           <TableHeadRow
@@ -260,7 +375,7 @@ const removeConfirmMessage = computed(() => {
       </TableShell>
     </div>
 
-    <div v-if="loading" class="grid gap-3 md:hidden">
+    <div v-if="!listStyle && loading" class="grid gap-3 md:hidden">
       <div
         v-for="index in 3"
         :key="index"
@@ -292,7 +407,7 @@ const removeConfirmMessage = computed(() => {
       </div>
     </div>
 
-    <div v-else-if="products.length > 0" class="grid gap-3 md:hidden">
+    <div v-else-if="!listStyle && products.length > 0" class="grid gap-3 md:hidden">
       <article
         v-for="(product, index) in products"
         :key="lineKey(product, index)"
@@ -394,7 +509,7 @@ const removeConfirmMessage = computed(() => {
     </div>
 
     <div
-      v-else
+      v-else-if="!listStyle"
       class="rounded-[18px] border border-grey-50 bg-background-on-canvas px-6 py-12 text-center text-sm text-grey-300 md:hidden"
     >
       No products have been added to this request yet.

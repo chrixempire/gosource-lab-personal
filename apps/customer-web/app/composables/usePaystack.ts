@@ -105,6 +105,7 @@ export function usePaystack() {
 
     return new Promise((resolve) => {
       let settled = false;
+      let successHandled = false;
 
       const finish = (result: 'success' | 'cancelled' | 'failed') => {
         if (settled) {
@@ -114,27 +115,54 @@ export function usePaystack() {
         resolve(result);
       };
 
+      const handleSuccess = async (event: unknown) => {
+        if (successHandled) {
+          finish('success');
+          return;
+        }
+
+        successHandled = true;
+
+        try {
+          await onSuccess?.(event);
+          finish('success');
+        } catch {
+          successHandled = false;
+          finish('failed');
+        }
+      };
+
+      const transactionOptions = {
+        key: publicKey,
+        email,
+        amount: Math.round(amount * 100),
+        currency: 'NGN',
+        metadata,
+        onSuccess: handleSuccess,
+        onCancel: () => {
+          onCancel?.();
+          finish('cancelled');
+        },
+        onError: (error: { message?: string }) => {
+          toast.error(error?.message?.trim() || 'Paystack payment failed.');
+          finish('failed');
+        },
+      };
+
       try {
         const paystack = new PaystackPop();
-        paystack.checkout({
-          key: publicKey,
-          email,
-          amount: Math.round(amount * 100),
-          currency: 'NGN',
-          metadata,
-          onSuccess: async (event: unknown) => {
-            try {
-              await onSuccess?.(event);
-              finish('success');
-            } catch {
-              finish('failed');
-            }
-          },
-          onCancel: () => {
-            onCancel?.();
-            finish('cancelled');
-          },
-        });
+        if (typeof paystack.newTransaction === 'function') {
+          paystack.newTransaction(transactionOptions);
+        } else if (typeof paystack.checkout === 'function') {
+          // Legacy inline API only exposes `callback` (not onSuccess).
+          paystack.checkout({
+            ...transactionOptions,
+            callback: handleSuccess,
+          });
+        } else {
+          toast.error('Paystack checkout is unavailable. Please refresh and try again.');
+          finish('failed');
+        }
       } catch {
         toast.error(paystackConnectionHelpMessage());
         finish('failed');

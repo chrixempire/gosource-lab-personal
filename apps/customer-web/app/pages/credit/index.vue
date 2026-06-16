@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import type { CustomerMeResponse } from '@gosource/api-client';
 import { Button } from '@gosource/ui';
 import CreditDashboard from '~/components/credit/CreditDashboard.vue';
+import CreditPageSkeleton from '~/components/credit/CreditPageSkeleton.vue';
 import CreditGetStarted from '~/components/credit/CreditGetStarted.vue';
 import CreditNotEligible from '~/components/credit/CreditNotEligible.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useCreditPageData } from '~/composables/useCreditPageData';
-import { isBusinessOwnerSession } from '~/lib/customer-roles';
-
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
+import { isEmptyCreditPagePayload } from '~/lib/credit-page-fetch';
+import { CREDIT_PAGE_CACHE_KEY } from '~/lib/invalidate-customer-list-cache';
 
 const creditPage = useCreditPageData();
 
@@ -33,26 +32,35 @@ const {
   createEmptyCreditPagePayload,
 } = creditPage;
 
-const { data: creditPayload, pending: pagePending } = await useAuthenticatedAsyncData(
-  'credit-page',
+const { data: creditPayload, pending: pagePending } =
+  await useAuthenticatedAsyncData(
+  CREDIT_PAGE_CACHE_KEY,
   () => fetchPayload(),
-  {
-    default: () => createEmptyCreditPagePayload(),
-    staleAfterMs: 60_000,
-  },
+    {
+      fastNav: true,
+      default: () => createEmptyCreditPagePayload(),
+      revalidateOnMount: true,
+      staleAfterMs: 60_000,
+    },
 );
 
 watch(
   creditPayload,
   (payload) => {
-    if (payload) {
-      applyPayload(payload);
+    if (!payload) {
+      return;
     }
+
+    // Cache invalidation resets useAsyncData to the empty default briefly — keep the dashboard visible.
+    if (isEmptyCreditPagePayload(payload) && account.value) {
+      return;
+    }
+
+    applyPayload(payload);
   },
   { immediate: true },
 );
 
-const isOwner = computed(() => isBusinessOwnerSession(session.value));
 const creditHistoryLoading = ref(false);
 const repaymentHistoryLoading = ref(false);
 
@@ -75,19 +83,22 @@ async function refreshRepaymentHistory(page: number, limit = repaymentMeta.value
 }
 
 async function refreshCreditPage() {
-  await loadPage();
+  creditHistoryLoading.value = true;
+  repaymentHistoryLoading.value = true;
+
+  try {
+    const payload = await loadPage();
+    creditPayload.value = payload;
+  } finally {
+    creditHistoryLoading.value = false;
+    repaymentHistoryLoading.value = false;
+  }
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <div v-if="pagePending" class="space-y-4">
-      <div class="h-8 w-48 animate-pulse rounded bg-grey-55" />
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div v-for="index in 3" :key="index" class="h-28 animate-pulse rounded-lg bg-grey-55" />
-      </div>
-      <div class="h-64 animate-pulse rounded-lg bg-grey-55" />
-    </div>
+    <CreditPageSkeleton v-if="pagePending" />
 
     <div
       v-else-if="loadError"
@@ -109,7 +120,6 @@ async function refreshCreditPage() {
       :credit-meta="creditMeta"
       :repayment-meta="repaymentMeta"
       :upcoming-payment="upcomingPayment"
-      :is-owner="isOwner"
       :credit-loading="creditHistoryLoading"
       :repayment-loading="repaymentHistoryLoading"
       @credit-page="refreshCreditHistory"

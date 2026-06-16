@@ -1,0 +1,11 @@
+@font-face {
+  font-family: 'LibreCaslonCondensed';
+  src:
+    local('LibreCaslonCondensed Bold Italic'),
+    local('LibreCaslonCondensed-BoldItalic'),
+    url('LibreCaslonCondensed-BoldItalic.woff2') format('woff2'),
+    url('LibreCaslonCondensed-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}

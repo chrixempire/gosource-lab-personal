@@ -32,6 +32,7 @@ import {
 } from './enum/request.enum';
 import { Order, OrderDocument } from '../order/entities/order.entity';
 import { ORDER_STATUS } from '../order/interface/order.interface';
+import { CouponType } from '../admin/coupon/coupon.enum';
 import { QueryParamsDto } from '../analytics/dto/query-param.dto';
 import { NewEmailInterface } from '../notification/email/email.interface';
 import { EmailService } from '../notification/email/email.service';
@@ -127,11 +128,23 @@ export class RequestService {
     });
   }
 
+  private requestProductLines(request: { products?: unknown }): any[] {
+    return Array.isArray(request.products) ? request.products : [];
+  }
+
+  private ensureRequestProductsArray(request: RequestDocument): any[] {
+    if (!Array.isArray(request.products)) {
+      request.products = [];
+    }
+
+    return request.products as any[];
+  }
+
   /** Legacy request lines were stored without ids; mutations require a stable line id. */
   private async ensureRequestProductLineIds(request: RequestDocument) {
     let mutated = false;
 
-    for (const line of request.products as Array<{ _id?: unknown }>) {
+    for (const line of this.ensureRequestProductsArray(request) as Array<{ _id?: unknown }>) {
       if (!line._id) {
         line._id = randomUUID();
         mutated = true;
@@ -483,6 +496,7 @@ export class RequestService {
     const update = await this.requestModel.findByIdAndUpdate(
       requestId,
       requestDetails,
+      { new: true },
     );
 
     if (update) {
@@ -560,28 +574,19 @@ export class RequestService {
         throw new BadRequestException('Request has already been approved');
       }
 
-      let totalPrice: number = request.serviceCharge + request.deliveryFee;
-
       let coupon = false;
       let couponObj: any;
 
-      // Calculate the subtotal price for the request
-      let subtotal;
-
-      if (!request.subtotal || request.subtotal === 0) {
-        subtotal = calculateTotalPrice(request.products, business.id);
-      } else {
-        subtotal = request.subtotal;
-      }
-
-      const deliveryFee = request.deliveryFee;
+      const deliveryFee = Number(request.deliveryFee ?? 0);
+      const discount = this.resolveBillableDiscount(request);
+      const subtotal = calculateTotalPrice(request.products, business.id);
 
       // Validate the coupon if provided
       if (request.coupon) {
         coupon = true;
       }
 
-      totalPrice += subtotal;
+      let totalPrice = subtotal + deliveryFee - discount;
 
       let serviceCharge = 0;
 
@@ -638,9 +643,6 @@ export class RequestService {
         paymentStatus = PaymentStatus.PAID;
       } else if (requestDetails.paymentMethod === PaymentMethod.WALLET) {
         paymentStatus = PaymentStatus.PAID;
-      } else if (requestDetails.paymentMethod === PaymentMethod.PAYSTACK) {
-        // Checkout only calls approve after Paystack inline success (same as wallet).
-        paymentStatus = PaymentStatus.PAID;
       }
 
       // Create a new order associated with the approved request
@@ -659,7 +661,7 @@ export class RequestService {
         totalPrice,
         approver: business.id,
         paymentStatus,
-        discount: request.coupon ?? 0,
+        discount: Number(request.discount ?? 0),
         paymentCount:
           requestDetails.paymentMethod === PaymentMethod.TRANSFER ? 0 : 1,
       };
@@ -993,7 +995,7 @@ export class RequestService {
 
   async getRequestPrice(requestId: string, businessId: string) {
     const request = await this.requestModel.findById(requestId);
-    const subtotal = calculateTotalPrice(request.products, businessId);
+    const subtotal = calculateTotalPrice(this.requestProductLines(request), businessId);
 
     return { subtotal };
   }
@@ -1122,7 +1124,9 @@ export class RequestService {
         throw new NotFoundException('Branch not found');
       }
 
-      if (branch.businessId.toString() !== businessDetails.id) {
+      const scopedBusinessId = await this.getAuthBusinessId(businessDetails.id);
+
+      if (branch.businessId.toString() !== scopedBusinessId) {
         throw new UnauthorizedException(
           'You cannot view requests for this branch',
         );
@@ -1274,15 +1278,16 @@ export class RequestService {
       // const jsonUnitsCache = new Map();
 
       for (const request of requests) {
+        const productLines = this.requestProductLines(request);
         let totalPrice: number = request.serviceCharge + request.deliveryFee;
-        const totalProducts: number = request.products.length;
+        const totalProducts: number = productLines.length;
         let totalQuantity: number = 0;
 
         // Get branch from cache
         // const branchId = request.branch._id || request.branch;
         // const branch = branchMap.get(branchId.toString());
 
-        totalQuantity += request.products.reduce(
+        totalQuantity += productLines.reduce(
           (acc, item) => acc + item.quantity,
           0,
         );
@@ -1453,36 +1458,56 @@ export class RequestService {
    * @returns The total price of the request
    */
   private getRequestTotalPrice(request: any) {
+    const productLines = this.requestProductLines(request);
+    const businessId = request.branch?.businessId;
+
     if (request.status === RequestStatus.PENDING) {
-      return calculateTotalPrice(request.products, request.branch.businessId);
+      return calculateTotalPrice(productLines, businessId);
     }
 
+    const requestProducts = Array.isArray(request.requestProducts)
+      ? request.requestProducts
+      : [];
+
     // use requestProducts
-    const products = request.products.map((item) => {
+    const products = productLines.map((item) => {
       return {
         ...item,
-        product: request.requestProducts.find(
+        product: requestProducts.find(
           (reqItem) => reqItem._id.toString() === item.product._id.toString(),
         ),
       };
     });
 
-    return calculateTotalPrice(products, request.branch.businessId);
+    return calculateTotalPrice(products, businessId);
   }
 
   /**
    * Subtotal = sum of product line prices only.
    * Total = subtotal + delivery + service charge − discount.
    */
+  private resolveBillableDiscount(request: any): number {
+    const couponType = request.couponDetails?.type;
+    if (
+      couponType === CouponType.FREE_DELIVERY ||
+      couponType === 'free_delivery'
+    ) {
+      return 0;
+    }
+
+    return Number(request.discount ?? 0);
+  }
+
   private resolveRequestMoneyTotals(request: any, businessId: string) {
+    const productLines = this.requestProductLines(request);
     const productsSubtotal =
       request.status === RequestStatus.PENDING
-        ? calculateTotalPrice(request.products, businessId)
+        ? calculateTotalPrice(productLines, businessId)
         : this.getRequestTotalPrice(request);
 
     const deliveryFee = Number(request.deliveryFee ?? 0);
     const serviceCharge = Number(request.serviceCharge ?? 0);
-    const discount = Number(request.discount ?? 0);
+    const discount = this.resolveBillableDiscount(request);
     const totalPrice = productsSubtotal + deliveryFee + serviceCharge - discount;
 
     return {

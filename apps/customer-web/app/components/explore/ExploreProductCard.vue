@@ -16,6 +16,7 @@ import {
 } from "~/composables/useMarketplaceCart";
 import { useRequestAddItemsMode } from "~/composables/useRequestAddItemsMode";
 import MarketProductImage from "~/components/market/MarketProductImage.vue";
+import MarketProductDiscountRibbon from "~/components/market/MarketProductDiscountRibbon.vue";
 import MarketProductQtyStrip from "~/components/market/MarketProductQtyStrip.vue";
 
 const props = withDefaults(
@@ -137,13 +138,10 @@ async function onAdd(e: MouseEvent) {
           logo-class="w-[72%] max-w-[8rem]"
         />
 
-        <span
+        <MarketProductDiscountRibbon
           v-if="discountPercent"
-          class="customer-image-discount-badge absolute right-2 top-2 z-10 flex size-[3.25rem] flex-col items-center justify-center rounded-full text-center"
-        >
-          <span class="text-sm font-bold leading-none">{{ discountPercent }}%</span>
-          <span class="mt-0.5 text-[10px] font-medium leading-none">Off</span>
-        </span>
+          :percent="discountPercent"
+        />
 
         <span
           v-else-if="discountLabel"

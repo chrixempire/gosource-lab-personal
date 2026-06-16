@@ -11,6 +11,7 @@ import CustomerStatCards from '~/components/customers/CustomerStatCards.vue';
 import CustomerTable from '~/components/customers/CustomerTable.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useCustomerListFilters } from '~/composables/useCustomerListFilters';
@@ -21,6 +22,7 @@ import {
   parseCustomersListResponse,
 } from '~/lib/customer-api';
 import { downloadCustomersCsv } from '~/lib/customer-export';
+import { withRoutePaginationMeta } from '~/lib/list-pagination-meta';
 import { customerListFiltersToApiQuery } from '~/lib/customer-filters';
 import type { AdminCustomerListItem, CustomerAccountType } from '~/types/customers';
 
@@ -66,7 +68,7 @@ const creditActionBusy = computed(
 
 const apiQuery = computed(() => customerListFiltersToApiQuery(filters.value));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/customers', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/customers', {
   query: apiQuery,
   watch: [apiQuery],
 });
@@ -76,7 +78,9 @@ const parsed = computed(() =>
 );
 
 const rows = computed(() => parsed.value.rows);
-const meta = computed(() => parsed.value.meta);
+const meta = computed(() =>
+  withRoutePaginationMeta(parsed.value.meta, filters.value.page, filters.value.limit),
+);
 
 const stats = computed(() => computeCustomerStats(rows.value, meta.value.total));
 
@@ -200,12 +204,7 @@ updateHeader({ title: 'Customers' });
 
 <template>
   <div class="flex min-w-0 flex-col gap-4">
-    <div
-      class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between"
-    >
-      <p class="max-w-xl text-sm text-grey-600">
-        Search and manage business and individual customers, credit access, and account details.
-      </p>
+    <div class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-end">
       <Button
         type="button"
         variant="secondary"

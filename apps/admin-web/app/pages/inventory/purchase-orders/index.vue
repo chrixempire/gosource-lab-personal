@@ -11,6 +11,7 @@ import PurchaseOrderStatCards from '~/components/purchase-orders/PurchaseOrderSt
 import PurchaseOrderTable from '~/components/purchase-orders/PurchaseOrderTable.vue';
 import EmptyState from '~/components/shared/EmptyState.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { usePurchaseOrderListFilters } from '~/composables/usePurchaseOrderListFilters';
@@ -24,6 +25,7 @@ import {
   parsePurchaseOrderDetail,
   parsePurchaseOrdersListResponse,
 } from '~/lib/purchase-order-api';
+import { withRoutePaginationMeta } from '~/lib/list-pagination-meta';
 import { purchaseOrderListFiltersToApiQuery } from '~/lib/purchase-order-filters';
 import type { AdminPurchaseOrderListItem } from '~/types/purchase-orders';
 
@@ -59,7 +61,7 @@ const actionLoadingOrderId = ref<string | null>(null);
 
 const apiQuery = computed(() => purchaseOrderListFiltersToApiQuery(filters.value));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/purchase-orders', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/purchase-orders', {
   query: apiQuery,
   watch: [apiQuery],
 });
@@ -68,7 +70,9 @@ const parsed = computed(() =>
   parsePurchaseOrdersListResponse(data.value, filters.value.page, filters.value.limit),
 );
 const orders = computed(() => parsed.value.rows);
-const meta = computed(() => parsed.value.meta);
+const meta = computed(() =>
+  withRoutePaginationMeta(parsed.value.meta, filters.value.page, filters.value.limit),
+);
 const stats = computed(() => parsed.value.stats);
 
 watch(
@@ -226,12 +230,7 @@ updateHeader({
 
 <template>
   <div class="flex min-w-0 flex-col gap-4">
-    <div
-      class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between"
-    >
-      <p class="max-w-xl text-sm text-grey-600">
-        Create and manage supplier purchase orders, receive stock, and share invoices.
-      </p>
+    <div class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-end">
       <Button
         type="button"
         size="small"

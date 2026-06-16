@@ -1,14 +1,14 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'customer-market' });
 
-import type { CustomerMeResponse, RequestRecord } from '@gosource/api-client';
+import type { RequestRecord } from '@gosource/api-client';
 import { Button, StatusTag, toast } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
 import MemberConfirmOverlay from '~/components/members/MemberConfirmOverlay.vue';
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import RequestBranchRequestsSection from '~/components/requests/RequestBranchRequestsSection.vue';
 import RequestDetailsPanel from '~/components/requests/RequestDetailsPanel.vue';
-import RequestRejectForm from '~/components/requests/RequestRejectForm.vue';
+import RequestRejectOverlay from '~/components/requests/RequestRejectOverlay.vue';
 import type { RequestListItem } from '~/components/requests/RequestCards.vue';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import {
@@ -24,6 +24,7 @@ import {
   resolveCurrentActorId,
 } from '~/lib/request-edit';
 import { useCustomerSession } from '~/composables/useCustomerSession';
+import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
 import { useRequestEdit } from '~/composables/useRequestEdit';
@@ -31,24 +32,16 @@ import { useCustomerRequestService } from '~/services/request.service';
 
 const runWhenSessionReady = useAuthenticatedFetch();
 
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
-const { sessionResolved } = useCustomerSession();
+const { session, sessionResolved } = useCustomerSession();
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
-
-watch(
-  session,
-  (value) => {
-    if (value && !isBusinessOwnerSession(value)) {
-      void navigateTo('/manage-requests', { replace: true });
-    }
-  },
-  { immediate: true },
-);
 
 const route = useRoute();
 const router = useRouter();
 const requestId = computed(() => String(route.params.id ?? ''));
-const requestDetailKey = computed(() => `manage-request-detail:${requestId.value || 'empty'}`);
+const requestDetailKey = computed(
+  () =>
+    `manage-request-detail:${getCustomerSessionCacheSignature(session.value)}:${requestId.value || 'empty'}`,
+);
 const isEditingProducts = ref(false);
 
 const { getRequest, listRequests, rejectRequest, cancelRequest } = useCustomerRequestService();
@@ -68,8 +61,9 @@ const {
 const relatedLoading = ref(false);
 const request = ref<RequestRecord | null>(null);
 const relatedRequests = ref<RequestListItem[]>([]);
-const isRejecting = ref(false);
+const rejectOpen = ref(false);
 const rejectReason = ref('');
+const rejectLoading = ref(false);
 const confirmLoading = ref(false);
 
 const confirmOpen = ref(false);
@@ -79,16 +73,6 @@ const confirmMessage = ref('');
 const confirmLabel = ref('');
 const confirmDestructive = ref(true);
 let confirmAction: (() => Promise<void>) | null = null;
-
-watch(
-  () => route.query.reject,
-  (value) => {
-    if (value === '1' || value === 'true') {
-      isRejecting.value = true;
-    }
-  },
-  { immediate: true },
-);
 
 watch(
   () => route.query.edit,
@@ -175,6 +159,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [requestId],
     default: () => ({
       requestKey: requestId.value,
@@ -207,11 +192,7 @@ watch(
       return;
     }
 
-    if (!resolved && !activeSession) {
-      setActiveRequest(nextRequest);
-      if (isEditingProducts.value) {
-        beginProductEdit(nextRequest);
-      }
+    if (!resolved || !activeSession) {
       return;
     }
 
@@ -266,7 +247,7 @@ async function fetchRequest() {
 
 watch(requestId, () => {
   clearActiveRequest();
-  isRejecting.value = false;
+  rejectOpen.value = false;
   rejectReason.value = '';
   cancelProductEdit();
 }, { immediate: true });
@@ -394,11 +375,21 @@ async function handleReopenRequest() {
   }
 
   const next = await reopenRejected(request.value.id);
-  if (next) {
-    request.value = next;
-    isRejecting.value = false;
-    startEditingProducts();
+  if (!next) {
+    return;
   }
+
+  request.value = next;
+  if (requestDetailPayload.value?.requestKey === requestId.value) {
+    requestDetailPayload.value = {
+      ...requestDetailPayload.value,
+      request: next,
+    };
+  }
+
+  rejectOpen.value = false;
+  startEditingProducts();
+  await refreshRelatedRequests(next);
 }
 
 const canReopenRejected = computed(() =>
@@ -468,29 +459,34 @@ function handleCancel() {
       const response = await cancelRequest(request.value!.id);
       if (response.data) {
         request.value = response.data;
-        isRejecting.value = false;
+        rejectOpen.value = false;
         await refreshRelatedRequests(response.data);
       }
     },
   });
 }
 
-async function submitReject() {
-  if (!request.value) return;
-  const reason = rejectReason.value.trim();
-  if (!reason) return;
+function openRejectModal() {
+  rejectReason.value = '';
+  rejectOpen.value = true;
+}
 
-  confirmLoading.value = true;
+async function submitReject(reason: string) {
+  if (!request.value) {
+    return;
+  }
+
+  rejectLoading.value = true;
   try {
-    const response = await rejectRequest(request.value.id, { reason });
+    const response = await rejectRequest(request.value.id, { rejectionReasons: reason });
     if (response.data) {
       request.value = response.data;
-      isRejecting.value = false;
+      rejectOpen.value = false;
       rejectReason.value = '';
       await refreshRelatedRequests(response.data);
     }
   } finally {
-    confirmLoading.value = false;
+    rejectLoading.value = false;
   }
 }
 
@@ -557,7 +553,7 @@ function openRelatedRequest(item: RequestListItem) {
           @edit="startEditingProducts"
           @add-more="handleAddMoreItems"
           @reopen="handleReopenRequest"
-          @reject="isRejecting = true"
+          @reject="openRejectModal"
           @cancel="handleCancel"
         />
       </div>
@@ -633,36 +629,6 @@ function openRelatedRequest(item: RequestListItem) {
             @quantity-change="handleProductQuantityChange"
             @remove-line="handleProductRemove"
           />
-          <RequestRejectForm
-            v-if="isRejecting && requestDetailsView"
-            v-model:reason="rejectReason"
-            class="mt-5"
-          />
-        </div>
-
-        <div
-          v-if="isRejecting && requestDetailsView"
-          class="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-grey-50 pt-5"
-        >
-          <Button
-            variant="neutral"
-            size="medium"
-            class="!w-auto min-w-[9rem]"
-            :disabled="confirmLoading"
-            @click="isRejecting = false"
-          >
-            Back
-          </Button>
-          <Button
-            variant="destructive"
-            size="medium"
-            class="!w-auto min-w-[9rem]"
-            :loading="confirmLoading"
-            :disabled="!rejectReason.trim()"
-            @click="submitReject"
-          >
-            Reject request
-          </Button>
         </div>
 
       </section>
@@ -693,6 +659,14 @@ function openRelatedRequest(item: RequestListItem) {
       :loading="confirmLoading"
       @update:open="confirmOpen = $event"
       @confirm="runConfirmAction"
+    />
+
+    <RequestRejectOverlay
+      v-model:open="rejectOpen"
+      v-model:reason="rejectReason"
+      :request-reference="request?.reference"
+      :loading="rejectLoading"
+      @confirm="submitReject"
     />
   </div>
 </template>

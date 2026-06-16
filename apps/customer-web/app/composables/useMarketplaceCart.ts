@@ -15,6 +15,8 @@ import {
 export type SetCartQuantityOptions = {
   silent?: boolean;
   product?: MarketProduct;
+  /** Skip GET /cart after each mutation; caller should reload once when batching adds. */
+  deferCartReload?: boolean;
 };
 
 export type CartLineMutationDirection = 'increase' | 'decrease';
@@ -107,12 +109,13 @@ export function useMarketplaceCart() {
     Object.fromEntries(lines.value.map((line) => [line.lineKey, line.quantity])),
   );
 
+  /** Distinct cart lines (products), not sum of quantities — used on header/floating cart badges. */
   const totalItemCount = computed(() => {
     if (requestAddMode.isAddingToRequest.value) {
       return requestAddMode.totalItemCount.value;
     }
 
-    return lines.value.reduce((sum, line) => sum + line.quantity, 0);
+    return lines.value.length;
   });
 
   const subtotalNaira = computed(() => {
@@ -666,7 +669,9 @@ export function useMarketplaceCart() {
           quantity: next,
         });
       }
-      await loadCart(true);
+      if (!options?.deferCartReload) {
+        await loadCart(true);
+      }
 
       if (!options?.silent) {
         if (!existing) {
@@ -680,7 +685,9 @@ export function useMarketplaceCart() {
 
       return true;
     } catch (error) {
-      await loadCart(true);
+      if (!options?.deferCartReload) {
+        await loadCart(true);
+      }
       if (isProductOutOfStockError(error)) {
         return false;
       }

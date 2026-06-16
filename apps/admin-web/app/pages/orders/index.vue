@@ -158,10 +158,7 @@ updateHeader({
 
 <template>
   <div class="flex min-w-0 flex-col gap-4">
-    <div class="flex flex-col gap-2 min-[900px]:flex-row min-[900px]:items-start min-[900px]:justify-between">
-      <p class="max-w-3xl text-base leading-7 text-grey-text">
-        Search, filter, and manage customer orders.
-      </p>
+    <div class="flex flex-col gap-2 min-[900px]:flex-row min-[900px]:items-end min-[900px]:justify-end">
       <Button
         type="button"
         variant="secondary"

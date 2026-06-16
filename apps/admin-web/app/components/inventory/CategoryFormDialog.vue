@@ -159,7 +159,7 @@ async function onSubmit() {
       <Button
         type="button"
         variant="outline"
-        size="small"
+        size="medium"
         :disabled="submitting"
         @click="open = false"
       >
@@ -167,7 +167,7 @@ async function onSubmit() {
       </Button>
       <Button
         type="button"
-        size="small"
+        size="medium"
         :loading="submitting"
         :disabled="loadPending || Boolean(loadFailure) || !hydrated"
         @click="onSubmit"

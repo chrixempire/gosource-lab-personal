@@ -62,7 +62,7 @@ const emit = defineEmits<{
           Item
         </p>
         <div class="mt-1 flex flex-wrap items-center gap-2">
-          <h1 class="text-lg font-semibold text-grey-900 sm:text-2xl">
+          <h1 class="text-h6 lg:text-h4">
             {{ view.name }}
           </h1>
           <StatusTag

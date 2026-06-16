@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { CustomerMeResponse } from '@gosource/api-client';
 import {
   Button,
   StatusTag,
@@ -24,18 +23,19 @@ import {
 import {
   creditRepaymentScheduleStatusLabel,
   creditRepaymentScheduleStatusVariant,
-  creditWorkflowStatusLabel,
-  creditWorkflowStatusVariant,
+  creditRequestStatusLabel,
+  creditRequestStatusVariant,
 } from '~/lib/credit-constants';
 import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
+import { invalidateCreditPageCache } from '~/lib/invalidate-customer-list-cache';
 import { formatCreditFromKobo } from '~/lib/credit-money';
+import { CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID } from '~/lib/credit-history-table-layout';
 import { formatRequestDate } from '~/lib/request-details';
-import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import {
   CUSTOMER_TABLE_BODY_CLASS,
-  CUSTOMER_TABLE_DATA_ROW_CLASS,
   CUSTOMER_TABLE_PANEL_CLASS,
   CUSTOMER_TABLE_STICKY_HEADER_CLASS,
+  CUSTOMER_TABLE_STRIPED_ROW_CLASS,
 } from '~/lib/customer-table-layout';
 import type {
   CustomerCreditAccount,
@@ -48,7 +48,6 @@ const runWhenSessionReady = useAuthenticatedFetch();
 const route = useRoute();
 const { setPageTitle, clearPageHeader } = useCustomerPageHeader();
 const isCompactViewport = useMediaQuery('(max-width: 999px)');
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const { getRequest, getCreditAccount } = useCustomerCreditService();
 
 const creditAccount = ref<CustomerCreditAccount | null>(null);
@@ -58,7 +57,6 @@ const loading = ref(true);
 const loadError = ref<string | null>(null);
 const request = ref<CustomerCreditRequestDetail | null>(null);
 
-const isOwner = computed(() => isBusinessOwnerSession(session.value));
 const cancelOpen = ref(false);
 const reapplyOpen = ref(false);
 
@@ -114,11 +112,13 @@ async function loadRequest() {
 }
 
 function onCancelSuccess() {
+  invalidateCreditPageCache();
   void navigateTo(CREDIT_PAGE_ROUTES.HOME);
 }
 
 function onReapplySuccess() {
   reapplyOpen.value = false;
+  invalidateCreditPageCache();
   void navigateTo(CREDIT_PAGE_ROUTES.HOME);
 }
 
@@ -176,15 +176,15 @@ onMounted(() => {
         <div class="flex flex-wrap items-center gap-2">
           <p class="text-lg font-semibold text-grey-900">#{{ request.reference }}</p>
           <StatusTag
-            :variant="creditWorkflowStatusVariant(request.status)"
+            :variant="creditRequestStatusVariant(request.status)"
             size="medium"
             class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
           >
-            {{ creditWorkflowStatusLabel(request.status) }}
+            {{ creditRequestStatusLabel(request.status) }}
           </StatusTag>
         </div>
 
-        <div v-if="isOwner" class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2">
           <Button
             v-if="request.status === 'pending'"
             variant="destructive"
@@ -258,24 +258,23 @@ onMounted(() => {
           :items="request.schedules"
         />
 
-        <TableShell v-else :class="CUSTOMER_TABLE_PANEL_CLASS">
+        <TableShell v-else :class="[CUSTOMER_TABLE_PANEL_CLASS, 'overflow-visible']">
           <TableHeader :class="CUSTOMER_TABLE_STICKY_HEADER_CLASS">
-            <TableHeadRow
-              class="grid grid-cols-[0.6fr_1fr_1fr_1fr_1fr_0.8fr] gap-3 px-4 py-3 text-xs font-semibold uppercase text-grey-400"
-            >
-              <span>#</span>
-              <span>Due date</span>
-              <span>Principal</span>
-              <span>Interest</span>
-              <span>Amount due</span>
-              <span>Status</span>
+            <TableHeadRow :style="{ gridTemplateColumns: CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID }">
+              <TableCell>#</TableCell>
+              <TableCell>Due date</TableCell>
+              <TableCell>Principal</TableCell>
+              <TableCell>Interest</TableCell>
+              <TableCell>Amount due</TableCell>
+              <TableCell>Status</TableCell>
             </TableHeadRow>
           </TableHeader>
           <TableBody :class="CUSTOMER_TABLE_BODY_CLASS">
             <TableRow
               v-for="schedule in request.schedules"
               :key="schedule.id"
-              :class="`${CUSTOMER_TABLE_DATA_ROW_CLASS} grid grid-cols-[0.6fr_1fr_1fr_1fr_1fr_0.8fr] gap-3 px-4 py-3`"
+              :class="CUSTOMER_TABLE_STRIPED_ROW_CLASS"
+              :style="{ gridTemplateColumns: CREDIT_REPAYMENT_SCHEDULE_TABLE_GRID }"
             >
               <TableCell>{{ schedule.installmentNumber || '—' }}</TableCell>
               <TableCell>{{ formatRequestDate(schedule.dueDate) }}</TableCell>

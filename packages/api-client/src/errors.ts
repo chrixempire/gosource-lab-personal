@@ -40,7 +40,10 @@ function extractObjectMessage(
   }
 
   const directMessage = firstString(value.message);
-  if (directMessage) {
+  if (
+    directMessage &&
+    !/^Request failed with status code \d+$/i.test(directMessage)
+  ) {
     return directMessage;
   }
 

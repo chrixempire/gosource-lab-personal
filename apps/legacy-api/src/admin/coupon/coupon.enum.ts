@@ -10,6 +10,7 @@ export enum CouponType {
 export enum CouponCategory {
   AMOUNT_OFF_ORDERS = 'amount_off_orders',
   AMOUNT_OFF_ITEMS = 'amount_off_items',
+  AMOUNT_OFF_CATEGORY = 'amount_off_category',
   BUY_ONE_GET_ONE = 'buy_one_get_one',
   COMBO_DEAL = 'combo_deal',
   LOYALTY_POINTS = 'loyalty_points',

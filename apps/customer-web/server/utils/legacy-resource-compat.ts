@@ -736,8 +736,20 @@ export function normalizeLegacyBranchListResponse(
   };
 }
 
+function resolveLegacyMemberBranch(raw: unknown) {
+  const branch = asRecord(raw);
+  const branchId = toStringValue(branch._id) || toStringValue(branch.id);
+  const branchName = toNullableString(branch.branchName);
+
+  return {
+    branchId: branchId || null,
+    branchName,
+  };
+}
+
 function normalizeLegacyInviteMember(raw: unknown): BranchMemberRecord {
   const invite = asRecord(raw);
+  const branch = resolveLegacyMemberBranch(invite.branchId);
   return {
     id: toStringValue(invite._id) || toStringValue(invite.invitationId),
     kind: 'invite',
@@ -748,11 +760,14 @@ function normalizeLegacyInviteMember(raw: unknown): BranchMemberRecord {
     role: normalizeEmployeeRole(invite.role),
     status: 'pending',
     createdAt: toStringValue(invite.createdAt),
+    branchId: branch.branchId,
+    branchName: branch.branchName,
   };
 }
 
 function normalizeLegacyEmployeeMember(raw: unknown): BranchMemberRecord {
   const employee = asRecord(raw);
+  const branch = resolveLegacyMemberBranch(employee.branchId);
   return {
     id: toStringValue(employee._id) || toStringValue(employee.id),
     kind: 'member',
@@ -763,6 +778,8 @@ function normalizeLegacyEmployeeMember(raw: unknown): BranchMemberRecord {
     role: normalizeEmployeeRole(employee.role),
     status: toBoolean(employee.isDeactivated) ? 'inactive' : 'active',
     createdAt: toStringValue(employee.createdAt),
+    branchId: branch.branchId,
+    branchName: branch.branchName,
   };
 }
 
@@ -899,6 +916,20 @@ export function toLegacyRequestListQuery(query: Record<string, unknown>): Record
 
 export function toLegacyOrderListQuery(query: Record<string, unknown>): Record<string, unknown> {
   return { ...query };
+}
+
+export function toLegacyRejectRequestBody(body: Record<string, unknown>): Record<string, unknown> {
+  if (typeof body.rejectionReasons === 'string') {
+    return body;
+  }
+
+  const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
+  if (!reason) {
+    return body;
+  }
+
+  const { reason: _removed, ...rest } = body;
+  return { ...rest, rejectionReasons: reason };
 }
 
 export function toLegacyCreateRequestBody(body: Record<string, unknown>): Record<string, unknown> {
@@ -1045,6 +1076,83 @@ function mapLegacyRequestProducts(
   return applySubtotalFallbackToRequestProducts(lines, context?.subtotal ?? 0);
 }
 
+function normalizeLegacyCouponCode(value: unknown) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || ['false', 'true', 'null', 'undefined'].includes(trimmed.toLowerCase())) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+function mapLegacyCouponDetails(data: unknown): RequestRecord['couponDetails'] {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+
+  const record = data as Record<string, unknown>;
+  const code = normalizeLegacyCouponCode(record.code) ?? normalizeLegacyCouponCode(toStringValue(record.code));
+  if (!code) {
+    return null;
+  }
+
+  const type = toStringValue(record.type);
+  return {
+    code,
+    type: (type || 'FIXED_AMOUNT') as NonNullable<RequestRecord['couponDetails']>['type'],
+    discount: Number(record.discount ?? 0),
+  };
+}
+
+function isFreeDeliveryCouponDetails(
+  couponDetails: RequestRecord['couponDetails'],
+): boolean {
+  return couponDetails?.type === 'FREE_DELIVERY';
+}
+
+function resolveLegacyBillableDiscount(input: {
+  discount: number;
+  couponDetails: RequestRecord['couponDetails'];
+}): number {
+  if (isFreeDeliveryCouponDetails(input.couponDetails)) {
+    return 0;
+  }
+
+  return input.discount;
+}
+
+/** Matches legacy-api default delivery tiers when fee was zeroed by coupon remove. */
+function estimateLegacyDeliveryFee(subtotal: number): number {
+  const tier1Base = 18000;
+  const tier1Threshold = 1_000_000;
+  if (subtotal < tier1Threshold) {
+    return tier1Base + subtotal * 0.02;
+  }
+  return 33000 + subtotal * 0.01;
+}
+
+function resolveLegacyRequestDeliveryFee(input: {
+  deliveryFee: number;
+  subtotal: number;
+  status: string;
+  coupon: boolean;
+}): number {
+  if (
+    !input.coupon &&
+    input.deliveryFee === 0 &&
+    input.status === 'pending' &&
+    input.subtotal >= 25000
+  ) {
+    return estimateLegacyDeliveryFee(input.subtotal);
+  }
+
+  return input.deliveryFee;
+}
+
 function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const branch =
     typeof data.branch === 'string'
@@ -1054,9 +1162,15 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const directions = toNullableString(address.directions ?? address.direction);
   const initiator = mapLegacyRequestActor(data.initiator);
   const storedSubtotal = Number(data.subtotal ?? 0);
-  const deliveryFee = Number(data.deliveryFee ?? 0);
+  const storedDeliveryFee = Number(data.deliveryFee ?? 0);
   const serviceCharge = Number(data.serviceCharge ?? 0);
-  const discount = Number(data.discount ?? 0);
+  const requestStatus = toStringValue(data.status) || 'pending';
+  const couponApplied = data.coupon === true;
+  const couponDetails = mapLegacyCouponDetails(data.couponDetails);
+  const discount = resolveLegacyBillableDiscount({
+    discount: Number(data.discount ?? 0),
+    couponDetails,
+  });
   const businessId = toStringValue(branch.businessId ?? data.businessId);
   const products = mapLegacyRequestProducts(data.products, {
     businessId,
@@ -1065,10 +1179,16 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
   const productsSubtotal = products.reduce((sum, line) => sum + line.totalPrice, 0);
   // Legacy API sometimes stored delivery/service inside `subtotal`; prefer line sum when available.
   const subtotal = productsSubtotal > 0 ? productsSubtotal : storedSubtotal;
+  const deliveryFee = resolveLegacyRequestDeliveryFee({
+    deliveryFee: storedDeliveryFee,
+    subtotal,
+    status: requestStatus,
+    coupon: couponApplied,
+  });
   const computedTotal = subtotal + deliveryFee + serviceCharge - discount;
   const storedTotal = Number(data.totalPrice ?? 0);
   const totalPrice =
-    storedTotal > subtotal ? storedTotal : computedTotal;
+    productsSubtotal > 0 ? computedTotal : storedTotal > 0 ? storedTotal : computedTotal;
 
   return {
     id: toStringValue(data._id ?? data.id),
@@ -1077,7 +1197,7 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
     branchName: toStringValue(branch.branchName),
     branchCode: toNullableString(branch.branchCode),
     reference: toStringValue(data.reference),
-    status: (toStringValue(data.status) || 'pending') as RequestRecord['status'],
+    status: requestStatus as RequestRecord['status'],
     paymentStatus: (toStringValue(data.paymentStatus) || 'pending') as RequestRecord['paymentStatus'],
     paymentMethod: toNullableString(data.paymentMethod),
     initiator: initiator ?? {
@@ -1105,6 +1225,9 @@ function mapLegacyRequestRecord(data: Record<string, unknown>): RequestRecord {
     serviceCharge,
     discount,
     totalPrice,
+    coupon: couponApplied,
+    couponCode: normalizeLegacyCouponCode(data.couponCode) ?? normalizeLegacyCouponCode(toNullableString(data.couponCode)),
+    couponDetails,
     approvedAt: toNullableString(data.approvedAt),
     rejectedAt: toNullableString(data.rejectedAt),
     cancelledAt: toNullableString(data.cancelledAt),
@@ -1209,7 +1332,7 @@ export function normalizeLegacyRequestListResponse(
         request.initiator.email,
         request.initiator.firstName ?? '',
         request.initiator.lastName ?? '',
-        ...request.products.map((product) => product.productName),
+        ...(request.products ?? []).map((product) => product.productName),
       ]
         .join(' ')
         .toLowerCase()
@@ -1423,6 +1546,31 @@ function mapLegacyTimelineRecord(item: Record<string, unknown>): OrderTimelineRe
   };
 }
 
+function resolveLegacyOrderDiscount(
+  data: Record<string, unknown>,
+  request: Record<string, unknown>,
+): number {
+  const couponDetails = mapLegacyCouponDetails(request.couponDetails);
+  if (isFreeDeliveryCouponDetails(couponDetails)) {
+    return 0;
+  }
+
+  const orderDiscount = toNumber(data.discount);
+  const couponApplied =
+    data.coupon === true || data.coupon === 1 || data.coupon === 'true';
+  const requestDiscount = resolveLegacyBillableDiscount({
+    discount: toNumber(request.discount),
+    couponDetails,
+  });
+
+  // Older orders stored the coupon flag (true) in discount; Mongoose coerced it to 1.
+  if (couponApplied && orderDiscount <= 1 && requestDiscount > orderDiscount) {
+    return requestDiscount;
+  }
+
+  return orderDiscount;
+}
+
 function mapLegacyOrderRecord(data: Record<string, unknown>): OrderRecord {
   const branch =
     typeof data.branch === 'string'
@@ -1443,14 +1591,15 @@ function mapLegacyOrderRecord(data: Record<string, unknown>): OrderRecord {
   const productsSubtotal = products.reduce((sum, line) => sum + line.totalPrice, 0);
   const deliveryFee = toNumber(data.deliveryFee);
   const serviceCharge = toNumber(data.serviceCharge);
-  const discount = toNumber(data.discount);
+  const discount = resolveLegacyOrderDiscount(data, request);
   const subtotal =
     productsSubtotal > 0
       ? productsSubtotal
       : Math.max(0, storedTotal - deliveryFee - serviceCharge + discount);
   const computedTotal = subtotal + deliveryFee + serviceCharge - discount;
-  // Legacy orders often store totalPrice as subtotal only; prefer line-sum + fees when stored total omits delivery.
-  const totalPrice = storedTotal > subtotal ? storedTotal : computedTotal;
+  // Prefer recomputed totals when line items are available — legacy orders may
+  // store totalPrice with delivery counted twice after coupon checkout.
+  const totalPrice = productsSubtotal > 0 ? computedTotal : storedTotal > 0 ? storedTotal : computedTotal;
 
   return {
     id: toStringValue(data._id ?? data.id),
@@ -1535,22 +1684,33 @@ export function normalizeLegacyOrderListResponse(
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
   const rootMeta = asRecord(root.meta);
   const legacyTotal = Number(rootMeta.total);
+
+  let pageItems = items;
+  if (items.length > safeLimit) {
+    const offset = (safePage - 1) * safeLimit;
+    pageItems = items.slice(offset, offset + safeLimit);
+  }
+
+  const observedMinimum = (safePage - 1) * safeLimit + pageItems.length;
   const total =
-    Number.isFinite(legacyTotal) && legacyTotal >= 0
-      ? legacyTotal
-      : items.length >= safeLimit
-        ? safePage * safeLimit + 1
-        : (safePage - 1) * safeLimit + items.length;
+    query && items.length > safeLimit
+      ? items.length
+      : Number.isFinite(legacyTotal) && legacyTotal >= 0
+        ? Math.max(legacyTotal, observedMinimum)
+        : pageItems.length >= safeLimit
+          ? safePage * safeLimit + 1
+          : observedMinimum;
   const totalPages = Math.max(1, Math.ceil(total / safeLimit));
-  const hasNextPage = safePage < totalPages;
-  const hasPrevPage = safePage > 1;
+  const normalizedPage = Math.min(safePage, totalPages);
+  const hasNextPage = normalizedPage < totalPages;
+  const hasPrevPage = normalizedPage > 1;
 
   return {
     status: true,
     message: toStringValue(root.message) || 'Orders fetched successfully',
-    data: items,
+    data: pageItems,
     meta: {
-      page: safePage,
+      page: normalizedPage,
       limit: safeLimit,
       total,
       totalPages,

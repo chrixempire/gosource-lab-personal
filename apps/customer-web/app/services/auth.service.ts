@@ -4,8 +4,7 @@ import type {
   VerifyOtpPayload,
   VerifyResetOtpPayload,
 } from '@gosource/api-client';
-import { toast } from '@gosource/ui';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 export function useCustomerAuthService() {
   return {
@@ -16,7 +15,7 @@ export function useCustomerAuthService() {
           body: payload,
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to create your business account right now'));
+        reportCustomerApiError(error, 'Unable to create your business account right now');
         throw error;
       }
     },
@@ -27,7 +26,7 @@ export function useCustomerAuthService() {
           body: { email },
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to resend the verification code right now'));
+        reportCustomerApiError(error, 'Unable to resend the verification code right now');
         throw error;
       }
     },
@@ -38,7 +37,7 @@ export function useCustomerAuthService() {
           body: payload,
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to verify the code right now'));
+        reportCustomerApiError(error, 'Unable to verify the code right now');
         throw error;
       }
     },
@@ -49,7 +48,7 @@ export function useCustomerAuthService() {
           body: { email },
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to send password reset email right now'));
+        reportCustomerApiError(error, 'Unable to send password reset email right now');
         throw error;
       }
     },
@@ -60,7 +59,7 @@ export function useCustomerAuthService() {
           body: payload,
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to verify reset code right now'));
+        reportCustomerApiError(error, 'Unable to verify reset code right now');
         throw error;
       }
     },
@@ -71,7 +70,7 @@ export function useCustomerAuthService() {
           body: payload,
         });
       } catch (error) {
-        toast.error(extractApiErrorMessage(error, 'Unable to reset password right now'));
+        reportCustomerApiError(error, 'Unable to reset password right now');
         throw error;
       }
     },

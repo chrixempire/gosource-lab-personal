@@ -15,7 +15,7 @@ definePageMeta({
 
 const route = useRoute();
 const { login } = useAdminAuthService();
-const { session } = useAdminSession();
+const { adoptSession } = useAdminSession();
 
 const form = reactive({
   email: '',
@@ -30,10 +30,12 @@ async function submit() {
   errorMessage.value = '';
 
   try {
-    session.value = await login({
-      email: normalizeEmail(form.email),
-      password: form.password,
-    });
+    adoptSession(
+      await login({
+        email: normalizeEmail(form.email),
+        password: form.password,
+      }),
+    );
     await navigateTo(sanitizeAuthRedirectPath(route.query.redirect, '/'));
   } catch (error) {
     const message = extractApiErrorMessage(error, 'Unable to sign in right now');
@@ -58,7 +60,7 @@ async function submit() {
     >
       <form class="space-y-4" @submit.prevent="submit">
         <label class="block space-y-2">
-          <span class="text-[13px] font-semibold text-grey-text">Email</span>
+          <span class="text-body-sm font-semibold text-grey-text">Email</span>
           <Input
             v-model="form.email"
             type="email"
@@ -69,7 +71,7 @@ async function submit() {
         </label>
 
         <label class="block space-y-2">
-          <span class="text-[13px] font-semibold text-grey-text">Password</span>
+          <span class="text-body-sm font-semibold text-grey-text">Password</span>
           <PasswordInput
             v-model="form.password"
             autocomplete="current-password"
@@ -81,7 +83,7 @@ async function submit() {
         <div class="flex justify-end">
           <NuxtLink
             :to="ADMIN_PAGE_ROUTES.RESET_PASSWORD"
-            class="text-[13px] font-semibold text-primary-500 underline-offset-4 hover:underline"
+            class="text-body-sm font-semibold text-primary-500 underline-offset-4 hover:underline"
           >
             Forgot password?
           </NuxtLink>
@@ -95,7 +97,7 @@ async function submit() {
       <template #footer>
         <p
           v-if="errorMessage"
-          class="rounded-[18px] border border-[#fda29b] bg-[#fef3f2] px-4 py-3 text-[13px] font-medium text-negative-500"
+          class="rounded-[18px] border border-[#fda29b] bg-[#fef3f2] px-4 py-3 text-body-sm font-medium text-negative-500"
         >
           {{ errorMessage }}
         </p>

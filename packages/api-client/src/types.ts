@@ -37,6 +37,8 @@ export interface EmployeeSessionData {
   position: string;
   role: string;
   status: string;
+  /** Populated from legacy login when businessId is embedded on the employee record. */
+  businessName?: string | null;
 }
 
 export interface CustomerSessionData {
@@ -231,6 +233,8 @@ export interface BranchMemberRecord {
   role: string;
   status: string;
   createdAt: string;
+  branchId?: string | null;
+  branchName?: string | null;
 }
 
 export interface BranchMembersResponse extends AuthResponse<BranchMemberRecord[]> {
@@ -343,6 +347,22 @@ export interface UpdateRequestPayload {
   serviceCharge?: number;
 }
 
+export type RequestCouponType = 'FIXED_AMOUNT' | 'PERCENTAGE' | 'FREE_DELIVERY';
+
+export interface RequestCouponDetails {
+  code: string;
+  type: RequestCouponType;
+  discount: number;
+}
+
+export interface ApplyCouponPayload {
+  code: string;
+}
+
+export interface ApplyCouponResponse extends AuthResponse<RequestCouponDetails> {
+  status?: boolean;
+}
+
 export interface RequestRecord {
   id: string;
   businessId: string;
@@ -365,6 +385,9 @@ export interface RequestRecord {
   serviceCharge: number;
   discount: number;
   totalPrice: number;
+  coupon?: boolean;
+  couponCode?: string | null;
+  couponDetails?: RequestCouponDetails | null;
   approvedAt: string | null;
   rejectedAt: string | null;
   cancelledAt: string | null;
@@ -467,7 +490,7 @@ export interface FundWalletPayload {
 }
 
 export interface RejectRequestPayload {
-  reason: string;
+  rejectionReasons: string;
 }
 
 export interface AdminLoginPayload {

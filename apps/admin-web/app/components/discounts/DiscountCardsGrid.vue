@@ -20,6 +20,7 @@ const emit = defineEmits<{
   edit: [discount: AdminDiscountListItem];
   activate: [discount: AdminDiscountListItem];
   deactivate: [discount: AdminDiscountListItem];
+  delete: [discount: AdminDiscountListItem];
 }>();
 
 const selectedSet = computed(() => new Set(selectedIds.value ?? []));
@@ -50,6 +51,7 @@ function toggleSelect(id: string, selected: boolean) {
         @edit="emit('edit', discount)"
         @activate="emit('activate', discount)"
         @deactivate="emit('deactivate', discount)"
+        @delete="emit('delete', discount)"
       />
     </div>
     <PaginationBar

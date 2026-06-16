@@ -75,5 +75,6 @@ export type LegacyCouponRow = {
   expiryDate?: string;
   isActive?: boolean;
   applicableItems?: string[];
+  categoryId?: string;
   title?: string;
 };

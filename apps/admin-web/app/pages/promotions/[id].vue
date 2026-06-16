@@ -2,6 +2,8 @@
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import PromotionForm from '~/components/promotions/PromotionForm.vue';
 import PromotionFormPageHeader from '~/components/promotions/PromotionFormPageHeader.vue';
+import PromotionFormSkeleton from '~/components/promotions/PromotionFormSkeleton.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { usePromotionMutations } from '~/composables/usePromotionMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
@@ -23,13 +25,32 @@ const form = reactive(createEmptyPromotionFormValues());
 const fieldErrors = reactive<Record<string, string>>({});
 const submitting = computed(() => busyPromotionId.value === promotionId.value);
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const {
+  data,
+  pending,
+  error,
+  refresh,
+  status: fetchStatus,
+} = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/promotions/${promotionId.value}`,
-  { watch: [promotionId] },
+  {
+    watch: [promotionId],
+    key: computed(() => `admin-promotion-detail:${promotionId.value}`),
+    fastNav: false,
+  },
 );
 
 const detail = computed(() => parsePromotionDetail(data.value));
-const status = computed(() => (detail.value ? computePromotionStatus(detail.value) : null));
+const promotionStatus = computed(() =>
+  detail.value ? computePromotionStatus(detail.value) : null,
+);
+const isWaitingForData = computed(
+  () =>
+    !detail.value &&
+    (pending.value || fetchStatus.value === 'idle' || fetchStatus.value === 'pending'),
+);
+const showInitialSkeleton = computed(() => isWaitingForData.value);
+const showLoadError = computed(() => !detail.value && !isWaitingForData.value);
 
 watch(
   data,
@@ -64,11 +85,13 @@ async function onSubmit() {
   }
 }
 
-useAdminHeader().updateHeader({ title: '' });
+useAdminHeader().updateHeader({ title: 'Promotion details' });
 
 useHead({
   title: computed(() =>
-    detail.value?.name ? `${detail.value.name} · Promotions` : 'Edit promotion',
+    detail.value?.name
+      ? `${detail.value.name} · Promotion details`
+      : 'Promotion details',
   ),
 });
 </script>
@@ -77,31 +100,33 @@ useHead({
   <div class="flex min-w-0 flex-col gap-4">
     <PromotionFormPageHeader
       :title="detail?.name"
-      :status="status"
-      :loading="pending"
+      :status="promotionStatus"
+      :loading="showInitialSkeleton"
       save-label="Save changes"
       :save-loading="submitting"
-      :save-disabled="pending"
+      :save-disabled="showInitialSkeleton"
       @back="goBack"
       @save="onSubmit"
     />
 
     <LoadErrorState
-      v-if="!pending && error"
+      v-if="showLoadError"
       :error="error"
       not-found-title="Promotion not found"
       resource-label="promotion"
       @retry="refresh()"
     />
 
-    <p v-else-if="pending" class="text-sm text-grey-500">Loading promotion…</p>
+    <template v-else>
+      <PromotionFormSkeleton v-if="showInitialSkeleton" />
 
-    <PromotionForm
-      v-else-if="!error"
-      v-model="form"
-      v-model:field-errors="fieldErrors"
-      mode="edit"
-      :promotion-id="promotionId"
-    />
+      <PromotionForm
+        v-else
+        v-model="form"
+        v-model:field-errors="fieldErrors"
+        mode="edit"
+        :promotion-id="promotionId"
+      />
+    </template>
   </div>
 </template>

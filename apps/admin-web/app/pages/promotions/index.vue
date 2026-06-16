@@ -7,8 +7,10 @@ import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import PromotionActionDialog from '~/components/promotions/PromotionActionDialog.vue';
 import PromotionCardsGrid from '~/components/promotions/PromotionCardsGrid.vue';
 import PromotionFilterBar from '~/components/promotions/PromotionFilterBar.vue';
+import PromotionMarketplaceBannersSection from '~/components/promotions/PromotionMarketplaceBannersSection.vue';
 import PromotionStatCards from '~/components/promotions/PromotionStatCards.vue';
 import PromotionTable from '~/components/promotions/PromotionTable.vue';
+import { useAdminListFetch } from '~/composables/useAdminListFetch';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { usePromotionListFilters } from '~/composables/usePromotionListFilters';
@@ -18,6 +20,7 @@ import {
   filterPromotionsByStatus,
   parsePromotionsListResponse,
 } from '~/lib/promotion-api';
+import { withRoutePaginationMeta } from '~/lib/list-pagination-meta';
 import { promotionListFiltersToApiQuery } from '~/lib/promotion-filters';
 import type { AdminPromotionListItem, PromotionActionMode } from '~/types/promotions';
 
@@ -42,7 +45,7 @@ const activePromotion = ref<AdminPromotionListItem | null>(null);
 
 const apiQuery = computed(() => promotionListFiltersToApiQuery(filters.value));
 
-const { data, pending, error, refresh } = await useFetch<unknown>('/api/promotions', {
+const { data, pending, error, refresh } = await useAdminListFetch<unknown>('/api/promotions', {
   query: apiQuery,
   watch: [apiQuery],
 });
@@ -56,7 +59,9 @@ const filteredRows = computed(() =>
 );
 
 const stats = computed(() => parsed.value.stats);
-const meta = computed(() => parsed.value.meta);
+const meta = computed(() =>
+  withRoutePaginationMeta(parsed.value.meta, filters.value.page, filters.value.limit),
+);
 
 watch(
   () => filters.value.name,
@@ -120,12 +125,7 @@ updateHeader({ title: 'Promotions' });
 
 <template>
   <div class="flex min-w-0 flex-col gap-4">
-    <div
-      class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between"
-    >
-      <p class="max-w-xl text-sm text-grey-600">
-        Create themed product promotions with optional percentage discounts and date windows.
-      </p>
+    <div class="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-end">
       <Button
         type="button"
         size="small"
@@ -138,6 +138,8 @@ updateHeader({ title: 'Promotions' });
     </div>
 
     <PromotionStatCards :filters="filters" :stats="stats" @filter-status="onFilterStatus" />
+
+    <PromotionMarketplaceBannersSection />
 
     <div
       class="flex flex-col gap-4 min-[1000px]:flex-row min-[1000px]:items-end min-[1000px]:justify-between"

@@ -1,0 +1,18 @@
+/** List endpoints backed by `useAdminListFetch` page cache. */
+export const ADMIN_LIST_CACHE_URLS = {
+  coupons: '/api/coupons',
+  promotions: '/api/promotions',
+  categories: '/api/categories',
+  products: '/api/products/filtered',
+  productUnits: '/api/products/units',
+  purchaseOrders: '/api/purchase-orders',
+  customers: '/api/customers',
+  creditApplications: '/api/credit/applications',
+  creditRequests: '/api/credit/requests',
+  creditRequestStats: '/api/credit/requests/stats',
+  creditRepayments: '/api/credit/repayments/payment-history',
+  creditRepaymentSchedules: '/api/credit/repayment-schedules',
+  creditRepaymentSchedulesOverdue: '/api/credit/repayment-schedules/overdue',
+  admins: '/api/admins',
+  roles: '/api/roles',
+} as const;

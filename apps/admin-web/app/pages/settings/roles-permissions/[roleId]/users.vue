@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-vue-next';
 import SettingsRoleUsersTable from '~/components/settings/SettingsRoleUsersTable.vue';
 import SettingsTableToolbarSkeleton from '~/components/settings/skeletons/SettingsTableToolbarSkeleton.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
 import { parseAdminRoleDetail } from '~/lib/settings-api';
@@ -15,9 +16,12 @@ const { updateHeader } = useAdminHeader();
 const roleId = computed(() => String(route.params.roleId ?? ''));
 const searchQuery = ref('');
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/roles/${roleId.value}`,
-  { watch: [roleId] },
+  {
+    watch: [roleId],
+    key: computed(() => `admin-role-users:${roleId.value}`),
+  },
 );
 
 const role = computed(() => parseAdminRoleDetail(data.value));

@@ -163,7 +163,7 @@ export class RejectRequestDto {
   @IsString()
   @MinLength(3)
   @MaxLength(500)
-  reason!: string;
+  rejectionReasons!: string;
 }
 
 export class UpdateRequestPaymentDto {

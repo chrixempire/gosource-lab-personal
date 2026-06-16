@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { OrderDetailRecord, OrderTimelineRecord } from '@gosource/api-client';
-import { toast } from '@gosource/ui';
 import OrderDetailPageHeader from '~/components/orders/OrderDetailPageHeader.vue';
 import OrderDetailsPanel from '~/components/orders/OrderDetailsPanel.vue';
 import OrderTimeline from '~/components/orders/OrderTimeline.vue';
@@ -10,17 +9,17 @@ import {
   type OrderDetailsView,
 } from '~/lib/order-details';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
-import { useReorderProducts } from '~/composables/useReorderProducts';
+import { useDownloadOrderInvoice } from '~/composables/useDownloadOrderInvoice';
+import { useReorderProducts, REORDER_THEN_MARKET_OPTIONS } from '~/composables/useReorderProducts';
 import { useCustomerOrderService } from '~/services/order.service';
 
 const { reorderProducts, reordering } = useReorderProducts();
-const downloadingInvoice = ref(false);
+const { downloadingInvoice, downloadOrderInvoice } = useDownloadOrderInvoice();
 
 const route = useRoute();
-const router = useRouter();
 const orderId = computed(() => String(route.params.id ?? ''));
 
-const { getOrder, getOrderTimeline, getOrderInvoiceUrl } = useCustomerOrderService();
+const { getOrder, getOrderTimeline } = useCustomerOrderService();
 
 const order = ref<OrderDetailRecord | null>(null);
 const timeline = ref<OrderTimelineRecord[]>([]);
@@ -58,6 +57,7 @@ const {
     };
   },
   {
+    fastNav: true,
     watch: [orderId],
     default: () => ({
       order: null as OrderDetailRecord | null,
@@ -90,42 +90,18 @@ useHead({
 });
 
 function goBack() {
-  if (import.meta.client && window.history.length > 1) {
-    router.back();
-    return;
-  }
-
   void navigateTo('/track-orders');
 }
 
 async function handleDownloadInvoice() {
-  if (!orderId.value || downloadingInvoice.value) {
+  if (!order.value) {
+    if (orderId.value) {
+      await downloadOrderInvoice(orderId.value);
+    }
     return;
   }
 
-  downloadingInvoice.value = true;
-
-  try {
-    const response = await fetch(getOrderInvoiceUrl(orderId.value), {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Invoice download failed');
-    }
-
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = objectUrl;
-    anchor.download = `order_invoice_${order.value?.reference ?? orderId.value}.pdf`;
-    anchor.click();
-    URL.revokeObjectURL(objectUrl);
-  } catch {
-    toast.error('Unable to download invoice right now.');
-  } finally {
-    downloadingInvoice.value = false;
-  }
+  await downloadOrderInvoice(order.value);
 }
 
 async function handleReorder() {
@@ -133,7 +109,7 @@ async function handleReorder() {
     return;
   }
 
-  await reorderProducts(order.value.products);
+  await reorderProducts(order.value.products, REORDER_THEN_MARKET_OPTIONS);
 }
 </script>
 

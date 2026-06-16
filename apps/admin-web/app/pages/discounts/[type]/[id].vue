@@ -3,12 +3,14 @@ import { Button } from '@gosource/ui';
 import { ArrowLeft } from 'lucide-vue-next';
 import DiscountForm from '~/components/discounts/DiscountForm.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useDiscountMutations } from '~/composables/useDiscountMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
 import {
   createEmptyDiscountFormValues,
   mapCouponToFormValues,
+  resolveDiscountCategoryId,
   validateDiscountForm,
 } from '~/lib/discount-form';
 import { parseDiscountDetail } from '~/lib/discount-api';
@@ -28,17 +30,26 @@ const form = reactive(createEmptyDiscountFormValues());
 const fieldErrors = reactive<Record<string, string>>({});
 const submitting = computed(() => busyDiscountId.value === discountId.value);
 
-const { data, pending, error, refresh } = await useFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/coupons/${discountId.value}`,
-  { watch: [discountId] },
+  {
+    watch: [discountId],
+    key: computed(() => `admin-discount-detail:${discountId.value}`),
+  },
 );
 
 watch(
   data,
-  (payload) => {
+  async (payload) => {
     const detail = parseDiscountDetail(payload);
-    if (detail) {
-      Object.assign(form, mapCouponToFormValues(detail));
+    if (!detail) {
+      return;
+    }
+
+    Object.assign(form, mapCouponToFormValues(detail));
+
+    if (slug.value === 'amountOffCategory' && !form.categoryId) {
+      form.categoryId = await resolveDiscountCategoryId(detail);
     }
   },
   { immediate: true },

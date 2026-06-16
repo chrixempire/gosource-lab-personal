@@ -66,6 +66,7 @@ const { data: productDetailPayload, pending: loading } = await useAuthenticatedA
     };
   },
   {
+    fastNav: true,
     watch: [productId],
     default: () => ({
       product: cachedProduct.value,
@@ -231,7 +232,7 @@ async function onAddToList() {
 
         <div class="flex min-w-0 flex-1 flex-col gap-2">
           <header class="space-y-1">
-            <h1 class="text-2xl font-semibold text-grey-900 sm:text-3xl">
+            <h1 class="text-h3 lg:text-h2">
               {{ product.name }}
             </h1>
             <div class="flex w-full items-center justify-between gap-3">
@@ -301,21 +302,21 @@ async function onAddToList() {
               </RadioGroup>
             </section>
 
-            <template v-if="inStock && product">
-              <div class="mt-4 flex flex-col gap-2">
-                <MarketProductLineTotal
-                  :product="product"
-                  :unit="selectedUnit"
-                  :quantity="pickQty"
-                />
-                <MarketProductDetailCartActions
-                  v-model:quantity="pickQty"
-                  :product="product"
-                  :unit="selectedUnit"
-                  :in-stock="inStock"
-                />
-              </div>
-            </template>
+            <div v-if="product" class="mt-4 flex flex-col gap-2">
+              <MarketProductLineTotal
+                v-if="inStock"
+                :product="product"
+                :unit="selectedUnit"
+                :quantity="pickQty"
+              />
+              <MarketProductDetailCartActions
+                v-model:quantity="pickQty"
+                :product="product"
+                :unit="selectedUnit"
+                :in-stock="inStock"
+                narrow-out-of-stock
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ import CustomerBranchFilterBar, {
 } from '~/components/customers/CustomerBranchFilterBar.vue';
 import CustomerBranchesMobileList from '~/components/customers/CustomerBranchesMobileList.vue';
 import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
+import { useAdminAuthenticatedFetch } from '~/composables/useAdminAuthenticatedFetch';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
 import { parseCustomerBranches } from '~/lib/customer-api';
@@ -70,9 +71,13 @@ const query = computed(() => ({
   ...(filters.value.endDate && { dateTo: filters.value.endDate }),
 }));
 
-const { data, pending, error, refresh } = useFetch<unknown>(
+const { data, pending, error, refresh } = useAdminAuthenticatedFetch<unknown>(
   () => `/api/customers/${props.customerId}/branches`,
-  { query, watch: [() => props.customerId, query] },
+  {
+    query,
+    watch: [() => props.customerId, query],
+    key: computed(() => `admin-customer-branches:${props.customerId}`),
+  },
 );
 
 const parsed = computed(() => parseCustomerBranches(data.value, page.value, limit.value));

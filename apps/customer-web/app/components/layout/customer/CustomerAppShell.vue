@@ -38,8 +38,12 @@ import { getMarketCategoryById } from '~/lib/marketplace-data';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
+import { useCustomerSession } from '~/composables/useCustomerSession';
+import { useCustomerSignOut } from '~/composables/useCustomerSignOut';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
+const { session, clearSession } = useCustomerSession();
+const { beginIntentionalSignOut } = useCustomerSignOut();
 const { clearAllDismissals } = useMarketBranchSetupDismissal();
 const { resetCartState } = useMarketplaceCart();
 const { ensureBranchesLoaded, clearActiveBranchForLogout, hasSession } =
@@ -77,8 +81,6 @@ const { header: pageHeaderOverride } = useCustomerPageHeader();
 const mobileNavOpen = ref(false);
 const desktopSidebarOpen = useState('customer-shell-sidebar-open', () => true);
 const isDesktopViewport = useMediaQuery('(min-width: 1024px)');
-const session = useState<CustomerMeResponse | null>('customer-session', () => null);
-
 const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/market', title: 'Market' },
   { match: '/business-insight', title: 'Business insight' },
@@ -199,6 +201,7 @@ async function confirmLogout() {
   }
 
   logoutLoading.value = true;
+  beginIntentionalSignOut();
 
   try {
     await $fetch('/api/auth/session/logout', {
@@ -206,9 +209,13 @@ async function confirmLogout() {
       credentials: 'same-origin',
     });
   } catch (error) {
-    toast.error(
-      extractApiErrorMessage(error, 'Unable to reach the server to sign out. You have been signed out here.'),
+    const message = extractApiErrorMessage(
+      error,
+      'Unable to reach the server to sign out. You have been signed out here.',
     );
+    if (message) {
+      toast.error(message);
+    }
   } finally {
     logoutLoading.value = false;
   }
@@ -217,8 +224,9 @@ async function confirmLogout() {
   clearAllDismissals();
   clearActiveBranchForLogout();
   resetCartState();
-  session.value = null;
+  clearSession();
   mobileNavOpen.value = false;
+
   await navigateTo('/auth/sign-in');
 }
 </script>
@@ -245,7 +253,7 @@ async function confirmLogout() {
           </div>
 
           <div
-            class="hidden min-w-0 shrink-0 items-center lg:flex lg:w-[270px] lg:px-6"
+            class="hidden min-w-0 shrink-0 items-center lg:flex lg:w-[250px] lg:px-6"
           >
             <BrandLogo class="h-auto w-[128px] max-w-none" />
           </div>
@@ -273,9 +281,7 @@ async function confirmLogout() {
                   : 'flex-1'
               "
             >
-              <h1
-                class="min-w-0 truncate text-[15px] font-semibold leading-tight text-grey-900 lg:text-lg"
-              >
+              <h1 class="min-w-0 truncate text-h5 lg:text-h3">
                 <span class="lg:hidden">{{ mobileHeaderTitle }}</span>
                 <span
                   v-if="isMarketCategoryPage && marketCategoryHeaderTitle"
@@ -313,7 +319,7 @@ async function confirmLogout() {
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
           <Sidebar
             class="hidden h-[calc(100vh-72px)] border-r border-grey-50 bg-background-on-canvas lg:flex"
-            width="271px"
+            width="251px"
             collapsed-width="0rem"
           >
             <CustomerSidebar
@@ -385,10 +391,8 @@ async function confirmLogout() {
         <DialogContent :overlay-class="CUSTOMER_FLOATING_OVERLAY_Z" :class="CUSTOMER_FLOATING_CONTENT_Z">
           <DialogHeader>
             <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-              <DialogTitle class="text-[24px] font-semibold text-grey-900">
-                Log out?
-              </DialogTitle>
-              <DialogDescription class="text-[12px] leading-5 text-grey-text">
+              <DialogTitle>Log out?</DialogTitle>
+              <DialogDescription class="text-body-sm text-grey-text">
                 You will need to sign in again to access your workspace.
               </DialogDescription>
             </div>
@@ -396,7 +400,7 @@ async function confirmLogout() {
           </DialogHeader>
 
           <DialogBody>
-            <p class="text-sm leading-6 text-grey-text">
+            <p class="text-body-sm text-grey-text">
               You will be signed out on this device.
             </p>
           </DialogBody>

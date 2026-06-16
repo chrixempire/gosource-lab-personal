@@ -77,6 +77,7 @@ const createDialogOpen = ref(false);
 const deleteDialogOpen = ref(false);
 const moveDialogOpen = ref(false);
 const drawerOpen = ref(false);
+const drawerMode = ref<'view' | 'move'>('view');
 
 const editingList = ref<ShoppingListRecord | null>(null);
 const selectedList = ref<ShoppingListRecord | null>(null);
@@ -121,6 +122,8 @@ const filteredLists = computed(() => {
 
 const totalItems = computed(() => filteredLists.value.length);
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / limit.value)));
+const hasNextPage = computed(() => page.value < totalPages.value);
+const hasPrevPage = computed(() => page.value > 1);
 const pageItems = computed(() => {
   const start = (page.value - 1) * limit.value;
   return filteredLists.value.slice(start, start + limit.value);
@@ -217,6 +220,8 @@ const { data: listsPayload, pending: listsPending, refresh: refreshListsPayload 
       };
     },
     {
+      fastNav: true,
+      revalidateOnMount: true,
       watch: [apiBranchId, employeeBranchId, () => route.query.branchId],
       default: () => ({
         branchId: '',
@@ -318,11 +323,22 @@ function openDeleteDialog(list: ShoppingListRecord) {
   deleteDialogOpen.value = true;
 }
 
-async function openListDrawer(listId: string) {
+async function openListDrawer(listId: string, mode: 'view' | 'move' = 'view') {
+  drawerMode.value = mode;
   selectedList.value = lists.value.find((list) => list.id === listId) ?? null;
   drawerOpen.value = true;
   await refreshSelectedList(listId);
 }
+
+async function openListMoveDrawer(listId: string) {
+  await openListDrawer(listId, 'move');
+}
+
+watch(drawerOpen, (open) => {
+  if (!open) {
+    drawerMode.value = 'view';
+  }
+});
 
 async function handleCreateOrUpdateList(payload: {
   name: string;
@@ -436,7 +452,11 @@ async function handleClearItems() {
 
 function handleMoveSelected(itemIds: string[]) {
   itemIdsToMove.value = itemIds;
-  moveDialogOpen.value = true;
+  drawerOpen.value = false;
+
+  window.setTimeout(() => {
+    moveDialogOpen.value = true;
+  }, 300);
 }
 
 async function handleMoveToCart(itemIds: string[]) {
@@ -544,11 +564,19 @@ async function handleCreateRequest() {
       <ListTable
         v-if="effectiveView === 'table'"
         :lists="pageItems"
+        :page="page"
+        :total-pages="totalPages"
+        :total-items="totalItems"
+        :page-size="limit"
+        :has-next-page="hasNextPage"
+        :has-prev-page="hasPrevPage"
         :loading="loading"
         :show-branch-column="showBranchColumn"
+        @page="setPage"
+        @page-size="setLimit"
         @row-click="(list) => openListDrawer(list.id)"
         @view="(list) => openListDrawer(list.id)"
-        @move="(list) => openListDrawer(list.id)"
+        @move="(list) => openListMoveDrawer(list.id)"
         @edit="(list) => { const record = findListRecord(list.id); if (record) openEditDialog(record); }"
         @delete="(list) => { const record = findListRecord(list.id); if (record) openDeleteDialog(record); }"
       />
@@ -560,13 +588,13 @@ async function handleCreateRequest() {
         :show-branch-name="showBranchColumn"
         @row-click="(list) => openListDrawer(list.id)"
         @view="(list) => openListDrawer(list.id)"
-        @move="(list) => openListDrawer(list.id)"
+        @move="(list) => openListMoveDrawer(list.id)"
         @edit="(list) => { const record = findListRecord(list.id); if (record) openEditDialog(record); }"
         @delete="(list) => { const record = findListRecord(list.id); if (record) openDeleteDialog(record); }"
       />
 
       <div
-        v-if="!loading && !filteredLists.length"
+        v-if="!loading && !filteredLists.length && effectiveView !== 'table'"
         class="rounded-[16px] border border-dashed border-grey-50 bg-background-on-canvas px-6 py-12 text-center"
       >
         <p class="text-base font-medium text-grey-900">No lists yet</p>
@@ -575,13 +603,15 @@ async function handleCreateRequest() {
         </p>
       </div>
 
-      <div v-if="!loading && totalItems > 0" class="mt-2 flex justify-end">
+      <div v-if="effectiveView !== 'table' && !loading && totalItems > 0" class="mt-2 flex justify-end">
         <PaginationBar
           plain
           :page="page"
           :total-pages="totalPages"
           :total-items="totalItems"
           :page-size="limit"
+          :has-next-page="hasNextPage"
+          :has-prev-page="hasPrevPage"
           :disabled="loading"
           @change="setPage"
           @page-size-change="setLimit"
@@ -619,6 +649,7 @@ async function handleCreateRequest() {
     <ListDrawer
       v-model:open="drawerOpen"
       :list="selectedList"
+      :mode="drawerMode"
       :items-loading="drawerItemsLoading"
       :saving-item-id="savingItemId"
       :move-submitting="moveSubmitting"
@@ -628,6 +659,7 @@ async function handleCreateRequest() {
       @delete-item="handleDeleteItem"
       @clear-items="handleClearItems"
       @move-to-cart="handleMoveToCart"
+      @move-selected="handleMoveSelected"
     />
   </div>
 </template>

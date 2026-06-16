@@ -4,6 +4,7 @@ import { formatCreditFromKobo } from '~/lib/credit-money';
 
 const props = defineProps<{
   account: CustomerCreditAccount | null;
+  amountDueKobo?: number;
 }>();
 
 const stats = computed(
@@ -26,7 +27,9 @@ const stats = computed(
   <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
     <div class="customer-surface-card rounded-lg p-5">
       <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-grey-400">Available credit</p>
-      <h3 class="text-2xl font-semibold text-grey-900">{{ formatCreditFromKobo(stats.availableKobo) }}</h3>
+      <p class="text-3xl font-semibold tabular-nums text-grey-900">
+        {{ formatCreditFromKobo(stats.availableKobo) }}
+      </p>
       <p class="mt-1 text-xs text-grey-300">
         Outstanding {{ formatCreditFromKobo(stats.outstandingKobo) }} / Limit
         {{ formatCreditFromKobo(stats.limitKobo) }}
@@ -35,16 +38,16 @@ const stats = computed(
 
     <div class="customer-surface-card rounded-lg p-5">
       <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-grey-400">Spendable amount</p>
-      <h3 class="text-2xl font-semibold text-grey-900">
+      <p class="text-3xl font-semibold tabular-nums text-grey-900">
         {{ formatCreditFromKobo(stats.spendableAmountKobo) }}
-      </h3>
+      </p>
     </div>
 
     <div class="customer-surface-card rounded-lg p-5">
       <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-grey-400">Amount due</p>
-      <h3 class="text-2xl font-semibold text-grey-900">
-        {{ formatCreditFromKobo(stats.outstandingKobo) }}
-      </h3>
+      <p class="text-3xl font-semibold tabular-nums text-grey-900">
+        {{ formatCreditFromKobo(props.amountDueKobo ?? stats.outstandingKobo) }}
+      </p>
     </div>
   </div>
 </template>

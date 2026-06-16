@@ -1,2 +1,2 @@
 /** Shared modal/drawer title styling for admin-web overlays. */
-export const ADMIN_MODAL_TITLE_CLASS = 'text-base font-semibold leading-snug text-grey-900';
+export const ADMIN_MODAL_TITLE_CLASS = 'text-h5';

@@ -14,6 +14,7 @@ import {
 } from '@gosource/ui';
 import { Check, Copy } from 'lucide-vue-next';
 import DiscountActionsMenu from '~/components/discounts/DiscountActionsMenu.vue';
+import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
 import { discountStatusVariant } from '~/lib/discount-constants';
 import {
   DISCOUNT_LIST_PANEL_CLASS,
@@ -39,6 +40,7 @@ const emit = defineEmits<{
   edit: [discount: AdminDiscountListItem];
   activate: [discount: AdminDiscountListItem];
   deactivate: [discount: AdminDiscountListItem];
+  delete: [discount: AdminDiscountListItem];
 }>();
 
 const selectedSet = computed(() => new Set(selectedIds.value ?? []));
@@ -109,11 +111,16 @@ function toggleRow(id: string, checked: boolean | 'indeterminate') {
       />
     </div>
 
+    <CreditTableEmptyBody
+      v-else-if="discounts.length === 0"
+      title="No discounts found"
+      description="Create a discount or adjust your filters."
+    />
+
     <TableBody v-else class="!max-h-none !overflow-visible">
       <TableRow
         v-for="discount in discounts"
         :key="discount.id"
-        class="even:bg-[#FAFBFC]"
         :style="{ gridTemplateColumns: DISCOUNT_TABLE_GRID_TEMPLATE }"
       >
         <TableCell class="flex items-center" @click.stop>
@@ -174,6 +181,7 @@ function toggleRow(id: string, checked: boolean | 'indeterminate') {
             @edit="emit('edit', discount)"
             @activate="emit('activate', discount)"
             @deactivate="emit('deactivate', discount)"
+            @delete="emit('delete', discount)"
           />
         </TableCell>
       </TableRow>

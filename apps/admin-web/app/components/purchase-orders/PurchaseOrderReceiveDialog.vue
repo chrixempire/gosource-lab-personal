@@ -233,6 +233,7 @@ function onConfirm() {
           <Button
             type="button"
             variant="secondary"
+            size="medium"
             class="!w-auto min-w-[6rem]"
             :disabled="loading"
             @click="open = false"
@@ -241,6 +242,7 @@ function onConfirm() {
           </Button>
           <Button
             type="button"
+            size="medium"
             class="!w-auto min-w-[6rem]"
             :loading="loading"
             :disabled="!canConfirm"

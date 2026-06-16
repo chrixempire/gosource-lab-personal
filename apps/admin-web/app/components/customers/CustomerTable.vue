@@ -117,7 +117,7 @@ function toggleRow(id: string, checked: boolean | 'indeterminate') {
         <TableRow
           v-for="customer in customers"
           :key="customer.id"
-          class="cursor-pointer transition-colors hover:bg-primary-50/45 even:bg-[#FAFBFC]"
+          class="cursor-pointer transition-colors hover:bg-primary-50/45"
           :style="{ gridTemplateColumns: CUSTOMER_TABLE_GRID_TEMPLATE }"
           @click="emit('view', customer)"
         >

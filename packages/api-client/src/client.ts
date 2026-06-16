@@ -74,10 +74,12 @@ export function createApiClient(options: ApiClientOptions = {}) {
       });
 
     let response = await executeRequest(headers);
+    let sessionRefreshSucceeded = false;
 
     if (response.status === 401 && onSessionRefresh) {
       try {
         await onSessionRefresh();
+        sessionRefreshSucceeded = true;
         response = await executeRequest(headers);
       } catch {
         await onSessionExpired?.();
@@ -107,8 +109,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
         status: response.status,
       } satisfies Partial<ApiError> & { status: number });
 
-      if (response.status === 401) {
+      if (response.status === 401 && !sessionRefreshSucceeded) {
         await onSessionExpired?.();
+        await onAuthFailure?.(normalizedError);
+      } else if (response.status === 401) {
         await onAuthFailure?.(normalizedError);
       }
 

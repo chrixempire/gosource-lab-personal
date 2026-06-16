@@ -33,7 +33,6 @@ const props = defineProps<{
   creditMeta: CreditListMeta;
   repaymentMeta: CreditListMeta;
   upcomingPayment: CustomerUpcomingCreditPayment;
-  isOwner: boolean;
   creditLoading?: boolean;
   repaymentLoading?: boolean;
 }>();
@@ -68,10 +67,22 @@ const hasPendingRequest = computed(() =>
   props.creditRequests.some((item) => item.status === 'pending'),
 );
 
-const showMakeRepayment = computed(() => (props.account?.outstandingKobo ?? 0) > 0);
+const showMakeRepayment = computed(
+  () =>
+    (props.account?.outstandingKobo ?? 0) > 0 ||
+    (props.upcomingPayment?.totalNextPaymentKobo ?? 0) > 0,
+);
 
 const showUpcomingBanner = computed(
   () => (props.upcomingPayment?.totalNextPaymentKobo ?? 0) > 0,
+);
+
+/** Next installment (principal + interest), not principal-only outstanding. */
+const amountDueKobo = computed(() =>
+  Math.max(
+    props.upcomingPayment?.totalNextPaymentKobo ?? 0,
+    props.account?.outstandingKobo ?? 0,
+  ),
 );
 
 /** Match gosource-web-app: disable primary actions while under review or not eligible. */
@@ -89,6 +100,11 @@ const isMoreActionsDisabled = computed(
 
 /** When true, owner header actions must not be interactive (matches review banner). */
 const lockOwnerCreditActions = computed(() => hasPendingApplication.value);
+
+/** Match gosource-web-app: top up only when principal is still outstanding. */
+const disableTopUpCredit = computed(
+  () => !props.account || (props.account.outstandingKobo ?? 0) === 0,
+);
 
 const disableManageCreditLimit = computed(() => {
   const creditUtil = props.account?.creditUtilization ?? 0;
@@ -137,16 +153,7 @@ function onActionSuccess() {
         :upcoming="upcomingPayment"
       />
 
-      <p
-        v-if="!isOwner"
-        class="text-sm text-grey-400"
-        :class="{ 'ml-auto': !showUpcomingBanner }"
-      >
-        Credit actions are available to the business owner only.
-      </p>
-
       <div
-        v-else
         class="flex shrink-0 flex-wrap items-center gap-2"
         :class="[
           { 'cursor-not-allowed': lockOwnerCreditActions },
@@ -205,7 +212,7 @@ function onActionSuccess() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              :disabled="!account || hasPendingRequest"
+              :disabled="disableTopUpCredit || hasPendingRequest"
               @select="openGetCredit('topup')"
             >
               Top up credit
@@ -221,7 +228,7 @@ function onActionSuccess() {
       </div>
     </div>
 
-    <CreditAccountOverview :account="account" />
+    <CreditAccountOverview :account="account" :amount-due-kobo="amountDueKobo" />
 
     <div
       v-if="showRejectedNotice"
@@ -235,7 +242,6 @@ function onActionSuccess() {
         }}
       </p>
       <Button
-        v-if="isOwner"
         class="mt-3 !w-auto shrink-0"
         size="small"
         variant="outline"
@@ -253,7 +259,6 @@ function onActionSuccess() {
       :repayment-meta="repaymentMeta"
       :credit-loading="creditLoading"
       :repayment-loading="repaymentLoading"
-      :is-owner="isOwner"
       @credit-page="emit('creditPage', $event)"
       @credit-limit="emit('creditLimit', $event)"
       @repayment-page="emit('repaymentPage', $event)"

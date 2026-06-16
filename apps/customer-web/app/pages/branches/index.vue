@@ -9,9 +9,10 @@ import BranchDeactivateOverlay from '~/components/branches/BranchDeactivateOverl
 import BranchDeleteOverlay from '~/components/branches/BranchDeleteOverlay.vue';
 import BranchEditOverlay from '~/components/branches/BranchEditOverlay.vue';
 import BranchInviteMemberOverlay from '~/components/branches/BranchInviteMemberOverlay.vue';
+import BranchMakeHeadquarterOverlay from '~/components/branches/BranchMakeHeadquarterOverlay.vue';
 import BranchTable from '~/components/branches/BranchTable.vue';
 import SearchField from '~/components/shared/collection/SearchField.vue';
-import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { usePaginatedListData } from '~/composables/usePaginatedListData';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useCustomerBranchService } from '~/services/branch.service';
 
@@ -36,6 +37,7 @@ const searchValue = ref('');
 const createOpen = ref(false);
 const editOpen = ref(false);
 const deactivateOpen = ref(false);
+const headquarterOpen = ref(false);
 const deleteOpen = ref(false);
 const inviteOpen = ref(false);
 const branches = ref<BranchRecord[]>([]);
@@ -68,8 +70,15 @@ const defaultMeta = {
   hasPrevPage: false,
 };
 
-const { data: branchesPayload, pending: loading, refresh: refreshBranches } = await useAuthenticatedAsyncData(
+const branchesListKeyParts = computed(() => [
+  page.value,
+  limit.value,
+  debouncedSearch.value,
+]);
+
+const { data: branchesPayload, pending: loading, refresh: refreshBranches } = await usePaginatedListData(
   'branches-list',
+  branchesListKeyParts,
   async () => {
     const response = await listBranches({
       page: page.value,
@@ -82,7 +91,6 @@ const { data: branchesPayload, pending: loading, refresh: refreshBranches } = aw
     };
   },
   {
-    watch: [page, limit, debouncedSearch],
     default: () => ({
       branches: [] as BranchRecord[],
       meta: { ...defaultMeta },
@@ -195,6 +203,11 @@ function handleDeleteBranch(branch: BranchListItem) {
   deleteOpen.value = true;
 }
 
+function handleMakeHeadquarterBranch(branch: BranchListItem) {
+  selectedBranchId.value = branch.id;
+  headquarterOpen.value = true;
+}
+
 function handleBranchUpdated(branch?: BranchRecord) {
   if (!branch) {
     return;
@@ -243,6 +256,35 @@ function handleBranchDeleted(branchId: string) {
   selectedBranchId.value = branchId;
   void refreshBranches();
 }
+
+function handleBranchHeadquarterUpdated(branch?: BranchRecord) {
+  if (!branch) {
+    void refreshBranches();
+    return;
+  }
+
+  const targetId = String(branch.id || selectedBranchId.value || '').trim();
+  branches.value = branches.value.map((item) => ({
+    ...item,
+    isHeadquarter: item.id === targetId,
+  }));
+
+  if (targetId) {
+    branches.value = branches.value.map((item) =>
+      item.id === targetId
+        ? {
+            ...item,
+            ...branch,
+            id: targetId,
+            isHeadquarter: true,
+          }
+        : {
+            ...item,
+            isHeadquarter: false,
+          },
+    );
+  }
+}
 </script>
 
 <template>
@@ -283,10 +325,10 @@ function handleBranchDeleted(branchId: string) {
         :branches="sortedBranches"
         :sort-key="sortKey"
         :sort-direction="sortDirection"
-        :page="meta.page"
+        :page="page"
         :total-pages="meta.totalPages"
         :total-items="meta.total"
-        :page-size="meta.limit"
+        :page-size="limit"
         :has-next-page="meta.hasNextPage"
         :has-prev-page="meta.hasPrevPage"
         :loading="loading"
@@ -300,6 +342,7 @@ function handleBranchDeleted(branchId: string) {
         @edit="handleEditBranch"
         @activate="handleActivateBranch"
         @deactivate="handleDeactivateBranch"
+        @make-headquarter="handleMakeHeadquarterBranch"
         @delete="handleDeleteBranch"
       />
 
@@ -313,14 +356,15 @@ function handleBranchDeleted(branchId: string) {
           @edit="handleEditBranch"
           @activate="handleActivateBranch"
           @deactivate="handleDeactivateBranch"
+          @make-headquarter="handleMakeHeadquarterBranch"
           @delete="handleDeleteBranch"
         />
         <PaginationBar
           plain
-          :page="meta.page"
+          :page="page"
           :total-pages="meta.totalPages"
           :total-items="meta.total"
-          :page-size="meta.limit"
+          :page-size="limit"
           :has-next-page="meta.hasNextPage"
           :has-prev-page="meta.hasPrevPage"
           @change="setPage"
@@ -380,6 +424,11 @@ function handleBranchDeleted(branchId: string) {
       v-model:open="deactivateOpen"
       :branch="selectedBranch"
       @deactivated="handleBranchDeactivated"
+    />
+    <BranchMakeHeadquarterOverlay
+      v-model:open="headquarterOpen"
+      :branch="selectedBranch"
+      @updated="handleBranchHeadquarterUpdated"
     />
     <BranchDeleteOverlay
       v-model:open="deleteOpen"

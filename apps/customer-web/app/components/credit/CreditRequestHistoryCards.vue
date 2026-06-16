@@ -2,8 +2,13 @@
 import { StatusTag } from '@gosource/ui';
 import CreditRequestActionsMenu from '~/components/credit/CreditRequestActionsMenu.vue';
 import {
-  creditWorkflowStatusLabel,
-  creditWorkflowStatusVariant,
+  canReapplyCreditRequest,
+  creditRequestStatusLabel,
+  creditRequestStatusVariant,
+  creditRequestTypeLabel,
+  creditRepaymentPaymentMethodLabel,
+  creditRepaymentStatusLabel,
+  creditRepaymentStatusVariant,
 } from '~/lib/credit-constants';
 import { creditRequestPath } from '~/lib/credit-routes';
 import { formatCreditFromKobo } from '~/lib/credit-money';
@@ -13,7 +18,6 @@ import type { CustomerCreditRequest } from '~/types/credit';
 defineProps<{
   items: CustomerCreditRequest[];
   loading?: boolean;
-  isOwner?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -44,19 +48,19 @@ const cardArticleClass =
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">
           <p class="font-semibold text-grey-900">#{{ row.reference }}</p>
-          <p class="mt-0.5 text-xs capitalize text-grey-400">{{ row.requestType }}</p>
+          <p class="mt-0.5 text-xs text-grey-400">{{ creditRequestTypeLabel(row.requestType) }}</p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
           <StatusTag
-            :variant="creditWorkflowStatusVariant(row.status)"
+            :variant="creditRequestStatusVariant(row.status)"
             size="medium"
             class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
           >
-            {{ creditWorkflowStatusLabel(row.status) }}
+            {{ creditRequestStatusLabel(row.status) }}
           </StatusTag>
           <CreditRequestActionsMenu
-            :can-cancel="isOwner && row.status === 'pending'"
-            :can-reapply="isOwner && row.status === 'rejected'"
+            :can-cancel="row.status === 'pending'"
+            :can-reapply="canReapplyCreditRequest(row.status)"
             @view-details="navigateTo(creditRequestPath(row.id))"
             @cancel="emit('cancel', row)"
             @reapply="emit('reapply', row)"
@@ -67,6 +71,12 @@ const cardArticleClass =
         <div>
           <dt class="text-grey-300">Amount</dt>
           <dd class="font-medium text-grey-900">{{ formatCreditFromKobo(row.requestedAmountKobo) }}</dd>
+        </div>
+        <div>
+          <dt class="text-grey-300">Approved</dt>
+          <dd class="font-medium text-grey-900">
+            {{ row.approvedAmountKobo > 0 ? formatCreditFromKobo(row.approvedAmountKobo) : '—' }}
+          </dd>
         </div>
         <div>
           <dt class="text-grey-300">Date</dt>

@@ -194,12 +194,18 @@ export class OrderService {
       };
     });
 
+    const minimumKnownTotal = (safePage - 1) * safeLimit + modifiedOrders.length;
+    const resolvedTotal =
+      modifiedOrders.length < safeLimit
+        ? Math.max(total, minimumKnownTotal)
+        : total;
+
     return {
       status: true,
       message: 'Orders fetched successfully',
       data: modifiedOrders,
       meta: {
-        total,
+        total: resolvedTotal,
         page: safePage,
         limit: safeLimit,
       },
@@ -213,21 +219,49 @@ export class OrderService {
       throw new NotFoundException('Order not found');
     }
 
-    const businessId = String(business?.id ?? '');
-    const orderBusinessId = String(order.business?._id ?? order.business ?? order.customerId ?? '');
-    const orderCustomerId = String(order.customerId ?? '');
-
-    if (
-      businessId &&
-      orderBusinessId &&
-      orderBusinessId !== businessId &&
-      orderCustomerId !== businessId
-    ) {
-      throw new NotFoundException('Order not found');
-    }
+    this.assertCanAccessOrder(order, business);
 
     const invoiceView = buildOrderInvoiceViewModel(order);
     return PdfUtil.generatePdf(invoiceView, 'order_invoice');
+  }
+
+  private assertCanAccessOrder(order: any, actor: any) {
+    const userType = String(actor?.user_type ?? '').toUpperCase();
+    const orderBusinessId = String(
+      order.business?._id ?? order.business ?? order.customerId ?? '',
+    );
+    const orderCustomerId = String(order.customerId ?? '');
+    const orderBranchId = String(order.branch?._id ?? order.branch ?? '');
+
+    if (userType === 'EMPLOYEE') {
+      const actorBusinessId = String(actor?.businessId ?? '');
+      const actorBranchId = String(actor?.branchId ?? '');
+
+      if (
+        actorBusinessId &&
+        orderBusinessId &&
+        orderBusinessId !== actorBusinessId &&
+        orderCustomerId !== actorBusinessId
+      ) {
+        throw new NotFoundException('Order not found');
+      }
+
+      if (actorBranchId && orderBranchId && orderBranchId !== actorBranchId) {
+        throw new NotFoundException('Order not found');
+      }
+
+      return;
+    }
+
+    const actorBusinessId = String(actor?.id ?? '');
+    if (
+      actorBusinessId &&
+      orderBusinessId &&
+      orderBusinessId !== actorBusinessId &&
+      orderCustomerId !== actorBusinessId
+    ) {
+      throw new NotFoundException('Order not found');
+    }
   }
 
   async findOne(id: string): Promise<any> {
@@ -294,20 +328,9 @@ export class OrderService {
     if (order) {
       order.paymentStatus = ORDER_PAYMENT_STATUS.PAID;
       await order.save();
-      if (order.request) {
-        await this.requestModel.findByIdAndUpdate(order.request, {
-          paymentStatus: PaymentStatus.PAID,
-        });
-      }
-    }
-
-    if (request) {
+    } else if (request) {
       request.paymentStatus = PaymentStatus.PAID;
       await request.save();
-      await this.orderModel.updateMany(
-        { request: request._id },
-        { paymentStatus: ORDER_PAYMENT_STATUS.PAID },
-      );
     }
 
     // Save Reference

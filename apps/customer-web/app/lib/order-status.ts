@@ -18,6 +18,15 @@ export const ORDER_ONGOING_STATUSES: OrderStatus[] = [
   'partially_delivered',
 ];
 
+/** Terminal order statuses grouped under "Completed" in gosource-web-app track orders. */
+export const ORDER_COMPLETED_STATUSES: OrderStatus[] = [
+  'delivered',
+  'cancelled',
+  'completed',
+  'refunded',
+  'returned',
+];
+
 export const ORDER_STATUS_FILTERS = new Set<OrderStatusFilter>([
   'ongoing',
   'delivered',
@@ -30,6 +39,10 @@ export const ORDER_STATUS_FILTERS = new Set<OrderStatusFilter>([
 export function orderStatusesForFilter(filter: OrderStatusFilter): OrderStatus[] {
   if (filter === 'ongoing') {
     return ORDER_ONGOING_STATUSES;
+  }
+
+  if (filter === 'completed') {
+    return ORDER_COMPLETED_STATUSES;
   }
 
   return [filter];

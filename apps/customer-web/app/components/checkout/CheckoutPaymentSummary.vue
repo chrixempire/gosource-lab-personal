@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { Button } from '@gosource/ui';
+import { Button, toast } from '@gosource/ui';
+import { Loader2, Tag, Trash2 } from 'lucide-vue-next';
+import CheckoutApplyCoupon from '~/components/checkout/CheckoutApplyCoupon.vue';
+import { checkoutCouponDisplayLabel } from '~/lib/checkout-coupon';
+import { useCustomerRequestService } from '~/services/request.service';
 
-defineProps<{
+const props = defineProps<{
+  requestId: string;
   subtotal: number;
   deliveryFee: number;
   serviceCharge: number;
   discount: number;
   total: number;
   formatCurrency: (value: number) => string;
+  couponApplied?: boolean;
+  couponLabel?: string | null;
   submitting?: boolean;
   canSubmit?: boolean;
   submitLabel?: string;
@@ -15,7 +22,43 @@ defineProps<{
 
 const emit = defineEmits<{
   submit: [];
+  'coupon-applied': [];
+  'coupon-removed': [];
 }>();
+
+const { removeCoupon } = useCustomerRequestService();
+const showCouponInput = ref(false);
+const removingCoupon = ref(false);
+
+const couponDisplayLabel = computed(() =>
+  checkoutCouponDisplayLabel(props.couponLabel, props.couponApplied),
+);
+
+watch(
+  () => props.couponApplied,
+  (applied) => {
+    if (applied) {
+      showCouponInput.value = false;
+    }
+  },
+);
+
+async function handleRemoveCoupon() {
+  if (!props.couponApplied || removingCoupon.value || props.submitting) {
+    return;
+  }
+
+  removingCoupon.value = true;
+  try {
+    await removeCoupon(props.requestId);
+    toast.success('Coupon removed');
+    emit('coupon-removed');
+  } catch {
+    // Error toast handled in service.
+  } finally {
+    removingCoupon.value = false;
+  }
+}
 </script>
 
 <template>
@@ -25,6 +68,45 @@ const emit = defineEmits<{
       <p class="mt-1 text-sm text-grey-text">
         This matches the request pricing that will be sent for checkout approval.
       </p>
+    </div>
+
+    <div class="mb-5 rounded-[16px] border border-grey-50 bg-grey-55/60 p-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-2">
+          <Tag class="size-4 shrink-0 text-grey-300" aria-hidden="true" />
+          <p class="truncate text-sm font-medium text-grey-900">
+            {{ couponDisplayLabel }}
+          </p>
+        </div>
+        <button
+          v-if="couponApplied"
+          type="button"
+          class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-negative-500 transition hover:bg-negative-50 hover:text-negative-600 disabled:cursor-not-allowed disabled:opacity-35"
+          :disabled="submitting || removingCoupon"
+          aria-label="Remove coupon"
+          @click="handleRemoveCoupon"
+        >
+          <Loader2 v-if="removingCoupon" class="size-4 animate-spin" aria-hidden="true" />
+          <Trash2 v-else class="size-4" aria-hidden="true" />
+        </button>
+        <Button
+          v-else-if="!showCouponInput"
+          type="button"
+          variant="secondary"
+          size="small"
+          class="!w-auto shrink-0"
+          @click="showCouponInput = true"
+        >
+          Add
+        </Button>
+      </div>
+
+      <div v-if="!couponApplied && showCouponInput" class="mt-3">
+        <CheckoutApplyCoupon
+          :request-id="requestId"
+          @applied="emit('coupon-applied')"
+        />
+      </div>
     </div>
 
     <div class="space-y-3 text-sm">

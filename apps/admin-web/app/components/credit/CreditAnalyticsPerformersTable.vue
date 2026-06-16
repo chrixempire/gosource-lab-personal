@@ -11,6 +11,7 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import CreditAnalyticsPerformerCards from '~/components/credit/CreditAnalyticsPerformerCards.vue';
+import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import { formatCreditFromKobo } from '~/lib/credit-money';
 import { CREDIT_ANALYTICS_TABLE_GRID, CREDIT_LIST_PANEL_CLASS } from '~/lib/credit-table-layout';
@@ -30,6 +31,22 @@ const filteredRows = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) return props.rows;
   return props.rows.filter((row) => row.displayName.toLowerCase().includes(query));
+});
+
+const isSearchActive = computed(() => searchQuery.value.trim().length > 0);
+
+const emptyTitle = computed(() => {
+  if (isSearchActive.value && props.rows.length > 0) {
+    return 'No performers match your search';
+  }
+  return 'No credit performers yet';
+});
+
+const emptyDescription = computed(() => {
+  if (isSearchActive.value && props.rows.length > 0) {
+    return 'Try a different business name.';
+  }
+  return 'Top performers will appear here once customers use credit.';
 });
 
 function performerInitials(name: string) {
@@ -89,11 +106,17 @@ function avatarFallbackClass(isInactive: boolean) {
         />
       </div>
 
-      <TableBody v-else-if="filteredRows.length" class="!max-h-none !overflow-visible">
+      <CreditTableEmptyBody
+        v-else-if="!filteredRows.length"
+        :title="emptyTitle"
+        :description="emptyDescription"
+      />
+
+      <TableBody v-else class="!max-h-none !overflow-visible">
         <TableRow
           v-for="row in filteredRows"
           :key="row.businessId"
-          class="even:bg-[#FAFBFC]"
+          class="bg-white"
           :style="{ gridTemplateColumns: CREDIT_ANALYTICS_TABLE_GRID }"
         >
           <TableCell>
@@ -120,14 +143,6 @@ function avatarFallbackClass(isInactive: boolean) {
           </TableCell>
           <TableCell>
             <p class="text-sm font-medium text-grey-800">{{ row.repaymentScore }}</p>
-          </TableCell>
-        </TableRow>
-      </TableBody>
-
-      <TableBody v-else class="!max-h-none !overflow-visible">
-        <TableRow :style="{ gridTemplateColumns: CREDIT_ANALYTICS_TABLE_GRID }">
-          <TableCell class="col-span-4 py-10 text-center text-sm text-grey-500">
-            No performers match your search.
           </TableCell>
         </TableRow>
       </TableBody>

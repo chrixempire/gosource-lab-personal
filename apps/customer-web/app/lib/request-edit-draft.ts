@@ -1,4 +1,5 @@
 import type { RequestProductRecord, RequestRecord } from '@gosource/api-client';
+import { resolveBillableDiscount } from '~/lib/request-pricing';
 
 export function cloneRequestRecord(request: RequestRecord): RequestRecord {
   return {
@@ -17,7 +18,10 @@ export function recomputeRequestTotals(request: RequestRecord): RequestRecord {
 
   const subtotal = products.reduce((sum, product) => sum + product.totalPrice, 0);
   const totalPrice =
-    subtotal + request.deliveryFee + request.serviceCharge - request.discount;
+    subtotal +
+    request.deliveryFee +
+    request.serviceCharge -
+    resolveBillableDiscount(request);
 
   return {
     ...request,

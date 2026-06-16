@@ -22,7 +22,7 @@ const cardClass =
 
 <template>
   <div class="space-y-6">
-    <h2 class="text-2xl font-semibold text-grey-900">Summary and finish up</h2>
+    <h3>Summary and finish up</h3>
 
     <article :class="cardClass">
       <div class="flex items-center justify-between gap-3">

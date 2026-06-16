@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CustomerMeResponse } from '@gosource/api-client';
 import { Button, toast } from '@gosource/ui';
 import { CheckCircle2 } from 'lucide-vue-next';
 import CreditApplyStepper from '~/components/credit/CreditApplyStepper.vue';
@@ -16,13 +17,16 @@ import {
   type CreditApplyFieldErrors,
 } from '~/lib/credit-apply';
 import { CREDIT_PAGE_ROUTES } from '~/lib/credit-routes';
+import { invalidateCreditPageCache } from '~/lib/invalidate-customer-list-cache';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { isBusinessOwnerSession } from '~/lib/customer-roles';
 import { useCustomerCreditService } from '~/services/credit.service';
 import { useCustomerProfileService } from '~/services/profile.service';
-import { extractApiErrorMessage } from '~/utils/api-error';
+import { reportCustomerApiError } from '~/utils/api-error';
 
 const { submitApplication } = useCustomerCreditService();
 const { getBusinessAccount } = useCustomerProfileService();
+const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 
 const currentStep = ref(1);
 const submitted = ref(false);
@@ -34,10 +38,20 @@ const errors = ref<CreditApplyFieldErrors>({});
 const { data: applyBusinessContext } = await useAuthenticatedAsyncData(
   'credit-apply-business',
   async () => {
-    const account = await getBusinessAccount({ silent: true }).catch(() => null);
-    return {
-      businessName: account?.businessName?.trim() ?? '',
-    };
+    if (isBusinessOwnerSession(session.value)) {
+      const account = await getBusinessAccount({ silent: true }).catch(() => null);
+      return {
+        businessName: account?.businessName?.trim() ?? '',
+      };
+    }
+
+    const employeeData = session.value?.user_type === 'employee' ? session.value.data : null;
+    const businessName =
+      employeeData && 'businessName' in employeeData
+        ? String(employeeData.businessName ?? '').trim()
+        : '';
+
+    return { businessName };
   },
   {
     default: () => ({ businessName: '' }),
@@ -108,10 +122,11 @@ async function handleContinue() {
   submitting.value = true;
   try {
     await submitApplication(buildCreditApplicationFormData(values.value));
+    invalidateCreditPageCache();
     submitted.value = true;
     toast.success('Credit application submitted successfully');
   } catch (error) {
-    toast.error(extractApiErrorMessage(error, 'Failed to submit application. Please try again.'));
+    reportCustomerApiError(error, 'Failed to submit application. Please try again.');
   } finally {
     submitting.value = false;
   }
@@ -128,7 +143,7 @@ async function handleContinue() {
         <CheckCircle2 class="size-10 text-primary-600" aria-hidden="true" />
       </div>
       <div class="space-y-2">
-        <h2 class="text-2xl font-semibold text-grey-900">Application submitted</h2>
+        <h3>Application submitted</h3>
         <p class="max-w-sm text-sm text-grey-400">
           Your credit application has been submitted successfully. We'll review it and notify you
           once a decision has been made.

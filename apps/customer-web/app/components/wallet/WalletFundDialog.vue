@@ -37,8 +37,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  funded: [paymentReference?: string];
-  refresh: [];
+  funded: [];
+  'funding-initiated': [];
   'update:open': [value: boolean];
 }>();
 
@@ -119,30 +119,27 @@ function backToAmountStep() {
 
 async function confirmFunding(paymentReference: string, numericAmount: number) {
   confirming.value = true;
-  toast.message('Payment received. Confirming your wallet balance…');
-
-  if (import.meta.dev) {
-    void devConfirmFunding({
-      paymentReference,
-      amount: numericAmount,
-    });
-  }
+  const processingToast = toast.loading('Confirming your wallet balance…');
 
   try {
+    if (import.meta.dev) {
+      await devConfirmFunding({
+        paymentReference,
+        amount: numericAmount,
+      });
+    }
+
     const outcome = await waitForWalletFundingConfirmation({
       paymentReference,
       listTransactions: (query) => listTransactions(query, { silent: true }),
-      onPoll: () => {
-        emit('refresh');
-      },
+      intervalMs: 800,
+      maxAttempts: 20,
     });
-
-    emit('refresh');
 
     if (outcome === 'successful') {
       toast.success('Wallet funded successfully');
       resetForm();
-      emit('funded', paymentReference);
+      emit('funded');
       emit('update:open', false);
       return;
     }
@@ -157,10 +154,11 @@ async function confirmFunding(paymentReference: string, numericAmount: number) {
         ? 'Payment recorded. If your balance is still ₦0, restart legacy-api and try again, or configure Paystack webhooks to your local server.'
         : 'Payment received but confirmation is taking longer than expected. Your balance will update shortly — refresh this page in a moment.',
     );
-    emit('funded', paymentReference);
+    emit('funded');
     emit('update:open', false);
     resetForm();
   } finally {
+    toast.dismiss(processingToast);
     confirming.value = false;
   }
 }
@@ -195,7 +193,7 @@ async function continueWithPaystack() {
           transactionReference: reference,
         });
 
-        emit('refresh');
+        emit('funding-initiated');
         await confirmFunding(reference, numericAmount);
       },
     });
@@ -239,7 +237,6 @@ function onContinueWithSelectedMethod() {
 function onTransferDone() {
   transferDialogOpen.value = false;
   resetForm();
-  emit('refresh');
   toast.message('When your transfer is confirmed, your wallet balance will update automatically.');
 }
 
@@ -269,7 +266,7 @@ watch(transferDialogOpen, (isOpen) => {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
-          <DialogTitle class="text-[24px] font-semibold text-grey-900">
+          <DialogTitle>
             {{ step === 'amount' ? 'Add money' : 'How would you like to pay?' }}
           </DialogTitle>
           <DialogDescription v-if="step === 'method'" class="text-[12px] leading-5 text-grey-text">
@@ -384,19 +381,19 @@ watch(transferDialogOpen, (isOpen) => {
 
       <DialogFooter class="gap-2">
         <template v-if="step === 'amount'">
-          <Button variant="neutral" size="small" class="!w-auto" :disabled="isBusy" @click="closeAmountDialog">
+          <Button variant="neutral" size="medium" class="!w-auto" :disabled="isBusy" @click="closeAmountDialog">
             Cancel
           </Button>
-          <Button size="small" class="!w-auto" :disabled="isBusy" @click="continueToMethodStep">
+          <Button size="medium" class="!w-auto" :disabled="isBusy" @click="continueToMethodStep">
             Continue
           </Button>
         </template>
         <template v-else>
-          <Button variant="neutral" size="small" class="!w-auto" :disabled="isBusy" @click="backToAmountStep">
+          <Button variant="neutral" size="medium" class="!w-auto" :disabled="isBusy" @click="backToAmountStep">
             Back
           </Button>
           <Button
-            size="small"
+            size="medium"
             class="!w-auto"
             :disabled="isBusy || !selectedMethod || (selectedMethod === 'transfer' && !transferAvailable)"
             @click="onContinueWithSelectedMethod"
