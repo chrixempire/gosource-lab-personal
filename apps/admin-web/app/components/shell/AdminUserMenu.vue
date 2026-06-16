@@ -65,7 +65,6 @@ const roleLabel = computed(() => {
         size="md"
         :alt="fullName"
         :fallback="initials"
-        fallback-class="!bg-white !text-primary-600"
       />
       <template v-if="!compact">
         <div class="min-w-0 flex-1">

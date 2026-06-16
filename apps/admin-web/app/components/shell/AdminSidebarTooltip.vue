@@ -15,7 +15,7 @@ const props = defineProps<{
     <TooltipContent
       side="right"
       :side-offset="12"
-      class="border-[#345B46] bg-[#1F4031] text-white shadow-lg"
+      class="border-admin-nav-active bg-admin-nav-bg text-white shadow-lg"
     >
       <span class="whitespace-nowrap">{{ props.label }}</span>
     </TooltipContent>

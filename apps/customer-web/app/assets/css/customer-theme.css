@@ -208,8 +208,8 @@ html.customer-theme-switching *::after {
   }
 
   /* Overlays product photos — keep solid contrast in dark mode too. */
-  .customer-image-discount-badge {
-    @apply border-2 border-white bg-primary-500 text-white shadow-[0_4px_12px_rgba(16,24,40,0.22)];
+  .customer-image-discount-ribbon {
+    filter: drop-shadow(0 2px 6px rgba(16, 24, 40, 0.18));
   }
 
   .customer-image-discount-pill {
