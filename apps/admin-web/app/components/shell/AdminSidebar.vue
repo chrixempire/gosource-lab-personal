@@ -16,8 +16,6 @@ import { filterAdminNavByCapabilities } from '~/lib/admin-permissions';
 import { useAdminCapabilities } from '~/composables/useAdminCapabilities';
 import { useAdminSession } from '~/composables/useAdminSession';
 
-const ADMIN_SIDEBAR_BG = '#1F4031';
-
 const props = defineProps<{
   expanded: boolean;
 }>();
@@ -111,9 +109,8 @@ watch(
 
 <template>
   <aside
-    class="flex h-full shrink-0 flex-col overflow-hidden text-white transition-[width] duration-300 ease-in-out"
+    class="flex h-full shrink-0 flex-col overflow-hidden bg-admin-nav-bg text-white transition-[width] duration-300 ease-in-out"
     :class="expanded ? 'w-full lg:w-[232px]' : 'w-[68px]'"
-    :style="{ backgroundColor: ADMIN_SIDEBAR_BG }"
   >
     <div
       :class="[

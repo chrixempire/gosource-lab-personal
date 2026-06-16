@@ -103,7 +103,7 @@ async function confirmLogout() {
 <template>
   <TooltipProvider :delay-duration="200">
   <SidebarProvider v-model:open="sidebarExpanded">
-    <div class="flex h-[100dvh] max-h-[100dvh] min-h-0 gap-0 overflow-hidden bg-[#1F4031] p-0 lg:gap-3 lg:p-3">
+    <div class="flex h-[100dvh] max-h-[100dvh] min-h-0 gap-0 overflow-hidden bg-admin-nav-bg p-0 lg:gap-3 lg:p-3">
       <div v-if="isDesktopViewport" class="hidden shrink-0 lg:flex">
         <AdminSidebar
           :expanded="sidebarExpanded"

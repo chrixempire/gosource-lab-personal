@@ -8,6 +8,11 @@
   --color-primary-600: #0f5c18;
   --color-primary-700: #0b3d12;
   --color-primary-800: #0b3d12;
+  /* gosource-admin-v2 sidebar palette (`background-nav-bg` / `nav-active`) */
+  --color-admin-nav-bg: #0c1b0d;
+  --color-admin-nav-active: #244226;
+  --color-admin-nav-text: #cedfd4;
+  --color-admin-nav-icon: #99ad99;
 }
 
 :root {
@@ -21,4 +26,10 @@
   --brand-green-soft: #e8f3ea;
   --border-input-active: #0f5c18;
   --sidebar-primary: #0f5c18;
+  --dark-green-300: #0c1b0d;
+  --dark-green-100: #244226;
+  --dark-green-00: #cedfd4;
+  --dark-green-50: #99ad99;
+  --background-nav-bg: var(--dark-green-300);
+  --admin-nav-bg: var(--dark-green-300);
 }

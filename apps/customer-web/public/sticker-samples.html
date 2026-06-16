@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Promotion sticker samples — GoSource</title>
+    <style>
+      :root {
+        --green: #09420c;
+        --grey-50: #f9fafb;
+        --grey-100: #f0f2f5;
+        --grey-500: #667185;
+        --grey-900: #101928;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background: #eef1f4;
+        color: var(--grey-900);
+      }
+
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: 600;
+      }
+
+      .lead {
+        margin: 0 0 28px;
+        color: var(--grey-500);
+        line-height: 1.5;
+        max-width: 760px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+      }
+
+      .sample {
+        background: #fff;
+        border: 1px solid #e4e7ec;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .sample-head {
+        padding: 12px 14px 0;
+      }
+
+      .sample-head h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .sample-head p {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: var(--grey-500);
+      }
+
+      .product {
+        position: relative;
+        margin: 14px;
+        aspect-ratio: 1.12 / 1;
+        border-radius: 8px;
+        background: var(--grey-100);
+        overflow: hidden;
+      }
+
+      .product-box {
+        position: absolute;
+        inset: 18% 14% 24%;
+        border-radius: 6px;
+        background: #fff;
+        border: 1px solid #e4e7ec;
+      }
+
+      .sticker-wrap {
+        position: absolute;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .sticker-wrap img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .sticker-text {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #fff;
+        font-weight: 700;
+        line-height: 1;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+      }
+
+      .sticker-text.single-line {
+        flex-direction: row;
+        gap: 4px;
+        font-size: 11px;
+        letter-spacing: 0.2px;
+      }
+
+      .sticker-text .pct {
+        font-size: 15px;
+      }
+
+      .sticker-text .off {
+        margin-top: 2px;
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      /* placement presets */
+      .pos-tr {
+        right: 6px;
+        top: 6px;
+        width: 58px;
+        height: 58px;
+      }
+
+      .pos-tr-wide {
+        right: 6px;
+        top: 8px;
+        width: 72px;
+        height: 34px;
+      }
+
+      .pos-tr-ribbon {
+        right: 0;
+        top: 0;
+        width: 64px;
+        height: 64px;
+      }
+
+      .pos-tr-star {
+        right: 4px;
+        top: 4px;
+        width: 62px;
+        height: 62px;
+      }
+
+      .pos-tr-tag {
+        right: 8px;
+        top: 8px;
+        width: 68px;
+        height: 52px;
+      }
+
+      .pos-tr-set {
+        right: 8px;
+        top: 8px;
+        width: 56px;
+        height: 56px;
+      }
+
+      .ribbon-text {
+        transform: rotate(45deg) translate(8px, -4px);
+        font-size: 9px;
+      }
+
+      .note {
+        margin-top: 28px;
+        padding: 14px 16px;
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #e4e7ec;
+        font-size: 13px;
+        color: var(--grey-500);
+        line-height: 1.55;
+      }
+
+      code {
+        font-size: 12px;
+        background: var(--grey-100);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Promotion sticker samples</h1>
+      <p class="lead">
+        Blank sticker PNGs with <strong>12% Off</strong> text composited on top — same approach
+        you’d use in <code>ExploreProductCard</code>. Online set from
+        <a href="https://www.vecteezy.com/png/11909104-blank-flat-sale-badge-label-set" target="_blank" rel="noreferrer">Vecteezy</a>;
+        green shapes are blank templates for GoSource primary green.
+      </p>
+
+      <div class="grid" id="samples"></div>
+
+      <div class="note">
+        Open while customer-web is running:
+        <code>http://localhost:3000/sticker-samples.html</code> (port may differ). Tell me the
+        sample name you prefer (e.g. <strong>online-set-4</strong> or <strong>sticker-circle-green</strong>)
+        and I’ll wire it into the product card.
+      </div>
+    </main>
+
+    <script>
+      const samples = [
+        { id: "online-set-1", name: "Online #1 — round seal", source: "Vecteezy set", pos: "pos-tr-set" },
+        { id: "online-set-2", name: "Online #2 — ribbon tag", source: "Vecteezy set", pos: "pos-tr-set" },
+        { id: "online-set-3", name: "Online #3 — burst", source: "Vecteezy set", pos: "pos-tr-set" },
+        { id: "online-set-4", name: "Online #4 — circle badge", source: "Vecteezy set", pos: "pos-tr-set" },
+        { id: "online-set-5", name: "Online #5 — mini tag", source: "Vecteezy set", pos: "pos-tr-set" },
+        { id: "online-set-6", name: "Online #6 — scallop", source: "Vecteezy set", pos: "pos-tr-set" },
+        { id: "online-set-7", name: "Online #7 — ticket", source: "Vecteezy set", pos: "pos-tr-set" },
+        { id: "online-set-8", name: "Online #8 — hex seal", source: "Vecteezy set", pos: "pos-tr-set" },
+        { id: "online-set-9", name: "Online #9 — banner", source: "Vecteezy set", pos: "pos-tr-wide" },
+        { id: "sticker-circle-green", name: "Green circle", source: "Blank template", pos: "pos-tr" },
+        { id: "sticker-starburst-green", name: "Green starburst", source: "Blank template", pos: "pos-tr-star" },
+        { id: "sticker-ribbon-corner", name: "Green corner ribbon", source: "Blank template", pos: "pos-tr-ribbon", ribbon: true },
+        { id: "sticker-pill-green", name: "Green pill", source: "Blank template", pos: "pos-tr-wide", single: true },
+        { id: "sticker-price-tag-green", name: "Green price tag", source: "Blank template", pos: "pos-tr-tag" },
+      ];
+
+      const root = document.getElementById("samples");
+
+      for (const sample of samples) {
+        const card = document.createElement("article");
+        card.className = "sample";
+        card.innerHTML = `
+          <div class="sample-head">
+            <h2>${sample.name}</h2>
+            <p>${sample.source}</p>
+          </div>
+          <div class="product">
+            <div class="product-box"></div>
+            <div class="sticker-wrap ${sample.pos}">
+              <img src="/images/sticker-samples/${sample.id}.png" alt="${sample.name}" />
+              <div class="sticker-text ${sample.single ? "single-line" : ""} ${sample.ribbon ? "ribbon-text" : ""}">
+                ${
+                  sample.single
+                    ? `<span>12% OFF</span>`
+                    : `<span class="pct">12%</span><span class="off">Off</span>`
+                }
+              </div>
+            </div>
+          </div>
+        `;
+        root.appendChild(card);
+      }
+    </script>
+  </body>
+</html>

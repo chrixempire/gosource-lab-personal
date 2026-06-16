@@ -48,7 +48,7 @@ onUnmounted(() => {
         />
 
         <aside
-          class="admin-mobile-nav-panel absolute inset-y-0 left-0 z-10 flex w-[70vw] max-w-[20rem] flex-col bg-[#1F4031] shadow-[24px_0_64px_-24px_rgba(16,24,40,0.32)]"
+          class="admin-mobile-nav-panel absolute inset-y-0 left-0 z-10 flex w-[70vw] max-w-[20rem] flex-col bg-admin-nav-bg shadow-[24px_0_64px_-24px_rgba(16,24,40,0.32)]"
         >
           <AdminSidebar
             expanded
