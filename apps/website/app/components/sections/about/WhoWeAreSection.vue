@@ -7,11 +7,11 @@
     <div class="site-container flex flex-col gap-12 lg:gap-20">
       <div v-reveal class="flex flex-col gap-8">
         <span class="text-lg font-semibold tracking-[0.02em] text-orange-500">Who we are</span>
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
-          <h2 class="max-w-[32.125rem] text-h1 text-grey-900">
+        <div class="flex max-w-[32.125rem] flex-col gap-2">
+          <h2 class="text-h1 text-grey-900">
             Simplifying food sourcing for business and households
           </h2>
-          <p class="max-w-[28.6875rem] text-base leading-6 tracking-[0.00625em] text-grey-700 lg:pt-1">
+          <p class="text-base leading-6 tracking-[0.00625em] text-grey-700">
             GoSource is a Nigerian foodtech company making bulk food sourcing
             easier for businesses and homes. Founded by industry experts in 2024,
             we blend local market insight with smart technology to eliminate the

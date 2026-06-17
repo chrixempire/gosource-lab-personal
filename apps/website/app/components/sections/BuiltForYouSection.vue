@@ -22,7 +22,7 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
           </p>
         </div>
 
-        <AppButton variant="primary" size="sm" :href="CUSTOMER_REGISTER_URL">
+        <AppButton variant="primary" size="lg" class="w-fit" :href="CUSTOMER_REGISTER_URL">
           Try GoSource now
           <Icon name="lucide:chevron-right" class="size-5 transition-transform group-hover:translate-x-0.5" />
         </AppButton>

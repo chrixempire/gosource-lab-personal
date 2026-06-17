@@ -1,11 +1,4 @@
 <script setup lang="ts">
-withDefaults(
-  defineProps<{
-    variant?: 'marquee' | 'about';
-  }>(),
-  { variant: 'marquee' },
-);
-
 const logos = [
   { src: '/images/partners/papas-grill.png', name: "Papa's Grill" },
   { src: '/images/partners/wings-bistro.png', name: 'Wings Bistro' },
@@ -29,23 +22,7 @@ const aboutQuote =
         Trusted by 50+ businesses across Nigeria
       </h2>
 
-      <!-- About page — static logo row -->
-      <div
-        v-if="variant === 'about'"
-        v-reveal="120"
-        class="flex w-full flex-wrap items-center justify-center gap-x-8 gap-y-6 sm:justify-between lg:gap-x-10"
-      >
-        <img
-          v-for="logo in logos"
-          :key="logo.name"
-          :src="logo.src"
-          :alt="logo.name"
-          loading="lazy"
-          class="h-9 w-auto max-w-[7rem] shrink-0 object-contain opacity-90 transition duration-300 hover:opacity-100 sm:h-10 lg:h-14"
-        />
-      </div>
-
-      <div v-else v-reveal="120" class="w-full">
+      <div v-reveal="120" class="w-full">
         <div class="hmask marquee-hover-pause w-full overflow-hidden">
           <div class="flex w-max animate-hscroll items-center will-change-transform">
             <img
