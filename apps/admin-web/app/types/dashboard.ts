@@ -31,10 +31,12 @@ export type DashboardSummaryResponse = {
   totalOrdersAmount: number;
   activeCustomers: number;
   inactiveCustomers: number;
+  purchaseOrderSpend: number;
   permissions?: {
     orders?: boolean;
     activeCustomers?: boolean;
     inactiveCustomers?: boolean;
+    purchaseOrders?: boolean;
   };
 };
 

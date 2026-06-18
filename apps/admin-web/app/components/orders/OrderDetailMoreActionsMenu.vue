@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@gosource/ui';
 import { ChevronDown, ChevronRight, Download } from 'lucide-vue-next';
-import { ORDER_STATUS_OPTIONS } from '~/lib/order-constants';
+import { ORDER_STATUS_CHANGE_OPTIONS } from '~/lib/order-constants';
 import type { OrderStatus } from '~/types/orders';
 
 defineProps<{
@@ -20,9 +20,7 @@ defineProps<{
   invoiceLoading?: boolean;
 }>();
 
-const changeStatusOptions = ORDER_STATUS_OPTIONS.filter(
-  (option) => option.value !== 'cancelled',
-);
+const changeStatusOptions = ORDER_STATUS_CHANGE_OPTIONS;
 
 const emit = defineEmits<{
   downloadInvoice: [];

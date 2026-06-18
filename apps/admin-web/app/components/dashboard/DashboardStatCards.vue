@@ -31,13 +31,20 @@ const hasOrderMetrics = computed(() => data.value?.permissions?.orders ?? Boolea
 const hasActiveCustomers = computed(
   () => data.value?.permissions?.activeCustomers ?? Boolean(data.value),
 );
+const hasPurchaseOrderSpend = computed(
+  () => data.value?.permissions?.purchaseOrders ?? Boolean(data.value),
+);
 
+const purchaseOrderSpendLabel = 'Purchase order spend (this month)';
 </script>
 
 <template>
-  <section v-if="showSkeleton" class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+  <section
+    v-if="showSkeleton"
+    class="grid grid-cols-2 items-start gap-4 xl:grid-cols-4"
+  >
     <DashboardStatCardSkeleton
-      v-for="index in 4"
+      v-for="index in 5"
       :key="index"
       class="w-full min-w-0"
     />
@@ -52,7 +59,7 @@ const hasActiveCustomers = computed(
     @retry="refresh()"
   />
 
-  <section v-else class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+  <section v-else class="grid grid-cols-2 items-start gap-4 xl:grid-cols-4">
     <DashboardStatCard
       v-if="hasOrderMetrics"
       label="Total orders"
@@ -100,8 +107,23 @@ const hasActiveCustomers = computed(
     <DashboardStatCard
       label="Inactive customers"
       :value="formatDashboardNumber(data?.inactiveCustomers ?? 0)"
-      hint="Overall account status"
+      inline-hint="Overall account status"
       indicator-color="bg-red-500"
+      class="w-full min-w-0"
+    />
+
+    <DashboardStatCard
+      v-if="hasPurchaseOrderSpend"
+      :label="purchaseOrderSpendLabel"
+      :value="formatDashboardCurrency(data?.purchaseOrderSpend ?? 0)"
+      hint="Items + logistics for the current month"
+      class="w-full min-w-0"
+    />
+    <DashboardStatCard
+      v-else
+      :label="purchaseOrderSpendLabel"
+      value="—"
+      hint="Requires purchase order view permission"
       class="w-full min-w-0"
     />
   </section>

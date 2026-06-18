@@ -5,6 +5,8 @@ const props = defineProps<{
   label: string;
   value: string;
   hint?: string;
+  /** Shown in brackets beside the value, 4px gap (e.g. `0 (Overall account status)`). */
+  inlineHint?: string;
   active?: boolean;
   class?: string;
 }>();
@@ -23,8 +25,13 @@ const props = defineProps<{
     <p class="text-sm font-medium text-grey-300">
       <slot name="label">{{ label }}</slot>
     </p>
-    <p class="mt-3.5 text-2xl font-semibold text-grey-900">{{ value }}</p>
-    <p v-if="hint" class="mt-1 text-xs text-grey-300">{{ hint }}</p>
+    <div class="mt-3.5 flex items-baseline gap-1">
+      <span class="text-2xl font-semibold text-grey-900">{{ value }}</span>
+      <span v-if="inlineHint" class="text-xs font-normal text-grey-300">
+        ({{ inlineHint }})
+      </span>
+    </div>
+    <p v-if="hint && !inlineHint" class="mt-1 text-xs text-grey-300">{{ hint }}</p>
     <slot />
   </article>
 </template>

@@ -44,6 +44,20 @@ export const ORDER_STATUS_OPTIONS: Array<{
   { value: 'cancelled', label: 'Cancelled', tagVariant: 'negative' },
 ];
 
+/** Statuses that cannot be set via update-order-status (derived or terminal). */
+export const ORDER_STATUSES_NOT_MANUALLY_SETTABLE = [
+  'cancelled',
+  'pending',
+  'partially_delivered',
+] as const;
+
+export const ORDER_STATUS_CHANGE_OPTIONS = ORDER_STATUS_OPTIONS.filter(
+  (option) =>
+    !ORDER_STATUSES_NOT_MANUALLY_SETTABLE.includes(
+      option.value as (typeof ORDER_STATUSES_NOT_MANUALLY_SETTABLE)[number],
+    ),
+);
+
 export const ORDER_QUICK_STATUS_FILTERS = [
   { key: 'pending', label: 'Pending orders' },
   { key: 'processing', label: 'Processing orders' },
