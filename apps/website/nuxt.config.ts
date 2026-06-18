@@ -17,6 +17,12 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  runtimeConfig: {
+    public: {
+      apiUrl: process.env.NUXT_PUBLIC_API_URL ?? 'https://gosource-api-v2-g7clw.ondigitalocean.app/v2',
+    },
+  },
+
   app: {
     head: {
       htmlAttrs: { lang: 'en' },

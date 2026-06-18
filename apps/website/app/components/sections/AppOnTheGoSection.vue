@@ -29,12 +29,7 @@ const categories = [
           GoSource at your fingertips, managing food supplies has never been
           easier.
           <template #actions>
-            <AppButton variant="primary" size="lg" href="#">
-              <Icon name="lucide:apple" class="size-5" />
-              <span class="h-4 w-px bg-white/40" />
-              <Icon name="lucide:smartphone" class="size-5" />
-              <span class="ml-1">Download app</span>
-            </AppButton>
+            <AppStoreBadges />
           </template>
         </SectionHeading>
 
