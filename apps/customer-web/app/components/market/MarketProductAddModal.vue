@@ -4,7 +4,7 @@
 -->
 <script setup lang="ts">
 import type { MarketProduct } from '~/lib/marketplace-data';
-import { effectiveUnitChoices, getMarketUnitChoice, isMarketProductInStock } from '~/lib/marketplace-data';
+import { effectiveUnitChoices, getMarketUnitChoice, hasUnitSalePrice, isMarketProductInStock } from '~/lib/marketplace-data';
 import {
   Button,
   Dialog,
@@ -206,11 +206,11 @@ const detailText = computed(() => props.product?.longDescription ?? props.produc
                       ]"
                     >
                       <span v-if="opt!.measure">1{{ opt!.measure }} = </span>
-                      <span :class="{ 'line-through text-grey-300': opt!.discountedPriceNaira }">
+                      <span :class="{ 'line-through text-grey-300': hasUnitSalePrice(opt!) }">
                         {{ formatNaira(opt!.priceNaira) }}
                       </span>
-                      <span v-if="opt!.discountedPriceNaira" class="ml-1 text-red-500">
-                        {{ formatNaira(opt!.discountedPriceNaira) }}
+                      <span v-if="hasUnitSalePrice(opt!)" class="ml-1 text-red-500">
+                        {{ formatNaira(opt!.discountedPriceNaira!) }}
                       </span>
                     </span>
                   </label>

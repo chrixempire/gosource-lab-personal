@@ -4,6 +4,7 @@ import type { MarketProduct } from '~/lib/marketplace-data';
 import {
   effectiveUnitChoices,
   getMarketUnitChoice,
+  hasUnitSalePrice,
   isMarketProductInStock,
 } from '~/lib/marketplace-data';
 import {
@@ -269,14 +270,14 @@ onUnmounted(() => {
                   </span>
                   <span class="shrink-0 text-right text-[13px] font-semibold tabular-nums">
                     <span
-                      v-if="opt!.discountedPriceNaira"
+                      v-if="hasUnitSalePrice(opt!)"
                       class="text-grey-300 line-through"
                     >
                       {{ formatNaira(opt!.priceNaira) }}
                     </span>
                     <span
                       :class="[
-                        opt!.discountedPriceNaira ? 'ml-1.5' : '',
+                        hasUnitSalePrice(opt!) ? 'ml-1.5' : '',
                         selectedUnit === opt!.name
                           ? 'text-primary-600'
                           : 'text-grey-900',
@@ -284,7 +285,9 @@ onUnmounted(() => {
                     >
                       {{
                         formatNaira(
-                          opt!.discountedPriceNaira ?? opt!.priceNaira,
+                          hasUnitSalePrice(opt!)
+                            ? opt!.discountedPriceNaira!
+                            : opt!.priceNaira,
                         )
                       }}
                     </span>
