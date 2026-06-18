@@ -120,11 +120,30 @@ export function useOrderMutations() {
     }
   }
 
+  async function markProductsDelivered(orderId: string, cartIds: string[]) {
+    updatingOrderId.value = orderId;
+    try {
+      await $fetch(`/api/orders/${orderId}/mark-delivered-products`, {
+        method: 'PATCH',
+        body: { cartIds },
+      });
+      toast.success('Products marked as delivered');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to mark products as delivered';
+      toast.error(message);
+      throw error;
+    } finally {
+      updatingOrderId.value = null;
+    }
+  }
+
   return {
     updatingOrderId,
     updateOrderStatus,
     updatePaymentStatus,
     cancelOrder,
+    markProductsDelivered,
     loadOrderInvoicePreview,
     buildOrderInvoicePreviewFromRaw,
     downloadOrderInvoice,

@@ -309,6 +309,18 @@ function goBackFromCheckout() {
   void navigateTo('/market');
 }
 
+function goBackToRequests() {
+  invalidateManageRequestsListCache();
+  void navigateTo('/manage-requests', { replace: true });
+}
+
+function handleSuccessDialogOpenChange(value: boolean) {
+  successDialogOpen.value = value;
+  if (!value) {
+    goBackToRequests();
+  }
+}
+
 async function downloadApprovedInvoice() {
   if (!approvedOrderId.value) {
     toast.error('Invoice is not available yet.');
@@ -496,8 +508,7 @@ watch(requestId, () => {
       :open="successDialogOpen"
       :reference="approvedRequest?.reference ?? request?.reference ?? ''"
       :download-invoice-loading="downloadingInvoice"
-      @update:open="successDialogOpen = $event"
-      @close="goBackToRequests"
+      @update:open="handleSuccessDialogOpenChange"
       @download-invoice="downloadApprovedInvoice"
       @track-order="trackApprovedOrder"
     />

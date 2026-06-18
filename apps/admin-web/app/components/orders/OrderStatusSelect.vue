@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { StatusTagSelect } from '@gosource/ui';
-import { ORDER_STATUS_OPTIONS } from '~/lib/order-constants';
+import { ORDER_STATUS_CHANGE_OPTIONS } from '~/lib/order-constants';
 import { getOrderStatusVariant } from '~/lib/order-details';
 import type { OrderStatus } from '~/types/orders';
 
@@ -21,7 +21,7 @@ const emit = defineEmits<{
     :value="status"
     :label="statusLabel"
     :variant="getOrderStatusVariant(status)"
-    :options="ORDER_STATUS_OPTIONS"
+    :options="ORDER_STATUS_CHANGE_OPTIONS"
     :disabled="disabled"
     @change="emit('change', $event as OrderStatus)"
   />

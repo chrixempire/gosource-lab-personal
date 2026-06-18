@@ -154,7 +154,19 @@ export type AdminOrderLineItem = {
   unit: string;
   lineTotal: number;
   lineTotalLabel: string;
+  status: string;
+  isDelivered: boolean;
+  statusLabel: string;
+  statusVariant: 'success' | 'warning';
 };
+
+export function getLineItemStatusDisplay(item: Pick<AdminOrderLineItem, 'status' | 'isDelivered'>) {
+  if (item.isDelivered || item.status.trim().toLowerCase() === 'delivered') {
+    return { label: 'Delivered', variant: 'success' as const };
+  }
+
+  return { label: 'Pending', variant: 'warning' as const };
+}
 
 export type AdminOrderTimelineEvent = {
   id: string;
@@ -231,16 +243,24 @@ export function mapLegacyOrderLineItems(order: Record<string, unknown>): AdminOr
       quantity: Number(line.quantity ?? 0),
       unit,
       lineTotal,
+      status: String(line.status ?? ''),
+      isDelivered: String(line.status ?? '').toLowerCase() === 'delivered',
     };
   });
 
   const fallbackSubtotal = resolveOrderSubtotal(order, rawLines);
   const pricedLines = applySubtotalFallbackToOrderLines(rawLines, fallbackSubtotal);
 
-  return pricedLines.map((line) => ({
-    ...line,
-    lineTotalLabel: formatDashboardCurrency(line.lineTotal),
-  }));
+  return pricedLines.map((line) => {
+    const statusDisplay = getLineItemStatusDisplay(line);
+
+    return {
+      ...line,
+      lineTotalLabel: formatDashboardCurrency(line.lineTotal),
+      statusLabel: statusDisplay.label,
+      statusVariant: statusDisplay.variant,
+    };
+  });
 }
 
 export function mapLegacyOrderTimeline(order: Record<string, unknown>): AdminOrderTimelineEvent[] {

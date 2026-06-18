@@ -186,6 +186,7 @@ useHead({
         :order-id="orderId"
         :payment-status-updating="updatingOrderId === orderId"
         @update-payment-status="onUpdatePaymentStatus"
+        @line-items-updated="refresh()"
       />
 
       <div class="flex flex-col items-stretch gap-4 lg:flex-row">
