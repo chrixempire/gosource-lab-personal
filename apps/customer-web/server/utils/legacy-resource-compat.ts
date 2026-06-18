@@ -401,22 +401,39 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
           : undefined,
     };
   });
-  const effectiveUnitPrices = unitChoices?.map(
+  const listUnitPrices = unitChoices?.map((choice) => choice.priceNaira) ?? [];
+  const saleUnitPrices = unitChoices?.map(
     (choice) => choice.discountedPriceNaira ?? choice.priceNaira,
-  );
-  const effectivePrice =
-    effectiveUnitPrices?.length
-      ? Math.min(...effectiveUnitPrices)
-      : [discountPrice, actualPrice, marketPrice, totalPrice].find((price) => price > 0) ?? 0;
+  ) ?? [];
+
+  // Product card price (reference ProductCard): v2 uses list-unit min; v1 uses discountPrice || totalPrice.
+  const cardPrice =
+    listUnitPrices.length > 0
+      ? Math.min(...listUnitPrices)
+      : discountPrice > 0
+        ? discountPrice
+        : totalPrice > 0
+          ? totalPrice
+          : actualPrice > 0
+            ? actualPrice
+            : marketPrice > 0
+              ? marketPrice
+              : 0;
+
+  const saleMin = saleUnitPrices.length > 0 ? Math.min(...saleUnitPrices) : cardPrice;
+  const listMin = listUnitPrices.length > 0 ? Math.min(...listUnitPrices) : undefined;
+
+  // Compare-at is for walk-in savings / badges only — not shown on product cards.
   const compareAtNaira =
-    unitChoices?.length
-      ? Math.min(...unitChoices.map((choice) => choice.priceNaira))
-      : actualPrice > 0 && actualPrice > effectivePrice
+    listMin !== undefined && listMin > saleMin
+      ? listMin
+      : listMin === undefined && actualPrice > 0 && actualPrice > cardPrice
         ? actualPrice
         : undefined;
+
   const discountPct =
-    compareAtNaira && compareAtNaira > effectivePrice
-      ? Math.round(((compareAtNaira - effectivePrice) / compareAtNaira) * 100)
+    compareAtNaira !== undefined && compareAtNaira > cardPrice
+      ? Math.round(((compareAtNaira - cardPrice) / compareAtNaira) * 100)
       : undefined;
   const rawUnit = toStringValue(product.unit);
   const unit =
@@ -448,6 +465,8 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
         }
       : undefined;
 
+  const defaultUnitListPrice = unitChoices?.[0]?.priceNaira ?? cardPrice;
+
   return {
     id: toStringValue(product._id) || toStringValue(product.id),
     name,
@@ -455,7 +474,7 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
     imageUrl: firstImageUrl(product.images),
     longDescription: toStringValue(product.description) || undefined,
     brandLabel: toNullableString(product.brand) ?? undefined,
-    priceNaira: effectivePrice,
+    priceNaira: cardPrice,
     compareAtNaira,
     discountPct,
     promotion,
@@ -469,7 +488,7 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
         : toBoolean(product.isLowStock)
           ? 'Low stock'
           : 'Many in stock',
-    unitPriceBadge: unit ? `${unit} = ₦${effectivePrice.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined,
+    unitPriceBadge: unit ? `${unit} = ₦${defaultUnitListPrice.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined,
     categoryId: categoryId || undefined,
     categoryName: categoryName || undefined,
   } as MarketProduct & { categoryId?: string; categoryName?: string };

@@ -114,7 +114,7 @@ async function onAdd(e: MouseEvent) {
   <article
     data-testid="explore-product-card"
     :class="[
-      `flex h-full min-w-0 flex-col overflow-hidden ${props.roundedClass} border bg-background-on-canvas transition-[transform,border-color,background-color] duration-300 ease-out hover:-translate-y-1`,
+      `flex h-full min-w-0 flex-col overflow-hidden text-left ${props.roundedClass} border bg-background-on-canvas transition-[transform,border-color,background-color] duration-300 ease-out hover:-translate-y-1`,
       inCartHighlight
         ? 'border-2 border-primary-500 bg-primary-50/40 dark:border-primary-500/50 dark:bg-primary-500/12'
         : 'border border-grey-50 hover:border-primary-500/35 dark:hover:border-primary-500/25',
@@ -151,28 +151,28 @@ async function onAdd(e: MouseEvent) {
         </span>
       </div>
 
-      <div class="flex flex-1 flex-col gap-1.5 px-3 pb-2.5 pt-2.5">
+      <div class="flex w-full flex-1 flex-col items-start gap-1.5 px-3 pb-2.5 pt-2.5">
         <h3
-          class="line-clamp-2 text-[14px] font-medium leading-snug text-grey-900"
+          class="w-full line-clamp-2 text-left text-[14px] font-medium leading-snug text-grey-900"
         >
           {{ product.name }}
         </h3>
 
-        <div class="mt-auto space-y-1">
-          <div class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+        <div class="mt-auto w-full space-y-1">
+          <div class="flex w-full flex-wrap items-center justify-start gap-x-1.5 gap-y-1">
+            <span
+              v-if="multi"
+              class="text-[11px] font-semibold leading-none text-negative-500"
+            >
+              From
+            </span>
             <span
               class="text-[15px] font-bold tabular-nums leading-tight text-grey-900"
             >
               {{ formatNaira(product.priceNaira) }}
             </span>
-            <span
-              v-if="product.compareAtNaira"
-              class="text-[12px] tabular-nums text-grey-300 line-through"
-            >
-              {{ formatNaira(product.compareAtNaira) }}
-            </span>
           </div>
-          <p v-if="unitLine" class="line-clamp-1 text-[11px] text-grey-300">
+          <p v-if="unitLine" class="w-full line-clamp-1 text-left text-[11px] text-grey-300">
             {{ unitLine }}
           </p>
         </div>
@@ -181,12 +181,12 @@ async function onAdd(e: MouseEvent) {
 
     <div class="w-full shrink-0 border-t border-grey-50" role="presentation" />
 
-    <div class="flex justify-center px-3 pb-2.5 pt-2.5" @click.stop>
+    <div class="w-full shrink-0 px-3 pb-2.5 pt-2.5" @click.stop>
       <Button
         v-if="!inStock"
         size="small"
         variant="destructive"
-        class="!h-9 !max-w-full !rounded-full !px-3 !text-xs !font-semibold"
+        class="!h-9 !w-full !max-w-full !rounded-full !px-3 !text-xs !font-semibold"
         type="button"
         disabled
       >
@@ -196,14 +196,14 @@ async function onAdd(e: MouseEvent) {
       <Button
         v-else-if="showAddButton"
         size="small"
-        class="!h-9 !max-w-full !rounded-full !px-3 !text-sm !font-semibold shadow-[0_8px_18px_-10px_rgba(4,85,11,0.58)] dark:shadow-none"
+        class="!h-9 !w-full !max-w-full !rounded-full !px-3 !text-sm !font-semibold shadow-[0_8px_18px_-10px_rgba(4,85,11,0.58)] dark:shadow-none"
         type="button"
         @click="onAdd"
       >
         + Add
       </Button>
 
-      <div v-else-if="showQtyStrip" class="w-full max-w-full">
+      <div v-else-if="showQtyStrip" class="w-full">
         <MarketProductQtyStrip
           :product-id="product.id"
           :product="product"

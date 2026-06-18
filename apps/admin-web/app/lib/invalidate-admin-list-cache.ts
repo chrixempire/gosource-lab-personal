@@ -2,7 +2,12 @@ import { clearNuxtData } from 'nuxt/app';
 import { usePaginatedListCache } from '~/composables/usePaginatedListCache';
 import { useAdminSession } from '~/composables/useAdminSession';
 import { getAdminSessionCacheSignature } from '~/lib/admin-session-cache';
-import { ADMIN_LIST_CACHE_URLS } from '~/lib/admin-list-cache-urls';
+import { ADMIN_LIST_CACHE_KEY_ALIASES, ADMIN_LIST_CACHE_URLS } from '~/lib/admin-list-cache-urls';
+
+function adminListCacheNamespaces(url: string): string[] {
+  const aliases = ADMIN_LIST_CACHE_KEY_ALIASES[url as keyof typeof ADMIN_LIST_CACHE_KEY_ALIASES] ?? [];
+  return [url, ...aliases];
+}
 
 /**
  * Drop cached list payloads after a mutation so revisiting a list route
@@ -13,13 +18,22 @@ export function invalidateAdminListCache(url: string) {
     return;
   }
 
-  usePaginatedListCache(url).invalidateNamespace();
-
   const { session } = useAdminSession();
   const sessionSignature = getAdminSessionCacheSignature(session.value);
-  const scopedUrl = `${url}:${sessionSignature}`;
+  const namespaces = adminListCacheNamespaces(url);
 
-  clearNuxtData((key) => key === url || key === scopedUrl || key.startsWith(`${url}:`));
+  for (const namespace of namespaces) {
+    usePaginatedListCache(namespace).invalidateNamespace();
+  }
+
+  clearNuxtData((key) =>
+    namespaces.some(
+      (namespace) =>
+        key === namespace ||
+        key === `${namespace}:${sessionSignature}` ||
+        key.startsWith(`${namespace}:`),
+    ),
+  );
 }
 
 export function invalidateAdminListCaches(urls: readonly string[]) {

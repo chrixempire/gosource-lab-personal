@@ -5,6 +5,13 @@ export type MarketUnitChoice = {
   discountedPriceNaira?: number;
 };
 
+export function hasUnitSalePrice(choice: MarketUnitChoice): boolean {
+  return (
+    choice.discountedPriceNaira !== undefined &&
+    choice.discountedPriceNaira < choice.priceNaira
+  );
+}
+
 export type MarketProductPromotion = {
   discountValue: number;
   isPercentageDiscounted: boolean;
