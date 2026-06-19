@@ -3,7 +3,6 @@ import {
   ALL_BRANCHES_VALUE,
   branchFilterFromQueryParam,
   branchFilterToQueryParam,
-  resolvePageListBranchId,
 } from '~/lib/branch-picker';
 import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
@@ -53,7 +52,16 @@ export function usePageBranchFilter() {
       return undefined;
     }
 
-    return resolvePageListBranchId(viewBranchId.value, { allowAll: true });
+    if (viewingAllBranches.value) {
+      return undefined;
+    }
+
+    const trimmedBranchId = viewBranchId.value.trim();
+    if (trimmedBranchId) {
+      return trimmedBranchId;
+    }
+
+    return ctx.activeBranchId.value?.trim() || undefined;
   });
 
   function isKnownBranchId(branchId: string) {

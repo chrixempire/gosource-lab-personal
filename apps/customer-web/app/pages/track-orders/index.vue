@@ -150,7 +150,7 @@ const ordersListKeyParts = computed(() => [
   listFilters.value.amountMin ?? '',
   listFilters.value.amountMax ?? '',
   listFilters.value.status.join(','),
-  apiBranchId.value ?? '',
+  pageBranch.viewingAllBranches.value ? '__all__' : (apiBranchId.value ?? ''),
 ]);
 
 const {
@@ -220,7 +220,12 @@ const {
     },
 );
 
-const ordersLoading = computed(() => activeTab.value === 'orders' && ordersPending.value);
+const ordersLoading = computed(
+  () =>
+    activeTab.value === 'orders'
+    && ordersPending.value
+    && (orderItems.value.length === 0 || ordersStaleForBranchFilter.value),
+);
 const insightLoading = computed(() => activeTab.value === 'insight' && insightPending.value);
 
 const insightRows = computed(() => insightPayload.value?.rows ?? []);
@@ -273,6 +278,19 @@ const orders = computed(() =>
   Array.isArray(ordersPayload.value?.orders) ? ordersPayload.value.orders : [],
 );
 const meta = computed(() => ordersPayload.value?.meta ?? defaultMeta);
+
+const ordersStaleForBranchFilter = computed(() => {
+  if (pageBranch.viewingAllBranches.value) {
+    return false;
+  }
+
+  const filterBranchId = apiBranchId.value?.trim();
+  if (!filterBranchId || orders.value.length === 0) {
+    return false;
+  }
+
+  return orders.value.some((order) => order.branchId !== filterBranchId);
+});
 
 const orderItems = computed<OrderListItem[]>(() =>
   orders.value.map(mapOrderToListItem),

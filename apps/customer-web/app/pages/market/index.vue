@@ -143,9 +143,6 @@ const heroSessionLoading = computed(() => {
 let heroBootstrapPromise: Promise<void> | null = null;
 
 async function bootstrapExploreHeroGreeting() {
-  const minSkeletonMs = 280;
-  const startedAt = Date.now();
-
   await whenReady();
 
   if (!hasSession.value) {
@@ -154,14 +151,6 @@ async function bootstrapExploreHeroGreeting() {
   }
 
   await ensureBranchesLoaded();
-
-  const elapsed = Date.now() - startedAt;
-  if (elapsed < minSkeletonMs) {
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, minSkeletonMs - elapsed);
-    });
-  }
-
   heroGreetingReady.value = true;
 }
 

@@ -79,6 +79,25 @@ export async function usePaginatedListData<ResT, DataT = ResT>(
     const signatureAtStart = watchSignature.value;
     const response = await handler();
 
+    if (signatureAtStart !== watchSignature.value) {
+      const staleFallback = pageCacheEnabled
+        ? resolveListCachedData(watchSignature.value, pageCache)
+        : undefined;
+
+      if (staleFallback !== undefined) {
+        return staleFallback;
+      }
+
+      const defaultValue = rest.default;
+      if (typeof defaultValue === 'function') {
+        return defaultValue() as ResT;
+      }
+
+      if (defaultValue !== undefined) {
+        return defaultValue as ResT;
+      }
+    }
+
     if (pageCacheEnabled) {
       pageCache.set(signatureAtStart, response);
     }
@@ -99,10 +118,21 @@ export async function usePaginatedListData<ResT, DataT = ResT>(
   });
 
   if (import.meta.client && pageCacheEnabled) {
-    function hydrateFromPageCache(signature = watchSignature.value) {
+    function applyCacheForSignature(signature = watchSignature.value) {
       const cached = pageCache.get(signature);
       if (cached !== undefined) {
         result.data.value = cached as DataT;
+        return;
+      }
+
+      const defaultValue = rest.default;
+      if (typeof defaultValue === 'function') {
+        result.data.value = defaultValue() as DataT;
+        return;
+      }
+
+      if (defaultValue !== undefined) {
+        result.data.value = defaultValue as DataT;
       }
     }
 
@@ -116,7 +146,7 @@ export async function usePaginatedListData<ResT, DataT = ResT>(
         whenReady,
         getLastFetchedAt: () => pageCache.getFetchedAt(watchSignature.value),
         refresh: () => result.refresh(),
-        hydrate: () => hydrateFromPageCache(),
+        hydrate: () => applyCacheForSignature(),
       },
     );
 
@@ -125,7 +155,7 @@ export async function usePaginatedListData<ResT, DataT = ResT>(
         return;
       }
 
-      hydrateFromPageCache(newSignature);
+      applyCacheForSignature(newSignature);
     });
 
     watch(listCacheBaseKey, async (next, prev) => {
