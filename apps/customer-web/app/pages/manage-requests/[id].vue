@@ -509,29 +509,9 @@ function openRelatedRequest(item: RequestListItem) {
       </Button>
 
       <div
-        v-if="request && isEditingProducts && canEditProducts"
-        class="flex shrink-0 items-center gap-2"
+        v-if="request && !isEditingProducts"
+        class="flex items-center gap-2"
       >
-        <Button
-          variant="neutral"
-          size="small"
-          class="!w-auto"
-          :disabled="lineMutationLoading"
-          @click="finishEditingProducts(false)"
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          size="small"
-          class="!w-auto"
-          :loading="lineMutationLoading"
-          @click="finishEditingProducts(true)"
-        >
-          Save
-        </Button>
-      </div>
-      <div v-else-if="request" class="flex items-center gap-2">
         <Button
           v-if="canApproveOrReject"
           variant="primary"
@@ -564,16 +544,16 @@ function openRelatedRequest(item: RequestListItem) {
         <div
           v-for="index in 3"
           :key="index"
-          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-5 py-5"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-3 py-3"
         >
           <div class="h-3 w-24 animate-pulse rounded bg-grey-50" />
           <div class="mt-4 h-8 w-40 animate-pulse rounded bg-grey-50" />
         </div>
       </div>
-      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
         <RequestDetailsPanel :view="null" loading :format-currency="formatRequestCurrency" />
       </section>
-      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
         <RequestBranchRequestsSection
           branch-name=""
           :requests="[]"
@@ -588,7 +568,7 @@ function openRelatedRequest(item: RequestListItem) {
         <div
           v-for="card in summaryCards"
           :key="card.label"
-          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-5 py-5"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-3 py-3"
         >
           <p class="text-xs font-semibold uppercase tracking-[0.08em] text-grey-300">
             {{ card.label }}
@@ -599,7 +579,7 @@ function openRelatedRequest(item: RequestListItem) {
         </div>
       </div>
 
-      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
         <div class="flex flex-col gap-2">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -615,7 +595,7 @@ function openRelatedRequest(item: RequestListItem) {
               {{ requestDetailsView?.statusLabel }}
             </StatusTag>
           </div>
-          <div class="-mx-6 border-b border-grey-50" />
+          <div class="-mx-3 border-b border-grey-50" />
         </div>
 
         <div class="mt-6">
@@ -628,7 +608,31 @@ function openRelatedRequest(item: RequestListItem) {
             :format-currency="formatRequestCurrency"
             @quantity-change="handleProductQuantityChange"
             @remove-line="handleProductRemove"
-          />
+          >
+            <template
+              v-if="isEditingProducts && canEditProducts"
+              #productsActions
+            >
+              <Button
+                variant="neutral"
+                size="small"
+                class="!w-auto"
+                :disabled="lineMutationLoading"
+                @click="finishEditingProducts(false)"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="small"
+                class="!w-auto"
+                :loading="lineMutationLoading"
+                @click="finishEditingProducts(true)"
+              >
+                Save
+              </Button>
+            </template>
+          </RequestDetailsPanel>
         </div>
 
       </section>

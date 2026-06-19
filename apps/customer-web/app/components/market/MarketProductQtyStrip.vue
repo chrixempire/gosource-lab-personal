@@ -306,7 +306,7 @@ const stripShellClass = computed(() => {
   }
 
   if (isCart.value) {
-    return 'h-7 min-h-7 w-full max-w-[7.5rem] overflow-hidden rounded-full bg-button-primary p-0.5 shadow-md';
+    return 'h-7 min-h-7 w-full max-w-full overflow-hidden rounded-full bg-button-primary p-0.5 shadow-md';
   }
 
   return 'h-9 min-h-9 overflow-hidden rounded-full bg-button-primary p-0.5 shadow-md';

@@ -4,6 +4,7 @@ import { StatusTag } from '@gosource/ui';
 import { Info } from 'lucide-vue-next';
 import OrderDetailFieldRow from '~/components/orders/OrderDetailFieldRow.vue';
 import RequestProductLinesEditor from '~/components/requests/RequestProductLinesEditor.vue';
+import { requestShowsApproverDetails } from '~/lib/request-details';
 
 export type RequestDetailsView = {
   id: string;
@@ -56,6 +57,10 @@ const emit = defineEmits<{
   quantityChange: [cartLineId: string, quantity: number];
   removeLine: [cartLineId: string];
 }>();
+
+const showApproverDetails = computed(() =>
+  props.view ? requestShowsApproverDetails(props.view.status) : false,
+);
 </script>
 
 <template>
@@ -73,14 +78,14 @@ const emit = defineEmits<{
       />
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5 lg:col-span-3">
+        <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-3 lg:col-span-3">
           <div class="h-5 w-36 animate-pulse rounded bg-grey-50" />
           <div class="mt-3 h-px w-full bg-grey-50" />
           <div class="mt-4 space-y-2">
             <div v-for="index in 7" :key="index" class="h-10 animate-pulse rounded bg-grey-55" />
           </div>
         </div>
-        <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5 lg:col-span-2">
+        <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-3 lg:col-span-2">
           <div class="h-5 w-32 animate-pulse rounded bg-grey-50" />
           <div class="mt-3 h-px w-full bg-grey-50" />
           <div class="mt-4 space-y-2">
@@ -91,7 +96,7 @@ const emit = defineEmits<{
     </template>
 
     <template v-else>
-      <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5">
+      <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-3">
         <div class="animate-pulse">
           <div class="mb-5 min-w-0">
             <div class="h-3 w-24 rounded bg-grey-50" />
@@ -102,7 +107,7 @@ const emit = defineEmits<{
       </div>
     </template>
 
-    <div :class="props.pageLayout ? undefined : 'rounded-[18px] border border-grey-50 bg-background-on-canvas p-4'">
+    <div :class="props.pageLayout ? 'min-w-0' : 'rounded-[18px] border border-grey-50 bg-background-on-canvas p-4'">
       <div
         v-if="!props.pageLayout"
         class="mb-3 h-3 w-20 animate-pulse rounded-full bg-grey-100"
@@ -158,7 +163,10 @@ const emit = defineEmits<{
       </p>
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <section class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5 lg:col-span-3">
+        <section
+          class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-3"
+          :class="showApproverDetails ? 'lg:col-span-3' : 'lg:col-span-5'"
+        >
           <h2 class="text-base font-semibold text-grey-900">
             Initiator details
           </h2>
@@ -198,7 +206,10 @@ const emit = defineEmits<{
           </dl>
         </section>
 
-        <section class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5 lg:col-span-2">
+        <section
+          v-if="showApproverDetails"
+          class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-3 lg:col-span-2"
+        >
           <h2 class="text-base font-semibold text-grey-900">
             Approver details
           </h2>
@@ -215,7 +226,7 @@ const emit = defineEmits<{
     </template>
 
     <template v-else>
-      <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-5">
+      <div class="rounded-[20px] border border-grey-50 bg-background-on-canvas p-3">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <p class="text-xs font-semibold uppercase tracking-[0.14em] text-grey-300">
@@ -307,13 +318,18 @@ const emit = defineEmits<{
       </div>
     </template>
 
-    <div :class="props.pageLayout ? undefined : 'rounded-[18px] border border-grey-50 bg-background-on-canvas p-4'">
-      <p
-        class="mb-3 text-sm font-semibold text-grey-900"
-        :class="props.pageLayout ? undefined : 'text-xs uppercase tracking-[0.12em] text-grey-300'"
-      >
-        Products
-      </p>
+    <div :class="props.pageLayout ? 'min-w-0' : 'rounded-[18px] border border-grey-50 bg-background-on-canvas p-4'">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <p
+          class="text-sm font-semibold text-grey-900"
+          :class="props.pageLayout ? undefined : 'text-xs uppercase tracking-[0.12em] text-grey-300'"
+        >
+          Products
+        </p>
+        <div v-if="$slots.productsActions" class="flex shrink-0 items-center gap-2">
+          <slot name="productsActions" />
+        </div>
+      </div>
       <RequestProductLinesEditor
         :products="view.products"
         :format-currency="formatCurrency"
