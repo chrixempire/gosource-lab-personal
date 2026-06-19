@@ -124,7 +124,6 @@ const {
         requestKey: '',
         ready: true,
         request: null as RequestRecord | null,
-        relatedRequests: [] as RequestListItem[],
       };
     }
 
@@ -136,28 +135,13 @@ const {
         requestKey: requestId.value,
         ready: true,
         request: null as RequestRecord | null,
-        relatedRequests: [] as RequestListItem[],
       };
-    }
-
-    let nextRelated: RequestListItem[] = [];
-    if (isSuperAdmin.value && nextRequest.branchId) {
-      const relatedResponse = await listRequests({
-        branchId: nextRequest.branchId,
-        page: 1,
-        limit: 20,
-      });
-
-      nextRelated = (relatedResponse.data ?? [])
-        .filter((item) => item.id !== nextRequest.id)
-        .map(mapRequestToListItem);
     }
 
     return {
       requestKey: requestId.value,
       ready: true,
       request: nextRequest,
-      relatedRequests: nextRelated,
     };
   },
   {
@@ -167,7 +151,6 @@ const {
       requestKey: requestId.value,
       ready: false,
       request: null as RequestRecord | null,
-      relatedRequests: [] as RequestListItem[],
     }),
   },
 );
@@ -187,7 +170,7 @@ watch(
     const nextRequest = payload?.request ?? null;
 
     request.value = nextRequest;
-    relatedRequests.value = Array.isArray(payload?.relatedRequests) ? payload!.relatedRequests : [];
+    relatedRequests.value = [];
 
     if (!nextRequest) {
       clearActiveRequest();
@@ -211,6 +194,8 @@ watch(
     if (isEditingProducts.value) {
       beginProductEdit(nextRequest);
     }
+
+    void refreshRelatedRequests(nextRequest);
   },
   { immediate: true },
 );

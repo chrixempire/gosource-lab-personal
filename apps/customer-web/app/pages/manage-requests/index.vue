@@ -170,7 +170,7 @@ const requestsListKeyParts = computed(() => [
   listFilters.value.amountMin ?? '',
   listFilters.value.amountMax ?? '',
   listFilters.value.status.join(','),
-  apiBranchId.value ?? '',
+  pageBranch.viewingAllBranches.value ? '__all__' : (apiBranchId.value ?? ''),
 ]);
 
 const {
@@ -305,8 +305,24 @@ const showNoBranchSetup = computed(
 
 const tableRequests = computed(() => (showNoBranchSetup.value ? [] : requestItems.value));
 
+const requestsStaleForBranchFilter = computed(() => {
+  if (pageBranch.viewingAllBranches.value) {
+    return false;
+  }
+
+  const filterBranchId = apiBranchId.value?.trim();
+  if (!filterBranchId || requests.value.length === 0) {
+    return false;
+  }
+
+  return requests.value.some((request) => request.branchId !== filterBranchId);
+});
+
 const tableLoading = computed(
-  () => requestsLoading.value || branchesLoading.value || showNoBranchSetup.value,
+  () =>
+    (requestsLoading.value && (requestItems.value.length === 0 || requestsStaleForBranchFilter.value))
+    || (branchesLoading.value && branches.value.length === 0)
+    || showNoBranchSetup.value,
 );
 
 const tableEmptyMessage = computed(() =>

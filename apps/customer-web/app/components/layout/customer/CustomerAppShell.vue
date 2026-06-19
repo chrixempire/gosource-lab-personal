@@ -31,6 +31,7 @@ import {
   CUSTOMER_MOBILE_NAV_DRAWER_Z,
 } from '~/lib/customer-overlay-z';
 import { resolveCustomerPageDescription } from '~/lib/customer-page-descriptions';
+import { useCustomerRouteLoading } from '~/composables/useCustomerRouteLoading';
 import { useCustomerPageHeader } from '~/composables/useCustomerPageHeader';
 import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.vue';
 import MarketSearch from '~/components/market/MarketSearch.vue';
@@ -43,6 +44,7 @@ import { useCustomerSignOut } from '~/composables/useCustomerSignOut';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
 const { session, clearSession } = useCustomerSession();
+const { isNavigating: routeNavigating } = useCustomerRouteLoading();
 const { beginIntentionalSignOut } = useCustomerSignOut();
 const { clearAllDismissals } = useMarketBranchSetupDismissal();
 const { resetCartState } = useMarketplaceCart();
@@ -235,6 +237,12 @@ async function confirmLogout() {
   <SidebarProvider v-model:open="desktopSidebarOpen">
     <TooltipProvider :delay-duration="200">
     <div>
+      <div
+        v-if="routeNavigating"
+        class="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[3px] origin-left animate-pulse bg-primary-500"
+        role="progressbar"
+        aria-hidden="true"
+      />
       <div
         class="customer-shell-bg flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden text-grey-900 lg:h-screen lg:max-h-screen"
       >
