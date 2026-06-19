@@ -12,7 +12,7 @@ export function getLegacyReceiptEmailHost(event: H3Event) {
 
   return new URL(getAdminLegacyApiBaseUrl(event)).host;
 }
-import { forwardApiError } from './forward-api-error';
+import { throwForwardedApiError } from './forward-api-error';
 import { withAdminLegacyAuthRetry } from './admin-legacy-proxy-auth';
 
 type LegacyQueryValue =
@@ -66,11 +66,11 @@ export async function fetchAdminLegacyApi<T>(
           'Legacy API is not reachable. Start apps/legacy-api (pnpm dev) and confirm NUXT_PUBLIC_LEGACY_API_BASE_URL matches its PORT.',
       });
     }
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -93,11 +93,11 @@ export async function patchAdminLegacyApi<T>(
       }) as Promise<T>,
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -121,11 +121,11 @@ export async function postAdminLegacyApi<T>(
       }) as Promise<T>,
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -156,11 +156,11 @@ export async function patchAdminLegacyFormData<T>(
       }) as Promise<T>,
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -191,11 +191,11 @@ export async function postAdminLegacyFormData<T>(
       }) as Promise<T>,
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -218,11 +218,11 @@ export async function deleteAdminLegacyApi<T>(
       }) as Promise<T>,
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -245,11 +245,11 @@ export async function postAdminLegacyMultipart<T>(
       }) as Promise<T>,
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -272,11 +272,11 @@ export async function patchAdminLegacyMultipart<T>(
       }) as Promise<T>,
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -299,11 +299,11 @@ export async function putAdminLegacyMultipart<T>(
       }) as Promise<T>,
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -324,10 +324,10 @@ export async function fetchAdminLegacyBinary(
       }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }

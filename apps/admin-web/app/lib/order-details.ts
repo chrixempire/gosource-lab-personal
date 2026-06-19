@@ -14,7 +14,13 @@ import {
   resolveOrderBusiness,
   resolveOrderInitiator,
 } from '~/lib/order-detail-compat';
-import { getOrderPaymentMethodLabel } from '~/lib/order-constants';
+import {
+  getOrderPaymentMethodLabel,
+  getOrderPaymentStatusLabel,
+  getOrderPaymentStatusTagVariant,
+  getOrderStatusLabel,
+  getOrderStatusTagVariant,
+} from '~/lib/order-constants';
 import type {
   AdminOrderListItem,
   LegacyOrderBusiness,
@@ -23,14 +29,17 @@ import type {
   OrderStatus,
 } from '~/types/orders';
 
-type OrderStatusTagVariant = AdminOrderListItem['statusVariant'];
+type OrderStatusTagVariantAlias = AdminOrderListItem['statusVariant'];
 type PaymentStatusTagVariant = AdminOrderListItem['paymentStatusVariant'];
 
-function formatStatusLabel(status: string) {
-  return status
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+export function getOrderStatusVariant(status: OrderStatus): OrderStatusTagVariantAlias {
+  return getOrderStatusTagVariant(status);
+}
+
+export function getOrderPaymentStatusVariant(
+  status: OrderPaymentStatus,
+): PaymentStatusTagVariant {
+  return getOrderPaymentStatusTagVariant(status);
 }
 
 export function normalizeOrderStatus(status: string | undefined | null): OrderStatus {
@@ -63,44 +72,6 @@ export function formatOrderDateTime(value: string | undefined) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
-}
-
-export function getOrderStatusVariant(status: OrderStatus): OrderStatusTagVariant {
-  if (status === 'ready') {
-    return 'ready';
-  }
-
-  if (status === 'partially_delivered') {
-    return 'partiallyDelivered';
-  }
-
-  if (status === 'accepted') {
-    return 'accepted';
-  }
-
-  if (['delivered', 'completed'].includes(status)) {
-    return 'success';
-  }
-
-  if (['cancelled', 'returned', 'refunded'].includes(status)) {
-    return 'negative';
-  }
-
-  return 'warning';
-}
-
-export function getOrderPaymentStatusVariant(
-  status: OrderPaymentStatus,
-): PaymentStatusTagVariant {
-  if (status === 'paid') {
-    return 'success';
-  }
-
-  if (status === 'cancelled' || status === 'refunded') {
-    return 'negative';
-  }
-
-  return 'warning';
 }
 
 function resolveBusiness(order: LegacyOrderRow): LegacyOrderBusiness | null {
@@ -137,10 +108,10 @@ export function mapLegacyOrderToListItem(order: LegacyOrderRow): AdminOrderListI
     paymentMethod: String(order.paymentMethod ?? ''),
     paymentMethodLabel: getOrderPaymentMethodLabel(order.paymentMethod),
     paymentStatus,
-    paymentStatusLabel: formatStatusLabel(paymentStatus),
+    paymentStatusLabel: getOrderPaymentStatusLabel(paymentStatus),
     paymentStatusVariant: getOrderPaymentStatusVariant(paymentStatus),
     status,
-    statusLabel: formatStatusLabel(status),
+    statusLabel: getOrderStatusLabel(status),
     statusVariant: getOrderStatusVariant(status),
     customerId: business?._id ?? '',
     customerName: business?.businessName ?? '—',
@@ -181,10 +152,10 @@ export type AdminOrderDetailsView = {
   referenceLabel: string;
   status: OrderStatus;
   statusLabel: string;
-  statusVariant: OrderStatusTagVariant;
+  statusVariant: AdminOrderListItem['statusVariant'];
   paymentStatus: OrderPaymentStatus;
   paymentStatusLabel: string;
-  paymentStatusVariant: PaymentStatusTagVariant;
+  paymentStatusVariant: AdminOrderListItem['paymentStatusVariant'];
   paymentMethod: string | null;
   paymentMethodLabel: string;
   createdLabel: string;

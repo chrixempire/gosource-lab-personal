@@ -1,3 +1,4 @@
+import { extractApiErrorMessage } from '@gosource/api-client';
 import { toast } from '@gosource/ui';
 import { h } from 'vue';
 import OrderInvoicePreview from '~/components/orders/OrderInvoicePreview.vue';
@@ -18,9 +19,7 @@ export function useOrderMutations() {
       });
       toast.success('Order status updated');
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unable to update order status';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to update order status'));
       throw error;
     } finally {
       updatingOrderId.value = null;
@@ -36,9 +35,7 @@ export function useOrderMutations() {
       });
       toast.success('Payment status updated');
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unable to update payment status';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to update payment status'));
       throw error;
     } finally {
       updatingOrderId.value = null;
@@ -54,8 +51,7 @@ export function useOrderMutations() {
       });
       toast.success('Order cancelled');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to cancel order';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to cancel order'));
       throw error;
     } finally {
       updatingOrderId.value = null;
@@ -98,8 +94,7 @@ export function useOrderMutations() {
       await downloadInvoicePdf(invoiceFileName(reference, orderId), invoicePdfOptions(preview));
       toast.success('Invoice downloaded');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to download invoice';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to download invoice'));
       throw error;
     } finally {
       updatingOrderId.value = null;
@@ -114,8 +109,7 @@ export function useOrderMutations() {
       await downloadInvoicePdf(invoiceFileName(reference), invoicePdfOptions(preview));
       toast.success('Invoice downloaded');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to download invoice';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to download invoice'));
       throw error;
     }
   }
@@ -129,9 +123,7 @@ export function useOrderMutations() {
       });
       toast.success('Products marked as delivered');
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unable to mark products as delivered';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to mark products as delivered'));
       throw error;
     } finally {
       updatingOrderId.value = null;
