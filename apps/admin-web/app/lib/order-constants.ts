@@ -44,6 +44,10 @@ export const ORDER_STATUS_OPTIONS: Array<{
   { value: 'cancelled', label: 'Cancelled', tagVariant: 'negative' },
 ];
 
+export type OrderStatusTagVariant = (typeof ORDER_STATUS_OPTIONS)[number]['tagVariant'];
+export type OrderPaymentStatusTagVariant =
+  (typeof ORDER_PAYMENT_STATUS_OPTIONS)[number]['tagVariant'];
+
 /** Statuses that cannot be set via update-order-status (derived or terminal). */
 export const ORDER_STATUSES_NOT_MANUALLY_SETTABLE = [
   'cancelled',
@@ -57,6 +61,111 @@ export const ORDER_STATUS_CHANGE_OPTIONS = ORDER_STATUS_OPTIONS.filter(
       option.value as (typeof ORDER_STATUSES_NOT_MANUALLY_SETTABLE)[number],
     ),
 );
+
+/** Terminal order statuses — no manual status dropdown (reference StatusUpdaterBadge). */
+export const ORDER_STATUSES_NOT_UPDATABLE = ['cancelled', 'delivered'] as const;
+
+export function isOrderStatusManuallyUpdatable(status: string | undefined | null) {
+  const normalized = String(status ?? '')
+    .trim()
+    .toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  return !ORDER_STATUSES_NOT_UPDATABLE.includes(
+    normalized as (typeof ORDER_STATUSES_NOT_UPDATABLE)[number],
+  );
+}
+
+export function isOrderPaymentStatusManuallyUpdatable(status: string | undefined | null) {
+  const normalized = String(status ?? '')
+    .trim()
+    .toLowerCase();
+
+  return normalized === 'pending' || normalized === 'partial';
+}
+
+export function getOrderStatusTagVariant(status: string | undefined | null): OrderStatusTagVariant {
+  const normalized = String(status ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+
+  const match = ORDER_STATUS_OPTIONS.find((option) => option.value === normalized);
+  if (match) {
+    return match.tagVariant;
+  }
+
+  if (['delivered', 'completed'].includes(normalized)) {
+    return 'success';
+  }
+
+  if (['cancelled', 'returned', 'refunded'].includes(normalized)) {
+    return 'negative';
+  }
+
+  return 'warning';
+}
+
+export function getOrderPaymentStatusTagVariant(
+  status: string | undefined | null,
+): OrderPaymentStatusTagVariant {
+  const normalized = String(status ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+
+  const match = ORDER_PAYMENT_STATUS_OPTIONS.find((option) => option.value === normalized);
+  if (match) {
+    return match.tagVariant;
+  }
+
+  return 'warning';
+}
+
+export function getOrderStatusLabel(status: string | undefined | null) {
+  const normalized = String(status ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+
+  const match = ORDER_STATUS_OPTIONS.find((option) => option.value === normalized);
+  if (match) {
+    return match.label;
+  }
+
+  if (!normalized) {
+    return 'Pending';
+  }
+
+  return normalized
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+export function getOrderPaymentStatusLabel(status: string | undefined | null) {
+  const normalized = String(status ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+
+  const match = ORDER_PAYMENT_STATUS_OPTIONS.find((option) => option.value === normalized);
+  if (match) {
+    return match.label;
+  }
+
+  if (!normalized) {
+    return 'Pending';
+  }
+
+  return normalized
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
 
 export const ORDER_QUICK_STATUS_FILTERS = [
   { key: 'pending', label: 'Pending orders' },
