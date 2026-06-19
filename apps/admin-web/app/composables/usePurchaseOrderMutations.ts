@@ -9,6 +9,7 @@ import {
   buildPurchaseOrderInvoicePreview,
   parsePurchaseOrderDetail,
 } from '~/lib/purchase-order-api';
+import { parsePurchaseOrderAmount } from '~/lib/purchase-order-form';
 import type { PurchaseOrderFormValues, PurchaseOrderInvoicePreview as PurchaseOrderInvoicePreviewData } from '~/types/purchase-orders';
 
 function buildPurchaseOrderPayload(values: PurchaseOrderFormValues) {
@@ -17,7 +18,7 @@ function buildPurchaseOrderPayload(values: PurchaseOrderFormValues) {
     expectedDate: values.expectedDate,
     suppliers: values.suppliers,
     note: values.note || undefined,
-    logisticsAmount: Number(values.logisticsAmount) || 0,
+    logisticsAmount: parsePurchaseOrderAmount(values.logisticsAmount),
     products: values.lineItems.map((item) => ({
       product: item.productId,
       quantity: item.quantity,
