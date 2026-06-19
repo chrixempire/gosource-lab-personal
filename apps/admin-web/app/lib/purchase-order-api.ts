@@ -4,6 +4,7 @@ import {
   purchaseOrderProductTypeLabel,
   purchaseOrderStatusLabel,
 } from '~/lib/purchase-order-constants';
+import { resolvePurchaseOrderLineItemCategoryLabel } from '~/lib/purchase-order-form';
 import type {
   AdminPurchaseOrderListItem,
   LegacyPurchaseOrderRow,
@@ -307,8 +308,7 @@ export function buildReceiveRows(order: LegacyPurchaseOrderRow): PurchaseOrderRe
     return {
       productId,
       name: item.product?.name ?? 'Product',
-      categoryLabel:
-        item.product?.category?.name ?? item.product?.categoryInfo?.name ?? '—',
+      categoryLabel: resolvePurchaseOrderLineItemCategoryLabel(item.product),
       ordered,
       received,
       toReceive: '',

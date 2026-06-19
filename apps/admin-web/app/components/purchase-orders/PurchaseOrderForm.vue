@@ -17,6 +17,7 @@ import {
 } from '@gosource/ui';
 import { useDebounce } from '@vueuse/core';
 import { LoaderCircle, Search, Trash2, X } from 'lucide-vue-next';
+import PurchaseOrderFormSkeleton from '~/components/purchase-orders/PurchaseOrderFormSkeleton.vue';
 import PurchaseOrderInvoiceDrawer from '~/components/purchase-orders/PurchaseOrderInvoiceDrawer.vue';
 import PurchaseOrderLineItemsMobileEditor from '~/components/purchase-orders/PurchaseOrderLineItemsMobileEditor.vue';
 import PurchaseOrderSupplierSelect from '~/components/purchase-orders/PurchaseOrderSupplierSelect.vue';
@@ -34,6 +35,7 @@ import {
   parseSupplierOptions,
 } from '~/lib/purchase-order-api';
 import { parseFilteredProductsResponse } from '~/lib/product-api';
+import { clearResolvedPurchaseOrderFieldErrors } from '~/lib/purchase-order-form';
 import { useAdminSession } from '~/composables/useAdminSession';
 import type { PurchaseOrderFormValues, PurchaseOrderLineItem } from '~/types/purchase-orders';
 
@@ -45,6 +47,7 @@ const props = defineProps<{
   orderId?: string;
   initialBillToById?: Record<string, { name: string; email: string }>;
   initialOrderedByLabel?: string;
+  hydrating?: boolean;
 }>();
 
 const { session } = useAdminSession();
@@ -142,6 +145,18 @@ const preview = computed(() =>
   ),
 );
 
+watch(
+  form,
+  () => {
+    if (Object.keys(fieldErrors.value).length === 0) {
+      return;
+    }
+
+    clearResolvedPurchaseOrderFieldErrors(form.value, fieldErrors.value);
+  },
+  { deep: true },
+);
+
 function parseFormattedNumber(value: string | number | null | undefined) {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : 0;
@@ -185,7 +200,7 @@ function addProduct(product: {
     totalPrice: unitPrice * quantity,
   };
 
-  form.value.lineItems = [...form.value.lineItems, line];
+  form.value.lineItems = [line, ...form.value.lineItems];
   productPickerOpen.value = false;
   productSearch.value = '';
 }
@@ -222,7 +237,9 @@ function clearProductSearch() {
 </script>
 
 <template>
-  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+  <div class="relative">
+    <div :class="hydrating ? 'pointer-events-none invisible' : ''">
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
     <div class="space-y-6">
       <section class="rounded-2xl border border-grey-50 bg-white p-5 shadow-sm">
         <h2 class="text-lg font-semibold text-grey-900">Order details</h2>
@@ -515,5 +532,11 @@ function clearProductSearch() {
     </aside>
 
     <PurchaseOrderInvoiceDrawer v-model:open="previewOpen" :preview="preview" />
+      </div>
+    </div>
+
+    <div v-if="hydrating" class="absolute inset-0">
+      <PurchaseOrderFormSkeleton />
+    </div>
   </div>
 </template>

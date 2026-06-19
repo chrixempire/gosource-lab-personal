@@ -13,6 +13,7 @@ import {
   parsePurchaseOrderDetail,
 } from '~/lib/purchase-order-api';
 import {
+  enrichPurchaseOrderLineItemCategories,
   mapPurchaseOrderToFormValues,
   validatePurchaseOrderForm,
 } from '~/lib/purchase-order-form';
@@ -28,8 +29,10 @@ const fieldErrors = reactive<Record<string, string>>({});
 const submitting = computed(() => busyOrderId.value === orderId.value);
 const initialBillToById = ref<Record<string, { name: string; email: string }>>({});
 const initialOrderedByLabel = ref('');
+const loadingCategories = ref(false);
+const formHydrating = computed(() => pending.value || loadingCategories.value);
 
-const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
+const { data, pending, error, refresh } = useAdminAuthenticatedFetch<unknown>(
   () => `/api/purchase-orders/${orderId.value}`,
   {
     watch: [orderId],
@@ -39,10 +42,17 @@ const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unkno
 
 watch(
   data,
-  (payload) => {
+  async (payload) => {
     const detail = parsePurchaseOrderDetail(payload);
-    if (detail) {
-      Object.assign(form, mapPurchaseOrderToFormValues(detail));
+    if (!detail) {
+      return;
+    }
+
+    loadingCategories.value = true;
+    try {
+      const values = mapPurchaseOrderToFormValues(detail);
+      await enrichPurchaseOrderLineItemCategories(values.lineItems);
+      Object.assign(form, values);
       const billTo = billToFromLegacySuppliers(detail.suppliers);
       initialBillToById.value = Object.fromEntries(
         (detail.suppliers ?? []).map((supplier, index) => {
@@ -51,6 +61,8 @@ watch(
         }),
       );
       initialOrderedByLabel.value = creatorOrderedByLabel(detail.creator);
+    } finally {
+      loadingCategories.value = false;
     }
   },
   { immediate: true },
@@ -100,7 +112,7 @@ updateHeader({
         size="small"
         class="!w-fit"
         :loading="submitting"
-        :disabled="pending"
+        :disabled="formHydrating"
         @click="onSubmit"
       >
         Save changes
@@ -120,6 +132,7 @@ updateHeader({
       v-model:field-errors="fieldErrors"
       mode="edit"
       :order-id="orderId"
+      :hydrating="formHydrating"
       :initial-bill-to-by-id="initialBillToById"
       :initial-ordered-by-label="initialOrderedByLabel"
     />
