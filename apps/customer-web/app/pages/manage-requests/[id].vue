@@ -27,10 +27,12 @@ import { useCustomerSession } from '~/composables/useCustomerSession';
 import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
+import { useCustomerListReturn } from '~/composables/useCustomerListReturn';
 import { useRequestEdit } from '~/composables/useRequestEdit';
 import { useCustomerRequestService } from '~/services/request.service';
 
 const runWhenSessionReady = useAuthenticatedFetch();
+const { navigateToManageRequestsList } = useCustomerListReturn();
 
 const { session, sessionResolved } = useCustomerSession();
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
@@ -201,7 +203,7 @@ watch(
       relatedRequests.value = [];
       clearActiveRequest();
       toast.error('You do not have access to this request.');
-      void navigateTo('/manage-requests');
+      void navigateToManageRequestsList();
       return;
     }
 
@@ -233,7 +235,7 @@ async function fetchRequest() {
     relatedRequests.value = [];
     clearActiveRequest();
     toast.error('You do not have access to this request.');
-    void navigateTo('/manage-requests');
+    void navigateToManageRequestsList();
     return;
   }
 
@@ -503,7 +505,7 @@ function openRelatedRequest(item: RequestListItem) {
         size="small"
         class="!w-auto"
         :left-icon="ChevronLeft"
-        @click="navigateTo('/manage-requests')"
+        @click="navigateToManageRequestsList()"
       >
         Back
       </Button>
@@ -629,7 +631,7 @@ function openRelatedRequest(item: RequestListItem) {
                 :loading="lineMutationLoading"
                 @click="finishEditingProducts(true)"
               >
-                Save
+                Edit
               </Button>
             </template>
           </RequestDetailsPanel>
