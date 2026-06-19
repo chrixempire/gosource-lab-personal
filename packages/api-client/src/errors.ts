@@ -18,6 +18,29 @@ function firstString(value: unknown): string | undefined {
   return undefined;
 }
 
+function isTransportErrorMessage(message: string) {
+  return (
+    /^\[(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\]/i.test(message) ||
+    /^Request failed with status code \d+$/i.test(message)
+  );
+}
+
+function readResponsePayload(value: Record<string, unknown>) {
+  const response =
+    typeof value.response === 'object' && value.response !== null
+      ? (value.response as Record<string, unknown>)
+      : null;
+
+  if (!response) {
+    return null;
+  }
+
+  const payload = response._data ?? response.data;
+  return typeof payload === 'object' && payload !== null && !Array.isArray(payload)
+    ? (payload as Record<string, unknown>)
+    : null;
+}
+
 function extractObjectMessage(
   value: Record<string, unknown>,
   depth: number,
@@ -26,7 +49,7 @@ function extractObjectMessage(
     return undefined;
   }
 
-  /** Prefer JSON body from fetch/ofetch/h3 before generic wrapper `message` (e.g. "[GET] … 400"). */
+  /** Prefer JSON body from fetch/ofetch/h3 before generic wrapper `message` (e.g. "[PATCH] … 403"). */
   const payload = value.data ?? value._data;
   if (typeof payload === 'object' && payload !== null && !Array.isArray(payload)) {
     const fromPayload = extractObjectMessage(payload as Record<string, unknown>, depth + 1);
@@ -39,16 +62,25 @@ function extractObjectMessage(
     }
   }
 
+  const responsePayload = readResponsePayload(value);
+  if (responsePayload) {
+    const fromResponse = extractObjectMessage(responsePayload, depth + 1);
+    if (fromResponse) {
+      return fromResponse;
+    }
+    const flatResponse = firstString(responsePayload.message);
+    if (flatResponse) {
+      return flatResponse;
+    }
+  }
+
   const directMessage = firstString(value.message);
-  if (
-    directMessage &&
-    !/^Request failed with status code \d+$/i.test(directMessage)
-  ) {
+  if (directMessage && !isTransportErrorMessage(directMessage)) {
     return directMessage;
   }
 
   const directStatusMessage = firstString(value.statusMessage);
-  if (directStatusMessage) {
+  if (directStatusMessage && !isTransportErrorMessage(directStatusMessage)) {
     return directStatusMessage;
   }
 
@@ -67,7 +99,7 @@ function extractObjectMessage(
   }
 
   const fallbackError = firstString(value.error);
-  if (fallbackError && fallbackError !== 'Error') {
+  if (fallbackError && fallbackError !== 'Error' && fallbackError !== 'Forbidden') {
     return fallbackError;
   }
 

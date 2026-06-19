@@ -73,10 +73,12 @@ export type AdminOrderListItem = {
   paymentMethodLabel: string;
   paymentStatus: OrderPaymentStatus;
   paymentStatusLabel: string;
-  paymentStatusVariant: 'success' | 'negative' | 'warning';
+  paymentStatusVariant: 'default' | 'success' | 'negative' | 'warning';
   status: OrderStatus;
   statusLabel: string;
   statusVariant:
+    | 'default'
+    | 'info'
     | 'success'
     | 'negative'
     | 'warning'
