@@ -13,6 +13,7 @@ import CheckoutRequestItems from '~/components/checkout/CheckoutRequestItems.vue
 import CheckoutSuccessDialog from '~/components/checkout/CheckoutSuccessDialog.vue';
 import CheckoutTransferDialog from '~/components/checkout/CheckoutTransferDialog.vue';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
+import { useCustomerListReturn } from '~/composables/useCustomerListReturn';
 import { useDownloadOrderInvoice } from '~/composables/useDownloadOrderInvoice';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { usePaystack } from '~/composables/usePaystack';
@@ -40,6 +41,7 @@ const session = useState<CustomerMeResponse | null>('customer-session', () => nu
 const runWhenSessionReady = useAuthenticatedFetch();
 const route = useRoute();
 const router = useRouter();
+const { navigateToManageRequestsList } = useCustomerListReturn();
 const requestId = computed(() => String(route.params.id ?? ''));
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
@@ -77,7 +79,7 @@ watch(
   (value) => {
     if (value && !isBusinessOwnerSession(value)) {
       toast.error('Only business owners can complete checkout.');
-      void navigateTo('/manage-requests', { replace: true });
+      void navigateToManageRequestsList({ replace: true });
     }
   },
   { immediate: true },
@@ -179,7 +181,7 @@ async function fetchCheckoutRequest(options?: { showPageLoading?: boolean }) {
 
       if (!record) {
         toast.error('Unable to find that request.');
-        await navigateTo('/manage-requests', { replace: true });
+        await navigateToManageRequestsList({ replace: true });
         return;
       }
 
@@ -311,7 +313,7 @@ function goBackFromCheckout() {
 
 function goBackToRequests() {
   invalidateManageRequestsListCache();
-  void navigateTo('/manage-requests', { replace: true });
+  void navigateToManageRequestsList({ replace: true });
 }
 
 function handleSuccessDialogOpenChange(value: boolean) {

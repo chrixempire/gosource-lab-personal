@@ -32,6 +32,7 @@ import {
   resolveCurrentActorId,
 } from '~/lib/request-edit';
 import { useRequestEdit } from '~/composables/useRequestEdit';
+import { useCustomerListReturn } from '~/composables/useCustomerListReturn';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
@@ -82,6 +83,13 @@ const {
 } = useRequestEdit();
 const route = useRoute();
 const router = useRouter();
+const { rememberManageRequestsListPath } = useCustomerListReturn();
+
+watch(
+  () => route.fullPath,
+  () => rememberManageRequestsListPath(route),
+  { immediate: true },
+);
 const {
   effectiveView,
   routeView,
@@ -860,7 +868,7 @@ async function submitReject(reason: string) {
             :loading="lineMutationLoading"
             @click="finishEditingProducts(true)"
           >
-            Save
+            Edit
           </Button>
         </template>
       </RequestDetailsPanel>
