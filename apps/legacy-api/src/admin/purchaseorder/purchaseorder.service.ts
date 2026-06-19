@@ -392,7 +392,11 @@ export class PurchaseOrderService {
    * @param id - The purchase order ID
    * @returns Object with status, message, and detailed purchase order data
    */
-  async getSinglePurchaseOrder(id: string) {
+  async getSinglePurchaseOrder(id: string): Promise<{
+    status: boolean;
+    message: string;
+    data: Record<string, unknown>;
+  }> {
     const purchaseOrderDoc: PurchaseOrderDocument = await this.purchaseOrderModel
       .findOne({
         _id: id,
