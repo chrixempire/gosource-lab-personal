@@ -124,7 +124,7 @@ export function creditRepaymentStatusVariant(
 ): 'warning' | 'success' | 'negative' | 'default' {
   const normalized = status.trim().toUpperCase();
   if (normalized === 'COMPLETED') {
-    return 'default';
+    return 'success';
   }
   if (normalized === 'FAILED' || normalized === 'CANCELLED') {
     return 'negative';
