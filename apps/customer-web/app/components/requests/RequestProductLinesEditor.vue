@@ -128,7 +128,7 @@ const removeConfirmMessage = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div class="min-w-0 space-y-3">
     <p
       v-if="editable && !canRemoveLine"
       class="rounded-[12px] border border-warning-100 bg-[rgba(247,144,9,0.08)] px-3 py-2.5 text-xs leading-5 text-grey-text"
@@ -178,12 +178,12 @@ const removeConfirmMessage = computed(() => {
           <div class="min-w-0 flex-1">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
-                <div class="flex min-w-0 flex-wrap items-center gap-2">
-                  <p class="truncate text-sm font-medium text-grey-900">
+                <div class="flex min-w-0 flex-col gap-1.5">
+                  <p class="break-words text-sm font-medium leading-snug text-grey-900 [overflow-wrap:anywhere]">
                     {{ product.productName }}
                   </p>
                   <span
-                    class="shrink-0 rounded-full border border-grey-50 px-2 py-0.5 text-xs font-medium text-grey-300"
+                    class="w-fit shrink-0 rounded-full border border-grey-50 px-2 py-0.5 text-xs font-medium text-grey-300"
                   >
                     {{ product.unit || 'Standard pack' }}
                   </span>
@@ -394,7 +394,10 @@ const removeConfirmMessage = computed(() => {
           />
         </div>
 
-        <div class="mt-4 grid grid-cols-2 gap-3">
+        <div
+          class="mt-4"
+          :class="editable ? 'flex flex-col gap-2' : 'grid grid-cols-2 gap-3'"
+        >
           <div
             v-for="cardIndex in editable ? 4 : 3"
             :key="cardIndex"
@@ -407,42 +410,52 @@ const removeConfirmMessage = computed(() => {
       </div>
     </div>
 
-    <div v-else-if="!listStyle && products.length > 0" class="grid gap-3 md:hidden">
+    <div v-else-if="!listStyle && products.length > 0" class="grid w-full min-w-0 gap-3 md:hidden">
       <article
         v-for="(product, index) in products"
         :key="lineKey(product, index)"
-        :class="mobileLineClass"
+        :class="[mobileLineClass, 'w-full min-w-0']"
       >
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex min-w-0 flex-1 items-start gap-3">
-            <div
-              v-if="product.imageUrl"
-              class="relative size-10 shrink-0 overflow-hidden rounded-lg bg-grey-55"
+        <div
+          class="grid min-w-0 items-start gap-x-3"
+          :class="
+            editable && canEditLine(product)
+              ? product.imageUrl
+                ? 'grid-cols-[2.5rem_minmax(0,1fr)_2rem]'
+                : 'grid-cols-[minmax(0,1fr)_2rem]'
+              : product.imageUrl
+                ? 'grid-cols-[2.5rem_minmax(0,1fr)]'
+                : 'grid-cols-1'
+          "
+        >
+          <div
+            v-if="product.imageUrl"
+            class="relative size-10 shrink-0 overflow-hidden rounded-lg bg-grey-55"
+          >
+            <MarketProductImage
+              :src="product.imageUrl"
+              :alt="product.productName"
+              logo-class="w-[70%] max-w-[1.75rem]"
+              :class="{ grayscale: product.inStock === false }"
+            />
+          </div>
+
+          <div class="min-w-0">
+            <p class="w-full break-words text-base font-semibold leading-snug text-grey-900 [overflow-wrap:anywhere]">
+              {{ product.productName }}
+            </p>
+            <p
+              v-if="!product.cartLineId"
+              class="mt-1 text-xs text-grey-300"
             >
-              <MarketProductImage
-                :src="product.imageUrl"
-                :alt="product.productName"
-                logo-class="w-[70%] max-w-[1.75rem]"
-                :class="{ grayscale: product.inStock === false }"
-              />
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-base font-semibold text-grey-900">
-                {{ product.productName }}
-              </p>
-              <p
-                v-if="!product.cartLineId"
-                class="mt-1 text-xs text-grey-300"
-              >
-                This line cannot be edited yet. Close and reopen this request, then try again.
-              </p>
-              <p
-                v-else-if="product.inStock === false"
-                class="mt-1 text-xs text-negative-500"
-              >
-                Out of stock — remove this item to continue.
-              </p>
-            </div>
+              This line cannot be edited yet. Close and reopen this request, then try again.
+            </p>
+            <p
+              v-else-if="product.inStock === false"
+              class="mt-1 text-xs text-negative-500"
+            >
+              Out of stock — remove this item to continue.
+            </p>
           </div>
 
           <button
@@ -458,12 +471,15 @@ const removeConfirmMessage = computed(() => {
           </button>
         </div>
 
-        <div class="mt-4 grid grid-cols-2 gap-3">
-          <div class="rounded-[16px] bg-grey-55 px-4 py-3">
+        <div
+          v-if="editable"
+          class="mt-4 flex w-full min-w-0 flex-col gap-2"
+        >
+          <div class="min-w-0 rounded-[16px] bg-grey-55 px-3 py-3 sm:px-4">
             <p class="text-xs font-medium uppercase tracking-[0.08em] text-grey-300">
               Quantity
             </p>
-            <div v-if="editable && canEditLine(product)" class="mt-2 w-full max-w-[7.5rem]">
+            <div v-if="canEditLine(product)" class="mt-2 w-full max-w-[8.5rem] min-w-0">
               <MarketProductQtyStrip
                 variant="cart"
                 :model-value="product.quantity"
@@ -478,29 +494,67 @@ const removeConfirmMessage = computed(() => {
             </p>
           </div>
 
-          <div class="rounded-[16px] bg-grey-55 px-4 py-3">
+          <div class="min-w-0 rounded-[16px] bg-grey-55 px-3 py-3 sm:px-4">
             <p class="text-xs font-medium uppercase tracking-[0.08em] text-grey-300">
               Unit price
             </p>
-            <p class="mt-1 text-sm font-semibold text-grey-900">
+            <p class="mt-1 break-words text-sm font-semibold tabular-nums text-grey-900">
               {{ formatCurrency(product.unitPrice) }}
             </p>
           </div>
 
-          <div class="rounded-[16px] bg-grey-55 px-4 py-3">
+          <div class="min-w-0 rounded-[16px] bg-grey-55 px-3 py-3 sm:px-4">
             <p class="text-xs font-medium uppercase tracking-[0.08em] text-grey-300">
               Unit
             </p>
-            <p class="mt-1 text-sm font-semibold text-grey-900">
+            <p class="mt-1 break-words text-sm font-semibold text-grey-900">
               {{ product.unit || 'Standard pack' }}
             </p>
           </div>
 
-          <div class="rounded-[16px] bg-grey-55 px-4 py-3">
+          <div class="min-w-0 rounded-[16px] bg-grey-55 px-3 py-3 sm:px-4">
             <p class="text-xs font-medium uppercase tracking-[0.08em] text-grey-300">
               Total
             </p>
+            <p class="mt-1 break-words text-sm font-semibold tabular-nums text-grey-900">
+              {{ formatCurrency(product.totalPrice) }}
+            </p>
+          </div>
+        </div>
+
+        <div v-else class="mt-4 grid min-w-0 grid-cols-2 gap-3">
+          <div class="min-w-0 rounded-[16px] bg-grey-55 px-3 py-3 sm:px-4">
+            <p class="text-xs font-medium uppercase tracking-[0.08em] text-grey-300">
+              Quantity
+            </p>
             <p class="mt-1 text-sm font-semibold text-grey-900">
+              {{ product.quantity }}
+            </p>
+          </div>
+
+          <div class="min-w-0 rounded-[16px] bg-grey-55 px-3 py-3 sm:px-4">
+            <p class="text-xs font-medium uppercase tracking-[0.08em] text-grey-300">
+              Unit price
+            </p>
+            <p class="mt-1 break-words text-sm font-semibold tabular-nums text-grey-900">
+              {{ formatCurrency(product.unitPrice) }}
+            </p>
+          </div>
+
+          <div class="min-w-0 rounded-[16px] bg-grey-55 px-3 py-3 sm:px-4">
+            <p class="text-xs font-medium uppercase tracking-[0.08em] text-grey-300">
+              Unit
+            </p>
+            <p class="mt-1 break-words text-sm font-semibold text-grey-900">
+              {{ product.unit || 'Standard pack' }}
+            </p>
+          </div>
+
+          <div class="min-w-0 rounded-[16px] bg-grey-55 px-3 py-3 sm:px-4">
+            <p class="text-xs font-medium uppercase tracking-[0.08em] text-grey-300">
+              Total
+            </p>
+            <p class="mt-1 break-words text-sm font-semibold tabular-nums text-grey-900">
               {{ formatCurrency(product.totalPrice) }}
             </p>
           </div>

@@ -146,3 +146,8 @@ export function mapRequestToListItem(request: RequestRecord): RequestListItem {
 export function requestHasPendingActions(status: RequestRecord['status']) {
   return status === 'pending';
 }
+
+/** Approver card only after a decision (approved / rejected). */
+export function requestShowsApproverDetails(status: RequestRecord['status']) {
+  return status === 'approved' || status === 'rejected';
+}

@@ -817,31 +817,8 @@ async function submitReject(reason: string) {
       @update:open="!$event && closeDetails()"
     >
       <template #actions>
-        <div
-          v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && isEditingProducts && canEditProducts"
-          class="flex shrink-0 items-center gap-2"
-        >
-          <Button
-            variant="neutral"
-            size="small"
-            class="!w-auto"
-            :disabled="lineMutationLoading"
-            @click="finishEditingProducts(false)"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            size="small"
-            class="!w-auto"
-            :loading="lineMutationLoading"
-            @click="finishEditingProducts(true)"
-          >
-            Save
-          </Button>
-        </div>
         <RequestActionsMenu
-          v-else-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton"
+          v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && !isEditingProducts"
           trigger-variant="icon"
           :show-view-details="false"
           :can-cancel="canCancel"
@@ -862,7 +839,31 @@ async function submitReject(reason: string) {
         :format-currency="formatRequestCurrency"
         @quantity-change="handleProductQuantityChange"
         @remove-line="handleProductRemove"
-      />
+      >
+        <template
+          v-if="isEditingProducts && canEditProducts"
+          #productsActions
+        >
+          <Button
+            variant="neutral"
+            size="small"
+            class="!w-auto"
+            :disabled="lineMutationLoading"
+            @click="finishEditingProducts(false)"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="small"
+            class="!w-auto"
+            :loading="lineMutationLoading"
+            @click="finishEditingProducts(true)"
+          >
+            Save
+          </Button>
+        </template>
+      </RequestDetailsPanel>
     </RequestDetailsSlidePanel>
 
     <MemberConfirmOverlay
