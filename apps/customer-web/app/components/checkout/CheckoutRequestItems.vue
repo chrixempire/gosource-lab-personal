@@ -13,7 +13,7 @@ const requestProducts = computed(() =>
 </script>
 
 <template>
-  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
     <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 class="text-lg font-semibold text-grey-900">Request items</h2>
@@ -29,6 +29,8 @@ const requestProducts = computed(() =>
     <RequestProductLinesEditor
       :products="requestProducts"
       :format-currency="formatCurrency"
+      compact
+      embedded
     />
   </section>
 </template>

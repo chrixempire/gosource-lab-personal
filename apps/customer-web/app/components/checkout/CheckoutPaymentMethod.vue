@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { RequestRecord } from '@gosource/api-client';
 import { RadioGroup, RadioGroupItem } from '@gosource/ui';
 import { BadgePercent, CreditCard, Landmark, Wallet } from 'lucide-vue-next';
+import CheckoutDeliveryDetails from '~/components/checkout/CheckoutDeliveryDetails.vue';
 import { formatCreditFromKobo } from '~/lib/credit-money';
 
 export type CheckoutPaymentMethodValue = 'Paystack' | 'Credit' | 'Transfer' | 'Wallet';
@@ -12,6 +14,7 @@ const props = defineProps<{
   creditEnabled?: boolean;
   creditAvailableKobo?: number;
   creditDescription?: string;
+  request?: RequestRecord | null;
 }>();
 
 const emit = defineEmits<{
@@ -60,13 +63,33 @@ function methodDescription(method: (typeof methods)[number]) {
     : value;
 }
 
+function formatWalletBalance(balance: number) {
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    maximumFractionDigits: 0,
+  }).format(balance);
+}
+
+function methodTitleMeta(method: (typeof methods)[number]) {
+  if (method.value === 'Wallet' && props.walletBalance !== null && props.walletBalance !== undefined) {
+    return `(Bal : ${formatWalletBalance(props.walletBalance)})`;
+  }
+
+  if (method.value === 'Credit' && props.creditAvailableKobo != null) {
+    return `(Aval credit : ${formatCreditFromKobo(props.creditAvailableKobo)})`;
+  }
+
+  return null;
+}
+
 function isDisabled(method: (typeof methods)[number]) {
   return method.disabled?.(Number(props.walletBalance ?? 0), props.orderTotal) ?? false;
 }
 </script>
 
 <template>
-  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
     <div class="mb-5">
       <h2 class="text-lg font-semibold text-grey-900">Payment method</h2>
       <p class="mt-1 text-sm text-grey-text">
@@ -99,32 +122,19 @@ function isDisabled(method: (typeof methods)[number]) {
         </div>
 
         <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-baseline gap-1">
             <p class="text-sm font-semibold text-grey-900">
               {{ method.label }}
             </p>
+            <p
+              v-if="methodTitleMeta(method)"
+              class="text-sm font-semibold text-grey-900"
+            >
+              {{ methodTitleMeta(method) }}
+            </p>
           </div>
-          <p class="text-sm leading-6 text-grey-text">
+          <p class="text-[11px] leading-5 text-grey-text">
             {{ methodDescription(method) }}
-          </p>
-          <p
-            v-if="method.value === 'Wallet' && walletBalance !== null && walletBalance !== undefined"
-            class="mt-2 text-xs font-medium text-grey-300"
-          >
-            Wallet balance:
-            {{
-              new Intl.NumberFormat('en-NG', {
-                style: 'currency',
-                currency: 'NGN',
-                maximumFractionDigits: 0,
-              }).format(walletBalance)
-            }}
-          </p>
-          <p
-            v-if="method.value === 'Credit' && creditAvailableKobo != null && creditAvailableKobo > 0"
-            class="mt-2 text-xs font-medium text-grey-300"
-          >
-            Available credit: {{ formatCreditFromKobo(creditAvailableKobo) }}
           </p>
         </div>
 
@@ -135,5 +145,10 @@ function isDisabled(method: (typeof methods)[number]) {
         />
       </label>
     </RadioGroup>
+
+    <template v-if="request">
+      <div class="mt-3 -mx-3 border-t border-grey-50" aria-hidden="true" />
+      <CheckoutDeliveryDetails :request="request" embedded class="mt-3" />
+    </template>
   </section>
 </template>

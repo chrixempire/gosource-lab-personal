@@ -25,10 +25,13 @@ const props = withDefaults(defineProps<{
   embedded?: boolean;
   /** Compact horizontal rows (request details slide panel). */
   listStyle?: boolean;
+  /** Smaller table typography (checkout request items). */
+  compact?: boolean;
 }>(), {
   editable: false,
   embedded: false,
   listStyle: false,
+  compact: false,
 });
 
 const tableShellClass = computed(() =>
@@ -56,6 +59,8 @@ const tableGridTemplate = computed(() =>
     ? '64px minmax(0,2.2fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,0.8fr) minmax(0,1fr) 3rem'
     : '64px minmax(0,2.4fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,0.8fr) minmax(0,1fr)',
 );
+
+const tableTextClass = computed(() => (props.compact ? 'text-[12px]' : 'text-sm'));
 
 const skeletonColumns = computed(() => [
   { kind: 'line' as const, lineClass: 'w-8' },
@@ -255,7 +260,10 @@ const removeConfirmMessage = computed(() => {
         <TableHeader>
           <TableHeadRow
             :style="{ gridTemplateColumns: tableGridTemplate }"
-            :class="loading ? 'pointer-events-none opacity-60' : undefined"
+            :class="[
+              loading ? 'pointer-events-none opacity-60' : undefined,
+              compact ? 'text-[12px]' : undefined,
+            ]"
           >
             <TableCell>S/N</TableCell>
             <TableCell>Product</TableCell>
@@ -281,7 +289,7 @@ const removeConfirmMessage = computed(() => {
             :class="CUSTOMER_TABLE_STRIPED_ROW_CLASS"
           >
             <TableCell>
-              <p class="text-sm font-medium text-grey-900">
+              <p :class="[tableTextClass, 'font-medium text-grey-900']">
                 {{ index + 1 }}
               </p>
             </TableCell>
@@ -299,7 +307,7 @@ const removeConfirmMessage = computed(() => {
                 />
               </div>
               <div class="min-w-0">
-                <p class="truncate text-sm font-semibold text-grey-900">
+                <p :class="[tableTextClass, 'truncate font-semibold text-grey-900']">
                   {{ product.productName }}
                 </p>
                 <p
@@ -328,25 +336,25 @@ const removeConfirmMessage = computed(() => {
                   @remove="promptRemove(product)"
                 />
               </div>
-              <p v-else class="text-sm font-medium text-grey-900">
+              <p v-else :class="[tableTextClass, 'font-medium text-grey-900']">
                 {{ product.quantity }}
               </p>
             </TableCell>
 
             <TableCell>
-              <p class="text-sm font-medium text-grey-900">
+              <p :class="[tableTextClass, 'font-medium text-grey-900']">
                 {{ formatCurrency(product.unitPrice) }}
               </p>
             </TableCell>
 
             <TableCell>
-              <p class="text-sm font-medium text-grey-900">
+              <p :class="[tableTextClass, 'font-medium text-grey-900']">
                 {{ product.unit || 'Standard pack' }}
               </p>
             </TableCell>
 
             <TableCell>
-              <p class="text-sm font-semibold text-grey-900">
+              <p :class="[tableTextClass, 'font-semibold text-grey-900']">
                 {{ formatCurrency(product.totalPrice) }}
               </p>
             </TableCell>
