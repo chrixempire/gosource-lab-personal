@@ -4,7 +4,7 @@ definePageMeta({ layout: 'customer-market' });
 import type { ApproveRequestResponse, CustomerMeResponse, RequestRecord } from '@gosource/api-client';
 import { Button, StatusTag, toast } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
-import CheckoutDeliveryDetails from '~/components/checkout/CheckoutDeliveryDetails.vue';
+import CheckoutDeliveryMessage from '~/components/checkout/CheckoutDeliveryMessage.vue';
 import CheckoutPaymentMethod, {
   type CheckoutPaymentMethodValue,
 } from '~/components/checkout/CheckoutPaymentMethod.vue';
@@ -500,35 +500,36 @@ const canSubmitCheckout = computed(
           :credit-enabled="checkoutCreditEligibility.enabled"
           :credit-available-kobo="creditAccount?.availableKobo ?? 0"
           :credit-description="checkoutCreditEligibility.description"
+          :request="request"
         />
 
-        <CheckoutPaymentSummary
-          :request-id="request.id"
-          :subtotal="requestSubtotal"
-          :delivery-fee="requestDeliveryFee"
-          :service-charge="computedServiceCharge"
-          :discount="requestDiscount"
-          :total="computedTotal"
-          :format-currency="formatRequestCurrency"
-          :coupon-applied="checkoutCouponApplied"
-          :coupon-label="checkoutCouponLabel"
-          :submitting="submitting"
-          :can-submit="canSubmitCheckout"
-          :submit-label="checkoutCtaLabel"
-          @submit="submitCheckout"
-          @coupon-applied="handleCouponApplied"
-          @coupon-removed="handleCouponRemoved"
-        />
+        <div class="flex flex-col gap-2">
+          <CheckoutPaymentSummary
+            :request-id="request.id"
+            :subtotal="requestSubtotal"
+            :delivery-fee="requestDeliveryFee"
+            :service-charge="computedServiceCharge"
+            :discount="requestDiscount"
+            :total="computedTotal"
+            :format-currency="formatRequestCurrency"
+            :coupon-applied="checkoutCouponApplied"
+            :coupon-label="checkoutCouponLabel"
+            :submitting="submitting"
+            :can-submit="canSubmitCheckout"
+            :submit-label="checkoutCtaLabel"
+            @submit="submitCheckout"
+            @coupon-applied="handleCouponApplied"
+            @coupon-removed="handleCouponRemoved"
+          />
+
+          <CheckoutDeliveryMessage />
+        </div>
       </div>
 
       <CheckoutRequestItems
         :request="request"
         :format-currency="formatRequestCurrency"
       />
-
-      <div class="grid gap-2 xl:grid-cols-2 xl:items-start">
-        <CheckoutDeliveryDetails class="min-w-0" :request="request" />
-      </div>
     </div>
 
     <div

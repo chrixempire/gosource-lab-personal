@@ -37,7 +37,7 @@ export function useBusinessBranchContext() {
   const branchFetchInitialized = useState('business-branch-fetch-initialized', () => false);
   const activeBranchId = useState<string | null>('business-active-branch-id', () => null);
 
-  const { listBranches } = useCustomerBranchService();
+  const { listBranches, getBranch } = useCustomerBranchService();
   const { cartDrawerOpen } = useMarketplaceUi();
 
   const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
@@ -83,9 +83,41 @@ export function useBusinessBranchContext() {
     }
 
     if (isEmployeeSession.value) {
-      branchFetchInitialized.value = true;
       applyActiveBranchForEmployee();
-      return branches.value;
+      const assignedBranchId = activeBranchId.value;
+
+      if (!assignedBranchId) {
+        branches.value = [];
+        branchFetchInitialized.value = true;
+        return branches.value;
+      }
+
+      if (branchFetchLoading.value) {
+        return branches.value;
+      }
+
+      const assignedBranchIsLoaded = branches.value?.some(
+        (branch) => branch.id === assignedBranchId,
+      );
+      if (!force && branchFetchInitialized.value && assignedBranchIsLoaded) {
+        return branches.value;
+      }
+
+      branchFetchLoading.value = true;
+
+      try {
+        const response = await getBranch(assignedBranchId);
+        branches.value = response.data ? [response.data] : [];
+        branchFetchInitialized.value = true;
+        return branches.value;
+      } catch {
+        // Keep only a matching cached record; never expose another branch to an employee.
+        branches.value = (branches.value ?? []).filter((branch) => branch.id === assignedBranchId);
+        branchFetchInitialized.value = true;
+        return branches.value;
+      } finally {
+        branchFetchLoading.value = false;
+      }
     }
 
     if (!isOwnerSession.value) {

@@ -62,7 +62,7 @@ async function handleRemoveCoupon() {
 </script>
 
 <template>
-  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+  <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
     <div class="mb-5">
       <h2 class="text-lg font-semibold text-grey-900">Pricing summary</h2>
       <p class="mt-1 text-sm text-grey-text">
@@ -70,7 +70,7 @@ async function handleRemoveCoupon() {
       </p>
     </div>
 
-    <div class="mb-5 rounded-[16px] border border-grey-50 bg-grey-55/60 p-4">
+    <div class="mb-5 rounded-[16px] border border-grey-50 bg-grey-55/60 p-2">
       <div class="flex items-center justify-between gap-3">
         <div class="flex min-w-0 items-center gap-2">
           <Tag class="size-4 shrink-0 text-grey-300" aria-hidden="true" />
