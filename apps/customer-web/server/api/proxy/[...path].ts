@@ -249,6 +249,20 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const isLegacyOrderListRequest =
+    isLegacyCustomerApiMode(event) &&
+    method === 'GET' &&
+    targetPathSegments[0] === 'order' &&
+    targetPathSegments.length === 1;
+  const requestedOrderPage = Number(query.page ?? 1);
+  const requestedOrderLimit = Number(query.limit ?? 10);
+  const orderAmountFrom = query.amountFrom != null ? Number(query.amountFrom) : Number.NaN;
+  const orderAmountTo = query.amountTo != null ? Number(query.amountTo) : Number.NaN;
+  const hasOrderAmountFilter =
+    isLegacyOrderListRequest &&
+    (Number.isFinite(orderAmountFrom) || Number.isFinite(orderAmountTo));
+  const legacyOrderBatchSize = 100;
+
   let proxyQuery: Record<string, unknown> = { ...query };
   if (
     isLegacyCustomerApiMode(event) &&
@@ -260,12 +274,19 @@ export default defineEventHandler(async (event) => {
   }
 
   if (
-    isLegacyCustomerApiMode(event) &&
-    method === 'GET' &&
-    targetPathSegments[0] === 'order' &&
-    targetPathSegments.length === 1
+    isLegacyOrderListRequest
   ) {
     proxyQuery = toLegacyOrderListQuery(proxyQuery);
+
+    if (hasOrderAmountFilter) {
+      // The legacy backend filters its stored total, while customer-web displays a
+      // normalized total. Fetch the scoped order set so filtering can happen on the
+      // normalized value before customer-facing pagination is applied.
+      delete proxyQuery.amountFrom;
+      delete proxyQuery.amountTo;
+      proxyQuery.page = 1;
+      proxyQuery.limit = legacyOrderBatchSize;
+    }
   }
 
   const targetUrl = buildTargetUrl(targetBaseUrl, targetPathSegments, proxyQuery);
@@ -275,9 +296,9 @@ export default defineEventHandler(async (event) => {
     targetPathSegments.length === 3 &&
     targetPathSegments[2] === 'invoice';
 
-  const execute = async () => {
+  const execute = async (url = targetUrl) => {
     try {
-      return await $fetch.raw(targetUrl, {
+      return await $fetch.raw(url, {
         method,
         headers,
         body: parsedBody ? JSON.stringify(parsedBody) : rawBody,
@@ -386,7 +407,65 @@ export default defineEventHandler(async (event) => {
   }
 
   if (isLegacyCustomerApiMode(event)) {
-    const legacyData = response._data;
+    let legacyData = response._data;
+
+    if (hasOrderAmountFilter) {
+      const firstRoot =
+        legacyData && typeof legacyData === 'object'
+          ? (legacyData as Record<string, unknown>)
+          : {};
+      const firstMeta =
+        firstRoot.meta && typeof firstRoot.meta === 'object'
+          ? (firstRoot.meta as Record<string, unknown>)
+          : {};
+      const rows = Array.isArray(firstRoot.data) ? [...firstRoot.data] : [];
+      const upstreamTotal = Number(firstMeta.total ?? rows.length);
+      const upstreamPageCount =
+        Number.isFinite(upstreamTotal) && upstreamTotal > 0
+          ? Math.ceil(upstreamTotal / legacyOrderBatchSize)
+          : 1;
+
+      for (let page = 2; page <= upstreamPageCount; page += 1) {
+        const pageUrl = buildTargetUrl(targetBaseUrl, targetPathSegments, {
+          ...proxyQuery,
+          page,
+        });
+        const pageResponse = await execute(pageUrl);
+        if (!('status' in pageResponse)) {
+          return pageResponse;
+        }
+        if (pageResponse.status >= 400) {
+          return forwardApiError(
+            event,
+            {
+              statusCode: pageResponse.status,
+              statusMessage: pageResponse.statusText || 'Unable to load filtered orders',
+              data: pageResponse._data,
+            },
+            'Unable to load filtered orders',
+          );
+        }
+
+        const pageRoot =
+          pageResponse._data && typeof pageResponse._data === 'object'
+            ? (pageResponse._data as Record<string, unknown>)
+            : {};
+        if (Array.isArray(pageRoot.data)) {
+          rows.push(...pageRoot.data);
+        }
+      }
+
+      legacyData = {
+        ...firstRoot,
+        data: rows,
+        meta: {
+          ...firstMeta,
+          page: 1,
+          limit: rows.length,
+          total: rows.length,
+        },
+      };
+    }
 
     if (isOrderInvoiceDownload) {
       setResponseHeader(event, 'content-type', response.headers.get('content-type') ?? 'application/pdf');
@@ -630,10 +709,13 @@ export default defineEventHandler(async (event) => {
 
     if (targetPathSegments[0] === 'order') {
       if (method === 'GET' && targetPathSegments.length === 1) {
-        const page = Number(query.page ?? 1);
-        const limit = Number(query.limit ?? 10);
+        const page = requestedOrderPage;
+        const limit = requestedOrderLimit;
         const search = typeof query.search === 'string' ? query.search : undefined;
-        return normalizeLegacyOrderListResponse(legacyData, page, limit, search);
+        return normalizeLegacyOrderListResponse(legacyData, page, limit, search, {
+          amountFrom: Number.isFinite(orderAmountFrom) ? orderAmountFrom : undefined,
+          amountTo: Number.isFinite(orderAmountTo) ? orderAmountTo : undefined,
+        });
       }
 
       if (

@@ -4,12 +4,18 @@ import OrderFilterChip from '~/components/orders/OrderFilterChip.vue';
 
 const open = defineModel<boolean>('open', { default: false });
 
-defineProps<{
-  label: string;
-  active?: boolean;
-  badgeCount?: number;
-  panelClass?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    label: string;
+    active?: boolean;
+    badgeCount?: number;
+    panelClass?: string;
+    applyDisabled?: boolean;
+  }>(),
+  {
+    applyDisabled: false,
+  },
+);
 
 const emit = defineEmits<{
   apply: [];
@@ -17,6 +23,10 @@ const emit = defineEmits<{
 }>();
 
 function onApply() {
+  if (props.applyDisabled) {
+    return;
+  }
+
   emit('apply');
   open.value = false;
 }
@@ -50,7 +60,7 @@ function onClear() {
           <Button type="button" size="small" variant="outline" @click="onClear">
             Clear
           </Button>
-          <Button type="button" size="small" @click="onApply">
+          <Button type="button" size="small" :disabled="applyDisabled" @click="onApply">
             Apply
           </Button>
         </div>

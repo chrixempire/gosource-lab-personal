@@ -1678,6 +1678,7 @@ export function normalizeLegacyOrderListResponse(
   page = 1,
   limit = 10,
   search?: string,
+  filters: { amountFrom?: number; amountTo?: number } = {},
 ): OrderListResponse {
   const root = asRecord(payload);
   let items = asArray(root.data).map((item) => mapLegacyOrderRecord(asRecord(item)));
@@ -1699,6 +1700,14 @@ export function normalizeLegacyOrderListResponse(
     );
   }
 
+  if (filters.amountFrom != null && Number.isFinite(filters.amountFrom)) {
+    items = items.filter((order) => order.totalPrice >= filters.amountFrom!);
+  }
+
+  if (filters.amountTo != null && Number.isFinite(filters.amountTo)) {
+    items = items.filter((order) => order.totalPrice <= filters.amountTo!);
+  }
+
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
   const rootMeta = asRecord(root.meta);
@@ -1711,8 +1720,9 @@ export function normalizeLegacyOrderListResponse(
   }
 
   const observedMinimum = (safePage - 1) * safeLimit + pageItems.length;
+  const hasLocalFilters = Boolean(query) || filters.amountFrom != null || filters.amountTo != null;
   const total =
-    query && items.length > safeLimit
+    hasLocalFilters
       ? items.length
       : Number.isFinite(legacyTotal) && legacyTotal >= 0
         ? Math.max(legacyTotal, observedMinimum)
