@@ -219,4 +219,33 @@ html.customer-theme-switching *::after {
   .customer-image-discount-pill {
     @apply bg-primary-500 text-white shadow-[0_2px_8px_rgba(16,24,40,0.18)];
   }
+
+  @keyframes customer-news-rail-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .customer-news-rail-track {
+    animation: customer-news-rail-scroll 60s linear infinite;
+  }
+
+  .customer-news-rail:hover .customer-news-rail-track {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .customer-news-rail {
+      overflow-x: auto;
+    }
+
+    .customer-news-rail-track {
+      animation: none;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+  }
 }

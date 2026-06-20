@@ -5,6 +5,7 @@ import ExploreCategorySection from '~/components/explore/ExploreCategorySection.
 import ExplorePageHero from '~/components/explore/ExplorePageHero.vue';
 import ExplorePromotionsSection from '~/components/explore/ExplorePromotionsSection.vue';
 import ExploreRecentOrdersSection from '~/components/explore/ExploreRecentOrdersSection.vue';
+import MarketNewsRail from '~/components/market/MarketNewsRail.vue';
 import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
@@ -384,6 +385,8 @@ onUnmounted(() => {
       :greeting-name="greetingName"
       :session-loading="heroSessionLoading"
     />
+
+    <MarketNewsRail class="mb-2" />
 
     <div class="flex flex-col gap-2">
       <ExploreRecentOrdersSection
