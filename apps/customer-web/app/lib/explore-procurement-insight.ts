@@ -322,27 +322,25 @@ export function normalizeProductAnalysisRows(data: unknown): ProductAnalysisApiR
     return [];
   }
 
-  return data
-    .map((entry) => {
+  return data.flatMap((entry): ProductAnalysisApiRow[] => {
       const row = entry as ProductAnalysisApiRow;
       const name = typeof row.name === 'string' ? row.name.trim() : '';
       const totalQuantity = Number(row.totalQuantity ?? 0);
       const totalAmountSpent = Number(row.totalAmountSpent ?? 0);
 
       if (!name || !Number.isFinite(totalAmountSpent) || totalAmountSpent <= 0) {
-        return null;
+        return [];
       }
 
-      return {
+      return [{
         name,
         totalQuantity: Number.isFinite(totalQuantity) ? totalQuantity : 0,
         totalAmountSpent,
         lastPurchaseDate: row.lastPurchaseDate ?? null,
         description:
           typeof row.description === 'string' ? row.description.trim() : '',
-      };
-    })
-    .filter((row): row is ProductAnalysisApiRow => row !== null);
+      }];
+    });
 }
 
 export function procuredItemsFromProductAnalysis(
@@ -369,25 +367,23 @@ export function normalizeTopProcuredItemsPayload(data: unknown): ProcuredItemRow
     return [];
   }
 
-  return data
-    .map((entry) => {
+  return data.flatMap((entry): ProcuredItemRow[] => {
       const row = entry as { name?: string; summary?: { totalCost?: number } };
       const totalCost = Number(row.summary?.totalCost ?? 0);
       const name = typeof row.name === 'string' ? row.name.trim() : '';
 
       if (!name || !Number.isFinite(totalCost) || totalCost <= 0) {
-        return null;
+        return [];
       }
 
-      return {
+      return [{
         name,
         totalCost,
         quantity: 0,
         description: '',
         lastPurchaseDate: null,
-      };
-    })
-    .filter((row): row is ProcuredItemRow => row !== null);
+      }];
+    });
 }
 
 export function normalizeTotalProcurementPayload(data: unknown): {
@@ -400,25 +396,23 @@ export function normalizeTotalProcurementPayload(data: unknown): {
   };
 
   const summary = root?.procurementSummary ?? {};
-  const items = Object.entries(summary)
-    .map(([name, row]) => {
+  const items = Object.entries(summary).flatMap(([name, row]): ProcuredItemRow[] => {
       const totalCost = Number(row?.amountSpent ?? 0);
       const trimmed = name.trim();
 
       if (!trimmed || !Number.isFinite(totalCost) || totalCost <= 0) {
-        return null;
+        return [];
       }
 
       const quantity = Number(row?.quantity ?? 0);
-      return {
+      return [{
         name: trimmed,
         totalCost,
         quantity: Number.isFinite(quantity) ? quantity : 0,
         description: '',
         lastPurchaseDate: null,
-      };
-    })
-    .filter((row): row is ProcuredItemRow => row !== null);
+      }];
+    });
 
   const reportedTotal = Number(root?.totalAmountSpent ?? 0);
   const totalSpent =

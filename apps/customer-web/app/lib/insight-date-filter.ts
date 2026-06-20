@@ -33,7 +33,7 @@ const INSIGHT_DATE_FILTER_TYPES = new Set<InsightDateFilterType>(
 );
 
 function readQueryString(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
   key: string,
 ) {
   const entry = query[key];
@@ -45,7 +45,7 @@ export function isInsightDateFilterType(value: string): value is InsightDateFilt
 }
 
 export function parseInsightDateFilterFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
 ): InsightDateFilterValue {
   const raw = readQueryString(query, 'insightPeriod');
   const filterType =

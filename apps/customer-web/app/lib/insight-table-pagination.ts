@@ -12,7 +12,7 @@ export type InsightPaginationMeta = {
 };
 
 function readQueryString(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
   key: string,
 ) {
   const entry = query[key];
@@ -20,7 +20,7 @@ function readQueryString(
 }
 
 export function parseInsightPaginationFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
   options: { defaultLimit?: number } = {},
 ) {
   const defaultLimit = options.defaultLimit ?? DEFAULT_INSIGHT_PAGE_SIZE;

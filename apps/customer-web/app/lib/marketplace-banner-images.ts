@@ -26,24 +26,23 @@ export function parseMarketplaceBannerManifest(payload: unknown): MarketplaceBan
   }
 
   return banners
-    .map((entry, index) => {
+    .flatMap((entry, index): MarketplaceBannerImage[] => {
       if (!entry || typeof entry !== 'object') {
-        return null;
+        return [];
       }
 
       const imageUrl = String((entry as MarketplaceBannerImage).imageUrl ?? '').trim();
       if (!imageUrl) {
-        return null;
+        return [];
       }
 
-      return {
+      return [{
         id: String((entry as MarketplaceBannerImage).id ?? `banner-${index + 1}`),
         imageUrl,
         alt: String((entry as MarketplaceBannerImage).alt ?? 'Marketplace promotion'),
         linkUrl: (entry as MarketplaceBannerImage).linkUrl ?? null,
-      };
+      }];
     })
-    .filter((entry): entry is MarketplaceBannerImage => entry != null)
     .slice(0, 4);
 }
 

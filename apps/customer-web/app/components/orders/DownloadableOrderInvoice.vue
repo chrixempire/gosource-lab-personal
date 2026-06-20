@@ -423,7 +423,7 @@ const calcUnitPrice = (item: Partial<InvoiceOrderProductLine>) => {
     return item.product.discountPrice;
   }
 
-  return price;
+  return price ?? item.product.discountPrice;
 };
 </script>
 

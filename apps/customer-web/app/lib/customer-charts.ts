@@ -75,7 +75,7 @@ export function customerChartTooltipPlugin(theme: ReturnType<typeof readCustomer
     padding: 10,
     displayColors: false,
     cornerRadius: 8,
-    titleFont: { size: 12, weight: '600' as const },
+    titleFont: { size: 12, weight: 600 },
     bodyFont: { size: 12 },
   };
 }

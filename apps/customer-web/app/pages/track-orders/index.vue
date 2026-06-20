@@ -346,7 +346,7 @@ watch(insightMeta, (meta) => {
 });
 
 function withoutInsightRouteParams(
-  query: Record<string, string | string[] | undefined>,
+  query: Record<string, string | Array<string | null> | null | undefined>,
 ) {
   const nextQuery = { ...query };
   delete nextQuery.insightPeriod;
@@ -360,7 +360,7 @@ function setActiveTab(tab: TrackOrdersTab) {
   const nextQuery = {
     ...route.query,
     ...trackOrdersTabToRouteQuery(tab),
-  } as Record<string, string | string[] | undefined>;
+  } as Record<string, string | Array<string | null> | null | undefined>;
 
   if (tab === 'insight') {
     Object.assign(

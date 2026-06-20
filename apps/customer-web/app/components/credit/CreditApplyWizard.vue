@@ -193,7 +193,7 @@ async function handleContinue() {
 
         <Button
           class="mt-6 h-12 w-full"
-          size="lg"
+          size="large"
           :loading="submitting"
           :disabled="!canContinue"
           @click="handleContinue"

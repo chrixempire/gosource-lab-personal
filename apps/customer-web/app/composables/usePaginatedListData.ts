@@ -38,7 +38,7 @@ export async function usePaginatedListData<ResT, DataT = ResT>(
   baseKey: string,
   keyParts: MaybeRefOrGetter<ListKeyPart[]>,
   handler: () => Promise<ResT>,
-  options?: AuthenticatedAsyncDataOptions<ResT, DataT, never, undefined> & {
+  options?: AuthenticatedAsyncDataOptions<ResT, DataT, never, DataT> & {
     pageCache?: boolean;
     revalidateOnFocus?: boolean;
   },
@@ -113,7 +113,7 @@ export async function usePaginatedListData<ResT, DataT = ResT>(
     getCachedData:
       getCachedDataOption ??
       (pageCacheEnabled
-        ? () => resolveListCachedData(watchSignature.value, pageCache)
+        ? () => resolveListCachedData(watchSignature.value, pageCache) as DataT | undefined
         : undefined),
   });
 

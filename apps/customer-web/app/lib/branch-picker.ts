@@ -5,7 +5,7 @@ export const ALL_BRANCHES_VALUE = '';
 export const BRANCH_FILTER_QUERY_ALL = 'all';
 
 export function branchFilterFromQueryParam(
-  raw: string | string[] | null | undefined,
+  raw: string | Array<string | null> | null | undefined,
 ): string | null {
   if (raw === undefined || raw === null) {
     return null;
@@ -48,7 +48,7 @@ export function resolvePageListBranchId(
   return trimmed || undefined;
 }
 
-type LocationQueryLike = Record<string, string | string[] | null | undefined>;
+type LocationQueryLike = Record<string, string | Array<string | null> | null | undefined>;
 
 /**
  * Branch id for shopping-lists fetch scope (empty = fan-out all branches).

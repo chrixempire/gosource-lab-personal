@@ -310,7 +310,9 @@ const membersListKeyParts = computed(() => [
   limit.value,
   debouncedSearch.value,
   apiBranchId.value ?? '',
-  route.query.branchId ?? '',
+  Array.isArray(route.query.branchId)
+    ? route.query.branchId.filter((value): value is string => value != null).join(',')
+    : route.query.branchId ?? '',
 ]);
 
 const { data: membersPayload, pending: membersPayloadPending, refresh: refreshMembersPayload } =
@@ -854,10 +856,7 @@ function cardArticleClass(member: BranchMemberRecord) {
                   <p class="truncate text-sm text-grey-300">
                     {{ member.email }}
                   </p>
-                  <p
-                    v-if="showMemberBranchLabels"
-                    class="truncate text-xs text-grey-300"
-                  >
+                  <p class="truncate text-xs text-grey-300">
                     {{ member.branchLabel }}
                   </p>
                 </div>
