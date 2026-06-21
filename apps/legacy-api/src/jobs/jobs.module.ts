@@ -36,6 +36,18 @@ import { QUEUE_NAMES } from './constants';
           removeOnFail: 50,
         },
       },
+      {
+        name: QUEUE_NAMES.ADMIN_MESSAGING_EMAIL,
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+          removeOnComplete: 100,
+          removeOnFail: 100,
+        },
+      },
     ),
   ],
   exports: [BullModule],

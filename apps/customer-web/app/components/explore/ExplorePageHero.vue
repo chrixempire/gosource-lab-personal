@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { useNow } from '@vueuse/core';
-import ExploreMarketBannerCarousel from '~/components/explore/ExploreMarketBannerCarousel.vue';
-import ExplorePageHeroGreetingSkeleton from '~/components/explore/ExplorePageHeroGreetingSkeleton.vue';
-import { useMarketplaceBanners } from '~/composables/useMarketplaceBanners';
-import { getCustomerTimeGreeting } from '~/lib/customer-time-of-day';
+import { useNow } from "@vueuse/core";
+import ExploreMarketBannerCarousel from "~/components/explore/ExploreMarketBannerCarousel.vue";
+import ExplorePageHeroGreetingSkeleton from "~/components/explore/ExplorePageHeroGreetingSkeleton.vue";
+import { useMarketplaceBanners } from "~/composables/useMarketplaceBanners";
+import { getCustomerTimeGreeting } from "~/lib/customer-time-of-day";
 
 defineProps<{
   greetingName: string;
   sessionLoading?: boolean;
+  hasLeadingAlert?: boolean;
 }>();
 
-const { banners: marketplaceBanners, loaded: marketplaceBannersLoaded } = useMarketplaceBanners();
+const { banners: marketplaceBanners, loaded: marketplaceBannersLoaded } =
+  useMarketplaceBanners();
 const now = useNow({ interval: 60_000 });
 const timeGreeting = computed(() => getCustomerTimeGreeting(now.value));
 const showMarketplaceCarousel = computed(
@@ -19,7 +21,7 @@ const showMarketplaceCarousel = computed(
 </script>
 
 <template>
-  <header class="mb-2 pt-3 sm:mb-2 sm:pt-6">
+  <header class="mb-2" :class="hasLeadingAlert ? 'pt-2.5' : 'pt-3 sm:pt-6'">
     <div class="flex min-h-0 min-w-0 flex-col gap-1">
       <ExplorePageHeroGreetingSkeleton v-if="sessionLoading" />
       <h1
