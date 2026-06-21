@@ -197,13 +197,18 @@ async function handlePay() {
     return;
   }
 
-  if (paymentMethod.value === 'BANK_TRANSFER') {
+  const method = paymentMethod.value;
+  if (!method) {
+    return;
+  }
+
+  if (method === 'BANK_TRANSFER') {
     transferOpen.value = true;
     return;
   }
 
   const checkout: RepaymentCheckout = {
-    method: paymentMethod.value,
+    method,
     amountNaira: effectiveAmountNaira.value,
   };
 

@@ -314,9 +314,14 @@ async function submitCheckout() {
 }
 
 function applyApprovedCheckout(response: ApproveRequestResponse) {
-  approvedRequest.value = response.data;
+  const approved = response.data;
+  if (!approved) {
+    return;
+  }
+
+  approvedRequest.value = approved;
   approvedOrderId.value = response.orderId ?? null;
-  request.value = response.data;
+  request.value = approved;
   resetCartState();
   void loadCart(true);
   invalidateCheckoutMutationListCaches();
@@ -332,6 +337,9 @@ async function processApproval(
   }
 
   const response = await processPayment(request.value.id, method, options);
+  if (!response) {
+    return;
+  }
   transferDialogOpen.value = false;
 
   if (response?.data) {

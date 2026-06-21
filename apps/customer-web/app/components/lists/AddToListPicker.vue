@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BranchRecord, ShoppingListRecord } from '@gosource/api-client';
+import type { BranchRecord, CustomerMeResponse, ShoppingListRecord } from '@gosource/api-client';
 import {
   Button,
   Dialog,
@@ -48,10 +48,7 @@ const { activeBranchId, ensureBranchForAction, fetchBranchesInBackground } = use
 const { listListsForBranch, createList } = useCustomerShoppingListService();
 const { getCachedLists, setCachedLists } = useShoppingListBranchCache();
 
-const session = useState<{
-  user_type?: 'customer' | 'employee';
-  data?: { branchId?: string | null };
-} | null>('customer-session', () => null);
+const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 
 const { listBranches } = useCustomerBranchService();
 
@@ -99,14 +96,19 @@ async function resolveBranchId() {
     return pickerBranchId.value || null;
   }
 
-  let branchId = activeBranchId.value ?? session.value?.data?.branchId ?? null;
+  const assignedBranchId = () => {
+    const data = session.value?.data;
+    return data && 'branchId' in data ? data.branchId : null;
+  };
+
+  let branchId = activeBranchId.value ?? assignedBranchId();
   if (!branchId) {
     await fetchBranchesInBackground(true);
-    branchId = activeBranchId.value ?? session.value?.data?.branchId ?? null;
+    branchId = activeBranchId.value ?? assignedBranchId();
   }
   if (!branchId) {
     await ensureBranchForAction();
-    branchId = activeBranchId.value ?? session.value?.data?.branchId ?? null;
+    branchId = activeBranchId.value ?? assignedBranchId();
   }
   return branchId;
 }

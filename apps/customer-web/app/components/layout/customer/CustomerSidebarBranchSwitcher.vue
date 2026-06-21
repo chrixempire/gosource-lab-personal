@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CustomerMeResponse } from '@gosource/api-client';
+import type { BranchRecord, CustomerMeResponse } from '@gosource/api-client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +63,7 @@ const filteredBranches = computed(() => {
   );
 });
 
-function branchLabel(branch: (typeof branches.value)[number]) {
+function branchLabel(branch: BranchRecord) {
   return `${branch.branchName}${branch.isHeadquarter ? ' (Headquarter)' : ''}`;
 }
 
@@ -102,10 +102,7 @@ onMounted(() => {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        :class="[
-          CUSTOMER_FLOATING_LAYER_Z,
-          'flex max-h-[min(18rem,70vh)] w-[var(--reka-dropdown-menu-trigger-width)] flex-col overflow-hidden p-0',
-        ]"
+        :class="`${CUSTOMER_FLOATING_LAYER_Z} flex max-h-[min(18rem,70vh)] w-[var(--reka-dropdown-menu-trigger-width)] flex-col overflow-hidden p-0`"
       >
         <div class="shrink-0 border-b border-grey-50 px-2 pb-2 pt-1">
           <Input

@@ -1,4 +1,4 @@
-import type { BranchListResponse, BranchRecord } from '@gosource/api-client';
+import type { BranchListResponse, BranchRecord, CustomerMeResponse } from '@gosource/api-client';
 import {
   clearStoredActiveBranchId,
   readStoredActiveBranchId,
@@ -24,10 +24,8 @@ export function resolveDefaultActiveBranchId(
   return branches.find((branch) => branch.isHeadquarter)?.id ?? branches[0]?.id ?? null;
 }
 
-type CustomerSessionState = {
-  user_type?: 'customer' | 'employee';
+type CustomerSessionState = CustomerMeResponse & {
   bootstrap?: { hasBranch?: boolean };
-  data?: { businessId?: string | null; branchId?: string | null };
 };
 
 export function useBusinessBranchContext() {
@@ -71,7 +69,8 @@ export function useBusinessBranchContext() {
   }
 
   function applyActiveBranchForEmployee() {
-    const id = session.value?.data?.branchId;
+    const data = session.value?.data;
+    const id = data && 'branchId' in data ? data.branchId : null;
     activeBranchId.value = typeof id === 'string' && id.trim() ? id.trim() : null;
   }
 

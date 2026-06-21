@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BranchRecord, ShoppingListRecord } from '@gosource/api-client';
+import type { BranchRecord, CustomerMeResponse, ShoppingListRecord } from '@gosource/api-client';
 import { Button, PaginationBar, ViewToggle, toast } from '@gosource/ui';
 import { useDebounceFn } from '@vueuse/core';
 import { Plus } from 'lucide-vue-next';
@@ -40,10 +40,7 @@ const {
 } = useCustomerShoppingListService();
 
 const route = useRoute();
-const session = useState<{
-  user_type?: 'customer' | 'employee';
-  data?: { branchId?: string | null };
-} | null>('customer-session', () => null);
+const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const { listsRefreshNonce } = useAddToList();
 const { setCachedLists } = useShoppingListBranchCache();
 const { isSubmitting: requestSubmitting, submitListAsRequest } = useListRequestAction();
@@ -100,7 +97,8 @@ watch(searchValue, (value) => {
 
 const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
 const employeeBranchId = computed(() => {
-  const branchId = session.value?.data?.branchId;
+  const data = session.value?.data;
+  const branchId = data && 'branchId' in data ? data.branchId : null;
   return typeof branchId === 'string' ? branchId.trim() : '';
 });
 
@@ -204,7 +202,7 @@ const { data: listsPayload, pending: listsPending, refresh: refreshListsPayload 
     async () => {
       const filterBranchId = resolveShoppingListsFilterBranchId(route.query, {
         apiBranchId: apiBranchId.value,
-        activeBranchId: workingBranchId.value,
+        activeBranchId: workingBranchId.value ?? undefined,
         isEmployee: isEmployeeSession.value,
         employeeBranchId: employeeBranchId.value,
       });

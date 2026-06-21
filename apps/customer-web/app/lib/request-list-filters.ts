@@ -20,7 +20,7 @@ const REQUEST_STATUS_SET = new Set<RequestStatusFilter>(
 );
 
 function readQueryString(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
   key: string,
 ) {
   const entry = query[key];
@@ -28,10 +28,10 @@ function readQueryString(
 }
 
 export function parseRequestStatusFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
 ): RequestStatusFilter[] | null {
   const raw = readQueryString(query, 'status');
-  if (raw === undefined) {
+  if (raw == null) {
     return null;
   }
 
@@ -46,7 +46,7 @@ export function parseRequestStatusFromQuery(
 }
 
 export function parseRequestFiltersFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
 ): RequestListFilters {
   const amountFrom = readQueryString(query, 'amountFrom');
   const amountTo = readQueryString(query, 'amountTo');

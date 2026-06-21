@@ -10,6 +10,7 @@ import {
   TableSkeleton,
 } from '@gosource/ui';
 import { CUSTOMER_TABLE_DATA_ROW_CLASS } from '~/lib/customer-table-layout';
+import type { RequestListItem } from '~/components/requests/RequestCards.vue';
 
 defineProps<{
   branchName: string;
