@@ -22,7 +22,7 @@ const alertStyle = computed(() => {
 
 <template>
   <div
-    class="-mx-4 flex w-[calc(100%+2rem)] items-start gap-2 rounded-[4px] border-b px-3 py-2.5 text-sm font-medium leading-5 sm:-mx-5 sm:w-[calc(100%+2.5rem)] sm:items-center sm:px-4 lg:-mx-6 lg:w-[calc(100%+3rem)]"
+    class="-mx-4 flex w-[calc(100%+2rem)] items-start gap-2 border-b px-3 py-2.5 text-sm font-medium leading-5 sm:-mx-5 sm:w-[calc(100%+2.5rem)] sm:items-center sm:px-4 lg:-mx-6 lg:w-[calc(100%+3rem)]"
     :style="alertStyle"
     role="status"
   >

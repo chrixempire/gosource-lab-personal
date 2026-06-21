@@ -17,7 +17,14 @@ import {
   TableShell,
   TableSkeleton,
 } from "@gosource/ui";
-import { ArrowDown, ArrowUp, Bell, Ellipsis, Mail } from "lucide-vue-next";
+import {
+  ArrowDown,
+  ArrowUp,
+  Bell,
+  Ellipsis,
+  LoaderCircle,
+  Mail,
+} from "lucide-vue-next";
 import type {
   AdminMessageRow,
   AdminMessageStatus,
@@ -50,7 +57,7 @@ const emit = defineEmits<{
 }>();
 
 const gridTemplate =
-  "48px minmax(280px,2.4fr) minmax(100px,.7fr) minmax(110px,.8fr) minmax(170px,1fr) 56px";
+  "2.75rem minmax(0,1.4fr) minmax(0,.65fr) minmax(0,.65fr) minmax(0,.9fr) 2.5rem";
 const selectedSet = computed(() => new Set(selectedIds.value ?? []));
 const selectionState = computed<boolean | "indeterminate">(() => {
   if (props.messages.length === 0) return false;
@@ -107,15 +114,12 @@ function formatDate(value: string) {
 
 <template>
   <TableShell
-    class="overflow-visible rounded-xl border border-grey-50 bg-white"
+    class="flex flex-col overflow-visible rounded-xl border border-grey-50 bg-white shadow-[0_20px_48px_-28px_rgba(16,24,40,0.14)]"
   >
     <TableHeader
-      class="overflow-hidden rounded-t-xl border-b border-grey-50 bg-white"
+      class="sticky -top-8 z-30 shrink-0 overflow-hidden rounded-t-xl border-b border-grey-50 bg-white pb-1 shadow-[0_10px_20px_-16px_rgba(16,24,40,0.18)]"
     >
-      <TableHeadRow
-        class="min-w-[850px]"
-        :style="{ gridTemplateColumns: gridTemplate }"
-      >
+      <TableHeadRow :style="{ gridTemplateColumns: gridTemplate }">
         <TableCell class="flex items-center">
           <Checkbox
             :model-value="selectionState"
@@ -150,132 +154,130 @@ function formatDate(value: string) {
       </TableHeadRow>
     </TableHeader>
 
-    <TableSkeleton
-      v-if="loading"
-      :columns="[
-        { kind: 'checkbox' },
-        { kind: 'line', lineClass: 'h-4 w-full' },
-        { kind: 'line', lineClass: 'h-4 w-full' },
-        { kind: 'line', lineClass: 'h-6 w-20 rounded-full' },
-        { kind: 'line', lineClass: 'h-4 w-36' },
-        { kind: 'action', boxClass: 'size-9' },
-      ]"
-      :grid-template-columns="gridTemplate"
-      :row-count="meta.limit"
-      row-class="min-w-[850px] min-h-[72px] bg-white"
-      body-class="!max-h-none !overflow-visible"
-    />
+    <div v-if="loading" class="min-h-0 flex-1">
+      <TableSkeleton
+        :columns="Array(6).fill({ kind: 'line' as const, lineClass: 'w-full' })"
+        :grid-template-columns="gridTemplate"
+        :row-count="10"
+      />
+    </div>
 
-    <TableBody v-else class="!max-h-none !overflow-visible !pt-0">
-      <div
+    <TableBody v-else class="!max-h-none !overflow-visible">
+      <TableRow
         v-if="messages.length === 0"
-        class="flex flex-col items-center justify-center px-6 py-12 text-center"
+        :style="{ gridTemplateColumns: gridTemplate }"
       >
-        <div
-          class="flex size-12 items-center justify-center rounded-full bg-grey-55 text-grey-400"
-        >
-          <Mail class="size-5" />
-        </div>
-        <p class="mt-4 text-base font-semibold text-grey-900">
-          No messages found
-        </p>
-        <p class="mt-1 max-w-md text-sm text-grey-400">
+        <TableCell />
+        <TableCell class="col-span-5 py-12 text-center text-sm text-grey-500">
           {{
             searchActive
               ? "Try changing your search term."
-              : "Send a message to start communicating with customers."
+              : "No messages found."
           }}
-        </p>
-      </div>
-
-      <TableRow
-        v-for="row in messages"
-        :key="row.id"
-        class="min-w-[850px] bg-white"
-        :style="{ gridTemplateColumns: gridTemplate }"
-      >
-        <TableCell class="flex items-center" @click.stop>
-          <Checkbox
-            :model-value="selectedSet.has(row.id)"
-            :aria-label="`Select ${row.message}`"
-            @update:model-value="toggleRow(row.id, $event)"
-          />
-        </TableCell>
-        <TableCell>
-          <p v-if="row.subject" class="text-sm font-semibold text-grey-900">
-            {{ row.subject }}
-          </p>
-          <p class="line-clamp-2 text-sm text-grey-700">{{ row.message }}</p>
-        </TableCell>
-        <TableCell>
-          <div class="inline-flex items-center gap-2 text-sm text-grey-700">
-            <Mail v-if="row.type === 'email'" class="size-4 text-primary-500" />
-            <Bell v-else class="size-4 text-warning-600" />
-            {{ typeLabel(row.type) }}
-          </div>
-        </TableCell>
-        <TableCell>
-          <StatusTag :variant="statusVariant(row.status)" size="medium">
-            {{ statusLabel(row.status) }}
-          </StatusTag>
-        </TableCell>
-        <TableCell>
-          <p class="text-sm text-grey-700">{{ formatDate(row.createdAt) }}</p>
-        </TableCell>
-        <TableCell @click.stop>
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button
-                size="icon"
-                variant="ghost"
-                class="!size-9 !rounded-full !border !border-grey-50 !bg-white !p-0"
-                aria-label="Message actions"
-              >
-                <Ellipsis class="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-52">
-              <DropdownMenuItem
-                v-if="row.type === 'email'"
-                :disabled="busyMessageId === row.id || row.status === 'pending'"
-                @select="emit('resend', row)"
-              >
-                Resend message
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                v-else
-                :disabled="busyMessageId === row.id"
-                @select="emit('edit', row)"
-              >
-                Edit message
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                v-if="row.type === 'alert'"
-                :disabled="busyMessageId === row.id"
-                @select="emit('toggleStatus', row)"
-              >
-                {{
-                  row.status === "active"
-                    ? "Deactivate message"
-                    : "Activate message"
-                }}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                class="text-negative-500"
-                :disabled="busyMessageId === row.id || row.status === 'pending'"
-                @select="emit('delete', row.id)"
-              >
-                Delete message
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </TableCell>
       </TableRow>
+
+      <template v-else>
+        <TableRow
+          v-for="row in messages"
+          :key="row.id"
+          :style="{ gridTemplateColumns: gridTemplate }"
+        >
+          <TableCell class="flex items-center" @click.stop>
+            <Checkbox
+              :model-value="selectedSet.has(row.id)"
+              :aria-label="`Select ${row.message}`"
+              @update:model-value="toggleRow(row.id, $event)"
+            />
+          </TableCell>
+          <TableCell>
+            <p v-if="row.subject" class="text-sm font-semibold text-grey-900">
+              {{ row.subject }}
+            </p>
+            <p class="line-clamp-2 text-sm text-grey-700">{{ row.message }}</p>
+          </TableCell>
+          <TableCell>
+            <div class="inline-flex items-center gap-2 text-sm text-grey-700">
+              <Mail
+                v-if="row.type === 'email'"
+                class="size-4 text-primary-500"
+              />
+              <Bell v-else class="size-4 text-warning-600" />
+              {{ typeLabel(row.type) }}
+            </div>
+          </TableCell>
+          <TableCell>
+            <StatusTag :variant="statusVariant(row.status)" size="medium">
+              {{ statusLabel(row.status) }}
+            </StatusTag>
+          </TableCell>
+          <TableCell>
+            <p class="text-sm text-grey-700">{{ formatDate(row.createdAt) }}</p>
+          </TableCell>
+          <TableCell @click.stop>
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  class="!size-9 !rounded-full !border !border-grey-50 !bg-white !p-0"
+                  :disabled="busyMessageId === row.id"
+                  aria-label="Message actions"
+                >
+                  <LoaderCircle
+                    v-if="busyMessageId === row.id"
+                    class="size-4 animate-spin text-primary-500"
+                  />
+                  <Ellipsis v-else class="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" class="w-52">
+                <DropdownMenuItem
+                  v-if="row.type === 'email'"
+                  :disabled="
+                    busyMessageId === row.id || row.status === 'pending'
+                  "
+                  @select="emit('resend', row)"
+                >
+                  Resend message
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-else
+                  :disabled="busyMessageId === row.id"
+                  @select="emit('edit', row)"
+                >
+                  Edit message
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-if="row.type === 'alert'"
+                  :disabled="busyMessageId === row.id"
+                  @select="emit('toggleStatus', row)"
+                >
+                  {{
+                    row.status === "active"
+                      ? "Deactivate message"
+                      : "Activate message"
+                  }}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  class="text-negative-500"
+                  :disabled="
+                    busyMessageId === row.id || row.status === 'pending'
+                  "
+                  @select="emit('delete', row.id)"
+                >
+                  Delete message
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TableCell>
+        </TableRow>
+      </template>
     </TableBody>
 
     <TableFooter
-      v-if="!loading && messages.length > 0"
-      class="border-t border-grey-50"
+      v-if="!loading && meta.total > 0"
+      class="border-x border-b border-grey-50"
     >
       <PaginationBar
         :page="meta.page"
