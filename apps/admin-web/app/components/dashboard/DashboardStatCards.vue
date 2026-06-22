@@ -35,7 +35,7 @@ const hasPurchaseOrderSpend = computed(
   () => data.value?.permissions?.purchaseOrders ?? Boolean(data.value),
 );
 
-const purchaseOrderSpendLabel = 'Purchase order spend (this month)';
+const purchaseOrderSpendLabel = 'Purchase order spend';
 </script>
 
 <template>
@@ -116,7 +116,7 @@ const purchaseOrderSpendLabel = 'Purchase order spend (this month)';
       v-if="hasPurchaseOrderSpend"
       :label="purchaseOrderSpendLabel"
       :value="formatDashboardCurrency(data?.purchaseOrderSpend ?? 0)"
-      hint="Items + logistics for the current month"
+      hint="Items + logistics for the selected period"
       class="w-full min-w-0"
     />
     <DashboardStatCard

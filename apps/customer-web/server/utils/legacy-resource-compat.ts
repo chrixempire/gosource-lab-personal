@@ -450,10 +450,10 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
   const categoryRaw = product.category;
   const categoryId = isRecord(categoryRaw)
     ? toStringValue(categoryRaw._id) || toStringValue(categoryRaw.id)
-    : '';
+    : toStringValue(categoryRaw);
   const categoryName = isRecord(categoryRaw)
     ? toStringValue(categoryRaw.name)
-    : toStringValue(categoryRaw);
+    : '';
   const inStock = toOptionalBoolean(product.inStock) ?? true;
   const promotionRaw = asRecord(product.promotion);
   const promotionDiscountValue = toNumber(promotionRaw.discountValue);
@@ -491,7 +491,7 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
     unitPriceBadge: unit ? `${unit} = ₦${defaultUnitListPrice.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined,
     categoryId: categoryId || undefined,
     categoryName: categoryName || undefined,
-  } as MarketProduct & { categoryId?: string; categoryName?: string };
+  };
 }
 
 function buildCategorySectionTitle(title: string) {
