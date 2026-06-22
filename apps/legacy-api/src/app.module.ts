@@ -51,6 +51,7 @@ import { MarketplaceBannerModule } from './marketplace-banner/marketplace-banner
 import { AdminMarketplaceBannerModule } from './admin/marketplace-banner/marketplace-banner.module';
 import { SecurityMiddleware } from './middleware/security.middleware';
 import { JobsModule } from './jobs/jobs.module';
+import { AdminMessagingModule } from './admin/messaging/messaging.module';
 
 dotenv.config();
 
@@ -105,6 +106,7 @@ dotenv.config();
     PromotionModule,
     MarketplaceBannerModule,
     AdminMarketplaceBannerModule,
+    AdminMessagingModule,
   ],
   controllers: [AppController],
   providers: [AppService, ExternalService],

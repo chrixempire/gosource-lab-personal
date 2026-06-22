@@ -22,9 +22,10 @@ hydrateFromStorage();
 const categoryId = computed(() => String(route.params.id ?? ''));
 const category = ref<MarketCategory | null>(null);
 const cachedCategory = computed(() => (categoryId.value ? findCategoryById(categoryId.value) ?? null : null));
+const categoryDetailKey = computed(() => `market-category-detail:${categoryId.value || 'missing'}`);
 
 const { data: categoryDetailPayload, pending: loading } = await useAuthenticatedAsyncData(
-  'market-category-detail',
+  categoryDetailKey,
   async () => {
     if (!categoryId.value) {
       return {
@@ -47,7 +48,6 @@ const { data: categoryDetailPayload, pending: loading } = await useAuthenticated
   },
   {
     fastNav: true,
-    watch: [categoryId],
     default: () => ({
       category: cachedCategory.value,
     }),
@@ -56,9 +56,23 @@ const { data: categoryDetailPayload, pending: loading } = await useAuthenticated
 );
 
 watch(
+  categoryId,
+  (nextCategoryId) => {
+    category.value = nextCategoryId ? findCategoryById(nextCategoryId) ?? null : null;
+  },
+  { flush: 'sync' },
+);
+
+watch(
   categoryDetailPayload,
   async (payload) => {
     const nextCategory = payload?.category ?? cachedCategory.value ?? null;
+
+    // Ignore an older category request if it resolves after the route ID changed.
+    if (nextCategory && nextCategory.id !== categoryId.value) {
+      return;
+    }
+
     category.value = nextCategory;
 
     if (nextCategory) {

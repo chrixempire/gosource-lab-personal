@@ -92,16 +92,16 @@ function onMobileOpenChange(nextOpen: boolean) {
   nextTick(focusSearchInput);
 }
 
-function onSelectCategory(category: MarketCategory) {
+async function onSelectCategory(category: MarketCategory) {
   resetSearchState();
   mobileOpen.value = false;
-  void router.push(`/market/category/${category.id}`);
+  await router.push(`/market/category/${category.id}`);
 }
 
-function onSelectProduct(productId: string) {
+async function onSelectProduct(productId: string) {
   resetSearchState();
   mobileOpen.value = false;
-  void router.push(`/market/product/${productId}`);
+  await router.push(`/market/product/${productId}`);
 }
 
 function onSearchFocus() {

@@ -33,8 +33,9 @@ async function fetchCustomerTotal(
 
 async function fetchPurchaseOrderSpend(
   event: Parameters<typeof fetchAdminLegacyApi>[0],
+  filterQuery: { filterType?: string; startDate?: string; endDate?: string },
 ) {
-  const dateRange = resolveDashboardPurchaseOrderDateRange({ filterType: 'this_month' });
+  const dateRange = resolveDashboardPurchaseOrderDateRange(filterQuery);
   const query: Record<string, string | number> = {
     page: 1,
     limit: 1,
@@ -76,7 +77,7 @@ export default defineEventHandler(async (event) => {
     }),
     fetchCustomerTotal(event, 'true'),
     fetchCustomerTotal(event, 'false'),
-    fetchPurchaseOrderSpend(event),
+    fetchPurchaseOrderSpend(event, filterQuery),
   ]);
 
   const metricsBody =

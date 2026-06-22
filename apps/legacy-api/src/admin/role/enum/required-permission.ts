@@ -38,6 +38,14 @@ export enum RequiredPermission {
   DELETE_PROMOTION = 'delete_promotion', // super admin only
   ACTIVATE_DEACTIVATE_PROMOTION = 'activate_deactivate_promotion',
 
+  // MESSAGING
+  VIEW_MESSAGES = 'view_messages',
+  CREATE_MESSAGES = 'create_messages',
+  EDIT_MESSAGES = 'edit_messages',
+  RESEND_MESSAGES = 'resend_messages',
+  TOGGLE_MESSAGES = 'toggle_messages',
+  DELETE_MESSAGES = 'delete_messages',
+
   // CUSTOMER MANAGEMENT
   VIEW_CUSTOMER = 'view_customer',
   MODIFY_CUSTOMER = 'modify_customer',

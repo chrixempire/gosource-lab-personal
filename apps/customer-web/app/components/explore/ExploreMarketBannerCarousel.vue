@@ -2,7 +2,7 @@
 import {
   MARKETPLACE_BANNER_ROTATE_MS,
   type MarketplaceBannerImage,
-} from '~/lib/marketplace-banner-images';
+} from "~/lib/marketplace-banner-images";
 
 const props = withDefaults(
   defineProps<{
@@ -62,7 +62,9 @@ onUnmounted(stopTimer);
     @mouseenter="stopTimer"
     @mouseleave="startTimer"
   >
-    <div class="relative w-full min-w-0 overflow-hidden rounded-none sm:rounded-[16px] lg:rounded-[16px]">
+    <div
+      class="relative w-full min-w-0 overflow-hidden rounded-none sm:rounded-[16px] lg:rounded-[16px]"
+    >
       <div
         class="flex w-full transition-transform duration-500 ease-out"
         :style="{ transform: `translateX(-${activeIndex * 100}%)` }"
@@ -81,29 +83,29 @@ onUnmounted(stopTimer);
               :alt="banner.alt"
               class="size-full object-cover"
               loading="lazy"
-            >
+            />
           </div>
         </component>
       </div>
-    </div>
 
-    <div
-      v-if="slideCount > 1"
-      class="mt-2 flex items-center justify-center gap-1.5 sm:mt-3 sm:gap-2"
-      role="tablist"
-      aria-label="Banner slides"
-    >
-      <button
-        v-for="(_, index) in slideCount"
-        :key="`dot-${index}`"
-        type="button"
-        class="h-2 cursor-pointer rounded-full bg-grey-300 transition-all duration-300 ease-out dark:bg-grey-50"
-        :class="activeIndex === index ? 'w-6 bg-primary-500 dark:bg-primary-500/80' : 'w-2'"
-        :aria-label="`Show banner ${index + 1}`"
-        :aria-selected="activeIndex === index"
-        role="tab"
-        @click="goTo(index)"
-      />
+      <div
+        v-if="slideCount > 1"
+        class="absolute bottom-[6px] left-1/2 z-10 flex -translate-x-1/2 items-center justify-center gap-1.5 sm:gap-2"
+        role="tablist"
+        aria-label="Banner slides"
+      >
+        <button
+          v-for="(_, index) in slideCount"
+          :key="`dot-${index}`"
+          type="button"
+          class="h-2 cursor-pointer rounded-full bg-white transition-all duration-300 ease-out"
+          :class="activeIndex === index ? 'w-6 opacity-100' : 'w-2 opacity-80'"
+          :aria-label="`Show banner ${index + 1}`"
+          :aria-selected="activeIndex === index"
+          role="tab"
+          @click="goTo(index)"
+        />
+      </div>
     </div>
   </div>
 </template>

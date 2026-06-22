@@ -27,6 +27,8 @@ const PAGE_DESCRIPTIONS: Record<string, string> = {
     'Create and manage coupon discounts for categories, products, orders, and delivery.',
   [ADMIN_PAGE_ROUTES.PROMOTIONS]:
     'Create themed product promotions with optional percentage discounts and date windows.',
+  [ADMIN_PAGE_ROUTES.MESSAGES]:
+    'Create and manage alert and email messages sent to customers.',
   [ADMIN_PAGE_ROUTES.CUSTOMERS]:
     'Search and manage business and individual customers, credit access, and account details.',
   // [ADMIN_PAGE_ROUTES.ACTIVITY_LOG]:

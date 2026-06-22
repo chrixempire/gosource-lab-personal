@@ -18,6 +18,9 @@ export const ADMIN_PAGE_ROUTES = {
   CREDIT_OVERDUE: '/credit/overdue',
   DISCOUNTS: '/discounts',
   PROMOTIONS: '/promotions',
+  MESSAGES: '/messages',
+  MESSAGE_ALERT_CREATE: '/messages/alerts',
+  MESSAGE_EMAIL_CREATE: '/messages/create-email',
   CUSTOMERS: '/customers',
   // ACTIVITY_LOG: '/activity-log', // Feature disabled
   SETTINGS: '/settings',
@@ -36,6 +39,10 @@ export function settingsRoleUsersPath(roleId: string) {
   return `${ADMIN_PAGE_ROUTES.SETTINGS_ROLES}/${roleId}/users`;
 }
 
+export function messageAlertEditPath(messageId: string) {
+  return `${ADMIN_PAGE_ROUTES.MESSAGE_ALERT_CREATE}/${messageId}`;
+}
+
 export type AdminNavItem = {
   label: string;
   icon: string;
@@ -44,7 +51,7 @@ export type AdminNavItem = {
   disabled?: boolean;
 };
 
-/** Mirrors reference `gosource-admin-v2` nav sections (Messaging omitted until routed). */
+/** Mirrors reference `gosource-admin-v2` nav sections. */
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: ADMIN_PAGE_ROUTES.HOME },
   { label: 'Orders', icon: 'i-lucide-shopping-bag', to: ADMIN_PAGE_ROUTES.ORDERS },
@@ -70,6 +77,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   },
   { label: 'Discounts', icon: 'i-lucide-ticket', to: ADMIN_PAGE_ROUTES.DISCOUNTS },
   { label: 'Promotions', icon: 'i-lucide-megaphone', to: ADMIN_PAGE_ROUTES.PROMOTIONS },
+  {
+    label: 'Messages',
+    icon: 'i-lucide-message-square',
+    to: ADMIN_PAGE_ROUTES.MESSAGES,
+  },
   { label: 'Customers', icon: 'i-lucide-users', to: ADMIN_PAGE_ROUTES.CUSTOMERS },
   // { label: 'Activity log', icon: 'i-lucide-scroll-text', to: ADMIN_PAGE_ROUTES.ACTIVITY_LOG },
 ];

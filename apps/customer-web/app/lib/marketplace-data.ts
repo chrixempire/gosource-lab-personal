@@ -21,6 +21,9 @@ export type MarketProduct = {
   id: string;
   name: string;
   description: string;
+  /** Owning category, used for product detail navigation and similar products. */
+  categoryId?: string;
+  categoryName?: string;
   imageUrl?: string;
   /** Active promotion discount badge (legacy `product.promotion`). */
   promotion?: MarketProductPromotion;
