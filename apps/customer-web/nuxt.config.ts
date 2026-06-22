@@ -64,6 +64,7 @@ export default defineNuxtConfig({
       apiBaseUrl: 'http://127.0.0.1:8000',
       googleMapsApiKey: '',
       paystackPublicKey: '',
+      gtmId: 'GTM-TMKBCG7P',
     },
   },
 
