@@ -36,6 +36,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^24.5.2",
-    "nuxt": "^4.4.4"
+    "nuxt": "^4.4.4",
+    "vue-tsc": "^3.3.0"
   }
 }

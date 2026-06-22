@@ -117,12 +117,7 @@ const desktopTableSectionClass = computed(() =>
           :style="{ gridTemplateColumns: REQUEST_TABLE_GRID_TEMPLATE }"
           @click="emit('rowClick', request)"
         >
-          <TableCell class="flex items-center gap-3">
-            <Avatar
-              size="sm"
-              :alt="request.initiatorName"
-              :fallback="request.initials"
-            />
+          <TableCell>
             <div class="min-w-0">
               <p class="truncate text-base font-semibold text-grey-900">
                 {{ request.reference }}
@@ -133,13 +128,21 @@ const desktopTableSectionClass = computed(() =>
             </div>
           </TableCell>
 
-          <TableCell>
-            <p class="truncate text-sm font-medium text-grey-900">
-              {{ request.initiatorName }}
-            </p>
-            <p class="truncate text-sm text-grey-300">
-              {{ request.initiatorEmail }}
-            </p>
+          <TableCell class="flex items-center gap-3">
+            <Avatar
+              size="sm"
+              :alt="request.initiatorName"
+              :fallback="request.initials"
+              fallback-class="bg-button-primary"
+            />
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-grey-900">
+                {{ request.initiatorName }}
+              </p>
+              <p class="truncate text-sm text-grey-300">
+                {{ request.initiatorEmail }}
+              </p>
+            </div>
           </TableCell>
 
           <TableCell>

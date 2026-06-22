@@ -143,7 +143,10 @@ const removeConfirmMessage = computed(() => {
       whole request if you no longer need it.
     </p>
 
-    <div v-if="listStyle && loading" class="space-y-0 divide-y divide-grey-50">
+    <div
+      v-if="listStyle && loading && products.length === 0"
+      class="space-y-0 divide-y divide-grey-50"
+    >
       <div
         v-for="index in 3"
         :key="index"
@@ -160,7 +163,8 @@ const removeConfirmMessage = computed(() => {
 
     <ul
       v-else-if="listStyle && products.length > 0"
-      class="divide-y divide-grey-50"
+      class="divide-y divide-grey-50 transition-opacity duration-200"
+      :class="loading ? 'pointer-events-none opacity-60' : undefined"
     >
       <li
         v-for="(product, index) in products"
@@ -188,7 +192,7 @@ const removeConfirmMessage = computed(() => {
                     {{ product.productName }}
                   </p>
                   <span
-                    class="w-fit shrink-0 rounded-full border border-grey-50 px-2 py-0.5 text-xs font-medium text-grey-300"
+                    class="w-fit shrink-0 rounded-full border border-grey-50 px-2 py-0.5 text-xs font-medium text-grey-900"
                   >
                     {{ product.unit || 'Standard pack' }}
                   </span>
@@ -239,7 +243,7 @@ const removeConfirmMessage = computed(() => {
             </div>
             <p
               v-else-if="!editable"
-              class="mt-1 text-xs text-grey-300"
+              class="mt-1 text-sm font-medium text-grey-900"
             >
               Qty {{ product.quantity }} · {{ formatCurrency(product.unitPrice) }} each
             </p>

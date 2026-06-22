@@ -16,14 +16,17 @@ const props = withDefaults(
     canAddMore?: boolean;
     canReopen?: boolean;
     showApproveAction?: boolean;
+    showRejectAction?: boolean;
     approveLabel?: string;
     showViewDetails?: boolean;
     viewDetailsLabel?: string;
     triggerVariant?: 'icon' | 'primary';
     triggerLabel?: string;
+    contentClass?: string;
   }>(),
   {
     showApproveAction: true,
+    showRejectAction: true,
     approveLabel: 'Approve request',
     showViewDetails: true,
     viewDetailsLabel: 'View details',
@@ -54,8 +57,12 @@ const hasVisibleItems = computed(
     props.canEdit ||
     props.canAddMore ||
     (props.canApproveReject && props.showApproveAction) ||
-    props.canApproveReject ||
+    (props.canApproveReject && props.showRejectAction) ||
     props.canCancel,
+);
+
+const menuContentClass = computed(() =>
+  ['w-56', props.contentClass].filter(Boolean).join(' '),
 );
 </script>
 
@@ -83,7 +90,7 @@ const hasVisibleItems = computed(
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" class="w-56">
+      <DropdownMenuContent align="end" :class="menuContentClass">
         <DropdownMenuItem
           v-if="showViewDetails"
           class="gap-2.5"
@@ -130,7 +137,7 @@ const hasVisibleItems = computed(
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          v-if="canApproveReject"
+          v-if="canApproveReject && showRejectAction"
           class="gap-2.5 text-negative-500 hover:bg-negative-50! hover:text-negative-500! data-highlighted:bg-negative-50! data-highlighted:text-negative-500! focus:bg-negative-50! focus:text-negative-500!"
           @select="emit('reject')"
         >

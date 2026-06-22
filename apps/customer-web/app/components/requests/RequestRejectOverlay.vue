@@ -78,7 +78,7 @@ watch(open, (nextOpen) => {
         <textarea
           v-model="reason"
           rows="4"
-          class="w-full rounded-[12px] border border-border-input-default bg-background-on-canvas px-4 py-3 text-sm outline-none transition focus:border-border-input-active focus:ring-4 focus:ring-primary-500/12"
+          class="w-full rounded-[12px] border border-border-input-default bg-background-on-canvas px-4 py-3 text-sm outline-none transition focus:border-border-input-active"
           placeholder="Tell the requester why this request is being rejected"
         />
       </DrawerBody>
@@ -123,7 +123,7 @@ watch(open, (nextOpen) => {
           <textarea
             v-model="reason"
             rows="4"
-            class="w-full rounded-[12px] border border-border-input-default bg-background-on-canvas px-4 py-3 text-sm outline-none transition focus:border-border-input-active focus:ring-4 focus:ring-primary-500/12"
+            class="w-full rounded-[12px] border border-border-input-default bg-background-on-canvas px-4 py-3 text-sm outline-none transition focus:border-border-input-active"
             placeholder="Tell the requester why this request is being rejected"
           />
         </div>

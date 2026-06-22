@@ -33,6 +33,7 @@ export function useRequestAddItemsMode() {
     saveProductEdit,
     upsertDraftProductLineLocal,
     removeDraftLineByProductUnitLocal,
+    lineMutationLoading,
   } = useRequestEdit();
   const { getRequest } = useCustomerRequestService();
   const { cartDrawerOpen } = useMarketplaceUi();
@@ -236,45 +237,21 @@ export function useRequestAddItemsMode() {
   }
 
   async function finishAddingToRequest() {
-    const id = requestId.value;
-    pendingOpenRequestDrawer.value = false;
-    cartDrawerOpen.value = false;
-    if (!id) {
-      clearActiveRequest();
-      await router.push('/manage-requests');
-      return;
-    }
-
-    const next = await saveProductEdit(id);
-    if (!next) {
-      toast.error('Unable to update request right now');
-      return;
-    }
-
-    setActiveRequest(next);
-    cancelProductEdit();
-
-    if (isBusinessOwnerSession(session.value)) {
-      await router.push(`/manage-requests/${id}`);
-      return;
-    }
-
-    await router.push({
-      path: '/manage-requests',
-      query: { open: id },
-    });
+    await commitDraftForPrimaryAction();
   }
 
   async function commitDraftForPrimaryAction() {
     const id = requestId.value;
-    pendingOpenRequestDrawer.value = false;
-    cartDrawerOpen.value = false;
     if (!id) {
+      pendingOpenRequestDrawer.value = false;
+      cartDrawerOpen.value = false;
       clearActiveRequest();
       await router.push('/manage-requests');
       return;
     }
 
+    // Run the update first so the CTA can show its loading state. Keep the
+    // drawer open on failure so the user can retry; only close on success.
     const next = await saveProductEdit(id);
     if (!next) {
       toast.error('Unable to update request right now');
@@ -283,6 +260,8 @@ export function useRequestAddItemsMode() {
 
     setActiveRequest(next);
     cancelProductEdit();
+    pendingOpenRequestDrawer.value = false;
+    cartDrawerOpen.value = false;
 
     if (isBusinessOwnerSession(session.value)) {
       await router.push(`/manage-requests/${id}`);
@@ -353,6 +332,7 @@ export function useRequestAddItemsMode() {
     requestDiscount,
     requestTotalPrice,
     primaryActionLabel,
+    isCommittingRequest: lineMutationLoading,
     getQtyForUnit,
     getTotalQtyForProduct,
     setQuantityForUnit,

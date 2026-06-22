@@ -51,6 +51,7 @@ const {
   finishAddingToRequest,
   commitDraftForPrimaryAction,
   primaryActionLabel,
+  isCommittingRequest,
   bootstrapFromRoute,
 } = useRequestAddItemsMode();
 const { canSubmitPrimary, continueShopping, isSubmitting, primaryCtaLabel, submitCartAsRequest } =
@@ -358,7 +359,8 @@ watch(
                 variant="primary"
                 class="min-w-0 flex-1"
                 type="button"
-                :disabled="!canSubmitRequestDraft"
+                :disabled="!canSubmitRequestDraft || isCommittingRequest"
+                :loading="isCommittingRequest"
                 @click="commitDraftForPrimaryAction"
               >
                 {{ primaryActionLabel }}
