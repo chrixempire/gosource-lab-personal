@@ -183,20 +183,19 @@ export function useCartRequestAction() {
 
       closeCartDrawer();
 
+      // Drop the cached request list BEFORE navigating so the table loads fresh
+      // (including the request we just created) on the next page load.
+      invalidateManageRequestsListCache();
+
       // Reference gosource-web-app: cart → POST /request → Super Admin → /checkout/:id (pay/approve).
       // Members only create the pending request; owner completes checkout separately.
       if (routesToCheckout) {
         await router.push(`/checkout/${createdRequestId}`);
-      } else if (createdRequestId) {
-        await router.push({
-          path: '/manage-requests',
-          query: { open: createdRequestId },
-        });
       } else {
+        // Land on the requests table refreshed with the new request. Do NOT
+        // auto-open the details modal — the user opens it when they want to.
         await router.push('/manage-requests');
       }
-
-      invalidateManageRequestsListCache();
 
       if (!routesToCheckout) {
         toast.success('Request submitted', { duration: 2000 });
