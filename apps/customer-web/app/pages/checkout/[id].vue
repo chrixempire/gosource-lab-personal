@@ -33,6 +33,7 @@ import {
   resolveRequestTotalPrice,
 } from '~/lib/request-pricing';
 import { resolveCheckoutCreditEligibility } from '~/lib/checkout-credit';
+import { paymentSuccessUrl, pushToDataLayer } from '~/lib/analytics-data-layer';
 import { useCustomerCreditService } from '~/services/credit.service';
 import { useCustomerProfileService } from '~/services/profile.service';
 import { useCustomerRequestService } from '~/services/request.service';
@@ -333,6 +334,21 @@ function applyApprovedCheckout(response: ApproveRequestResponse) {
 
   approvedRequest.value = approved;
   approvedOrderId.value = response.orderId ?? null;
+  const orderId = approvedOrderId.value?.trim();
+  if (orderId) {
+    const successUrl = paymentSuccessUrl(orderId);
+    void router.push({
+      query: {
+        ...route.query,
+        event: 'payment-success',
+        oid: orderId,
+      },
+    });
+    pushToDataLayer('payment-success', {
+      successUrl,
+      value: computedTotal.value,
+    });
+  }
   request.value = approved;
   resetCartState();
   void loadCart(true);
