@@ -212,7 +212,7 @@ useHead({ title: 'Add email message' });
                 <button
                   type="button"
                   class="mt-2 font-medium text-primary-600"
-                  @click="refreshCustomers"
+                  @click="() => refreshCustomers()"
                 >
                   Try again
                 </button>

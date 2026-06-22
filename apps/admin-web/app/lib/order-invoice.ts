@@ -42,7 +42,8 @@ export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderI
       : [address?.streetAddress, address?.lga, address?.state].filter(Boolean).join(', ') ||
         branchName;
 
-  const lineItems = mapLegacyOrderLineItems(order).map((item) => ({
+  const mappedLines = mapLegacyOrderLineItems(order);
+  const lineItems = mappedLines.map((item) => ({
     name: item.name,
     quantityLabel: `${item.quantity} ${item.unit}`.trim(),
     unitPrice: item.quantity > 0 ? item.lineTotal / item.quantity : item.lineTotal,
@@ -52,8 +53,8 @@ export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderI
   const deliveryFee = Number(order.deliveryFee ?? 0);
   const serviceCharge = Number(order.serviceCharge ?? 0);
   const discount = Number(order.discount ?? 0);
-  const subtotal = resolveOrderSubtotal(order, lineItems);
-  const total = resolveOrderTotalPrice(order, lineItems);
+  const subtotal = resolveOrderSubtotal(order, mappedLines);
+  const total = resolveOrderTotalPrice(order, mappedLines);
 
   const itemCount = lineItems.length;
 

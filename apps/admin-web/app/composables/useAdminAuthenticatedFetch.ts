@@ -78,7 +78,7 @@ export function useAdminAuthenticatedFetch<T>(
     async () =>
       apiFetch<T>(resolvedUrl.value, {
         query: querySnapshot?.value,
-      }),
+      }) as Promise<T>,
     {
       fastNav,
       ...rest,

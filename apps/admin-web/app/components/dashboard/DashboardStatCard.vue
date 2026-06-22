@@ -12,7 +12,7 @@ defineProps<{
 </script>
 
 <template>
-  <StatCard :value="value" :hint="hint" :inline-hint="inlineHint" :class="class">
+  <StatCard :label="label" :value="value" :hint="hint" :inline-hint="inlineHint" :class="class">
     <template #label>
       <span class="flex items-center gap-2">
         <span

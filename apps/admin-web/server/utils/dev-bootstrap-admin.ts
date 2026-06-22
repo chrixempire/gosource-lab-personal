@@ -21,7 +21,7 @@ function assertDevBootstrapEnabled(event: H3Event) {
     });
   }
 
-  if (config.devAdminBootstrapEnabled !== true && config.devAdminBootstrapEnabled !== 'true') {
+  if (String(config.devAdminBootstrapEnabled) !== 'true') {
     throw createError({
       statusCode: 404,
       statusMessage: 'Not found',

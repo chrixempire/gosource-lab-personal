@@ -88,14 +88,11 @@ function onSelect(value: string) {
         <DropdownMenuItem
           v-for="option in filteredOptions"
           :key="option.value"
-          :class="
-            [
-              'flex items-center justify-between gap-3 rounded-xl border border-transparent',
-              modelValue === option.value
-                ? 'border-primary-200 bg-primary-50/50 text-primary-700'
-                : '',
-            ]
-          "
+          :class="`flex items-center justify-between gap-3 rounded-xl border border-transparent ${
+            modelValue === option.value
+              ? 'border-primary-200 bg-primary-50/50 text-primary-700'
+              : ''
+          }`"
           @select="onSelect(option.value)"
         >
           <span class="truncate">{{ option.label }}</span>

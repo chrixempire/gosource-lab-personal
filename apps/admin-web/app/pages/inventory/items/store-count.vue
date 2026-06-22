@@ -283,7 +283,10 @@ async function onCompleteCount() {
 }
 
 function onSelectHistory(id: string) {
-  const nextQuery = { ...route.query, history: id };
+  const nextQuery: Record<string, string | string[] | null | undefined> = {
+    ...route.query,
+    history: id,
+  };
   delete nextQuery.page;
   void router.push({ path: ADMIN_PAGE_ROUTES.INVENTORY_STORE_COUNT, query: nextQuery });
 }

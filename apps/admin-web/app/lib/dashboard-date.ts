@@ -36,7 +36,7 @@ export function isDashboardDateFilterType(value: string): value is DashboardDate
 }
 
 export function parseDashboardDateFilterFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | null | Array<string | null> | undefined>,
 ): DashboardDateFilterValue {
   const rawFilter = Array.isArray(query.filter) ? query.filter[0] : query.filter;
   const filterType = isDashboardDateFilterType(String(rawFilter ?? ''))
@@ -79,8 +79,12 @@ export function dashboardFilterMenuItemClass(selected: boolean) {
     : DASHBOARD_FILTER_MENU_ITEM_CLASS;
 }
 
-export function toDashboardQueryParams(filter: DashboardDateFilterValue) {
-  const params: Record<string, string> = {
+export function toDashboardQueryParams(filter: DashboardDateFilterValue): {
+  filterType: string;
+  startDate?: string;
+  endDate?: string;
+} {
+  const params: { filterType: string; startDate?: string; endDate?: string } = {
     filterType: filter.filterType,
   };
 

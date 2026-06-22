@@ -55,7 +55,7 @@ function isSelected(itemId: string) {
         <AdminMobileCardStat label="Status">
           <StatusTag
             :variant="item.statusVariant"
-            size="small"
+            size="medium"
             class="rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold normal-case"
           >
             {{ item.statusLabel }}

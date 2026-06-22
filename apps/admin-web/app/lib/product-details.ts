@@ -42,8 +42,9 @@ export function parseUnitPriceMap(value: unknown): UnitPriceEntry[] | null {
 
     try {
       const next = JSON.parse(raw) as unknown;
-      if (asRecord(next)) {
-        parsed = next;
+      const nextRecord = asRecord(next);
+      if (nextRecord) {
+        parsed = nextRecord;
       }
     } catch {
       const fallbackEntries = Array.from(

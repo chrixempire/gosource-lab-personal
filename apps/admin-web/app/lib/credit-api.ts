@@ -503,7 +503,7 @@ export function formatCreditRevenueRange(revenueRange: string | undefined) {
   if (!revenueRange?.trim()) return '—';
   const parts = revenueRange.split('-').map((part) => Number(part.trim()));
   if (parts.length === 2 && parts.every((value) => Number.isFinite(value))) {
-    return `${formatDashboardCurrency(parts[0])} – ${formatDashboardCurrency(parts[1])}`;
+    return `${formatDashboardCurrency(parts[0]!)} – ${formatDashboardCurrency(parts[1]!)}`;
   }
   return revenueRange;
 }

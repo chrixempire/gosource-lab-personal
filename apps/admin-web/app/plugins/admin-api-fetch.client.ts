@@ -22,8 +22,8 @@ export default defineNuxtPlugin(() => {
     session.value = refreshed;
   });
 
-  globalThis.$fetch = wrapFetchWithSessionRetry(originalFetch, {
+  globalThis.$fetch = wrapFetchWithSessionRetry(originalFetch as never, {
     refreshSession,
     onSessionRefreshFailed: handleSessionExpired,
-  });
+  }) as typeof globalThis.$fetch;
 });

@@ -4,7 +4,9 @@ import { canAccessAdminRoute, canManageCredit } from '~/lib/admin-permissions';
 export function useAdminCapabilities() {
   const capabilities = useState<AdminCapabilities | null>('admin-capabilities', () => null);
   const resolved = useState('admin-capabilities-resolved', () => false);
-  const requestFetch = import.meta.server ? useRequestFetch() : null;
+  const requestFetch = import.meta.server
+    ? (useRequestFetch as unknown as () => unknown)()
+    : null;
 
   async function ensureCapabilities() {
     if (resolved.value) {
@@ -12,8 +14,11 @@ export function useAdminCapabilities() {
     }
 
     try {
-      const fetchCapabilities = requestFetch ?? $fetch;
-      capabilities.value = await fetchCapabilities<AdminCapabilities>('/api/auth/capabilities', {
+      const fetchCapabilities = (requestFetch ?? $fetch) as unknown as (
+        url: string,
+        options?: Record<string, unknown>,
+      ) => Promise<AdminCapabilities>;
+      capabilities.value = await fetchCapabilities('/api/auth/capabilities', {
         credentials: 'same-origin',
       });
     } catch {

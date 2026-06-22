@@ -66,7 +66,8 @@ export function useCategoryMutations() {
   ) {
     deletingCategoryId.value = categoryId;
     try {
-      await $fetch(`/api/categories/${categoryId}`, {
+      const url: string = `/api/categories/${categoryId}`;
+      await $fetch(url, {
         method: 'DELETE',
         body: payload,
       });

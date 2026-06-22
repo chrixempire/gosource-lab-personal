@@ -75,7 +75,7 @@ function avatarFallbackClass(isInactive: boolean) {
     <SearchField
       v-model="searchQuery"
       placeholder="Search users"
-      :class="[CREDIT_LIST_SEARCH_CLASS, 'mt-4 max-w-[295px]']"
+      :class="`${CREDIT_LIST_SEARCH_CLASS} mt-4 max-w-[295px]`"
       :disabled="loading && rows.length === 0"
     />
 

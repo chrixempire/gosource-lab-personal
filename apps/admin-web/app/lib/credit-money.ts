@@ -29,7 +29,7 @@ export function sanitizeFormattedNumberInput(value: string, allowDecimal = false
 
   const [whole, ...decimals] = sanitized.split('.');
   const decimalPart = decimals.join('');
-  return decimalPart ? `${whole}.${decimalPart.slice(0, 2)}` : whole;
+  return decimalPart ? `${whole ?? ''}.${decimalPart.slice(0, 2)}` : (whole ?? '');
 }
 
 export function formatFormattedNumberInput(value: string, allowDecimal = false) {

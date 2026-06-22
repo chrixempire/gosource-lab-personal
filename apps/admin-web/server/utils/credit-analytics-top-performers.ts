@@ -143,6 +143,7 @@ function upsertBusinessAggregate(
 
 function attachSchedule(map: Map<string, BusinessAggregate>, schedule: LegacySchedule) {
   const business = asRecord(schedule.business);
+  if (!business) return;
   const businessId = businessIdFrom(business);
   if (!businessId) return;
 

@@ -160,9 +160,9 @@ function readProductFromCountedEntry(entry: Record<string, unknown>) {
   return {
     _id: String(entry.productId ?? ''),
     name: '—',
-    quantity: entry.originalQuantity,
-    marketPrice: entry.price,
-    purchaseUnit: entry.unit,
+    quantity: Number(entry.originalQuantity ?? 0),
+    marketPrice: Number(entry.price ?? 0),
+    purchaseUnit: String(entry.unit ?? ''),
   } satisfies LegacyProductRow;
 }
 

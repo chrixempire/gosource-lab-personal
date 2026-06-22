@@ -18,10 +18,11 @@ function getNestedPayload(error: unknown): Record<string, unknown> | null {
     return null;
   }
 
+  const response = toObject(candidate.response);
   return (
     toObject(candidate.data) ??
-    toObject(candidate.response?._data) ??
-    toObject(candidate.response) ??
+    toObject(response?._data) ??
+    response ??
     toObject(candidate.cause)
   );
 }

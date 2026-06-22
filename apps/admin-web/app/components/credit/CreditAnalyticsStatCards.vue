@@ -38,6 +38,7 @@ function displayValue(key: (typeof CREDIT_ANALYTICS_STAT_CARDS)[number]['key']) 
       <StatCard
         v-for="card in CREDIT_ANALYTICS_STAT_CARDS"
         :key="card.key"
+        :label="card.label"
         :value="displayValue(card.key)"
         class="h-full w-full"
       >

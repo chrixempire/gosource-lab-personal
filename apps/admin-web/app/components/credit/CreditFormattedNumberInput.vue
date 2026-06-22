@@ -23,8 +23,9 @@ const props = withDefaults(
 );
 
 function onUpdate(value: string) {
-  const sanitized = sanitizeFormattedNumberInput(value, props.allowDecimal);
-  model.value = formatFormattedNumberInput(sanitized, props.allowDecimal);
+  const allowDecimal = props.allowDecimal === true;
+  const sanitized = sanitizeFormattedNumberInput(value, allowDecimal);
+  model.value = formatFormattedNumberInput(sanitized, allowDecimal);
 }
 </script>
 

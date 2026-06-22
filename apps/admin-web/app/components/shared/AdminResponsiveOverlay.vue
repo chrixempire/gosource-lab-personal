@@ -45,7 +45,7 @@ const isMobile = useMediaQuery('(max-width: 767px)');
         </div>
         <DrawerTitle
           v-else-if="title"
-          :class="['min-w-0 flex-1 pr-2', ADMIN_MODAL_TITLE_CLASS]"
+          :class="`min-w-0 flex-1 pr-2 ${ADMIN_MODAL_TITLE_CLASS}`"
         >
           {{ title }}
         </DrawerTitle>
@@ -73,7 +73,7 @@ const isMobile = useMediaQuery('(max-width: 767px)');
         </div>
         <DialogTitle
           v-else-if="title"
-          :class="['min-w-0 flex-1 pr-2', ADMIN_MODAL_TITLE_CLASS]"
+          :class="`min-w-0 flex-1 pr-2 ${ADMIN_MODAL_TITLE_CLASS}`"
         >
           {{ title }}
         </DialogTitle>
