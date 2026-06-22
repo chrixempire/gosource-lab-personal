@@ -10,6 +10,7 @@ import CheckoutPaymentMethod, {
 } from '~/components/checkout/CheckoutPaymentMethod.vue';
 import CheckoutPaymentSummary from '~/components/checkout/CheckoutPaymentSummary.vue';
 import CheckoutRequestItems from '~/components/checkout/CheckoutRequestItems.vue';
+import CheckoutCutoffNoticeDialog from '~/components/checkout/CheckoutCutoffNoticeDialog.vue';
 import CheckoutSuccessDialog from '~/components/checkout/CheckoutSuccessDialog.vue';
 import CheckoutTransferDialog from '~/components/checkout/CheckoutTransferDialog.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
@@ -56,6 +57,17 @@ const approvedOrderId = ref<string | null>(null);
 const selectedMethod = ref<CheckoutPaymentMethodValue | null>(null);
 const transferDialogOpen = ref(false);
 const successDialogOpen = ref(false);
+const cutoffNoticeOpen = ref(false);
+
+// Orders placed past the 1pm cutoff are processed the next day. Notify the
+// customer once when they land on the checkout page after the cutoff.
+const ORDER_CUTOFF_HOUR = 13;
+
+onMounted(() => {
+  if (new Date().getHours() >= ORDER_CUTOFF_HOUR) {
+    cutoffNoticeOpen.value = true;
+  }
+});
 const walletBalance = ref<number | null>(null);
 const canBuyOnCredit = ref<boolean | null>(null);
 const creditAccount = ref<CustomerCreditAccount | null>(null);
@@ -546,6 +558,11 @@ const canSubmitCheckout = computed(
     >
       Request not found.
     </div>
+
+    <CheckoutCutoffNoticeDialog
+      :open="cutoffNoticeOpen"
+      @update:open="cutoffNoticeOpen = $event"
+    />
 
     <CheckoutTransferDialog
       :open="transferDialogOpen"

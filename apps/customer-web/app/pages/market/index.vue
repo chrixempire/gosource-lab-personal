@@ -5,7 +5,7 @@ import ExploreCategorySection from "~/components/explore/ExploreCategorySection.
 import ExplorePageHero from "~/components/explore/ExplorePageHero.vue";
 import ExplorePromotionsSection from "~/components/explore/ExplorePromotionsSection.vue";
 import ExploreRecentOrdersSection from "~/components/explore/ExploreRecentOrdersSection.vue";
-import MarketNewsRail from "~/components/market/MarketNewsRail.vue";
+// import MarketNewsRail from "~/components/market/MarketNewsRail.vue";
 import MarketActiveAlert from "~/components/market/MarketActiveAlert.vue";
 import MarketProductDetailSlideModal from "~/components/market/MarketProductDetailSlideModal.vue";
 import { useAuthenticatedAsyncData } from "~/composables/useAuthenticatedAsyncData";
@@ -439,7 +439,7 @@ onUnmounted(() => {
       :has-leading-alert="Boolean(activeAlert)"
     />
 
-    <MarketNewsRail class="mb-2" />
+    <!-- <MarketNewsRail class="mb-2" /> -->
 
     <div class="flex flex-col gap-2">
       <ExploreRecentOrdersSection
