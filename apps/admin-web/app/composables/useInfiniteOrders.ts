@@ -89,8 +89,10 @@ export function useInfiniteOrders(filters: Ref<OrderListFilters>) {
       return;
     }
 
+    const current = orders.value[index];
+    if (!current) return;
     orders.value[index] = {
-      ...orders.value[index],
+      ...current,
       ...patch,
     };
   }

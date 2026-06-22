@@ -92,18 +92,19 @@ export async function useAdminPaginatedListData<ResT, DataT = ResT>(
     revalidateOnMount: false,
     server: rest.server ?? false,
     watch: [watchSignature, ...extraWatchArray],
-    getCachedData:
+    getCachedData: (
       getCachedDataOption ??
       (pageCacheEnabled
         ? () => resolveListCachedData(watchSignature.value, pageCache)
-        : undefined),
+        : undefined)
+    ) as typeof getCachedDataOption,
   });
 
   if (import.meta.client && pageCacheEnabled) {
     function hydrateFromPageCache(signature = watchSignature.value) {
       const cached = pageCache.get(signature);
       if (cached !== undefined) {
-        result.data.value = cached as DataT;
+        result.data.value = cached as typeof result.data.value;
       }
     }
 

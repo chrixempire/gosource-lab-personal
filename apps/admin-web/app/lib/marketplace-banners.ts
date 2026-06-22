@@ -43,26 +43,25 @@ export function parseMarketplaceBannerRecords(payload: unknown): MarketplaceBann
   }
 
   return banners
-    .map((entry, index) => {
+    .flatMap((entry, index): MarketplaceBannerRecord[] => {
       const record = asRecord(entry);
       if (!record) {
-        return null;
+        return [];
       }
 
       const imageUrl = String(record.imageUrl ?? '').trim();
       if (!imageUrl) {
-        return null;
+        return [];
       }
 
-      return {
+      return [{
         id: String(record.id ?? `banner-${index + 1}`),
         imageUrl,
         alt: String(record.alt ?? 'Marketplace banner'),
         linkUrl: (record.linkUrl as string | null | undefined) ?? '/market',
         storageKey: String(record.storageKey ?? '').trim() || null,
-      };
+      }];
     })
-    .filter((entry): entry is MarketplaceBannerRecord => entry != null)
     .slice(0, MARKETPLACE_BANNER_SLOT_COUNT);
 }
 

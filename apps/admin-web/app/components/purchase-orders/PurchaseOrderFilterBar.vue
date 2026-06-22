@@ -55,7 +55,7 @@ const showClearAll = computed(() => hasActivePurchaseOrderFilters(props.filters)
       label="Product type"
       :active="filters.productType.length > 0"
       @open="syncDraftFromProps"
-      @apply="emit('apply', { productType: [...draftProductType], page: 1 })"
+      @apply="emit('apply', { productType: [...draftProductType] as PurchaseOrderListFilters['productType'], page: 1 })"
       @clear="emit('apply', { productType: [], page: 1 })"
     >
       <div class="flex flex-col gap-2">

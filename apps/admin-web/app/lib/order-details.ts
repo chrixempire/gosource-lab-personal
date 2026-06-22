@@ -39,7 +39,10 @@ export function getOrderStatusVariant(status: OrderStatus): OrderStatusTagVarian
 export function getOrderPaymentStatusVariant(
   status: OrderPaymentStatus,
 ): PaymentStatusTagVariant {
-  return getOrderPaymentStatusTagVariant(status);
+  const variant = getOrderPaymentStatusTagVariant(status);
+  return ['default', 'success', 'negative', 'warning'].includes(variant)
+    ? (variant as PaymentStatusTagVariant)
+    : 'warning';
 }
 
 export function normalizeOrderStatus(status: string | undefined | null): OrderStatus {
@@ -222,11 +225,13 @@ export function mapLegacyOrderLineItems(order: Record<string, unknown>): AdminOr
   const fallbackSubtotal = resolveOrderSubtotal(order, rawLines);
   const pricedLines = applySubtotalFallbackToOrderLines(rawLines, fallbackSubtotal);
 
-  return pricedLines.map((line) => {
-    const statusDisplay = getLineItemStatusDisplay(line);
+  return pricedLines.map((line, index) => {
+    const originalLine = rawLines[index]!;
+    const mergedLine = { ...originalLine, ...line };
+    const statusDisplay = getLineItemStatusDisplay(mergedLine);
 
     return {
-      ...line,
+      ...mergedLine,
       lineTotalLabel: formatDashboardCurrency(line.lineTotal),
       statusLabel: statusDisplay.label,
       statusVariant: statusDisplay.variant,
@@ -244,7 +249,9 @@ export function mapLegacyOrderTimeline(order: Record<string, unknown>): AdminOrd
 
       return {
         id: String(event._id ?? `timeline-${index}`),
-        title: formatStatusLabel(String(event.title ?? 'Update')),
+        title: String(event.title ?? 'Update')
+          .replace(/[_-]+/g, ' ')
+          .replace(/\b\w/g, (character) => character.toUpperCase()),
         description: String(event.description ?? ''),
         updatedAt,
       };

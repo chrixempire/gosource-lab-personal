@@ -35,6 +35,7 @@ function mapMovementRow(record: Record<string, unknown>): InventoryMovementRow |
     deductedQuantity: Number(record.deductedQuantity ?? 0),
     closingQuantity: Number(record.closingQuantity ?? 0),
     isLowStock: isProductLowStock({
+      _id: String(id),
       trackQuantity: record.trackQuantity !== false,
       quantity: Number(record.closingQuantity ?? 0),
       lowStockLevel:

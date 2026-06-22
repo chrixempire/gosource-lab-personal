@@ -66,7 +66,7 @@ function onSelect(key: string) {
         <DropdownMenuItem
           v-for="option in options"
           :key="option.key"
-          :class="option.danger ? destructiveItemClass : undefined"
+          :class="'danger' in option && option.danger ? destructiveItemClass : undefined"
           @select="onSelect(option.key)"
         >
           {{ option.label }}

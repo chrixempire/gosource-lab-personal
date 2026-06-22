@@ -43,7 +43,7 @@ export async function useAdminListFetch<T>(
 
     return useAdminAuthenticatedAsyncData(
       fetchKey,
-      () => apiFetch<T>(resolvedUrl.value),
+      () => apiFetch<T>(resolvedUrl.value) as Promise<T>,
       {
         ...rest,
         fastNav: true,
@@ -67,13 +67,13 @@ export async function useAdminListFetch<T>(
   return useAdminPaginatedListData<T>(
     baseKey,
     keyParts,
-    () => apiFetch<T>(toValue(url), { query: toValue(query) }),
+    () => apiFetch<T>(toValue(url), { query: toValue(query) }) as Promise<T>,
     {
       ...rest,
       lazy: lazy ?? true,
       server: rest.server ?? false,
       pageCache: pageCacheEnabled,
       watch: extraWatch.length > 0 ? extraWatch : undefined,
-    },
+    } as never,
   );
 }

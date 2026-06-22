@@ -16,7 +16,7 @@ const props = defineProps<{
 
 const query = computed(() => toDashboardQueryParams(props.filter));
 
-const { data, pending, error } = await useAdminAuthenticatedFetch<DashboardSummaryResponse>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<DashboardSummaryResponse>(
   '/api/dashboard/summary',
   {
     query,

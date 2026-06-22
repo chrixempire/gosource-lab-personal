@@ -45,7 +45,8 @@ export function useMessageMutations() {
   async function updateAlert(id: string, payload: AdminAlertPayload) {
     busyMessageId.value = id;
     try {
-      const response = await $fetch(`/api/messages/${id}`, {
+      const url: string = `/api/messages/${id}`;
+      const response = await $fetch(url, {
         method: 'PATCH',
         body: payload,
       });
@@ -68,7 +69,8 @@ export function useMessageMutations() {
   ) {
     busyMessageId.value = id;
     try {
-      await $fetch(`/api/messages/${id}/${action}`, {
+      const url: string = `/api/messages/${id}/${action}`;
+      await $fetch(url, {
         method: 'PATCH',
         body: {},
       });
@@ -93,7 +95,8 @@ export function useMessageMutations() {
   async function deleteMessage(id: string) {
     busyMessageId.value = id;
     try {
-      await $fetch(`/api/messages/${id}`, { method: 'DELETE', body: {} });
+      const url: string = `/api/messages/${id}`;
+      await $fetch(url, { method: 'DELETE', body: {} });
       invalidateMessages();
       toast.success('Message deleted');
     } catch (error) {

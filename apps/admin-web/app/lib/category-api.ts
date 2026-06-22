@@ -83,16 +83,14 @@ export function parseCategoryOptions(payload: unknown): CategoryOption[] {
     ? (body.categories as LegacyCategoryRow[])
     : Array.isArray(body) ? (body as LegacyCategoryRow[]) : [];
 
-  return categories
-    .map((category) => {
+  return categories.flatMap((category): CategoryOption[] => {
       const id = category._id;
       const label = category.name;
 
       if (!id || !label) {
-        return null;
+        return [];
       }
 
-      return { id, label, imageUrl: category.image ?? null };
-    })
-    .filter((row): row is CategoryOption => row !== null);
+      return [{ id, label, imageUrl: category.image ?? null }];
+    });
 }

@@ -350,7 +350,7 @@ function clearProductSearch() {
                   <Input
                     :model-value="productSearch"
                     placeholder="Search products to add"
-                    :class="['pl-10', productSearch && 'pr-10']"
+                    :class="productSearch ? 'pl-10 pr-10' : 'pl-10'"
                     @update:model-value="productSearch = $event"
                   />
                   <button

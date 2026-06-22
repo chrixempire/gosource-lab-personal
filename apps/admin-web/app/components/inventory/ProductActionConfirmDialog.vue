@@ -36,7 +36,7 @@ const copy = computed(() =>
   <Dialog v-model:open="open">
     <DialogContent class="w-[min(92vw,480px)]">
       <DialogHeader>
-        <DialogTitle :class="['min-w-0 flex-1 pr-2', ADMIN_MODAL_TITLE_CLASS]">
+        <DialogTitle :class="`min-w-0 flex-1 pr-2 ${ADMIN_MODAL_TITLE_CLASS}`">
           {{ copy?.title ?? 'Confirm action' }}
         </DialogTitle>
         <DialogClose class="shrink-0" />

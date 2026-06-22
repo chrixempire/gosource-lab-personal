@@ -82,6 +82,8 @@ export type AdminOrderListItem = {
     | 'success'
     | 'negative'
     | 'warning'
+    | 'completed'
+    | 'glory'
     | 'ready'
     | 'partiallyDelivered'
     | 'accepted';
