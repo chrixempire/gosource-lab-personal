@@ -12,6 +12,7 @@ import { useRequestEdit } from '~/composables/useRequestEdit';
 import { useMarketplaceUi } from '~/composables/useMarketplaceUi';
 import { useCustomerRequestService } from '~/services/request.service';
 import { extractApiResponseMessage } from '~/utils/api-error';
+import { invalidateManageRequestsListCache } from '~/lib/invalidate-customer-list-cache';
 
 let activeBootstrapPromise: Promise<void> | null = null;
 let activeBootstrapRequestId: string | null = null;
@@ -262,6 +263,10 @@ export function useRequestAddItemsMode() {
     cancelProductEdit();
     pendingOpenRequestDrawer.value = false;
     cartDrawerOpen.value = false;
+
+    // Drop the cached requests list BEFORE navigating so the table reflects the
+    // updated item count instead of serving stale rows until a manual reload.
+    invalidateManageRequestsListCache();
 
     if (isBusinessOwnerSession(session.value)) {
       await router.push(`/manage-requests/${id}`);
