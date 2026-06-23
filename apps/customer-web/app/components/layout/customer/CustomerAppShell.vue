@@ -95,7 +95,8 @@ const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/branches', title: 'Branches' },
   { match: '/members', title: 'Members' },
   { match: '/settings/my-profile', title: 'My Profile' },
-  { match: '/settings/business-profile', title: 'Business Profile' },
+  // Standalone Business Profile now redirects to the Business profile tab on My Profile.
+  // { match: '/settings/business-profile', title: 'Business Profile' },
   { match: '/settings/security', title: 'Security' },
   { match: '/settings/help-support', title: 'Help & Support' },
 ];
@@ -319,6 +320,7 @@ async function confirmLogout() {
 
             <div class="ml-auto flex shrink-0 items-center gap-2">
               <CustomerThemeToggle />
+              <!-- Notification bell is intentionally disabled until the in-app notification flow is implemented. -->
               <MarketHeaderCartButton v-if="showHeaderCart" />
             </div>
           </div>
