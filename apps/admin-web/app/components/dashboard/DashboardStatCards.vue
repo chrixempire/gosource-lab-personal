@@ -34,6 +34,17 @@ const hasActiveCustomers = computed(
 const hasPurchaseOrderSpend = computed(
   () => data.value?.permissions?.purchaseOrders ?? Boolean(data.value),
 );
+const hasFinancialMetrics = computed(
+  () => data.value?.permissions?.financials ?? false,
+);
+const profitCoverageHint = computed(() => {
+  const coverage = data.value?.historicalProfitCoveragePercent ?? 0;
+  const unverified = data.value?.unverifiedProfitOrderCount ?? 0;
+  if (unverified > 0) {
+    return `${coverage.toFixed(1)}% historical cost coverage · ${unverified} order${unverified === 1 ? '' : 's'} excluded`;
+  }
+  return 'Paid item revenue minus verified inventory cost';
+});
 
 const purchaseOrderSpendLabel = 'Purchase order spend';
 </script>
@@ -44,7 +55,7 @@ const purchaseOrderSpendLabel = 'Purchase order spend';
     class="grid grid-cols-2 items-start gap-4 xl:grid-cols-4"
   >
     <DashboardStatCardSkeleton
-      v-for="index in 5"
+      v-for="index in 7"
       :key="index"
       class="w-full min-w-0"
     />
@@ -60,6 +71,36 @@ const purchaseOrderSpendLabel = 'Purchase order spend';
   />
 
   <section v-else class="grid grid-cols-2 items-start gap-4 xl:grid-cols-4">
+    <DashboardStatCard
+      v-if="hasFinancialMetrics"
+      label="Revenue"
+      :value="formatDashboardCurrency(data?.revenue ?? 0)"
+      hint="Paid item sales only · fees and reversed orders excluded"
+      class="w-full min-w-0"
+    />
+    <DashboardStatCard
+      v-else
+      label="Revenue"
+      value="—"
+      hint="Requires order view permission"
+      class="w-full min-w-0"
+    />
+
+    <DashboardStatCard
+      v-if="hasFinancialMetrics"
+      label="Gross profit"
+      :value="formatDashboardCurrency(data?.grossProfit ?? 0)"
+      :hint="profitCoverageHint"
+      class="w-full min-w-0"
+    />
+    <DashboardStatCard
+      v-else
+      label="Gross profit"
+      value="—"
+      hint="Requires order view permission"
+      class="w-full min-w-0"
+    />
+
     <DashboardStatCard
       v-if="hasOrderMetrics"
       label="Total orders"

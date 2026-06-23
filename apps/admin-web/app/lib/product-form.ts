@@ -63,15 +63,15 @@ export function buildPricingQuantityPerUnitDescription(
 
   if (!stockUnit) {
     return (
-      'Q/U is how many stock units make up one pricing unit. Set the unit in Stock inventory first — ' +
-      'for example, if stock is pieces and you sell by pack, enter 40 when 40 pieces make 1 pack.'
+      'Q/U is how many stock units make up one of this pricing unit. Set the unit in Stock inventory first — ' +
+      'for example, if stock is pieces and you sell by pack, enter 40 when 1 pack contains 40 pieces.'
     );
   }
 
   const stock = stockUnit.toLowerCase();
   return (
-    `Q/U is how many ${stock} make up one pricing unit. ` +
-    `Example: stock is counted in ${stock} and you sell by pack — enter 40 when 40 ${stock} = 1 pack.`
+    `Q/U is how many ${stock} make up one of this pricing unit. ` +
+    `Example: stock is counted in ${stock} and 1 pack contains 8 ${stock} — enter 8 for the pack (enter 1 if the unit is sold as a single ${stock}).`
   );
 }
 

@@ -57,6 +57,11 @@ import { buildOrderInvoiceViewModel } from '../../utils/order-invoice-view';
 import { PdfUtil } from '../../utils/pdfWriter';
 import { Employee } from '../../employee/entities/employee.entity';
 import { Request } from '../../request/schema/request.schema';
+import {
+  resolvePurchaseUnitConversion,
+  snapshotOrderFinancialLines,
+  summarizeOrderFinancials,
+} from '../../order/order-financials';
 
 interface CartItem {
   product: string;
@@ -607,8 +612,16 @@ export class OrderService {
     if (status === ORDER_PAYMENT_STATUS.PAID) {
       // Combine existing products with additional products
       const combinedProducts = [
-        ...order.products,
-        ...(order.additionalProducts || []),
+        ...snapshotOrderFinancialLines(
+          order.products as any[],
+          order.business,
+          order.discount,
+        ),
+        ...snapshotOrderFinancialLines(
+          (order.additionalProducts || []) as any[],
+          order.business,
+          0,
+        ),
       ];
       // Deduct product quantities from inventory once paid
       const initialCustomerPaymentMethod = order.paymentMethod;
@@ -616,7 +629,7 @@ export class OrderService {
         initialCustomerPaymentMethod === PaymentMethod.TRANSFER &&
         order.paymentCount < 1
       ) {
-        await this.requestService.deductProductQuantity(combinedProducts);
+        await this.requestService.deductProductQuantity(combinedProducts as any);
       } else {
         await this.requestService.deductProductQuantity(
           order.additionalProducts || [],
@@ -635,6 +648,7 @@ export class OrderService {
         additionalProducts: [],
         additionalTotalPrice: 0,
         paymentCount: (order.paymentCount || 0) + 1,
+        paidAt: order.paidAt ?? new Date(),
       };
     } else {
       // Keep existing additionalProducts and additionalTotalPrice if not paid
@@ -1545,22 +1559,12 @@ export class OrderService {
         // Find the conversion factor from newUnit array
         let quantityToAdd = item.quantity;
 
-        if (product.newUnit) {
-          try {
-            const newUnits = JSON.parse(product.newUnit);
-            const unitMapping = newUnits.find(
-              (unitObj: any) => unitObj.unit === item.unit,
-            );
-
-            if (unitMapping && unitMapping.quantity) {
-              // Convert customer unit back to base purchase unit
-              // If returning 5 "oplo" and 1 oplo = 2 base units, add 10 base units
-              quantityToAdd = item.quantity * parseFloat(unitMapping.quantity);
-            }
-          } catch (error) {
-            console.error('Error parsing newUnit:', error);
-            // Fallback to original quantity if parsing fails
-          }
+        const purchaseUnitConversion = resolvePurchaseUnitConversion(
+          product as any,
+          item.unit,
+        );
+        if (purchaseUnitConversion !== null) {
+          quantityToAdd = item.quantity * purchaseUnitConversion;
         }
 
         const quantityToAddValue = quantityToAdd;
@@ -1754,6 +1758,17 @@ export class OrderService {
     const bucketFormat = getTrendDateBucketFormat(filterType);
     const dashboardTimezone = getDashboardTimezone();
 
+    const createdAtRange = (dateFilter as any).createdAt;
+    const financialDateFilter = createdAtRange
+      ? {
+          $or: [
+            { paidAt: createdAtRange },
+            { paidAt: { $exists: false }, createdAt: createdAtRange },
+            { paidAt: null, createdAt: createdAtRange },
+          ],
+        }
+      : {};
+
     const [trendRows, statusRows] = await Promise.all([
       this.orderModel.aggregate([
         { $match: dateFilter },
@@ -1787,6 +1802,56 @@ export class OrderService {
       ]),
     ]);
 
+    const financialSummary = {
+      revenue: 0,
+      verifiedRevenue: 0,
+      costOfGoodsSold: 0,
+      grossProfit: 0,
+      qualifyingOrderCount: 0,
+      verifiedProfitOrderCount: 0,
+      unverifiedProfitOrderCount: 0,
+    };
+    const financialOrderCursor = this.orderModel
+      .find({
+        ...financialDateFilter,
+        paymentStatus: ORDER_PAYMENT_STATUS.PAID,
+        status: {
+          $nin: [
+            ORDER_STATUS.CANCELLED,
+            ORDER_STATUS.RETURNED,
+            ORDER_STATUS.REFUNDED,
+          ],
+        },
+      })
+      .select(
+        'products additionalProducts totalPrice additionalTotalPrice deliveryFee serviceCharge discount',
+      )
+      .lean()
+      .cursor();
+
+    for await (const order of financialOrderCursor) {
+      const calculated = summarizeOrderFinancials(order as any);
+      financialSummary.revenue += calculated.revenue;
+      financialSummary.qualifyingOrderCount += 1;
+      if (calculated.verified) {
+        financialSummary.verifiedRevenue += calculated.revenue;
+        financialSummary.costOfGoodsSold += calculated.costOfGoodsSold;
+        financialSummary.grossProfit += calculated.grossProfit;
+        financialSummary.verifiedProfitOrderCount += 1;
+      } else {
+        financialSummary.unverifiedProfitOrderCount += 1;
+      }
+    }
+
+    const historicalCoveragePercent = financialSummary.qualifyingOrderCount
+      ? (financialSummary.verifiedProfitOrderCount /
+          financialSummary.qualifyingOrderCount) *
+        100
+      : 100;
+    const grossMarginPercent = financialSummary.verifiedRevenue
+      ? (financialSummary.grossProfit / financialSummary.verifiedRevenue) * 100
+      : 0;
+
     const points = trendRows.map((row) => ({
       label: row._id as string,
       date: row._id as string,
@@ -1805,7 +1870,10 @@ export class OrderService {
     const bucketCounts = new Map<string, number>();
     for (const row of statusRows) {
       const bucket = mapOrderStatusToPieBucket(String(row._id ?? ''));
-      bucketCounts.set(bucket, (bucketCounts.get(bucket) ?? 0) + (row.count as number));
+      bucketCounts.set(
+        bucket,
+        (bucketCounts.get(bucket) ?? 0) + (row.count as number),
+      );
     }
 
     const totalStatusOrders = Array.from(bucketCounts.values()).reduce(
@@ -1833,6 +1901,11 @@ export class OrderService {
       statusBreakdown: {
         total: totalStatusOrders,
         slices,
+      },
+      financials: {
+        ...financialSummary,
+        grossMarginPercent,
+        historicalCoveragePercent,
       },
       dateRange: {
         filterType: filterType ?? DateFilterType.ALL_TIME,
