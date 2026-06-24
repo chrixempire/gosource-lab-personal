@@ -20,7 +20,7 @@ const visibleProducts = computed(() =>
   <section
     :id="`explore-section-${section.id}`"
     :data-category-id="section.id"
-    class="scroll-mt-[4rem] border-b border-grey-50/80 pb-0 pt-0 last:border-b-0"
+    class="scroll-mt-[4rem] border-b border-grey-50/80 pb-2 pt-0 last:border-b-0"
   >
     <header class="mb-3 flex items-center justify-between gap-3 rounded-lg bg-[#EAECF0] p-2">
       <div class="flex min-w-0 items-center gap-2 pl-2">

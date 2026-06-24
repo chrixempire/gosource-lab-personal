@@ -8,6 +8,8 @@ import MarketBranchSetupBanner from '~/components/market/MarketBranchSetupBanner
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
 import MarketProductSection from '~/components/market/MarketProductSection.vue';
+import ExploreCategoryFilterBar from '~/components/explore/ExploreCategoryFilterBar.vue';
+import { ALL_EXPLORE_CATEGORIES_ID } from '~/lib/explore-catalog-filters';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useMarketCatalog } from '~/composables/useMarketCatalog';
 import { useCustomerMarketService } from '~/services/market.service';
@@ -15,7 +17,18 @@ import { useCustomerMarketService } from '~/services/market.service';
 const route = useRoute();
 const router = useRouter();
 const { getCategory } = useCustomerMarketService();
-const { hydrateFromStorage, upsertCategory, findCategoryById } = useMarketCatalog();
+const { categories, hydrateFromStorage, upsertCategory, findCategoryById } = useMarketCatalog();
+
+function onSelectCategory(nextCategoryId: string) {
+  if (nextCategoryId === ALL_EXPLORE_CATEGORIES_ID) {
+    void navigateTo('/market');
+    return;
+  }
+  if (nextCategoryId === categoryId.value) {
+    return;
+  }
+  void navigateTo(`/market/category/${nextCategoryId}`);
+}
 
 hydrateFromStorage();
 
@@ -136,10 +149,17 @@ onMounted(async () => {
 
 <template>
   <div data-testid="market-category-page">
-    <div v-if="category" class="pb-10 pt-2">
+    <div v-if="category" class="pb-10 pt-0">
+      <ExploreCategoryFilterBar
+        :categories="categories"
+        :active-category-id="categoryId"
+        hide-filters
+        @select-category="onSelectCategory"
+      />
+
       <MarketBranchSetupBanner />
 
-      <div class="mb-2">
+      <div class="mb-3 mt-2 flex items-center gap-2">
         <Button
           variant="neutral"
           size="small"
@@ -149,6 +169,26 @@ onMounted(async () => {
         >
           Back
         </Button>
+
+        <div class="flex min-w-0 items-center gap-2">
+          <span
+            class="inline-flex size-6 shrink-0 items-center justify-center overflow-hidden"
+            aria-hidden="true"
+          >
+            <img
+              v-if="category.imageUrl"
+              :src="category.imageUrl"
+              :alt="category.title"
+              class="size-6 rounded-[4px] object-contain"
+            >
+            <span v-else-if="category.emoji" class="text-xl leading-none">
+              {{ category.emoji }}
+            </span>
+          </span>
+          <h1 class="min-w-0 truncate text-base font-semibold text-grey-900 sm:text-lg">
+            {{ category.title }}
+          </h1>
+        </div>
       </div>
 
       <MarketProductSection :category="category" layout="grid" />

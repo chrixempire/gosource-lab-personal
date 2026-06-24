@@ -156,10 +156,10 @@ watch(
     class="m-0"
   >
     <header
-      class="mb-3 flex items-center justify-between gap-2 px-1 sm:px-0"
+      class="mb-3 flex items-center justify-between gap-2 rounded-lg bg-primary-50 p-2"
     >
-      <div class="flex min-w-0 items-center gap-1.5">
-        <h2 class="truncate text-base font-semibold text-grey-900 sm:text-lg">
+      <div class="flex min-w-0 items-center gap-1.5 pl-2">
+        <h2 class="truncate text-base font-semibold text-success-700 sm:text-lg">
           Deals combo for you
         </h2>
         <span

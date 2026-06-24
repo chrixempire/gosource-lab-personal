@@ -12,13 +12,23 @@ import {
   parseNairaAmountInput,
 } from "~/lib/wallet-display";
 
-const props = defineProps<{
-  categories: MarketCategory[];
-  activeCategoryId: string;
-  inStockOnly: boolean;
-  priceMin: number | null;
-  priceMax: number | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    categories: MarketCategory[];
+    activeCategoryId: string;
+    inStockOnly?: boolean;
+    priceMin?: number | null;
+    priceMax?: number | null;
+    /** Hide the in-stock/price filter cluster so the bar is a pure category rail. */
+    hideFilters?: boolean;
+  }>(),
+  {
+    inStockOnly: false,
+    priceMin: null,
+    priceMax: null,
+    hideFilters: false,
+  },
+);
 
 const emit = defineEmits<{
   "select-category": [categoryId: string];
@@ -120,7 +130,7 @@ function categoryChipClass(categoryId: string) {
     "group flex w-[88px] shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl p-1.5 text-center transition sm:w-[104px]",
     isCategoryActive(categoryId)
       ? "bg-primary-50/80 text-primary-500 dark:bg-primary-500/10 dark:text-primary-300"
-      : "text-grey-700 hover:bg-background-active dark:text-grey-200 dark:hover:bg-white/5",
+      : "text-grey-700 hover:bg-grey-50 dark:text-grey-200 dark:hover:bg-white/5",
   ];
 }
 
@@ -326,9 +336,13 @@ watch(
           </button>
         </div>
 
-        <div class="h-fit w-px shrink-0 bg-grey-100" aria-hidden="true" />
+        <div
+          v-if="!hideFilters"
+          class="h-fit w-px shrink-0 bg-grey-100"
+          aria-hidden="true"
+        />
 
-        <div class="flex shrink-0 items-center gap-2">
+        <div v-if="!hideFilters" class="flex shrink-0 items-center gap-2">
           <button
             type="button"
             class="shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-sm font-medium transition"
