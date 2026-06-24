@@ -3,7 +3,7 @@ definePageMeta({ layout: 'customer-market' });
 
 import type { MarketCategory, MarketProduct } from '~/lib/marketplace-data';
 import { Button } from '@gosource/ui';
-import { ChevronLeft } from 'lucide-vue-next';
+import { ChevronLeft, PackageOpen } from 'lucide-vue-next';
 import MarketBranchSetupBanner from '~/components/market/MarketBranchSetupBanner.vue';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
@@ -115,6 +115,8 @@ const {
   pendingResumeProduct,
 } = useMarketBranchGate();
 
+const hasProducts = computed(() => (category.value?.products?.length ?? 0) > 0);
+
 const modalProduct = ref<MarketProduct | null>(null);
 
 function openProductAddModal(product: MarketProduct) {
@@ -191,7 +193,25 @@ onMounted(async () => {
         </div>
       </div>
 
-      <MarketProductSection :category="category" layout="grid" />
+      <MarketProductSection v-if="hasProducts" :category="category" layout="grid" />
+
+      <div
+        v-else
+        class="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center"
+      >
+        <span
+          class="flex size-16 items-center justify-center rounded-full bg-grey-55 text-grey-300"
+          aria-hidden="true"
+        >
+          <PackageOpen class="size-12" />
+        </span>
+        <h2 class="text-base font-semibold text-grey-900">
+          No products in this category yet
+        </h2>
+        <p class="max-w-sm text-sm text-grey-300">
+          There are currently no products available under {{ category.title }}. Check back soon or explore other categories.
+        </p>
+      </div>
     </div>
 
     <div
