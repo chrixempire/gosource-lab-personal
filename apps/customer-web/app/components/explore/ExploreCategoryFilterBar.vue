@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import {
   ALL_EXPLORE_CATEGORIES_ID,
   EXPLORE_CATEGORY_FILTER_STICKY_CLASS,
-  exploreCategoryDotColor,
 } from "~/lib/explore-catalog-filters";
 import {
   formatNairaAmountInput,
@@ -39,8 +38,21 @@ const priceActive = computed(
 
 const activePillClass =
   "bg-primary-500 text-white shadow-[0_4px_14px_-6px_rgba(15,92,24,0.45)] dark:bg-primary-500/22 dark:text-[#86efac] dark:shadow-none dark:ring-1 dark:ring-primary-500/35";
-const inactiveChipClass =
-  "text-grey-300 customer-sidebar-nav-hover";
+const categoryLabelClass =
+  "block w-full overflow-hidden text-ellipsis whitespace-nowrap text-center font-['Inter'] text-xs font-medium not-italic leading-[18px] tracking-[0.1px] text-[#344054]";
+const failedCategoryImages = ref<Set<string>>(new Set());
+
+function categoryHasImage(category: MarketCategory) {
+  return Boolean(
+    category.imageUrl && !failedCategoryImages.value.has(category.id),
+  );
+}
+
+function markCategoryImageFailed(categoryId: string) {
+  const next = new Set(failedCategoryImages.value);
+  next.add(categoryId);
+  failedCategoryImages.value = next;
+}
 
 function syncPriceDraft() {
   draftPriceMin.value =
@@ -105,8 +117,10 @@ function isCategoryActive(categoryId: string) {
 
 function categoryChipClass(categoryId: string) {
   return [
-    "shrink-0 cursor-pointer rounded-full text-sm font-semibold transition",
-    isCategoryActive(categoryId) ? activePillClass : inactiveChipClass,
+    "group flex w-[88px] shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl p-1.5 text-center transition sm:w-[104px]",
+    isCategoryActive(categoryId)
+      ? "bg-primary-50/80 text-primary-500 dark:bg-primary-500/10 dark:text-primary-300"
+      : "text-grey-700 hover:bg-background-active dark:text-grey-200 dark:hover:bg-white/5",
   ];
 }
 
@@ -259,43 +273,60 @@ watch(
         ref="scrollerRef"
         class="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] lg:gap-4 [&::-webkit-scrollbar]:hidden"
       >
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex shrink-0 items-start gap-1">
           <button
             :ref="(el) => setChipRef(ALL_EXPLORE_CATEGORIES_ID, el)"
             type="button"
-            :class="[categoryChipClass(ALL_EXPLORE_CATEGORIES_ID), 'px-4 py-2']"
+            :class="categoryChipClass(ALL_EXPLORE_CATEGORIES_ID)"
             :aria-current="
               isCategoryActive(ALL_EXPLORE_CATEGORIES_ID) ? 'true' : undefined
             "
             @click="selectCategory(ALL_EXPLORE_CATEGORIES_ID)"
           >
-            All categories
+            <span
+              class="flex size-[18px] items-center justify-center text-[18px] leading-none"
+              aria-hidden="true"
+            >
+              🛒
+            </span>
+            <span :class="categoryLabelClass">
+              All categories
+            </span>
           </button>
 
           <button
-            v-for="(category, index) in categories"
+            v-for="category in categories"
             :key="category.id"
             :ref="(el) => setChipRef(category.id, el)"
             type="button"
-            :class="[
-              categoryChipClass(category.id),
-              'flex items-center gap-2 px-3 py-2 font-medium',
-              isCategoryActive(category.id) ? '!font-semibold' : '',
-            ]"
+            :class="categoryChipClass(category.id)"
             :aria-current="isCategoryActive(category.id) ? 'true' : undefined"
+            :title="category.title"
             @click="selectCategory(category.id)"
           >
             <span
-              v-if="!isCategoryActive(category.id)"
-              class="size-2.5 shrink-0 rounded-full"
-              :style="{ backgroundColor: exploreCategoryDotColor(index) }"
+              class="flex size-[18px] items-center justify-center overflow-hidden"
               aria-hidden="true"
-            />
-            <span class="whitespace-nowrap">{{ category.title }}</span>
+            >
+              <img
+                v-if="categoryHasImage(category)"
+                :src="category.imageUrl"
+                :alt="category.title"
+                class="size-full object-contain transition-transform duration-200 group-hover:scale-105"
+                loading="lazy"
+                @error="markCategoryImageFailed(category.id)"
+              >
+              <span v-else class="text-[18px] leading-none">
+                {{ category.emoji || '🛒' }}
+              </span>
+            </span>
+            <span :class="categoryLabelClass">
+              {{ category.title }}
+            </span>
           </button>
         </div>
 
-        <div class="h-8 w-px shrink-0 bg-grey-100" aria-hidden="true" />
+        <div class="h-fit w-px shrink-0 bg-grey-100" aria-hidden="true" />
 
         <div class="flex shrink-0 items-center gap-2">
           <button
