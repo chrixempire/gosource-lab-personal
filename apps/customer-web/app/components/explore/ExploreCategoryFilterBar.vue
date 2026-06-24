@@ -49,7 +49,7 @@ const priceActive = computed(
 const activePillClass =
   "bg-primary-500 text-white shadow-[0_4px_14px_-6px_rgba(15,92,24,0.45)] dark:bg-primary-500/22 dark:text-[#86efac] dark:shadow-none dark:ring-1 dark:ring-primary-500/35";
 const categoryLabelClass =
-  "block w-full overflow-hidden text-ellipsis whitespace-nowrap text-center font-['Inter'] text-xs font-medium not-italic leading-[18px] tracking-[0.1px] text-[#344054]";
+  "block w-full overflow-hidden text-ellipsis whitespace-nowrap text-center font-['Inter'] text-[14px] font-medium not-italic leading-[18px] tracking-[0.1px] text-[#344054]";
 const failedCategoryImages = ref<Set<string>>(new Set());
 
 function categoryHasImage(category: MarketCategory) {
@@ -127,7 +127,7 @@ function isCategoryActive(categoryId: string) {
 
 function categoryChipClass(categoryId: string) {
   return [
-    "group flex w-[88px] shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl p-1.5 text-center transition sm:w-[104px]",
+    "group flex w-[100px] shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl p-1.5 text-center transition",
     isCategoryActive(categoryId)
       ? "bg-primary-50/80 text-primary-500 dark:bg-primary-500/10 dark:text-primary-300"
       : "text-grey-700 hover:bg-grey-50 dark:text-grey-200 dark:hover:bg-white/5",
@@ -281,7 +281,7 @@ watch(
 
       <div
         ref="scrollerRef"
-        class="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] lg:gap-4 [&::-webkit-scrollbar]:hidden"
+        class="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto px-2 [-ms-overflow-style:none] [scrollbar-width:none] lg:gap-4 [&::-webkit-scrollbar]:hidden"
       >
         <div class="flex shrink-0 items-start gap-1">
           <button
@@ -315,7 +315,7 @@ watch(
             @click="selectCategory(category.id)"
           >
             <span
-              class="flex size-[18px] items-center justify-center overflow-hidden"
+              class="flex size-[24px] items-center justify-center overflow-hidden"
               aria-hidden="true"
             >
               <img
@@ -326,11 +326,16 @@ watch(
                 loading="lazy"
                 @error="markCategoryImageFailed(category.id)"
               >
-              <span v-else class="text-[18px] leading-none">
+              <span v-else class="text-[24px] leading-none">
                 {{ category.emoji || '🛒' }}
               </span>
             </span>
-            <span :class="categoryLabelClass">
+            <span
+              :class="[
+                categoryLabelClass,
+                isCategoryActive(category.id) ? '!text-primary-500' : '',
+              ]"
+            >
               {{ category.title }}
             </span>
           </button>
@@ -338,7 +343,7 @@ watch(
 
         <div
           v-if="!hideFilters"
-          class="h-fit w-px shrink-0 bg-grey-100"
+          class="h-10 w-px shrink-0 self-center bg-[#d0d5dd]"
           aria-hidden="true"
         />
 

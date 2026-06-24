@@ -24,20 +24,20 @@ const visibleProducts = computed(() =>
   >
     <header class="mb-3 flex items-center justify-between gap-3 rounded-lg bg-[#EAECF0] p-2">
       <div class="flex min-w-0 items-center gap-2 pl-2">
-        <h2 class="min-w-0 truncate text-base font-semibold text-black sm:text-lg min-[900px]:text-xl">
+        <h2 class="min-w-0 truncate text-[14px] font-semibold text-black">
           {{ section.title }}
         </h2>
         <span
-          class="inline-flex size-[18px] shrink-0 items-center justify-center"
+          class="inline-flex size-[24px] shrink-0 items-center justify-center"
           aria-hidden="true"
         >
           <img
             v-if="section.imageUrl"
             :src="section.imageUrl"
             :alt="section.title"
-            class="size-[18px] shrink-0 rounded-[4px] object-contain"
+            class="size-[24px] shrink-0 rounded-[4px] object-contain"
           >
-          <span v-else-if="section.emoji" class="text-[18px] leading-none">
+          <span v-else-if="section.emoji" class="text-[24px] leading-none">
             {{ section.emoji }}
           </span>
         </span>
