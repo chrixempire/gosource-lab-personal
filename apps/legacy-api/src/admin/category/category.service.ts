@@ -21,12 +21,20 @@ import { Product } from '../../product/entities/product.entity';
 import { FilterCategoryDto } from './dto/filter-category.dto';
 import { UpdateCategoryDto } from '../../category/dto/update-category.dto';
 import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
+import { ActivityLog } from '../../activity/schema/activityLog.schema';
+import {
+  ACTIVITY_LOG_ACTION_TYPE,
+  IActivityLog,
+} from '../../activity/interface/activityLog.interface';
+import { adminInitiator } from '../../utils/activity-initiator.util';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectModel(Category.name) private categoryModel: Model<Category>,
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
+    @InjectModel(ActivityLog.name)
+    private readonly activityLogModel: Model<ActivityLog>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
@@ -36,7 +44,7 @@ export class CategoryService {
    * @param categoryData
    * @returns
    */
-  async createCategory(categoryData: any, file: any): Promise<any> {
+  async createCategory(categoryData: any, file: any, admin?: any): Promise<any> {
     const maxPosition = await this.categoryModel
       .findOne()
       .sort({ position: -1 })
@@ -79,6 +87,15 @@ export class CategoryService {
     });
 
     if (newCategory) {
+      await this.activityLogModel.create({
+        objectId: newCategory.id,
+        description: `Created category - Name: ${newCategory.name}`,
+        ...adminInitiator(admin),
+        metadata: { name: newCategory.name },
+        action: ACTIVITY_LOG_ACTION_TYPE.CREATE,
+        module: Category.name,
+      } as IActivityLog);
+
       await Promise.all([
         this.cacheManager.del('only_categories'),
         this.cacheManager.del('all_products_sorted'),
@@ -165,6 +182,7 @@ export class CategoryService {
     categoryId: string,
     categoryData: UpdateCategoryDto,
     file: any,
+    admin?: any,
   ): Promise<any> {
     const category: CategoryDocument =
       await this.categoryModel.findById(categoryId);
@@ -191,6 +209,21 @@ export class CategoryService {
       }
     }
 
+    // Capture field-level changes (old → new) before applying the update.
+    const changes: Record<string, { old: unknown; new: unknown }> = {};
+    if (
+      categoryData.name != null &&
+      categoryData.name !== category.name
+    ) {
+      changes.title = { old: category.name, new: categoryData.name };
+    }
+    if (
+      categoryData.desc != null &&
+      categoryData.desc !== category.desc
+    ) {
+      changes.description = { old: category.desc ?? '', new: categoryData.desc };
+    }
+
     categoryData['image'] = imageUrl;
 
     const update = await this.categoryModel.findByIdAndUpdate(
@@ -202,6 +235,15 @@ export class CategoryService {
     );
 
     if (update) {
+      await this.activityLogModel.create({
+        objectId: update.id,
+        description: `Updated category - Name: ${update.name}`,
+        ...adminInitiator(admin),
+        metadata: { name: update.name, changes },
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: Category.name,
+      } as IActivityLog);
+
       await this.cacheManager.del('only_categories');
       await this.cacheManager.del('categories_with_products');
 
@@ -213,7 +255,11 @@ export class CategoryService {
     }
   }
 
-  async remove(id: string, deleteCategoryDto: DeleteCategoryDto): Promise<any> {
+  async remove(
+    id: string,
+    deleteCategoryDto: DeleteCategoryDto,
+    admin?: any,
+  ): Promise<any> {
     const { newCategoryId } = deleteCategoryDto;
     const deleteAll: boolean = deleteCategoryDto.deleteAll;
 
@@ -229,6 +275,16 @@ export class CategoryService {
         this.categoryModel.findByIdAndDelete(id),
         this.productModel.deleteMany({ category: id }),
       ]);
+
+      await this.activityLogModel.create({
+        objectId: id,
+        description: `Deleted category and its products - Name: ${category.name}`,
+        ...adminInitiator(admin),
+        metadata: { name: category.name, deleteAll: true },
+        action: ACTIVITY_LOG_ACTION_TYPE.DELETE,
+        module: Category.name,
+      } as IActivityLog);
+
       return {
         status: true,
         message: 'Category and associated products deleted successfully',
@@ -250,6 +306,19 @@ export class CategoryService {
           { $set: { category: newCategoryId } },
         ),
       ]);
+
+      await this.activityLogModel.create({
+        objectId: id,
+        description: `Deleted category "${category.name}" and moved its products to "${targetCategory.name}"`,
+        ...adminInitiator(admin),
+        metadata: {
+          name: category.name,
+          deleteAll: false,
+          newCategoryId,
+        },
+        action: ACTIVITY_LOG_ACTION_TYPE.DELETE,
+        module: Category.name,
+      } as IActivityLog);
 
       return {
         status: true,
@@ -279,7 +348,10 @@ export class CategoryService {
     };
   }
 
-  async rearrangeCategory(data: ReorderCategoriesDto): Promise<any> {
+  async rearrangeCategory(
+    data: ReorderCategoriesDto,
+    admin?: any,
+  ): Promise<any> {
     const { rearrangedCategories } = data;
     if (rearrangedCategories.length === 0) {
       throw new BadRequestException('Invalid rearrangement data');
@@ -320,6 +392,15 @@ export class CategoryService {
 
       await this.cacheManager.del('only_categories');
       await this.cacheManager.del('categories_with_products');
+
+      await this.activityLogModel.create({
+        objectId: null,
+        description: `Reordered ${rearrangedCategories.length} categories`,
+        ...adminInitiator(admin),
+        metadata: { count: rearrangedCategories.length },
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: Category.name,
+      } as IActivityLog);
 
       return { status: true, message: 'Categories rearranged successfully' };
     } catch (error) {

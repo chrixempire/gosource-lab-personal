@@ -10,6 +10,7 @@ export const ADMIN_PAGE_ROUTES = {
   INVENTORY_REPORT: '/inventory/items/inventory-report',
   INVENTORY_CATEGORY: '/inventory/category',
   PURCHASE_ORDERS: '/inventory/purchase-orders',
+  INVENTORY_ACTIVITY_LOG: '/inventory/activity-log',
   CREDIT_ANALYTICS: '/credit/analytics',
   CREDIT_APPLICATIONS: '/credit/application',
   CREDIT_REQUESTS: '/credit/request',
@@ -62,6 +63,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
       { label: 'Items', to: ADMIN_PAGE_ROUTES.INVENTORY },
       { label: 'Categories', to: ADMIN_PAGE_ROUTES.INVENTORY_CATEGORY },
       { label: 'Purchase orders', to: ADMIN_PAGE_ROUTES.PURCHASE_ORDERS },
+      { label: 'Activity log', to: ADMIN_PAGE_ROUTES.INVENTORY_ACTIVITY_LOG },
     ],
   },
   {
@@ -108,6 +110,10 @@ export function isAdminNavChildActive(path: string, childTo: string) {
       path === ADMIN_PAGE_ROUTES.PURCHASE_ORDERS ||
       path.startsWith(`${ADMIN_PAGE_ROUTES.PURCHASE_ORDERS}/`)
     );
+  }
+
+  if (childTo === ADMIN_PAGE_ROUTES.INVENTORY_ACTIVITY_LOG) {
+    return path === ADMIN_PAGE_ROUTES.INVENTORY_ACTIVITY_LOG;
   }
 
   if (childTo === ADMIN_PAGE_ROUTES.CREDIT_ANALYTICS) {

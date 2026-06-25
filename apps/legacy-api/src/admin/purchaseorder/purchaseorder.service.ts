@@ -29,11 +29,13 @@ import { AdminUser } from '../auth/schema/adminUser.schema';
 import { PdfUtil } from '../../utils/pdfWriter';
 import { FilterPurchaseOrderDto } from './dto/filter - purchaseorder.dto';
 import {
+  ACTIVITY_LOG_ACTION_TYPE,
   IActivityLog,
   INITIATOR_TYPE,
 } from '../../activity/interface/activityLog.interface';
 import { ActivityLog } from '../../activity/schema/activityLog.schema';
 import { createMoney } from '../../utils/money';
+import { adminInitiator } from '../../utils/activity-initiator.util';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -153,6 +155,15 @@ export class PurchaseOrderService {
       createPurchaseOrderDto,
     );
 
+    await this.activityLogModel.create({
+      objectId: newPurchaseOrder.id,
+      description: `Created purchase order with ${newPurchaseOrder.products?.length ?? 0} item(s)`,
+      ...adminInitiator(user),
+      metadata: { itemCount: newPurchaseOrder.products?.length ?? 0 },
+      action: ACTIVITY_LOG_ACTION_TYPE.CREATE,
+      module: PurchaseOrder.name,
+    } as IActivityLog);
+
     this.sendReceiptEmail(newPurchaseOrder.id, false, request.headers);
     return {
       status: true,
@@ -227,6 +238,7 @@ export class PurchaseOrderService {
     productId: string,
     quantityToAdd: number,
     reference: string = 'PURCHASE_ORDER',
+    admin?: any,
   ): Promise<void> {
     const product = await this.productModel.findById(productId).exec();
 
@@ -264,6 +276,8 @@ export class PurchaseOrderService {
             'PURCHASE_ORDER',
             description,
             description,
+            admin?.id ?? admin?._id ?? null,
+            INITIATOR_TYPE.ADMIN,
           ),
         );
       }
@@ -514,6 +528,7 @@ export class PurchaseOrderService {
   async receiveItems(
     id: string,
     receivedItemsDto: ReceivedItemsDto,
+    admin?: any,
   ): Promise<any> {
     const { receivedItems } = receivedItemsDto;
 
@@ -549,6 +564,7 @@ export class PurchaseOrderService {
         receivedItem.productId,
         receivedItem.quantityReceived,
         `Purchase Order: ${purchaseOrder._id}`,
+        admin,
       );
 
       purchaseOrder.markModified('products');
@@ -566,6 +582,46 @@ export class PurchaseOrderService {
 
     await purchaseOrder.save();
 
+    // Resolve product names so the log reads clearly, and compute the
+    // quantity still outstanding per received item.
+    const receivedIds = receivedItems.map((item) => item.productId);
+    const receivedProducts = await this.productModel
+      .find({ _id: { $in: receivedIds } })
+      .select('name trackQuantity')
+      .lean();
+    const productMap = new Map(
+      receivedProducts.map((product) => [String(product._id), product]),
+    );
+
+    const receivedItemsSummary = receivedItems.map((item) => {
+      const productInCart = purchaseOrder.products.find(
+        (cartItem) => cartItem.product.toString() === item.productId,
+      );
+      const ordered = productInCart?.quantity ?? 0;
+      const receivedTotal = productInCart?.quantityReceived ?? 0;
+      const product = productMap.get(String(item.productId)) as any;
+      return {
+        productId: item.productId,
+        productName: product?.name ?? 'Unknown product',
+        quantityReceived: item.quantityReceived,
+        quantityRemaining: Math.max(0, ordered - receivedTotal),
+        // Shows why stock did (or didn't) update for this item on receipt.
+        trackQuantity: Boolean(product?.trackQuantity),
+      };
+    });
+
+    await this.activityLogModel.create({
+      objectId: purchaseOrder.id,
+      description: `Received items on purchase order — status now ${purchaseOrder.status}`,
+      ...adminInitiator(admin),
+      metadata: {
+        status: purchaseOrder.status,
+        receivedItems: receivedItemsSummary,
+      },
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: PurchaseOrder.name,
+    } as IActivityLog);
+
     return {
       status: true,
       message: 'Items received successfully',
@@ -579,7 +635,7 @@ export class PurchaseOrderService {
    * @param purchaseOrderId - The purchase order ID
    * @returns Object with status, message, and updated purchase order data
    */
-  async cancelRemainingItems(purchaseOrderId: string) {
+  async cancelRemainingItems(purchaseOrderId: string, admin?: any) {
     const purchaseOrder = await this.purchaseOrderModel
       .findById(purchaseOrderId)
       .exec();
@@ -600,6 +656,15 @@ export class PurchaseOrderService {
 
     await purchaseOrder.save();
 
+    await this.activityLogModel.create({
+      objectId: purchaseOrder.id,
+      description: 'Cancelled remaining (un-received) items on purchase order',
+      ...adminInitiator(admin),
+      metadata: { status: purchaseOrder.status },
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: PurchaseOrder.name,
+    } as IActivityLog);
+
     return {
       status: true,
       message: 'Remaining items canceled and quantities updated successfully',
@@ -612,7 +677,7 @@ export class PurchaseOrderService {
    * @param id - The purchase order ID
    * @returns Object with status and success message
    */
-  async remove(id: string) {
+  async remove(id: string, admin?: any) {
     const purchaseOrder = await this.purchaseOrderModel.findOne({
       _id: id,
       status: PurchaseOrderStatus.PENDING,
@@ -621,6 +686,16 @@ export class PurchaseOrderService {
       throw new NotFoundException('Pending Purchase Order not found');
     }
     await this.purchaseOrderModel.deleteOne({ _id: id });
+
+    await this.activityLogModel.create({
+      objectId: id,
+      description: 'Deleted pending purchase order',
+      ...adminInitiator(admin),
+      metadata: {},
+      action: ACTIVITY_LOG_ACTION_TYPE.DELETE,
+      module: PurchaseOrder.name,
+    } as IActivityLog);
+
     return {
       status: true,
       message: 'Purchase Order deleted successfully',
@@ -650,7 +725,11 @@ export class PurchaseOrderService {
    * @param productId - The product ID to remove
    * @returns Object with status, message, and updated purchase order data
    */
-  async removeSingleItem(purchaseOrderId: string, productId: string) {
+  async removeSingleItem(
+    purchaseOrderId: string,
+    productId: string,
+    admin?: any,
+  ) {
     const purchaseOrder = await this.purchaseOrderModel
       .findById(purchaseOrderId)
       .exec();
@@ -688,6 +767,15 @@ export class PurchaseOrderService {
 
     await purchaseOrder.save();
 
+    await this.activityLogModel.create({
+      objectId: purchaseOrder.id,
+      description: 'Removed an item from purchase order',
+      ...adminInitiator(admin),
+      metadata: { removedProductId: productId },
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: PurchaseOrder.name,
+    } as IActivityLog);
+
     return {
       status: true,
       message: 'Product removed successfully',
@@ -701,7 +789,7 @@ export class PurchaseOrderService {
    * @param purchaseOrderId - The purchase order ID
    * @returns Object with status, message, and updated purchase order data
    */
-  async markAllItemsAsReceived(purchaseOrderId: string) {
+  async markAllItemsAsReceived(purchaseOrderId: string, admin?: any) {
     const purchaseOrder = await this.purchaseOrderModel
       .findById(purchaseOrderId)
       .exec();
@@ -721,6 +809,7 @@ export class PurchaseOrderService {
           product.product.toString(),
           remainingQuantity,
           `Purchase Order Completion: ${purchaseOrder._id}`,
+          admin,
         );
       }
       product.quantityReceived = product.quantity;
@@ -729,6 +818,15 @@ export class PurchaseOrderService {
     purchaseOrder.status = PurchaseOrderStatus.COMPLETE;
 
     await purchaseOrder.save();
+
+    await this.activityLogModel.create({
+      objectId: purchaseOrder.id,
+      description: 'Marked all items received — purchase order completed',
+      ...adminInitiator(admin),
+      metadata: { status: purchaseOrder.status },
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: PurchaseOrder.name,
+    } as IActivityLog);
 
     return {
       status: true,
@@ -743,7 +841,11 @@ export class PurchaseOrderService {
    * @param purchaseOrderData - The data to update the purchase order with
    * @returns Object with status, message, and updated purchase order data
    */
-  async update(purchaseOrderId: string, purchaseOrderData: any): Promise<any> {
+  async update(
+    purchaseOrderId: string,
+    purchaseOrderData: any,
+    admin?: any,
+  ): Promise<any> {
     const purchaseOrder: PurchaseOrderDocument =
       await this.purchaseOrderModel.findById(purchaseOrderId);
 
@@ -762,6 +864,15 @@ export class PurchaseOrderService {
       .populate('products.product');
 
     if (update) {
+      await this.activityLogModel.create({
+        objectId: purchaseOrderId,
+        description: 'Updated purchase order',
+        ...adminInitiator(admin),
+        metadata: { fields: Object.keys(purchaseOrderData ?? {}) },
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: PurchaseOrder.name,
+      } as IActivityLog);
+
       return {
         status: true,
         message: 'PurchaseOrder updated successfully',

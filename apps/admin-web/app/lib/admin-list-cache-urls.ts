@@ -6,6 +6,7 @@ export const ADMIN_LIST_CACHE_URLS = {
   products: '/api/products/filtered',
   productUnits: '/api/products/units',
   purchaseOrders: '/api/purchase-orders',
+  activityLogs: '/api/activity',
   customers: '/api/customers',
   creditApplications: '/api/credit/applications',
   creditRequests: '/api/credit/requests',
@@ -30,4 +31,5 @@ export const ADMIN_LIST_CACHE_KEY_ALIASES: Partial<
   >
 > = {
   [ADMIN_LIST_CACHE_URLS.products]: ['inventory-products'],
+  [ADMIN_LIST_CACHE_URLS.activityLogs]: ['inventory-activity-log'],
 };

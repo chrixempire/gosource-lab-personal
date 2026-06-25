@@ -19,8 +19,18 @@ export class ActivityLog {
 
   @Prop({
     type: SchemaTypes.ObjectId,
+    ref: 'AdminUser',
   })
   readonly initiator: mongoose.Types.ObjectId;
+
+  // Human-readable name of the actor, snapshotted at log time so it survives
+  // even if the initiating admin is later renamed or removed.
+  @Prop({ required: false })
+  readonly initiatorName?: string;
+
+  // Role name of the actor (admin role or business role), snapshotted at log time.
+  @Prop({ required: false })
+  readonly initiatorRole?: string;
 
   @Prop({
     required: true,

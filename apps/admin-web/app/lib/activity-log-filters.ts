@@ -86,6 +86,44 @@ export function activityLogFiltersToApiQuery(filters: ActivityLogListFilters) {
   };
 }
 
+/**
+ * Backend module names that make up the inventory section. Used to scope the
+ * inventory activity-log page to items, categories and purchase orders.
+ */
+export const INVENTORY_ACTIVITY_MODULES = [
+  'Product',
+  'Category',
+  'PurchaseOrder',
+] as const;
+
+/** Module dropdown options for the inventory activity-log page. */
+export const INVENTORY_ACTIVITY_MODULE_OPTIONS: {
+  value: string;
+  label: string;
+}[] = [
+  { value: 'Product', label: 'Items' },
+  { value: 'Category', label: 'Categories' },
+  { value: 'PurchaseOrder', label: 'Purchase orders' },
+];
+
+/**
+ * API query for the inventory activity-log page. Reuses the shared query
+ * builder but scopes results to the inventory modules — either the single
+ * module the user picked, or all inventory modules via the `modules` $in list.
+ */
+export function inventoryActivityLogApiQuery(filters: ActivityLogListFilters) {
+  const base = activityLogFiltersToApiQuery(filters);
+
+  if (filters.module.trim()) {
+    return base;
+  }
+
+  return {
+    ...base,
+    modules: INVENTORY_ACTIVITY_MODULES.join(','),
+  };
+}
+
 export function hasActiveActivityLogFilters(filters: ActivityLogListFilters) {
   return Boolean(
     filters.search.trim() ||

@@ -1,6 +1,10 @@
 export interface IActivityLog {
   description: string;
   initiator: string | null;
+  /** Human-readable name of the actor (e.g. "Jane Doe"), captured at log time. */
+  initiatorName?: string | null;
+  /** Role name of the actor (admin or business role), captured at log time. */
+  initiatorRole?: string | null;
   objectId?: string | null;
   initiatorType: string;
   module?: string;

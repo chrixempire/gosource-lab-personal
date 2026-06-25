@@ -63,6 +63,12 @@ export class FilterActivityDto {
   @IsString()
   module?: string;
 
+  // Comma-separated list of modules to scope to (e.g. "Product,Category,PurchaseOrder").
+  // Matched with $in so a single page can span several modules.
+  @IsOptional()
+  @IsString()
+  modules?: string;
+
   @IsOptional()
   @IsEnum(ACTIVITY_LOG_ACTION_TYPE, {
     message: 'action must be a valid action type.',
@@ -157,6 +163,16 @@ export class FilterActivityDto {
 
     if (this.module) {
       filterConditions.push({ module: this.module });
+    }
+
+    if (this.modules) {
+      const moduleList = this.modules
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (moduleList.length > 0) {
+        filterConditions.push({ module: { $in: moduleList } });
+      }
     }
 
     if (this.action) {

@@ -52,6 +52,7 @@ import {
   buildPromotionDiscountPatch,
 } from '../../utils/promotion-discount.util';
 import { buildLowStockPatch } from '../../utils/low-stock.util';
+import { adminInitiator } from '../../utils/activity-initiator.util';
 
 @Injectable()
 export class ProductService {
@@ -76,7 +77,11 @@ export class ProductService {
    * @param files
    * @returns
    */
-  async addProduct(productData: CreateProductDto, files: any): Promise<any> {
+  async addProduct(
+    productData: CreateProductDto,
+    files: any,
+    admin?: any,
+  ): Promise<any> {
     const { name } = productData;
     const category: CategoryDocument = await this.categoryModel.findById(
       productData.category,
@@ -132,8 +137,7 @@ export class ProductService {
     const activityLog: IActivityLog = {
       objectId: addProduct.id,
       description: `Add product - Name: ${newProductDetails.name}`,
-      initiator: null,
-      initiatorType: INITIATOR_TYPE.ADMIN,
+      ...adminInitiator(admin),
       metadata: {},
       action: ACTIVITY_LOG_ACTION_TYPE.CREATE,
       module: Product.name,
@@ -201,6 +205,7 @@ export class ProductService {
     productData: NewProductInterface,
     productId: string,
     files: any,
+    admin?: any,
   ): Promise<any> {
     const product: ProductDocument =
       await this.productModel.findById(productId);
@@ -376,46 +381,84 @@ export class ProductService {
       await this.productModel.findByIdAndUpdate(product.id, newProductDetails, {
         new: true,
       });
-    const priceKeys = [
-      'actualPrice',
-      'discountPrice',
-      'totalPrice',
-      'marketPrice',
+    // Build a field-level change map (old → new). Numeric price fields are
+    // compared as numbers so identical values that differ only in type
+    // (DB number vs form string) aren't falsely reported as changes.
+    const changes: Record<string, { old: unknown; new: unknown }> = {};
+
+    const numericChangeFields: { key: string; label: string }[] = [
+      { key: 'marketPrice', label: 'Market price' },
+      { key: 'totalPrice', label: 'Total price' },
+      { key: 'actualPrice', label: 'Actual price' },
+      { key: 'discountPrice', label: 'Discount price' },
     ];
 
-    const priceChanges = {};
-
-    priceKeys.forEach((key) => {
-      if (key in newProductDetails && product[key] !== newProductDetails[key]) {
-        priceChanges[key] = {
-          old: product[key],
-          new: newProductDetails[key],
-        };
+    for (const { key, label } of numericChangeFields) {
+      if (!(key in newProductDetails)) {
+        continue;
       }
-    });
+      const oldNum = Number(product[key]);
+      const newNum = Number(newProductDetails[key]);
+      if (Number.isFinite(newNum) && oldNum !== newNum) {
+        changes[label] = { old: product[key] ?? null, new: newProductDetails[key] };
+      }
+    }
 
-    const hasPriceChanges = Object.keys(priceChanges).length > 0;
+    // Selling-unit price changes (the per-unit prices, not the cost/market price).
+    const parseSellingUnitPrices = (raw: unknown): Record<string, number> => {
+      if (!raw) return {};
+      try {
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const map: Record<string, number> = {};
+        if (Array.isArray(data)) {
+          for (const entry of data) {
+            if (entry && entry.unit != null) {
+              map[String(entry.unit)] = Number(entry.price);
+            }
+          }
+        } else if (data && typeof data === 'object') {
+          for (const [unitName, price] of Object.entries(data)) {
+            map[unitName] = Number(price);
+          }
+        }
+        return map;
+      } catch {
+        return {};
+      }
+    };
+
+    const sellingField = 'newUnit' in newProductDetails ? 'newUnit' : 'unit' in newProductDetails ? 'unit' : null;
+    if (sellingField) {
+      const oldPrices = parseSellingUnitPrices(product[sellingField]);
+      const newPrices = parseSellingUnitPrices(newProductDetails[sellingField]);
+      for (const [unitName, newPrice] of Object.entries(newPrices)) {
+        const oldPrice = oldPrices[unitName];
+        if (!Number.isFinite(newPrice)) continue;
+        if (oldPrice == null) {
+          changes[`${unitName} (selling price)`] = { old: null, new: newPrice };
+        } else if (Number(oldPrice) !== Number(newPrice)) {
+          changes[`${unitName} (selling price)`] = { old: oldPrice, new: newPrice };
+        }
+      }
+    }
+
+    const changeKeys = Object.keys(changes);
+    const hasPriceChanges = changeKeys.length > 0;
 
     const activityMetadata = {
-      priceChange: hasPriceChanges,
-      priceChanges,
+      changes,
       newProductDetails,
     };
 
     let description = `Update product - Name: ${newProductDetails.name}`;
-
     if (hasPriceChanges) {
-      const updatedPrices = Object.entries(priceChanges)
-        .map(([key, value]) => `Update product ${key} to ₦${value['new']}`)
-        .join('; ');
-      description = updatedPrices;
+      description = `Updated ${newProductDetails.name}: ${changeKeys.join(', ')}`;
     }
 
     const activityLog: IActivityLog = {
       objectId: productId,
       description,
-      initiator: null,
-      initiatorType: INITIATOR_TYPE.ADMIN,
+      ...adminInitiator(admin),
       metadata: activityMetadata,
       action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
       module: Product.name,
@@ -739,6 +782,7 @@ export class ProductService {
   async addBatchProduct(
     productData: CreateBatchProductDto,
     productId: string,
+    admin?: any,
   ): Promise<any> {
     // Find product and include customer details
     const product: ProductDocument = await this.productModel.findOne({
@@ -807,6 +851,8 @@ export class ProductService {
           'RESTOCK',
           description,
           description,
+          admin?.id ?? admin?._id ?? null,
+          INITIATOR_TYPE.ADMIN,
         ),
       );
 
@@ -827,6 +873,7 @@ export class ProductService {
   async deductBatchProduct(
     productData: DeductBatchProductDto,
     productId: string,
+    admin?: any,
   ): Promise<any> {
     const { deductReason } = productData;
     // Find product and include customer details
@@ -875,6 +922,8 @@ export class ProductService {
           'RESTOCK',
           movementDescription,
           activityLogDescription,
+          admin?.id ?? admin?._id ?? null,
+          INITIATOR_TYPE.ADMIN,
         ),
       );
 
@@ -888,7 +937,7 @@ export class ProductService {
    * @param productId The ID of the product to update.
    * @returns The updated product details.
    */
-  async setProductInStock(productId: string): Promise<any> {
+  async setProductInStock(productId: string, admin?: any): Promise<any> {
     const product: ProductDocument =
       await this.productModel.findById(productId);
 
@@ -908,6 +957,14 @@ export class ProductService {
       );
 
     if (updatedProduct) {
+      await this.activityLogModel.create({
+        objectId: productId,
+        description: `Marked product in stock - Name: ${updatedProduct.name}`,
+        ...adminInitiator(admin),
+        metadata: { field: 'inStock', old: false, new: true },
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: Product.name,
+      } as IActivityLog);
       await this.cacheManager.del('all_products_sorted');
       await this.cacheManager.del('categories_with_products');
       return successResponse('Product is now in stock', updatedProduct);
@@ -921,7 +978,7 @@ export class ProductService {
    * @throws NotFoundException if the product does not exist.
    * @throws BadRequestException if the product is already out of stock.
    */
-  async setProductOutOfStock(productId: string): Promise<any> {
+  async setProductOutOfStock(productId: string, admin?: any): Promise<any> {
     const product: ProductDocument =
       await this.productModel.findById(productId);
 
@@ -941,6 +998,14 @@ export class ProductService {
       );
 
     if (updatedProduct) {
+      await this.activityLogModel.create({
+        objectId: productId,
+        description: `Marked product out of stock - Name: ${updatedProduct.name}`,
+        ...adminInitiator(admin),
+        metadata: { field: 'inStock', old: true, new: false },
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: Product.name,
+      } as IActivityLog);
       await this.cacheManager.del('all_products_sorted');
       await this.cacheManager.del('categories_with_products');
       return successResponse('Product is now out of stock', updatedProduct);
@@ -955,7 +1020,7 @@ export class ProductService {
    * @throws {NotFoundException} When product not found
    * @throws {Error} When concurrent update detected
    */
-  async deactivateItem(productId: string): Promise<any> {
+  async deactivateItem(productId: string, admin?: any): Promise<any> {
     // Start transaction session
     const session = await this.connection.startSession();
     session.startTransaction();
@@ -995,6 +1060,15 @@ export class ProductService {
       // Commit transaction
       await session.commitTransaction();
 
+      await this.activityLogModel.create({
+        objectId: productId,
+        description: `Deactivated product - Name: ${deactivatedProduct.name}`,
+        ...adminInitiator(admin),
+        metadata: { field: 'active', old: true, new: false },
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: Product.name,
+      } as IActivityLog);
+
       await this.cacheManager.del('all_products_sorted');
       await this.cacheManager.del('categories_with_products');
 
@@ -1020,7 +1094,7 @@ export class ProductService {
    * @throws {NotFoundException} When product not found
    * @throws {Error} When concurrent update detected
    */
-  async activateItem(productId: string): Promise<any> {
+  async activateItem(productId: string, admin?: any): Promise<any> {
     // Start transaction session
     const session = await this.connection.startSession();
     session.startTransaction();
@@ -1059,6 +1133,15 @@ export class ProductService {
 
       // Commit transaction
       await session.commitTransaction();
+
+      await this.activityLogModel.create({
+        objectId: productId,
+        description: `Activated product - Name: ${activatedProduct.name}`,
+        ...adminInitiator(admin),
+        metadata: { field: 'active', old: false, new: true },
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: Product.name,
+      } as IActivityLog);
 
       await this.cacheManager.del('all_products_sorted');
       await this.cacheManager.del('categories_with_products');
@@ -1760,6 +1843,8 @@ export class ProductService {
             'STOCK_COUNT_ADJUSTMENT',
             description,
             description,
+            initiator ?? null,
+            INITIATOR_TYPE.ADMIN,
           ),
         );
       }
