@@ -5,6 +5,7 @@ import {
   resolveOrderSubtotal,
   resolveOrderTotalPrice,
 } from '~/lib/order-line-pricing';
+import { parseUnitPriceMap } from '~/lib/product-details';
 import {
   displayOrDash,
   formatOrderActorName,
@@ -118,6 +119,12 @@ export function mapLegacyOrderToListItem(order: LegacyOrderRow): AdminOrderListI
     statusVariant: getOrderStatusVariant(status),
     customerId: business?._id ?? '',
     customerName: business?.businessName ?? '—',
+    isEditable: isOrderItemsEditable(status),
+    hasAdditionalItems: Array.isArray(
+      (order as Record<string, unknown>).additionalProducts,
+    )
+      ? ((order as Record<string, unknown>).additionalProducts as unknown[]).length > 0
+      : false,
   };
 }
 
@@ -140,6 +147,30 @@ export function getLineItemStatusDisplay(item: Pick<AdminOrderLineItem, 'status'
   }
 
   return { label: 'Pending', variant: 'warning' as const };
+}
+
+/** An item added to the order after creation (the order's `additionalProducts`). */
+export type AdminOrderAdditionalItem = {
+  cartId: string;
+  productId: string;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+  lineTotalLabel: string;
+  units: { key: string; price: number }[];
+  version: string;
+  trackQuantity: boolean;
+  stock: number;
+  imageUrl: string | null;
+};
+
+/** Statuses after which an order's items can no longer be edited. */
+const NON_EDITABLE_ORDER_STATUSES = ['delivered', 'shipped', 'cancelled'];
+
+export function isOrderItemsEditable(status: OrderStatus): boolean {
+  return !NON_EDITABLE_ORDER_STATUSES.includes(status);
 }
 
 export type AdminOrderTimelineEvent = {
@@ -177,6 +208,13 @@ export type AdminOrderDetailsView = {
   serviceCharge: number;
   discount: number;
   totalPrice: number;
+  businessId: string;
+  isEditable: boolean;
+  additionalItems: AdminOrderAdditionalItem[];
+  additionalTotalPrice: number;
+  additionalTotalLabel: string;
+  combinedTotalPrice: number;
+  combinedTotalLabel: string;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -239,6 +277,50 @@ export function mapLegacyOrderLineItems(order: Record<string, unknown>): AdminOr
   });
 }
 
+export function mapLegacyOrderAdditionalItems(
+  order: Record<string, unknown>,
+): AdminOrderAdditionalItem[] {
+  const items = Array.isArray(order.additionalProducts) ? order.additionalProducts : [];
+  const businessId = resolveOrderBusinessId(order);
+
+  return items.map((entry, index) => {
+    const line = asRecord(entry) ?? {};
+    const product = asRecord(line.product) ?? asRecord(line.cartProduct) ?? {};
+    const { lineTotal, unit } = resolveOrderLinePricing(line, businessId);
+    const quantity = Number(line.quantity ?? 0);
+    const storedUnitPrice = Number(line.unitPrice ?? line.price ?? 0);
+    const unitPrice =
+      storedUnitPrice > 0 ? storedUnitPrice : quantity > 0 ? lineTotal / quantity : 0;
+
+    const unitMap =
+      parseUnitPriceMap(product.discountedUnit) ?? parseUnitPriceMap(product.unit) ?? [];
+    let units = unitMap.map((option) => ({ key: option.key, price: option.price }));
+    if (units.length === 0) {
+      units = [{ key: unit, price: unitPrice }];
+    }
+
+    const images = Array.isArray(product.images) ? product.images : [];
+    const firstImage = asRecord(images[0]);
+
+    return {
+      cartId: String(line._id ?? `additional-${index}`),
+      productId: String(product._id ?? line.product ?? ''),
+      name: (typeof product.name === 'string' && product.name) || 'Product',
+      unit,
+      unitPrice,
+      quantity,
+      lineTotal,
+      lineTotalLabel: formatDashboardCurrency(lineTotal),
+      units,
+      version: String(product.version ?? ''),
+      trackQuantity: Boolean(product.trackQuantity),
+      stock: Number(product.quantity ?? 0),
+      imageUrl:
+        firstImage && typeof firstImage.url === 'string' ? firstImage.url : null,
+    };
+  });
+}
+
 export function mapLegacyOrderTimeline(order: Record<string, unknown>): AdminOrderTimelineEvent[] {
   const timeline = Array.isArray(order.timeline) ? order.timeline : [];
 
@@ -287,6 +369,15 @@ export function mapLegacyOrderToDetailsView(order: Record<string, unknown>): Adm
   const approvedByName = formatOrderActorName(approver) ?? customerFullName;
 
   const lineItems = mapLegacyOrderLineItems(order);
+  const totalPrice = resolveOrderTotalPrice(order, lineItems);
+
+  const additionalItems = mapLegacyOrderAdditionalItems(order);
+  const storedAdditionalTotal = Number(order.additionalTotalPrice ?? 0);
+  const additionalTotalPrice =
+    storedAdditionalTotal > 0
+      ? storedAdditionalTotal
+      : additionalItems.reduce((sum, item) => sum + item.lineTotal, 0);
+  const combinedTotalPrice = totalPrice + additionalTotalPrice;
 
   return {
     id: listItem.id,
@@ -318,6 +409,13 @@ export function mapLegacyOrderToDetailsView(order: Record<string, unknown>): Adm
     deliveryFee: Number(order.deliveryFee ?? 0),
     serviceCharge: Number(order.serviceCharge ?? 0),
     discount: Number(order.discount ?? 0),
-    totalPrice: resolveOrderTotalPrice(order, lineItems),
+    totalPrice,
+    businessId: resolveOrderBusinessId(order),
+    isEditable: isOrderItemsEditable(listItem.status),
+    additionalItems,
+    additionalTotalPrice,
+    additionalTotalLabel: formatDashboardCurrency(additionalTotalPrice),
+    combinedTotalPrice,
+    combinedTotalLabel: formatDashboardCurrency(combinedTotalPrice),
   };
 }

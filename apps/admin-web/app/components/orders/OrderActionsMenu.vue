@@ -19,6 +19,8 @@ const emit = defineEmits<{
   view: [];
   download: [];
   cancel: [];
+  addItems: [];
+  editItems: [];
 }>();
 </script>
 
@@ -39,6 +41,18 @@ const emit = defineEmits<{
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" class="w-52">
         <DropdownMenuItem @select="emit('view')">View details</DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="order.isEditable"
+          @select="emit('addItems')"
+        >
+          Add items
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="order.isEditable && order.hasAdditionalItems"
+          @select="emit('editItems')"
+        >
+          Edit added items
+        </DropdownMenuItem>
         <DropdownMenuItem @select="emit('download')">Download invoice</DropdownMenuItem>
         <DropdownMenuItem
           v-if="isOrderCancellable(order)"

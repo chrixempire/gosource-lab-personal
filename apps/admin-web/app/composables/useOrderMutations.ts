@@ -3,8 +3,9 @@ import { toast } from '@gosource/ui';
 import { h } from 'vue';
 import OrderInvoicePreview from '~/components/orders/OrderInvoicePreview.vue';
 import { unwrapLegacyPayload } from '~/lib/dashboard-api';
+import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import { downloadInvoicePdf, INVOICE_PREVIEW_ELEMENT_ID } from '~/lib/download-invoice-pdf';
-import { buildOrderInvoicePreview } from '~/lib/order-invoice';
+import { buildOrderInvoicePreview, type OrderInvoiceVariant } from '~/lib/order-invoice';
 import type { OrderInvoicePreview as OrderInvoicePreviewData } from '~/types/order-invoice';
 
 export function useOrderMutations() {
@@ -83,8 +84,11 @@ export function useOrderMutations() {
     return buildOrderInvoicePreview(order);
   }
 
-  function buildOrderInvoicePreviewFromRaw(order: Record<string, unknown>) {
-    return buildOrderInvoicePreview(order);
+  function buildOrderInvoicePreviewFromRaw(
+    order: Record<string, unknown>,
+    variant: OrderInvoiceVariant = 'combined',
+  ) {
+    return buildOrderInvoicePreview(order, variant);
   }
 
   async function downloadOrderInvoice(orderId: string, reference?: string) {
@@ -130,12 +134,73 @@ export function useOrderMutations() {
     }
   }
 
+  /** Add new (additional) products to an existing order. */
+  async function addOrderProducts(
+    orderId: string,
+    products: { product: string; unit: string; quantity: number }[],
+  ) {
+    updatingOrderId.value = orderId;
+    try {
+      await $fetch('/api/orders/add-products', {
+        method: 'PATCH',
+        body: { orderId, products },
+      });
+      toast.success('Items added to order');
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, 'Unable to add items to order'));
+      throw error;
+    } finally {
+      updatingOrderId.value = null;
+    }
+  }
+
+  /** Update quantities/units of the added items (omitted items are removed). */
+  async function updateOrderProducts(
+    orderId: string,
+    products: {
+      cartId: string;
+      productId: string;
+      newQuantity: number;
+      unit: string;
+    }[],
+    reason?: string,
+  ) {
+    updatingOrderId.value = orderId;
+    try {
+      const response = await $fetch<unknown>(
+        `/api/orders/${orderId}/update-order-products`,
+        {
+          method: 'PATCH',
+          body: { products, ...(reason ? { reason } : {}) },
+        },
+      );
+
+      // Surface any refund the backend computed for reduced/removed items.
+      const data = unwrapLegacyPayload(response) as { refundAmount?: number } | null;
+      const refund = Number(data?.refundAmount ?? 0);
+      if (refund > 0) {
+        toast.success(
+          `Order items updated · ${formatDashboardCurrency(refund)} refund recorded`,
+        );
+      } else {
+        toast.success('Order items updated');
+      }
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, 'Unable to update order items'));
+      throw error;
+    } finally {
+      updatingOrderId.value = null;
+    }
+  }
+
   return {
     updatingOrderId,
     updateOrderStatus,
     updatePaymentStatus,
     cancelOrder,
     markProductsDelivered,
+    addOrderProducts,
+    updateOrderProducts,
     loadOrderInvoicePreview,
     buildOrderInvoicePreviewFromRaw,
     downloadOrderInvoice,
