@@ -35,7 +35,6 @@ import { useCustomerRouteLoading } from '~/composables/useCustomerRouteLoading';
 import { useCustomerPageHeader } from '~/composables/useCustomerPageHeader';
 import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.vue';
 import MarketSearch from '~/components/market/MarketSearch.vue';
-import { getMarketCategoryById } from '~/lib/marketplace-data';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
@@ -117,14 +116,6 @@ const pageDescription = computed(() =>
 const isMarketCategoryPage = computed(() => /^\/market\/category\/[^/]+$/.test(route.path));
 const isMarketProductPage = computed(() => /^\/market\/product\/[^/]+$/.test(route.path));
 const isMarketRecentOrdersPage = computed(() => route.path === '/market/recent-orders');
-
-const marketCategoryHeaderTitle = computed(() => {
-  const id = route.params.id;
-  if (typeof id !== 'string') {
-    return '';
-  }
-  return getMarketCategoryById(id)?.title ?? '';
-});
 
 /** Mobile header: route segment label only (e.g. "Category", not the category name). */
 const mobileHeaderTitle = computed(() => {
@@ -292,15 +283,7 @@ async function confirmLogout() {
             >
               <h1 class="min-w-0 truncate text-h5 lg:text-h3">
                 <span class="lg:hidden">{{ mobileHeaderTitle }}</span>
-                <span
-                  v-if="isMarketCategoryPage && marketCategoryHeaderTitle"
-                  class="hidden lg:contents"
-                >
-                  <span>Market</span>
-                  <span class="mx-1 font-normal">/</span>
-                  <span class="text-grey-300">{{ marketCategoryHeaderTitle }}</span>
-                </span>
-                <span v-else-if="isMarketRecentOrdersPage" class="hidden lg:contents">
+                <span v-if="isMarketRecentOrdersPage" class="hidden lg:contents">
                   <span>Market</span>
                   <span class="mx-1 font-normal">/</span>
                   <span class="text-grey-300">Recently ordered</span>

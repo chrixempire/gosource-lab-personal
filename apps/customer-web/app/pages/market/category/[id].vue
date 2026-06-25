@@ -3,11 +3,13 @@ definePageMeta({ layout: 'customer-market' });
 
 import type { MarketCategory, MarketProduct } from '~/lib/marketplace-data';
 import { Button } from '@gosource/ui';
-import { ChevronLeft } from 'lucide-vue-next';
+import { ChevronLeft, PackageOpen } from 'lucide-vue-next';
 import MarketBranchSetupBanner from '~/components/market/MarketBranchSetupBanner.vue';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
 import MarketProductSection from '~/components/market/MarketProductSection.vue';
+import ExploreCategoryFilterBar from '~/components/explore/ExploreCategoryFilterBar.vue';
+import { ALL_EXPLORE_CATEGORIES_ID } from '~/lib/explore-catalog-filters';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useMarketCatalog } from '~/composables/useMarketCatalog';
 import { useCustomerMarketService } from '~/services/market.service';
@@ -15,7 +17,18 @@ import { useCustomerMarketService } from '~/services/market.service';
 const route = useRoute();
 const router = useRouter();
 const { getCategory } = useCustomerMarketService();
-const { hydrateFromStorage, upsertCategory, findCategoryById } = useMarketCatalog();
+const { categories, hydrateFromStorage, upsertCategory, findCategoryById } = useMarketCatalog();
+
+function onSelectCategory(nextCategoryId: string) {
+  if (nextCategoryId === ALL_EXPLORE_CATEGORIES_ID) {
+    void navigateTo('/market');
+    return;
+  }
+  if (nextCategoryId === categoryId.value) {
+    return;
+  }
+  void navigateTo(`/market/category/${nextCategoryId}`);
+}
 
 hydrateFromStorage();
 
@@ -102,6 +115,8 @@ const {
   pendingResumeProduct,
 } = useMarketBranchGate();
 
+const hasProducts = computed(() => (category.value?.products?.length ?? 0) > 0);
+
 const modalProduct = ref<MarketProduct | null>(null);
 
 function openProductAddModal(product: MarketProduct) {
@@ -136,10 +151,17 @@ onMounted(async () => {
 
 <template>
   <div data-testid="market-category-page">
-    <div v-if="category" class="pb-10 pt-2">
+    <div v-if="category" class="pb-10 pt-0">
+      <ExploreCategoryFilterBar
+        :categories="categories"
+        :active-category-id="categoryId"
+        hide-filters
+        @select-category="onSelectCategory"
+      />
+
       <MarketBranchSetupBanner />
 
-      <div class="mb-2">
+      <div class="mb-3 mt-2 flex items-center gap-2">
         <Button
           variant="neutral"
           size="small"
@@ -149,9 +171,47 @@ onMounted(async () => {
         >
           Back
         </Button>
+
+        <div class="flex min-w-0 items-center gap-2">
+          <span
+            class="inline-flex size-6 shrink-0 items-center justify-center overflow-hidden"
+            aria-hidden="true"
+          >
+            <img
+              v-if="category.imageUrl"
+              :src="category.imageUrl"
+              :alt="category.title"
+              class="size-6 rounded-[4px] object-contain"
+            >
+            <span v-else-if="category.emoji" class="text-xl leading-none">
+              {{ category.emoji }}
+            </span>
+          </span>
+          <h1 class="min-w-0 truncate text-base font-semibold text-grey-900 sm:text-lg">
+            {{ category.title }}
+          </h1>
+        </div>
       </div>
 
-      <MarketProductSection :category="category" layout="grid" />
+      <MarketProductSection v-if="hasProducts" :category="category" layout="grid" />
+
+      <div
+        v-else
+        class="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center"
+      >
+        <span
+          class="flex size-16 items-center justify-center rounded-full bg-grey-55 text-grey-300"
+          aria-hidden="true"
+        >
+          <PackageOpen class="size-12" />
+        </span>
+        <h2 class="text-base font-semibold text-grey-900">
+          No products in this category yet
+        </h2>
+        <p class="max-w-sm text-sm text-grey-300">
+          There are currently no products available under {{ category.title }}. Check back soon or explore other categories.
+        </p>
+      </div>
     </div>
 
     <div
