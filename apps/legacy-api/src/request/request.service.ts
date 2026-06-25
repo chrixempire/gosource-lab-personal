@@ -58,6 +58,10 @@ import { Types } from 'mongoose';
 import { CreditService } from '../credit/credit.service';
 import { SystemConfigService } from '../admin/admin/system-config.service';
 import { createMoney } from '../utils/money';
+import {
+  resolvePurchaseUnitConversion,
+  snapshotOrderFinancialLines,
+} from '../order/order-financials';
 
 @Injectable()
 export class RequestService {
@@ -646,8 +650,14 @@ export class RequestService {
       }
 
       // Create a new order associated with the approved request
+      const snapshottedProducts = snapshotOrderFinancialLines(
+        request.products as any[],
+        business.id,
+        discount,
+      );
+
       const newOrder = {
-        products: request.products,
+        products: snapshottedProducts,
         branch: request.branch,
         reference: request.reference,
         address: request.address,
@@ -661,7 +671,8 @@ export class RequestService {
         totalPrice,
         approver: business.id,
         paymentStatus,
-        discount: Number(request.discount ?? 0),
+        paidAt: paymentStatus === PaymentStatus.PAID ? new Date() : undefined,
+        discount,
         paymentCount:
           requestDetails.paymentMethod === PaymentMethod.TRANSFER ? 0 : 1,
       };
@@ -902,23 +913,12 @@ export class RequestService {
         // Find the conversion factor from newUnit array
         let quantityToDeduct = item.quantity;
 
-        if (product.newUnit) {
-          try {
-            const newUnits = JSON.parse(product.newUnit);
-            const unitMapping = newUnits.find(
-              (unitObj: any) => unitObj.unit === item.unit,
-            );
-
-            if (unitMapping && unitMapping.quantity) {
-              // Convert customer unit to base purchase unit
-              // If customer buys 5 "oplo" and 1 oplo = 2 base units, deduct 10 base units
-              quantityToDeduct =
-                item.quantity * parseFloat(unitMapping.quantity);
-            }
-          } catch (error) {
-            console.error('Error parsing newUnit:', error);
-            // Fallback to original quantity if parsing fails
-          }
+        const purchaseUnitConversion = resolvePurchaseUnitConversion(
+          product as any,
+          item.unit,
+        );
+        if (purchaseUnitConversion !== null) {
+          quantityToDeduct = item.quantity * purchaseUnitConversion;
         }
 
         const quantityToDeductValue = quantityToDeduct;

@@ -118,6 +118,9 @@ export class Order {
   @Prop({ required: false })
   cancelledAt: Date;
 
+  @Prop({ required: false })
+  paidAt: Date;
+
   @Prop({ required: false, default: 0 })
   totalPrice: number;
 

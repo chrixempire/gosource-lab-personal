@@ -12,6 +12,7 @@ import { PaymentReference } from '../paystack/schema/paymentReference.schema';
 import { BusinessCustomer } from '../business/schema/business.schema';
 import { Request, RequestDocument } from '../request/schema/request.schema';
 import { PaymentStatus } from '../request/enum/request.enum';
+import { snapshotOrderFinancialLines } from './order-financials';
 import { OrderFilterUtil } from '../utils/filter';
 @Injectable()
 export class OrderService {
@@ -327,6 +328,12 @@ export class OrderService {
 
     if (order) {
       order.paymentStatus = ORDER_PAYMENT_STATUS.PAID;
+      order.paidAt = order.paidAt ?? new Date();
+      order.products = snapshotOrderFinancialLines(
+        order.products as any[],
+        order.business,
+        order.discount,
+      ) as any;
       await order.save();
     } else if (request) {
       request.paymentStatus = PaymentStatus.PAID;

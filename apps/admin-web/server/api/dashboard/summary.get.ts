@@ -84,6 +84,7 @@ export default defineEventHandler(async (event) => {
     metricsResult.status === 'fulfilled' ? unwrapPayload(metricsResult.value) : null;
   const trends = asRecord(metricsBody?.trends);
   const summary = asRecord(trends?.summary);
+  const financials = asRecord(metricsBody?.financials);
 
   return {
     orders: Number(summary?.orderCount) || 0,
@@ -92,11 +93,21 @@ export default defineEventHandler(async (event) => {
     inactiveCustomers: inactiveResult.status === 'fulfilled' ? inactiveResult.value : 0,
     purchaseOrderSpend:
       purchaseOrderSpendResult.status === 'fulfilled' ? purchaseOrderSpendResult.value : 0,
+    revenue: Number(financials?.revenue) || 0,
+    grossProfit: Number(financials?.grossProfit) || 0,
+    grossMarginPercent: Number(financials?.grossMarginPercent) || 0,
+    historicalProfitCoveragePercent:
+      Number(financials?.historicalCoveragePercent) || 0,
+    qualifyingRevenueOrderCount: Number(financials?.qualifyingOrderCount) || 0,
+    unverifiedProfitOrderCount:
+      Number(financials?.unverifiedProfitOrderCount) || 0,
     permissions: {
       orders: metricsResult.status === 'fulfilled',
       activeCustomers: activeResult.status === 'fulfilled',
       inactiveCustomers: inactiveResult.status === 'fulfilled',
       purchaseOrders: purchaseOrderSpendResult.status === 'fulfilled',
+      financials:
+        metricsResult.status === 'fulfilled' && Boolean(financials),
     },
   };
 });
