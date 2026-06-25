@@ -1,5 +1,6 @@
 import { resolveOrderSubtotal, resolveOrderTotalPrice } from '~/lib/order-line-pricing';
 import {
+  mapLegacyOrderAdditionalItems,
   mapLegacyOrderLineItems,
   mapLegacyOrderToDetailsView,
 } from '~/lib/order-details';
@@ -15,7 +16,18 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
 }
 
-export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderInvoicePreview {
+/**
+ * Which slice of the order to render on the invoice:
+ * - `combined` (default): original + added items, full totals.
+ * - `original`: only the originally ordered items + fees.
+ * - `added`: only the items added after creation, no delivery/service fees.
+ */
+export type OrderInvoiceVariant = 'combined' | 'original' | 'added';
+
+export function buildOrderInvoicePreview(
+  order: Record<string, unknown>,
+  variant: OrderInvoiceVariant = 'combined',
+): OrderInvoicePreview {
   const view = mapLegacyOrderToDetailsView(order);
   const business = resolveOrderBusiness(order);
   const initiator = resolveOrderInitiator(order);
@@ -43,18 +55,59 @@ export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderI
         branchName;
 
   const mappedLines = mapLegacyOrderLineItems(order);
-  const lineItems = mappedLines.map((item) => ({
+  const baseLineItems = mappedLines.map((item) => ({
     name: item.name,
     quantityLabel: `${item.quantity} ${item.unit}`.trim(),
     unitPrice: item.quantity > 0 ? item.lineTotal / item.quantity : item.lineTotal,
     totalPrice: item.lineTotal,
   }));
 
-  const deliveryFee = Number(order.deliveryFee ?? 0);
-  const serviceCharge = Number(order.serviceCharge ?? 0);
-  const discount = Number(order.discount ?? 0);
-  const subtotal = resolveOrderSubtotal(order, mappedLines);
-  const total = resolveOrderTotalPrice(order, mappedLines);
+  // Items added to the order after creation appear on the invoice too.
+  const additionalItems = mapLegacyOrderAdditionalItems(order);
+  const additionalLineItems = additionalItems.map((item) => ({
+    name: `${item.name} (added)`,
+    quantityLabel: `${item.quantity} ${item.unit}`.trim(),
+    unitPrice: item.unitPrice,
+    totalPrice: item.lineTotal,
+  }));
+  const additionalTotal = additionalItems.reduce((sum, item) => sum + item.lineTotal, 0);
+
+  const orderDeliveryFee = Number(order.deliveryFee ?? 0);
+  const orderServiceCharge = Number(order.serviceCharge ?? 0);
+  const orderDiscount = Number(order.discount ?? 0);
+  const baseSubtotal = resolveOrderSubtotal(order, mappedLines);
+  const baseTotal = resolveOrderTotalPrice(order, mappedLines);
+
+  let lineItems: typeof baseLineItems;
+  let subtotal: number;
+  let total: number;
+  let deliveryFee: number;
+  let serviceCharge: number;
+  let discount: number;
+
+  if (variant === 'added') {
+    // Added items only — billed without delivery/service fees.
+    lineItems = additionalLineItems;
+    subtotal = additionalTotal;
+    deliveryFee = 0;
+    serviceCharge = 0;
+    discount = 0;
+    total = additionalTotal;
+  } else if (variant === 'original') {
+    lineItems = baseLineItems;
+    subtotal = baseSubtotal;
+    deliveryFee = orderDeliveryFee;
+    serviceCharge = orderServiceCharge;
+    discount = orderDiscount;
+    total = baseTotal;
+  } else {
+    lineItems = [...baseLineItems, ...additionalLineItems];
+    subtotal = baseSubtotal + additionalTotal;
+    deliveryFee = orderDeliveryFee;
+    serviceCharge = orderServiceCharge;
+    discount = orderDiscount;
+    total = baseTotal + additionalTotal;
+  }
 
   const itemCount = lineItems.length;
 

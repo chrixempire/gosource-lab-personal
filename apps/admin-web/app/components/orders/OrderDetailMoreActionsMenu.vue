@@ -18,12 +18,13 @@ defineProps<{
   canChangeStatus?: boolean;
   disabled?: boolean;
   invoiceLoading?: boolean;
+  hasAdditionalItems?: boolean;
 }>();
 
 const changeStatusOptions = ORDER_STATUS_CHANGE_OPTIONS;
 
 const emit = defineEmits<{
-  downloadInvoice: [];
+  downloadInvoice: [variant: 'combined' | 'original' | 'added'];
   changeStatus: [status: OrderStatus];
   cancel: [];
 }>();
@@ -46,10 +47,29 @@ const emit = defineEmits<{
     </DropdownMenuTrigger>
 
     <DropdownMenuContent align="end" class="w-52">
+      <template v-if="hasAdditionalItems">
+        <DropdownMenuItem
+          class="gap-2.5"
+          :disabled="invoiceLoading"
+          @select="emit('downloadInvoice', 'original')"
+        >
+          <Download class="size-4" />
+          Download invoice (original items)
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          class="gap-2.5"
+          :disabled="invoiceLoading"
+          @select="emit('downloadInvoice', 'added')"
+        >
+          <Download class="size-4" />
+          Download invoice (added items)
+        </DropdownMenuItem>
+      </template>
       <DropdownMenuItem
+        v-else
         class="gap-2.5"
         :disabled="invoiceLoading"
-        @select="emit('downloadInvoice')"
+        @select="emit('downloadInvoice', 'combined')"
       >
         <Download class="size-4" />
         Download invoice

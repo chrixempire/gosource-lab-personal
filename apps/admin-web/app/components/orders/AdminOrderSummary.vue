@@ -53,11 +53,35 @@ function formatNaira(value: number) {
           <dt class="text-grey-300">Discount</dt>
           <dd class="font-medium text-grey-900">-{{ formatNaira(view.discount) }}</dd>
         </div>
+        <div
+          v-if="view.additionalTotalPrice > 0"
+          class="flex justify-between gap-4 border-t border-primary-100 pt-2"
+        >
+          <dt class="text-grey-300">Order total</dt>
+          <dd class="font-medium text-grey-900">{{ formatNaira(view.totalPrice) }}</dd>
+        </div>
+        <div v-if="view.additionalTotalPrice > 0" class="flex justify-between gap-4">
+          <dt class="text-grey-300">Added items</dt>
+          <dd class="font-medium text-grey-900">{{ formatNaira(view.additionalTotalPrice) }}</dd>
+        </div>
         <div class="flex justify-between gap-4 border-t border-primary-100 pt-2 text-base">
-          <dt class="font-semibold text-grey-900">Total</dt>
-          <dd class="font-semibold text-grey-900">{{ formatNaira(view.totalPrice) }}</dd>
+          <dt class="font-semibold text-grey-900">
+            {{ view.additionalTotalPrice > 0 ? 'Combined total' : 'Total' }}
+          </dt>
+          <dd class="font-semibold text-grey-900">
+            {{ formatNaira(view.additionalTotalPrice > 0 ? view.combinedTotalPrice : view.totalPrice) }}
+          </dd>
         </div>
       </dl>
+
+      <p
+        v-if="view.additionalTotalPrice > 0"
+        class="mt-3 rounded-lg bg-grey-55 px-3 py-2 text-xs text-grey-700"
+      >
+        Added items are unpaid. Set the order's payment status to
+        <span class="font-semibold">Paid</span> to settle them — they'll then
+        merge into the order's items.
+      </p>
     </template>
   </section>
 </template>
