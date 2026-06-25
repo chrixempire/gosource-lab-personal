@@ -51,7 +51,7 @@ const additionalLineItems = computed<AdminOrderLineItem[]>(() =>
     isDelivered: false,
     // Added items sit in additionalProducts until the customer pays, at which
     // point they merge into the order's products — so they're awaiting payment.
-    statusLabel: 'Pending payment',
+    statusLabel: 'Unpaid',
     statusVariant: 'warning' as const,
   })),
 );

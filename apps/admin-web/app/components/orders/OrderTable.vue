@@ -37,7 +37,7 @@ const emit = defineEmits<{
   rowClick: [order: AdminOrderListItem];
   updateOrderStatus: [orderId: string, status: OrderStatus];
   updatePaymentStatus: [orderId: string, status: OrderPaymentStatus];
-  download: [order: AdminOrderListItem];
+  download: [order: AdminOrderListItem, variant: 'combined' | 'original' | 'added'];
   cancel: [order: AdminOrderListItem];
   addItems: [order: AdminOrderListItem];
   editItems: [order: AdminOrderListItem];
@@ -189,7 +189,7 @@ useIntersectionObserver(
               :order="order"
               :loading="updatingOrderId === order.id || itemsLoadingOrderId === order.id"
               @view="emit('rowClick', order)"
-              @download="emit('download', order)"
+              @download="emit('download', order, $event)"
               @cancel="emit('cancel', order)"
               @add-items="emit('addItems', order)"
               @edit-items="emit('editItems', order)"

@@ -209,9 +209,15 @@ async function onCancelConfirm(reason: string) {
   }
 }
 
-async function onDownload(order: AdminOrderListItem) {
+async function onDownload(
+  order: AdminOrderListItem,
+  variant: 'combined' | 'original' | 'added' = 'combined',
+) {
   try {
-    await downloadOrderInvoice(order.id, order.reference);
+    const suffix =
+      variant === 'added' ? 'added' : variant === 'original' ? 'original' : undefined;
+    const reference = [order.reference, suffix].filter(Boolean).join('-');
+    await downloadOrderInvoice(order.id, reference || order.reference, variant);
   } catch {
     // toast handled in composable
   }

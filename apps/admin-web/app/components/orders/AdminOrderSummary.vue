@@ -73,6 +73,15 @@ function formatNaira(value: number) {
           </dd>
         </div>
       </dl>
+
+      <p
+        v-if="view.additionalTotalPrice > 0"
+        class="mt-3 rounded-lg bg-grey-55 px-3 py-2 text-xs text-grey-700"
+      >
+        Added items are unpaid. Set the order's payment status to
+        <span class="font-semibold">Paid</span> to settle them — they'll then
+        merge into the order's items.
+      </p>
     </template>
   </section>
 </template>

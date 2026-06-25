@@ -73,7 +73,10 @@ export function useOrderMutations() {
     return `order_invoice_${safe}`;
   }
 
-  async function loadOrderInvoicePreview(orderId: string) {
+  async function loadOrderInvoicePreview(
+    orderId: string,
+    variant: OrderInvoiceVariant = 'combined',
+  ) {
     const payload = await $fetch<unknown>(`/api/orders/${orderId}`);
     const order = unwrapLegacyPayload(payload);
 
@@ -81,7 +84,7 @@ export function useOrderMutations() {
       throw new Error('Order not found');
     }
 
-    return buildOrderInvoicePreview(order);
+    return buildOrderInvoicePreview(order, variant);
   }
 
   function buildOrderInvoicePreviewFromRaw(
@@ -91,10 +94,14 @@ export function useOrderMutations() {
     return buildOrderInvoicePreview(order, variant);
   }
 
-  async function downloadOrderInvoice(orderId: string, reference?: string) {
+  async function downloadOrderInvoice(
+    orderId: string,
+    reference?: string,
+    variant: OrderInvoiceVariant = 'combined',
+  ) {
     updatingOrderId.value = orderId;
     try {
-      const preview = await loadOrderInvoicePreview(orderId);
+      const preview = await loadOrderInvoicePreview(orderId, variant);
       await downloadInvoicePdf(invoiceFileName(reference, orderId), invoicePdfOptions(preview));
       toast.success('Invoice downloaded');
     } catch (error) {
