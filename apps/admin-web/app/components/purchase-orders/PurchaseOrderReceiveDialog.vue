@@ -203,7 +203,15 @@ function onConfirm() {
             <p class="text-center text-sm font-medium text-grey-900">{{ row.ordered }}</p>
             <p class="text-center text-sm font-medium text-grey-900">{{ row.received }}</p>
 
-            <div class="min-w-0">
+            <!-- Fully received: nothing left to receive, so show a static 0. -->
+            <div
+              v-if="remainingToReceive(row) === 0"
+              class="flex h-9 items-center text-sm font-medium text-grey-300"
+              :aria-label="`${row.name} fully received`"
+            >
+              0
+            </div>
+            <div v-else class="min-w-0">
               <Input
                 v-model="row.toReceive"
                 type="text"
