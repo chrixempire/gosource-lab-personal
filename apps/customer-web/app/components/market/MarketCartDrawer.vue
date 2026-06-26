@@ -49,7 +49,9 @@ const {
   requestDiscount,
   requestTotalPrice,
   finishAddingToRequest,
-  commitDraftForPrimaryAction,
+  updateRequestAndOpen,
+  checkoutRequest,
+  isBusinessOwner,
   primaryActionLabel,
   isCommittingRequest,
   bootstrapFromRoute,
@@ -161,6 +163,34 @@ function close() {
 
 function continueShoppingAction() {
   close();
+}
+
+// Track which request CTA is in flight so only the clicked button shows its
+// loading spinner (Update vs Checkout), not both.
+const pendingRequestAction = ref<'update' | 'checkout' | null>(null);
+
+async function handleUpdateRequest() {
+  if (pendingRequestAction.value) {
+    return;
+  }
+  pendingRequestAction.value = 'update';
+  try {
+    await updateRequestAndOpen();
+  } finally {
+    pendingRequestAction.value = null;
+  }
+}
+
+async function handleCheckoutRequest() {
+  if (pendingRequestAction.value) {
+    return;
+  }
+  pendingRequestAction.value = 'checkout';
+  try {
+    await checkoutRequest();
+  } finally {
+    pendingRequestAction.value = null;
+  }
 }
 
 async function removeEntry(entry: DrawerLineEntry) {
@@ -345,26 +375,52 @@ watch(
               </div>
             </div>
             <div class="mt-3 flex gap-2">
-              <Button
-                size="medium"
-                variant="outline"
-                class="customer-muted-action-btn min-w-0 flex-1"
-                type="button"
-                @click="continueShoppingAction"
-              >
-                Continue shopping
-              </Button>
-              <Button
-                size="medium"
-                variant="primary"
-                class="min-w-0 flex-1"
-                type="button"
-                :disabled="!canSubmitRequestDraft || isCommittingRequest"
-                :loading="isCommittingRequest"
-                @click="commitDraftForPrimaryAction"
-              >
-                {{ primaryActionLabel }}
-              </Button>
+              <template v-if="isBusinessOwner">
+                <Button
+                  size="medium"
+                  variant="outline"
+                  class="customer-muted-action-btn min-w-0 flex-1"
+                  type="button"
+                  :disabled="!canSubmitRequestDraft || isCommittingRequest"
+                  :loading="pendingRequestAction === 'update'"
+                  @click="handleUpdateRequest"
+                >
+                  Update request
+                </Button>
+                <Button
+                  size="medium"
+                  variant="primary"
+                  class="min-w-0 flex-1"
+                  type="button"
+                  :disabled="!canSubmitRequestDraft || isCommittingRequest"
+                  :loading="pendingRequestAction === 'checkout'"
+                  @click="handleCheckoutRequest"
+                >
+                  Checkout
+                </Button>
+              </template>
+              <template v-else>
+                <Button
+                  size="medium"
+                  variant="outline"
+                  class="customer-muted-action-btn min-w-0 flex-1"
+                  type="button"
+                  @click="continueShoppingAction"
+                >
+                  Continue shopping
+                </Button>
+                <Button
+                  size="medium"
+                  variant="primary"
+                  class="min-w-0 flex-1"
+                  type="button"
+                  :disabled="!canSubmitRequestDraft || isCommittingRequest"
+                  :loading="pendingRequestAction === 'update'"
+                  @click="handleUpdateRequest"
+                >
+                  {{ primaryActionLabel }}
+                </Button>
+              </template>
             </div>
           </template>
 

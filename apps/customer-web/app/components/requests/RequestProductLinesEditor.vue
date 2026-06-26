@@ -589,6 +589,8 @@ const removeConfirmMessage = computed(() => {
       :confirm-label="canRemoveLine ? 'Remove product' : 'OK'"
       :destructive="canRemoveLine"
       :loading="loading"
+      content-class="z-[120]"
+      overlay-class="z-[120]"
       @update:open="!$event && closeRemoveConfirm()"
       @confirm="canRemoveLine ? confirmRemove() : closeRemoveConfirm()"
     />
