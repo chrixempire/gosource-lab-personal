@@ -143,36 +143,29 @@ const valueClass = 'mt-1 text-sm font-semibold text-grey-900';
           <p :class="valueClass">{{ formValues.trackQuantity ? 'Yes' : 'No' }}</p>
         </div>
 
-        <template v-if="formValues.trackQuantity">
+        <div>
+          <p :class="labelClass">Unit</p>
+          <p :class="valueClass">{{ purchaseUnitLabel }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
-            <p :class="labelClass">Unit</p>
-            <p :class="valueClass">{{ purchaseUnitLabel }}</p>
+            <p :class="labelClass">Market price</p>
+            <p :class="valueClass">{{ formValues.marketPrice || '—' }}</p>
           </div>
-
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div>
-              <p :class="labelClass">Market price</p>
-              <p :class="valueClass">{{ formValues.marketPrice || '—' }}</p>
-            </div>
-            <div>
-              <p :class="labelClass">Quantity</p>
-              <p :class="valueClass">{{ formValues.quantity || '—' }}</p>
-            </div>
-            <div>
-              <p :class="labelClass">Total price</p>
-              <p :class="valueClass">{{ formValues.totalPrice || '—' }}</p>
-            </div>
+          <div>
+            <p :class="labelClass">Quantity</p>
+            <p :class="valueClass">{{ formValues.quantity || '—' }}</p>
           </div>
-
-          <div v-if="formValues.setLowStockLevel">
-            <p :class="labelClass">Low stock level</p>
-            <p :class="valueClass">{{ formValues.stockLevel || '—' }}</p>
+          <div>
+            <p :class="labelClass">Total price</p>
+            <p :class="valueClass">{{ formValues.totalPrice || '—' }}</p>
           </div>
-        </template>
+        </div>
 
-        <div v-else>
-          <p :class="labelClass">Market price</p>
-          <p :class="valueClass">{{ formValues.marketPrice || '—' }}</p>
+        <div v-if="formValues.setLowStockLevel">
+          <p :class="labelClass">Low stock level</p>
+          <p :class="valueClass">{{ formValues.stockLevel || '—' }}</p>
         </div>
 
         <div>
@@ -207,9 +200,9 @@ const valueClass = 'mt-1 text-sm font-semibold text-grey-900';
             <p :class="labelClass">Price per unit</p>
             <p :class="valueClass">{{ row.price || '—' }}</p>
           </div>
-          <div v-if="formValues.trackQuantity">
+          <div v-if="row.quantityPerUnit">
             <p :class="labelClass">Q/U</p>
-            <p :class="valueClass">{{ row.quantityPerUnit || '—' }}</p>
+            <p :class="valueClass">{{ row.quantityPerUnit }}</p>
           </div>
         </div>
       </div>
