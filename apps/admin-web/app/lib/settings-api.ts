@@ -281,17 +281,16 @@ export function parseSystemConfig(payload: unknown): SystemConfigEntry[] {
   const rows = asArray(root?.data ?? payload);
 
   return rows
-    .map((row) => {
+    .flatMap((row): SystemConfigEntry[] => {
       const record = asRecord(row);
-      if (!record || typeof record.key !== 'string') return null;
-      return {
+      if (!record || typeof record.key !== 'string') return [];
+      return [{
         key: record.key,
         value: record.value,
         description:
           typeof record.description === 'string' ? record.description : null,
-      } satisfies SystemConfigEntry;
-    })
-    .filter((row): row is SystemConfigEntry => Boolean(row));
+      }];
+    });
 }
 
 export function parseDeliveryFeeConfig(entries: SystemConfigEntry[]): DeliveryFeeConfig | null {

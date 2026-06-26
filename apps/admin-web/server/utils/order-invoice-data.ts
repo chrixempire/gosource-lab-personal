@@ -89,8 +89,8 @@ export function buildOrderInvoicePreview(order: Record<string, unknown>): OrderI
 
   const deliveryFee = Number(order.deliveryFee ?? 0);
   const serviceCharge = Number(order.serviceCharge ?? 0);
-  const subtotal = resolveOrderSubtotal(order, lineItems);
-  const total = resolveOrderTotalPrice(order, lineItems);
+  const subtotal = resolveOrderSubtotal(order, mappedLines);
+  const total = resolveOrderTotalPrice(order, mappedLines);
 
   return {
     referenceLabel: reference ? `#${reference}` : '—',

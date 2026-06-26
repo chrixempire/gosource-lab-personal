@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PaginationBar, StatusTag } from '@gosource/ui';
+import type { AdminOrderListItem } from '~/types/orders';
 import AdminMobileCardStat from '~/components/shared/AdminMobileCardStat.vue';
 import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
 import LoadErrorState from '~/components/shared/LoadErrorState.vue';
@@ -12,9 +13,9 @@ type OrderRow = {
   createdLabel: string;
   itemCountLabel: string;
   totalLabel: string;
-  statusVariant: string;
+  statusVariant: AdminOrderListItem['statusVariant'];
   statusLabel: string;
-  paymentStatusVariant: string;
+  paymentStatusVariant: AdminOrderListItem['paymentStatusVariant'];
   paymentStatusLabel: string;
 };
 

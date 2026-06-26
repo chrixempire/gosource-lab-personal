@@ -27,10 +27,12 @@ import { useCustomerSession } from '~/composables/useCustomerSession';
 import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
+import { useCustomerListReturn } from '~/composables/useCustomerListReturn';
 import { useRequestEdit } from '~/composables/useRequestEdit';
 import { useCustomerRequestService } from '~/services/request.service';
 
 const runWhenSessionReady = useAuthenticatedFetch();
+const { navigateToManageRequestsList } = useCustomerListReturn();
 
 const { session, sessionResolved } = useCustomerSession();
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
@@ -122,7 +124,6 @@ const {
         requestKey: '',
         ready: true,
         request: null as RequestRecord | null,
-        relatedRequests: [] as RequestListItem[],
       };
     }
 
@@ -134,28 +135,13 @@ const {
         requestKey: requestId.value,
         ready: true,
         request: null as RequestRecord | null,
-        relatedRequests: [] as RequestListItem[],
       };
-    }
-
-    let nextRelated: RequestListItem[] = [];
-    if (isSuperAdmin.value && nextRequest.branchId) {
-      const relatedResponse = await listRequests({
-        branchId: nextRequest.branchId,
-        page: 1,
-        limit: 20,
-      });
-
-      nextRelated = (relatedResponse.data ?? [])
-        .filter((item) => item.id !== nextRequest.id)
-        .map(mapRequestToListItem);
     }
 
     return {
       requestKey: requestId.value,
       ready: true,
       request: nextRequest,
-      relatedRequests: nextRelated,
     };
   },
   {
@@ -165,7 +151,6 @@ const {
       requestKey: requestId.value,
       ready: false,
       request: null as RequestRecord | null,
-      relatedRequests: [] as RequestListItem[],
     }),
   },
 );
@@ -185,7 +170,7 @@ watch(
     const nextRequest = payload?.request ?? null;
 
     request.value = nextRequest;
-    relatedRequests.value = Array.isArray(payload?.relatedRequests) ? payload!.relatedRequests : [];
+    relatedRequests.value = [];
 
     if (!nextRequest) {
       clearActiveRequest();
@@ -201,7 +186,7 @@ watch(
       relatedRequests.value = [];
       clearActiveRequest();
       toast.error('You do not have access to this request.');
-      void navigateTo('/manage-requests');
+      void navigateToManageRequestsList();
       return;
     }
 
@@ -209,6 +194,8 @@ watch(
     if (isEditingProducts.value) {
       beginProductEdit(nextRequest);
     }
+
+    void refreshRelatedRequests(nextRequest);
   },
   { immediate: true },
 );
@@ -233,7 +220,7 @@ async function fetchRequest() {
     relatedRequests.value = [];
     clearActiveRequest();
     toast.error('You do not have access to this request.');
-    void navigateTo('/manage-requests');
+    void navigateToManageRequestsList();
     return;
   }
 
@@ -503,35 +490,15 @@ function openRelatedRequest(item: RequestListItem) {
         size="small"
         class="!w-auto"
         :left-icon="ChevronLeft"
-        @click="navigateTo('/manage-requests')"
+        @click="navigateToManageRequestsList()"
       >
         Back
       </Button>
 
       <div
-        v-if="request && isEditingProducts && canEditProducts"
-        class="flex shrink-0 items-center gap-2"
+        v-if="request && !isEditingProducts"
+        class="flex items-center gap-2"
       >
-        <Button
-          variant="neutral"
-          size="small"
-          class="!w-auto"
-          :disabled="lineMutationLoading"
-          @click="finishEditingProducts(false)"
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          size="small"
-          class="!w-auto"
-          :loading="lineMutationLoading"
-          @click="finishEditingProducts(true)"
-        >
-          Save
-        </Button>
-      </div>
-      <div v-else-if="request" class="flex items-center gap-2">
         <Button
           v-if="canApproveOrReject"
           variant="primary"
@@ -564,16 +531,16 @@ function openRelatedRequest(item: RequestListItem) {
         <div
           v-for="index in 3"
           :key="index"
-          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-5 py-5"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-3 py-3"
         >
           <div class="h-3 w-24 animate-pulse rounded bg-grey-50" />
           <div class="mt-4 h-8 w-40 animate-pulse rounded bg-grey-50" />
         </div>
       </div>
-      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
         <RequestDetailsPanel :view="null" loading :format-currency="formatRequestCurrency" />
       </section>
-      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
         <RequestBranchRequestsSection
           branch-name=""
           :requests="[]"
@@ -588,7 +555,7 @@ function openRelatedRequest(item: RequestListItem) {
         <div
           v-for="card in summaryCards"
           :key="card.label"
-          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-5 py-5"
+          class="rounded-[24px] border border-grey-50 bg-background-on-canvas px-3 py-3"
         >
           <p class="text-xs font-semibold uppercase tracking-[0.08em] text-grey-300">
             {{ card.label }}
@@ -599,7 +566,7 @@ function openRelatedRequest(item: RequestListItem) {
         </div>
       </div>
 
-      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
+      <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-3">
         <div class="flex flex-col gap-2">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -615,7 +582,7 @@ function openRelatedRequest(item: RequestListItem) {
               {{ requestDetailsView?.statusLabel }}
             </StatusTag>
           </div>
-          <div class="-mx-6 border-b border-grey-50" />
+          <div class="-mx-3 border-b border-grey-50" />
         </div>
 
         <div class="mt-6">
@@ -628,7 +595,31 @@ function openRelatedRequest(item: RequestListItem) {
             :format-currency="formatRequestCurrency"
             @quantity-change="handleProductQuantityChange"
             @remove-line="handleProductRemove"
-          />
+          >
+            <template
+              v-if="isEditingProducts && canEditProducts"
+              #productsActions
+            >
+              <Button
+                variant="neutral"
+                size="small"
+                class="!w-auto"
+                :disabled="lineMutationLoading"
+                @click="finishEditingProducts(false)"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="small"
+                class="!w-auto"
+                :loading="lineMutationLoading"
+                @click="finishEditingProducts(true)"
+              >
+                Edit
+              </Button>
+            </template>
+          </RequestDetailsPanel>
         </div>
 
       </section>

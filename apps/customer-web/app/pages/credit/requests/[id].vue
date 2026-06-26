@@ -74,6 +74,7 @@ const cancelTarget = computed((): CustomerCreditRequest | null => {
     requestType: request.value.requestType,
     status: request.value.status,
     requestedAmountKobo: request.value.requestedAmountKobo,
+    approvedAmountKobo: request.value.approvedAmountKobo,
     repaidAmountKobo: request.value.repaidAmountKobo,
     createdAt: request.value.createdAt,
     requestedRepaymentFrequency: request.value.requestedRepaymentFrequency,

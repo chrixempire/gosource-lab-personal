@@ -1,4 +1,4 @@
-import { setResponseStatus, type H3Event } from 'h3';
+import { setResponseStatus, createError, type H3Event } from 'h3';
 import { extractApiErrorMessage } from '@gosource/api-client';
 
 type ForwardedErrorPayload = {
@@ -18,10 +18,11 @@ function getNestedPayload(error: unknown): Record<string, unknown> | null {
     return null;
   }
 
+  const response = toObject(candidate.response);
   return (
     toObject(candidate.data) ??
-    toObject(candidate.response?._data) ??
-    toObject(candidate.response) ??
+    toObject(response?._data) ??
+    response ??
     toObject(candidate.cause)
   );
 }
@@ -61,4 +62,19 @@ export function forwardApiError(
   setResponseStatus(event, statusCode);
 
   return body;
+}
+
+export function throwForwardedApiError(
+  event: H3Event,
+  error: unknown,
+  fallbackMessage = 'An unexpected error occurred',
+): never {
+  const body = forwardApiError(event, error, fallbackMessage);
+
+  throw createError({
+    statusCode: body.statusCode,
+    statusMessage: body.message,
+    message: body.message,
+    data: body,
+  });
 }

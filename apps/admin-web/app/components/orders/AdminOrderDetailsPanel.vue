@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { StatusTag } from '@gosource/ui';
-import AdminOrderLineItemsTable from '~/components/orders/AdminOrderLineItemsTable.vue';
+import AdminOrderLineItemsSection from '~/components/orders/AdminOrderLineItemsSection.vue';
 import OrderPaymentStatusSelect from '~/components/orders/OrderPaymentStatusSelect.vue';
 import type { AdminOrderDetailsView } from '~/lib/order-details';
 import type { OrderPaymentStatus } from '~/types/orders';
@@ -14,6 +14,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   updatePaymentStatus: [status: OrderPaymentStatus];
+  lineItemsUpdated: [];
 }>();
 
 const paymentReadOnly = computed(() => props.view?.status === 'cancelled');
@@ -44,7 +45,13 @@ const paymentReadOnly = computed(() => props.view?.status === 'cancelled');
 
     <div class="lg:col-span-2">
       <div class="mb-3 h-4 w-20 animate-pulse rounded bg-grey-55" />
-      <AdminOrderLineItemsTable :items="[]" loading />
+      <AdminOrderLineItemsSection
+        :items="[]"
+        order-id=""
+        order-status="pending"
+        payment-status="pending"
+        loading
+      />
     </div>
   </div>
 
@@ -128,9 +135,16 @@ const paymentReadOnly = computed(() => props.view?.status === 'cancelled');
       </section>
     </div>
 
-    <section class="rounded-[18px] border border-grey-50 bg-white p-4">
-      <h2 class="mb-3 text-sm font-semibold text-grey-900">Line items</h2>
-      <AdminOrderLineItemsTable :items="view.lineItems" />
-    </section>
+    <AdminOrderLineItemsSection
+      v-if="orderId"
+      :items="view.lineItems"
+      :order-id="orderId"
+      :order-status="view.status"
+      :payment-status="view.paymentStatus"
+      :additional-items="view.additionalItems"
+      :editable="view.isEditable"
+      :disabled="paymentStatusUpdating"
+      @updated="emit('lineItemsUpdated')"
+    />
   </div>
 </template>

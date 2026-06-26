@@ -45,10 +45,13 @@ export default defineNuxtPlugin(() => {
     : async () => {};
 
   if (import.meta.client) {
-    globalThis.$fetch = wrapFetchWithSessionRetry(originalFetch, {
-      refreshSession,
-      onSessionRefreshFailed: onSessionRefreshFailed,
-    });
+    globalThis.$fetch = wrapFetchWithSessionRetry(
+      originalFetch as unknown as Parameters<typeof wrapFetchWithSessionRetry>[0],
+      {
+        refreshSession,
+        onSessionRefreshFailed: onSessionRefreshFailed,
+      },
+    ) as unknown as typeof globalThis.$fetch;
   }
 
   const apiClient = createApiClient({

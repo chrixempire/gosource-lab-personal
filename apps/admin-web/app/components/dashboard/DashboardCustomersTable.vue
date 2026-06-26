@@ -76,7 +76,7 @@ const query = computed(() => ({
   limit: pageSize.value,
 }));
 
-const { data, pending, error } = await useAdminAuthenticatedFetch<unknown>(
+const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
   '/api/dashboard/customer-ranking',
   {
     query,

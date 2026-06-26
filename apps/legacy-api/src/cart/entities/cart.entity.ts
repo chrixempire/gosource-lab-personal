@@ -49,6 +49,36 @@ export class Cart {
   @Prop()
   totalPrice: number;
 
+  @Prop({ required: false })
+  financialSnapshotVersion: number;
+
+  @Prop({ required: false })
+  unitSellingPrice: number;
+
+  @Prop({ required: false })
+  grossLineRevenue: number;
+
+  @Prop({ required: false })
+  allocatedDiscount: number;
+
+  @Prop({ required: false })
+  netLineRevenue: number;
+
+  @Prop({ required: false })
+  baseUnitCost: number;
+
+  @Prop({ required: false })
+  baseQuantityPerSellingUnit: number;
+
+  @Prop({ required: false })
+  totalBaseQuantity: number;
+
+  @Prop({ required: false })
+  totalCost: number;
+
+  @Prop({ required: false })
+  grossProfit: number;
+
   @Prop({ required: false, type: ProductSchema })
   cartProduct: ProductDocument;
 

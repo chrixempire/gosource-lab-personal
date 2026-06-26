@@ -31,10 +31,19 @@ export type DashboardSummaryResponse = {
   totalOrdersAmount: number;
   activeCustomers: number;
   inactiveCustomers: number;
+  purchaseOrderSpend: number;
+  revenue: number;
+  grossProfit: number;
+  grossMarginPercent: number;
+  historicalProfitCoveragePercent: number;
+  qualifyingRevenueOrderCount: number;
+  unverifiedProfitOrderCount: number;
   permissions?: {
     orders?: boolean;
     activeCustomers?: boolean;
     inactiveCustomers?: boolean;
+    purchaseOrders?: boolean;
+    financials?: boolean;
   };
 };
 
@@ -70,6 +79,17 @@ export type DashboardOrderMetricsResponse = {
     statusBreakdown: {
       total: number;
       slices: DashboardStatusSlice[];
+    };
+    financials: {
+      revenue: number;
+      verifiedRevenue: number;
+      costOfGoodsSold: number;
+      grossProfit: number;
+      grossMarginPercent: number;
+      historicalCoveragePercent: number;
+      qualifyingOrderCount: number;
+      verifiedProfitOrderCount: number;
+      unverifiedProfitOrderCount: number;
     };
     dateRange: DashboardDateFilterValue;
   };

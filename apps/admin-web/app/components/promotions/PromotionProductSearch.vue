@@ -83,6 +83,13 @@ function onSelect(product: AdminProductListItem) {
   open.value = false;
 }
 
+function loadMore() {
+  if (!hasMore.value || pending.value || loadingMore.value) {
+    return;
+  }
+  void fetchProducts(currentPage.value + 1, true);
+}
+
 watch(debouncedSearch, (term) => {
   if (!open.value) {
     return;

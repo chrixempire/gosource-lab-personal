@@ -167,7 +167,14 @@ const { data: walletPayload, pending: loading, invalidateListCache } =
         };
       }
 
-      const nextWallet = await getWallet({ silent: true });
+      const [nextWallet, transactionsResponse] = await Promise.all([
+        getWallet({ silent: true }),
+        listTransactions(
+          { page: page.value, limit: limit.value },
+          { silent: true },
+        ),
+      ]);
+
       if (!nextWallet) {
         return {
           wallet: null as WalletRecord | null,
@@ -176,17 +183,12 @@ const { data: walletPayload, pending: loading, invalidateListCache } =
         };
       }
 
-      const response = await listTransactions(
-        { page: page.value, limit: limit.value },
-        { silent: true },
-      );
-
       return {
         wallet: nextWallet,
-        transactions: Array.isArray(response.data?.transactions)
-          ? response.data.transactions
+        transactions: Array.isArray(transactionsResponse.data?.transactions)
+          ? transactionsResponse.data.transactions
           : ([] as WalletTransactionRecord[]),
-        totalTransactions: response.data?.totalTransactions ?? 0,
+        totalTransactions: transactionsResponse.data?.totalTransactions ?? 0,
       };
     },
     {
@@ -214,6 +216,10 @@ watch(
     }
   },
   { immediate: true },
+);
+
+const showWalletPageSkeleton = computed(
+  () => loading.value && !wallet.value && isOwner.value,
 );
 
 const suppressFundingBalanceRefresh = ref(false);
@@ -481,7 +487,7 @@ onBeforeUnmount(() => {
     Wallet is available to business owners only.
   </div>
 
-  <WalletPageSkeleton v-else-if="loading" :table-row-count="limit" />
+  <WalletPageSkeleton v-else-if="showWalletPageSkeleton" :table-row-count="limit" />
 
   <div v-else-if="!wallet" class="min-h-[240px] w-full" />
 

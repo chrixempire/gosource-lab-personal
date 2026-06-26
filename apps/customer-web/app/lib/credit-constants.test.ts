@@ -4,6 +4,7 @@ import {
   canReapplyCreditRequest,
   creditRepaymentPaymentMethodLabel,
   creditRepaymentStatusLabel,
+  creditRepaymentStatusVariant,
   creditRequestStatusLabel,
   creditRequestTypeLabel,
   creditWorkflowStatusLabel,
@@ -38,4 +39,11 @@ test('creditRepaymentPaymentMethodLabel formats enum values', () => {
 
 test('creditRepaymentStatusLabel maps completed repayments', () => {
   assert.equal(creditRepaymentStatusLabel('COMPLETED'), 'Completed');
+});
+
+test('creditRepaymentStatusVariant maps completed repayments to success', () => {
+  assert.equal(creditRepaymentStatusVariant('COMPLETED'), 'success');
+  assert.equal(creditRepaymentStatusVariant('completed'), 'success');
+  assert.equal(creditRepaymentStatusVariant('PENDING'), 'warning');
+  assert.equal(creditRepaymentStatusVariant('FAILED'), 'negative');
 });

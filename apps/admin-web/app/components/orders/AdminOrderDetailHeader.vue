@@ -18,7 +18,7 @@ defineProps<{
 const emit = defineEmits<{
   back: [];
   previewInvoice: [];
-  downloadInvoice: [];
+  downloadInvoice: [variant: 'combined' | 'original' | 'added'];
   changeStatus: [status: OrderStatus];
   cancel: [];
 }>();
@@ -71,7 +71,8 @@ const emit = defineEmits<{
           :can-change-status="canChangeStatus"
           :disabled="actionsDisabled"
           :invoice-loading="invoiceLoading"
-          @download-invoice="emit('downloadInvoice')"
+          :has-additional-items="(view?.additionalItems?.length ?? 0) > 0"
+          @download-invoice="emit('downloadInvoice', $event)"
           @change-status="emit('changeStatus', $event)"
           @cancel="emit('cancel')"
         />

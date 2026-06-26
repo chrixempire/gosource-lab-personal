@@ -86,6 +86,7 @@ export function useMarketplaceCart() {
   const { hasSession, sessionResolved, whenReady } = useCustomerSession();
   const {
     activeBranchId,
+    branches,
     branchFetchInitialized,
     ensureBranchForAction,
     fetchBranchesInBackground,
@@ -119,6 +120,10 @@ export function useMarketplaceCart() {
   });
 
   const subtotalNaira = computed(() => {
+    if (requestAddMode.isAddingToRequest.value) {
+      return requestAddMode.requestSubtotal.value;
+    }
+
     const computedTotal = lines.value.reduce((sum, line) => {
       const product = line.product ?? getMarketProductById(line.productId);
       if (!product) {
@@ -440,6 +445,18 @@ export function useMarketplaceCart() {
 
         if (branchId) {
           await ensureUnbranchedCartMigrated(branchId);
+        }
+
+        // The 'all' scope returns the whole business cart (every branch + every
+        // member). Only use it for a user who genuinely has no branch (branch
+        // list settled AND empty). For a branched user whose active branch has
+        // not resolved yet, skip and wait — falling back to 'all' here briefly
+        // shows other members' items (e.g. an admin seeing their 2 + a member's
+        // 2 = 4 on reload, before settling back to 2).
+        const userHasNoBranch =
+          branchFetchInitialized.value && !branches.value?.length;
+        if (!branchId && !userHasNoBranch) {
+          return;
         }
 
         const cartScopeId = branchId || 'all';

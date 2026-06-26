@@ -60,6 +60,7 @@ const emit = defineEmits<{
             class="shrink-0"
             :alt="request.initiatorName"
             :fallback="request.initials"
+            fallback-class="bg-button-primary"
           />
           <div class="min-w-0 flex-1 space-y-1">
             <h2 class="break-words text-base font-semibold leading-snug text-grey-900">

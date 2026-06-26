@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
 // FAQ page hero — Figma 891:12819.
 </script>
 
@@ -20,10 +19,7 @@ import { CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
           Start ordering on GoSource today to make the process of buying food items
           very easy for your business.
         </p>
-        <AppButton variant="primary" size="sm" :href="CUSTOMER_REGISTER_URL" class="mt-2">
-          Start now
-          <Icon name="lucide:chevron-right" class="size-5 transition-transform group-hover:translate-x-0.5" />
-        </AppButton>
+        <AppStoreBadges class="mt-2" />
       </div>
     </div>
   </section>

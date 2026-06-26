@@ -46,6 +46,16 @@ function onDraftAmountMaxInput(value: string) {
   draftAmountMax.value = formatNairaAmountInput(value);
 }
 
+const amountRangeInvalid = computed(() => {
+  if (!draftAmountMin.value.trim() || !draftAmountMax.value.trim()) {
+    return false;
+  }
+
+  const min = parseNairaAmountInput(draftAmountMin.value);
+  const max = parseNairaAmountInput(draftAmountMax.value);
+  return Number.isFinite(min) && Number.isFinite(max) && min > max;
+});
+
 watch(
   () => props.filters,
   () => syncDraftFromProps(),
@@ -63,6 +73,10 @@ function openStatus() {
 }
 
 function applyAmount() {
+  if (amountRangeInvalid.value) {
+    return;
+  }
+
   const minRaw = draftAmountMin.value.trim() ? parseNairaAmountInput(draftAmountMin.value) : Number.NaN;
   const maxRaw = draftAmountMax.value.trim() ? parseNairaAmountInput(draftAmountMax.value) : Number.NaN;
   emit('apply', {
@@ -134,6 +148,7 @@ const showClearAll = computed(() =>
       v-model:open="amountOpen"
       label="Price"
       :active="amountActive"
+      :apply-disabled="amountRangeInvalid"
       @apply="applyAmount"
       @clear="clearAmount"
       @update:open="(value) => value && openAmount()"
@@ -154,8 +169,12 @@ const showClearAll = computed(() =>
             :model-value="draftAmountMax"
             inputmode="numeric"
             placeholder="Any"
+            :invalid="amountRangeInvalid"
             @update:model-value="onDraftAmountMaxInput"
           />
+          <span v-if="amountRangeInvalid" class="text-xs font-medium text-negative-500">
+            Maximum price must be greater than or equal to minimum price.
+          </span>
         </label>
       </div>
     </OrderFilterPopover>

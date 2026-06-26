@@ -5,6 +5,7 @@ import type { MarketProduct } from '~/lib/marketplace-data';
 import {
   effectiveUnitChoices,
   getMarketUnitChoice,
+  hasUnitSalePrice,
   isMarketProductInStock,
   registerMarketProduct,
 } from '~/lib/marketplace-data';
@@ -24,17 +25,27 @@ import { formatNaira, useMarketplaceCart } from '~/composables/useMarketplaceCar
 
 const route = useRoute();
 const router = useRouter();
-const { getProduct, listCategories } = useCustomerMarketService();
-const { categories, catalogList, hydrateFromStorage, setCategories, findProductById, findProductCategory } = useMarketCatalog();
+const { getCategory, getProduct, listCategories } = useCustomerMarketService();
+const {
+  categories,
+  catalogList,
+  hydrateFromStorage,
+  setCategories,
+  upsertCategory,
+  findProductById,
+  findCategoryById,
+  findProductCategory,
+} = useMarketCatalog();
 const productId = computed(() => String(route.params.id ?? ''));
 
 hydrateFromStorage();
 
 const product = ref<MarketProduct | null>(null);
 const cachedProduct = computed(() => (productId.value ? findProductById(productId.value) ?? null : null));
+const productDetailKey = computed(() => `market-product-detail:${productId.value || 'missing'}`);
 
 const { data: productDetailPayload, pending: loading } = await useAuthenticatedAsyncData(
-  'market-product-detail',
+  productDetailKey,
   async () => {
     if (!productId.value) {
       return {
@@ -46,7 +57,10 @@ const { data: productDetailPayload, pending: loading } = await useAuthenticatedA
     const cached = findProductById(productId.value) ?? null;
     const needsCategories = catalogList().length === 0;
     const [productResult, categoriesResult] = await Promise.allSettled([
-      getProduct(productId.value, { force: !cached, quiet: Boolean(cached) }),
+      getProduct(productId.value, {
+        force: !cached || !cached.categoryId,
+        quiet: Boolean(cached),
+      }),
       needsCategories ? listCategories({ force: false, quiet: true }) : null,
     ]);
 
@@ -67,13 +81,20 @@ const { data: productDetailPayload, pending: loading } = await useAuthenticatedA
   },
   {
     fastNav: true,
-    watch: [productId],
     default: () => ({
       product: cachedProduct.value,
       categories: catalogList(),
     }),
     staleAfterMs: 5 * 60 * 1000,
   },
+);
+
+watch(
+  productId,
+  (nextProductId) => {
+    product.value = nextProductId ? findProductById(nextProductId) ?? null : null;
+  },
+  { flush: 'sync' },
 );
 
 watch(
@@ -87,7 +108,15 @@ watch(
       setCategories(payload.categories);
     }
 
-    product.value = payload.product ?? cachedProduct.value ?? null;
+    const nextProduct = payload.product ?? cachedProduct.value ?? null;
+
+    // The same dynamic page instance is reused for product-to-product
+    // navigation. Ignore an older request if it resolves after the route ID changed.
+    if (nextProduct && nextProduct.id !== productId.value) {
+      return;
+    }
+
+    product.value = nextProduct;
 
     if (product.value) {
       registerMarketProduct(product.value);
@@ -137,9 +166,30 @@ const similar = computed(() => {
     return [];
   }
 
-  const category = findProductCategory(product.value.id);
+  const category =
+    (product.value.categoryId ? findCategoryById(product.value.categoryId) : undefined) ??
+    findProductCategory(product.value.id);
   return category?.products.filter((item) => item.id !== product.value?.id).slice(0, 12) ?? [];
 });
+
+watch(
+  () => product.value?.categoryId,
+  async (categoryId) => {
+    if (!categoryId || findCategoryById(categoryId)) {
+      return;
+    }
+
+    try {
+      const response = await getCategory(categoryId, { quiet: true });
+      if (response.data) {
+        upsertCategory(response.data);
+      }
+    } catch {
+      // Product details remain usable if related-category loading fails.
+    }
+  },
+  { immediate: true },
+);
 
 const selectedLineQty = computed(() =>
   product.value ? getQtyForUnit(product.value.id, selectedUnit.value) : 0,
@@ -177,8 +227,8 @@ onMounted(async () => {
   void fetchBranchesInBackground();
 });
 
-function openSimilarProduct(product: MarketProduct) {
-  router.push(`/market/product/${product.id}`);
+async function openSimilarProduct(product: MarketProduct) {
+  await router.push(`/market/product/${product.id}`);
 }
 
 provide('marketOpenAddModal', openSimilarProduct);
@@ -291,11 +341,11 @@ async function onAddToList() {
                     ]"
                   >
                     <span v-if="opt!.measure">1{{ opt!.measure }} = </span>
-                    <span :class="{ 'line-through text-grey-300': opt!.discountedPriceNaira }">
+                    <span :class="{ 'line-through text-grey-300': hasUnitSalePrice(opt!) }">
                       {{ formatNaira(opt!.priceNaira) }}
                     </span>
-                    <span v-if="opt!.discountedPriceNaira" class="ml-1 text-red-500">
-                      {{ formatNaira(opt!.discountedPriceNaira) }}
+                    <span v-if="hasUnitSalePrice(opt!)" class="ml-1 text-red-500">
+                      {{ formatNaira(opt!.discountedPriceNaira!) }}
                     </span>
                   </span>
                 </label>

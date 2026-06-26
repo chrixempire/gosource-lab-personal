@@ -179,7 +179,7 @@ async function submit() {
   <Drawer v-if="isMobile" :open="open" @update:open="emit('update:open', $event)">
     <DrawerContent
       :overlay-class="CUSTOMER_FLOATING_OVERLAY_Z"
-      :class="['max-h-[92vh]', CUSTOMER_FLOATING_CONTENT_Z]"
+      :class="`max-h-[92vh] ${CUSTOMER_FLOATING_CONTENT_Z}`"
     >
       <DrawerHeader>
         <div class="flex flex-col gap-1">

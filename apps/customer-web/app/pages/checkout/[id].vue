@@ -4,15 +4,18 @@ definePageMeta({ layout: 'customer-market' });
 import type { ApproveRequestResponse, CustomerMeResponse, RequestRecord } from '@gosource/api-client';
 import { Button, StatusTag, toast } from '@gosource/ui';
 import { ChevronLeft } from 'lucide-vue-next';
-import CheckoutDeliveryDetails from '~/components/checkout/CheckoutDeliveryDetails.vue';
+import CheckoutDeliveryMessage from '~/components/checkout/CheckoutDeliveryMessage.vue';
 import CheckoutPaymentMethod, {
   type CheckoutPaymentMethodValue,
 } from '~/components/checkout/CheckoutPaymentMethod.vue';
 import CheckoutPaymentSummary from '~/components/checkout/CheckoutPaymentSummary.vue';
 import CheckoutRequestItems from '~/components/checkout/CheckoutRequestItems.vue';
+import CheckoutCutoffNoticeDialog from '~/components/checkout/CheckoutCutoffNoticeDialog.vue';
 import CheckoutSuccessDialog from '~/components/checkout/CheckoutSuccessDialog.vue';
 import CheckoutTransferDialog from '~/components/checkout/CheckoutTransferDialog.vue';
-import { useAuthenticatedFetch } from '~/composables/useAuthenticatedFetch';
+import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
+import { useCustomerListReturn } from '~/composables/useCustomerListReturn';
+import { getCustomerSessionCacheSignature } from '~/lib/customer-session-cache';
 import { useDownloadOrderInvoice } from '~/composables/useDownloadOrderInvoice';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { usePaystack } from '~/composables/usePaystack';
@@ -30,6 +33,7 @@ import {
   resolveRequestTotalPrice,
 } from '~/lib/request-pricing';
 import { resolveCheckoutCreditEligibility } from '~/lib/checkout-credit';
+import { paymentSuccessUrl, pushToDataLayer } from '~/lib/analytics-data-layer';
 import { useCustomerCreditService } from '~/services/credit.service';
 import { useCustomerProfileService } from '~/services/profile.service';
 import { useCustomerRequestService } from '~/services/request.service';
@@ -37,32 +41,113 @@ import { useCustomerWalletService } from '~/services/wallet.service';
 import type { CustomerCreditAccount } from '~/types/credit';
 
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
-const runWhenSessionReady = useAuthenticatedFetch();
 const route = useRoute();
 const router = useRouter();
+const { navigateToManageRequestsList } = useCustomerListReturn();
 const requestId = computed(() => String(route.params.id ?? ''));
-const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 
 const { getRequest } = useCustomerRequestService();
 const { processPayment, submitting } = useProcessCheckoutPayment();
 const { resetCartState, loadCart } = useMarketplaceCart();
 const { getWallet } = useCustomerWalletService();
 const { getBusinessAccount } = useCustomerProfileService();
-const { downloadingInvoice, downloadOrderInvoice } = useDownloadOrderInvoice();
 const { getCreditAccount } = useCustomerCreditService();
-
-const loading = ref(true);
-const request = ref<RequestRecord | null>(null);
+const { downloadingInvoice, downloadOrderInvoice } = useDownloadOrderInvoice();
 const approvedRequest = ref<RequestRecord | null>(null);
 const approvedOrderId = ref<string | null>(null);
 const selectedMethod = ref<CheckoutPaymentMethodValue | null>(null);
 const transferDialogOpen = ref(false);
 const successDialogOpen = ref(false);
+const cutoffNoticeOpen = ref(false);
+
+// Orders placed past the 1pm cutoff are processed the next day. Notify the
+// customer once when they land on the checkout page after the cutoff.
+const ORDER_CUTOFF_HOUR = 13;
+
+onMounted(() => {
+  if (new Date().getHours() >= ORDER_CUTOFF_HOUR) {
+    cutoffNoticeOpen.value = true;
+  }
+});
 const walletBalance = ref<number | null>(null);
 const canBuyOnCredit = ref<boolean | null>(null);
 const creditAccount = ref<CustomerCreditAccount | null>(null);
 
+type CheckoutPagePayload = {
+  requestKey: string;
+  ready: boolean;
+  request: RequestRecord | null;
+  walletBalance: number | null;
+  canBuyOnCredit: boolean | null;
+  creditAccount: CustomerCreditAccount | null;
+};
+
+const checkoutKey = computed(
+  () =>
+    `checkout:${getCustomerSessionCacheSignature(session.value)}:${requestId.value || 'empty'}`,
+);
+
+const routeValidatedForRequestId = ref<string | null>(null);
+
+const request = ref<RequestRecord | null>(null);
+
 const { mutate: paystackMutate } = usePaystack();
+
+const {
+  data: checkoutPayload,
+  pending: checkoutPending,
+  refresh: refreshCheckoutPayload,
+} = await useAuthenticatedAsyncData(
+  checkoutKey,
+  async (): Promise<CheckoutPagePayload> => {
+    if (!requestId.value) {
+      return {
+        requestKey: '',
+        ready: true,
+        request: null,
+        walletBalance: null,
+        canBuyOnCredit: null,
+        creditAccount: null,
+      };
+    }
+
+    const [requestResponse, wallet, creditContext] = await Promise.all([
+      getRequest(requestId.value),
+      getWallet().catch(() => null),
+      Promise.all([
+        getBusinessAccount(),
+        getCreditAccount({ silent: true }),
+      ]).catch(() => [null, null] as const),
+    ]);
+
+    const [business, account] = creditContext;
+
+    return {
+      requestKey: requestId.value,
+      ready: true,
+      request: requestResponse.data ?? null,
+      walletBalance: wallet?.balance ?? 0,
+      canBuyOnCredit: business?.canBuyOnCredit ?? null,
+      creditAccount: account,
+    };
+  },
+  {
+    fastNav: true,
+    watch: [requestId],
+    default: (): CheckoutPagePayload => ({
+      requestKey: requestId.value,
+      ready: false,
+      request: null,
+      walletBalance: null,
+      canBuyOnCredit: null,
+      creditAccount: null,
+    }),
+  },
+);
+
+const showCheckoutSkeleton = computed(
+  () => checkoutPending.value && !request.value && !approvedRequest.value,
+);
 
 useHead({
   title: computed(() =>
@@ -77,7 +162,7 @@ watch(
   (value) => {
     if (value && !isBusinessOwnerSession(value)) {
       toast.error('Only business owners can complete checkout.');
-      void navigateTo('/manage-requests', { replace: true });
+      void navigateToManageRequestsList({ replace: true });
     }
   },
   { immediate: true },
@@ -133,84 +218,63 @@ watch(checkoutCreditEligibility, (eligibility) => {
   }
 });
 
-async function loadCheckoutCreditContext() {
-  try {
-    const [business, account] = await Promise.all([
-      getBusinessAccount(),
-      getCreditAccount({ silent: true }),
-    ]);
-    canBuyOnCredit.value = business?.canBuyOnCredit ?? null;
-    creditAccount.value = account;
-  } catch {
-    canBuyOnCredit.value = null;
-    creditAccount.value = null;
-  }
-}
-
-async function loadWalletBalance() {
-  try {
-    const wallet = await runWhenSessionReady(() => getWallet());
-    walletBalance.value = wallet?.balance ?? 0;
-  } catch {
-    walletBalance.value = 0;
-  }
-}
-
-async function fetchCheckoutRequest(options?: { showPageLoading?: boolean }) {
-  if (!requestId.value) {
-    if (options?.showPageLoading) {
-      loading.value = false;
+watch(
+  checkoutPayload,
+  async (payload) => {
+    if (!payload?.ready || payload.requestKey !== requestId.value) {
+      return;
     }
-    return;
-  }
 
-  if (options?.showPageLoading) {
-    loading.value = true;
-  }
+    if (approvedRequest.value || successDialogOpen.value) {
+      return;
+    }
 
-  try {
-    await runWhenSessionReady(async () => {
-      if (options?.showPageLoading) {
-        await Promise.all([loadWalletBalance(), loadCheckoutCreditContext()]);
-      }
+    if (routeValidatedForRequestId.value !== requestId.value) {
+      routeValidatedForRequestId.value = requestId.value;
 
-      const response = await getRequest(requestId.value);
-      const record = response.data ?? null;
-
-      if (!record) {
+      if (!payload.request) {
         toast.error('Unable to find that request.');
-        await navigateTo('/manage-requests', { replace: true });
+        await navigateToManageRequestsList({ replace: true });
         return;
       }
 
-      if (options?.showPageLoading && record.status !== 'pending') {
+      if (payload.request.status !== 'pending') {
         toast.error('Only pending requests can be checked out.');
-        await navigateTo(`/manage-requests/${record.id}`, { replace: true });
+        await navigateTo(`/manage-requests/${payload.request.id}`, { replace: true });
         return;
       }
 
-      request.value = record;
-      if (options?.showPageLoading) {
-        selectedMethod.value = null;
-      }
-    });
-  } finally {
-    if (options?.showPageLoading) {
-      loading.value = false;
+      selectedMethod.value = null;
     }
-  }
-}
 
-async function loadRequest() {
-  await fetchCheckoutRequest({ showPageLoading: true });
+    request.value = payload.request;
+    walletBalance.value = payload.walletBalance;
+    canBuyOnCredit.value = payload.canBuyOnCredit;
+    creditAccount.value = payload.creditAccount;
+  },
+  { immediate: true },
+);
+
+watch(requestId, () => {
+  approvedRequest.value = null;
+  approvedOrderId.value = null;
+  request.value = null;
+  selectedMethod.value = null;
+  transferDialogOpen.value = false;
+  successDialogOpen.value = false;
+  routeValidatedForRequestId.value = null;
+});
+
+async function refreshCheckoutRequest() {
+  await refreshCheckoutPayload();
 }
 
 async function handleCouponApplied() {
-  await fetchCheckoutRequest();
+  await refreshCheckoutRequest();
 }
 
 async function handleCouponRemoved() {
-  await fetchCheckoutRequest();
+  await refreshCheckoutRequest();
 }
 
 async function submitCheckout() {
@@ -263,9 +327,29 @@ async function submitCheckout() {
 }
 
 function applyApprovedCheckout(response: ApproveRequestResponse) {
-  approvedRequest.value = response.data;
+  const approved = response.data;
+  if (!approved) {
+    return;
+  }
+
+  approvedRequest.value = approved;
   approvedOrderId.value = response.orderId ?? null;
-  request.value = response.data;
+  const orderId = approvedOrderId.value?.trim();
+  if (orderId) {
+    const successUrl = paymentSuccessUrl(orderId);
+    void router.push({
+      query: {
+        ...route.query,
+        event: 'payment-success',
+        oid: orderId,
+      },
+    });
+    pushToDataLayer('payment-success', {
+      successUrl,
+      value: computedTotal.value,
+    });
+  }
+  request.value = approved;
   resetCartState();
   void loadCart(true);
   invalidateCheckoutMutationListCaches();
@@ -281,6 +365,9 @@ async function processApproval(
   }
 
   const response = await processPayment(request.value.id, method, options);
+  if (!response) {
+    return;
+  }
   transferDialogOpen.value = false;
 
   if (response?.data) {
@@ -307,6 +394,18 @@ function goBackFromCheckout() {
   }
 
   void navigateTo('/market');
+}
+
+function goBackToRequests() {
+  invalidateManageRequestsListCache();
+  void navigateToManageRequestsList({ replace: true });
+}
+
+function handleSuccessDialogOpenChange(value: boolean) {
+  successDialogOpen.value = value;
+  if (!value) {
+    goBackToRequests();
+  }
 }
 
 async function downloadApprovedInvoice() {
@@ -348,16 +447,6 @@ const checkoutCtaLabel = computed(() => {
 const canSubmitCheckout = computed(
   () => Boolean(request.value) && Boolean(selectedMethod.value) && !submitting.value,
 );
-
-watch(requestId, () => {
-  approvedRequest.value = null;
-  approvedOrderId.value = null;
-  request.value = null;
-  selectedMethod.value = null;
-  transferDialogOpen.value = false;
-  successDialogOpen.value = false;
-  void loadRequest();
-}, { immediate: true });
 </script>
 
 <template>
@@ -383,7 +472,7 @@ watch(requestId, () => {
       </StatusTag>
     </div>
 
-    <div v-if="loading" class="flex flex-col gap-2">
+    <div v-if="showCheckoutSkeleton" class="flex flex-col gap-2">
       <div class="grid gap-2 xl:grid-cols-2 xl:items-start">
         <section class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-5">
           <div class="h-6 w-40 animate-pulse rounded bg-grey-50" />
@@ -447,35 +536,36 @@ watch(requestId, () => {
           :credit-enabled="checkoutCreditEligibility.enabled"
           :credit-available-kobo="creditAccount?.availableKobo ?? 0"
           :credit-description="checkoutCreditEligibility.description"
+          :request="request"
         />
 
-        <CheckoutPaymentSummary
-          :request-id="request.id"
-          :subtotal="requestSubtotal"
-          :delivery-fee="requestDeliveryFee"
-          :service-charge="computedServiceCharge"
-          :discount="requestDiscount"
-          :total="computedTotal"
-          :format-currency="formatRequestCurrency"
-          :coupon-applied="checkoutCouponApplied"
-          :coupon-label="checkoutCouponLabel"
-          :submitting="submitting"
-          :can-submit="canSubmitCheckout"
-          :submit-label="checkoutCtaLabel"
-          @submit="submitCheckout"
-          @coupon-applied="handleCouponApplied"
-          @coupon-removed="handleCouponRemoved"
-        />
+        <div class="flex flex-col gap-2">
+          <CheckoutPaymentSummary
+            :request-id="request.id"
+            :subtotal="requestSubtotal"
+            :delivery-fee="requestDeliveryFee"
+            :service-charge="computedServiceCharge"
+            :discount="requestDiscount"
+            :total="computedTotal"
+            :format-currency="formatRequestCurrency"
+            :coupon-applied="checkoutCouponApplied"
+            :coupon-label="checkoutCouponLabel"
+            :submitting="submitting"
+            :can-submit="canSubmitCheckout"
+            :submit-label="checkoutCtaLabel"
+            @submit="submitCheckout"
+            @coupon-applied="handleCouponApplied"
+            @coupon-removed="handleCouponRemoved"
+          />
+
+          <CheckoutDeliveryMessage />
+        </div>
       </div>
 
       <CheckoutRequestItems
         :request="request"
         :format-currency="formatRequestCurrency"
       />
-
-      <div class="grid gap-2 xl:grid-cols-2 xl:items-start">
-        <CheckoutDeliveryDetails class="min-w-0" :request="request" />
-      </div>
     </div>
 
     <div
@@ -484,6 +574,11 @@ watch(requestId, () => {
     >
       Request not found.
     </div>
+
+    <CheckoutCutoffNoticeDialog
+      :open="cutoffNoticeOpen"
+      @update:open="cutoffNoticeOpen = $event"
+    />
 
     <CheckoutTransferDialog
       :open="transferDialogOpen"
@@ -496,8 +591,7 @@ watch(requestId, () => {
       :open="successDialogOpen"
       :reference="approvedRequest?.reference ?? request?.reference ?? ''"
       :download-invoice-loading="downloadingInvoice"
-      @update:open="successDialogOpen = $event"
-      @close="goBackToRequests"
+      @update:open="handleSuccessDialogOpenChange"
       @download-invoice="downloadApprovedInvoice"
       @track-order="trackApprovedOrder"
     />

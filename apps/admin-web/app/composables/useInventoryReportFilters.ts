@@ -1,7 +1,7 @@
 import { toDashboardQueryParams } from '~/lib/dashboard-date';
 import { useDashboardDateFilter } from '~/composables/useDashboardDateFilter';
 
-function flatRouteQuery(query: Record<string, string | string[] | undefined | null>) {
+function flatRouteQuery(query: Record<string, string | null | Array<string | null> | undefined>) {
   return Object.fromEntries(
     Object.entries(query).flatMap(([key, entry]) => {
       const resolved = Array.isArray(entry) ? entry[0] : entry;

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '@gosource/shared/styles/main.css';
 @import 'tw-animate-css';
 
 /* ------------------------------------------------------------------ *

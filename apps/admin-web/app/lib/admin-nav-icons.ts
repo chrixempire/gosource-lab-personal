@@ -3,6 +3,7 @@ import {
   BadgePercent,
   LayoutDashboard,
   Megaphone,
+  MessageSquare,
   Package,
   ScrollText,
   ShoppingBag,
@@ -17,6 +18,7 @@ export const ADMIN_NAV_ICON_MAP: Record<string, Component> = {
   'i-lucide-badge-percent': BadgePercent,
   'i-lucide-ticket': Ticket,
   'i-lucide-megaphone': Megaphone,
+  'i-lucide-message-square': MessageSquare,
   'i-lucide-users': Users,
   'i-lucide-scroll-text': ScrollText,
 };

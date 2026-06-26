@@ -1,4 +1,7 @@
-import { ORDER_PAYMENT_STATUS_OPTIONS, ORDER_STATUS_OPTIONS } from '~/lib/order-constants';
+import {
+  getOrderPaymentStatusLabel,
+  getOrderStatusLabel,
+} from '~/lib/order-constants';
 import {
   getOrderPaymentStatusVariant,
   getOrderStatusVariant,
@@ -9,22 +12,20 @@ import type { OrderPaymentStatus, OrderStatus } from '~/types/orders';
 
 export function buildOrderStatusPatch(status: OrderStatus) {
   const normalizedStatus = normalizeOrderStatus(status);
-  const option = ORDER_STATUS_OPTIONS.find((entry) => entry.value === normalizedStatus);
 
   return {
     status: normalizedStatus,
-    statusLabel: option?.label ?? String(normalizedStatus),
+    statusLabel: getOrderStatusLabel(normalizedStatus),
     statusVariant: getOrderStatusVariant(normalizedStatus),
   };
 }
 
 export function buildOrderPaymentStatusPatch(status: OrderPaymentStatus) {
   const normalizedStatus = normalizeOrderPaymentStatus(status);
-  const option = ORDER_PAYMENT_STATUS_OPTIONS.find((entry) => entry.value === normalizedStatus);
 
   return {
     paymentStatus: normalizedStatus,
-    paymentStatusLabel: option?.label ?? String(normalizedStatus),
+    paymentStatusLabel: getOrderPaymentStatusLabel(normalizedStatus),
     paymentStatusVariant: getOrderPaymentStatusVariant(normalizedStatus),
   };
 }

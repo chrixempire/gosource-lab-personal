@@ -3,6 +3,7 @@ import { Button, SearchField, toast, ViewToggle } from '@gosource/ui';
 import { useDebounce } from '@vueuse/core';
 import { Download } from 'lucide-vue-next';
 import OrderCancelDialog from '~/components/orders/OrderCancelDialog.vue';
+import OrderEditItemsDrawer from '~/components/orders/OrderEditItemsDrawer.vue';
 import OrderFilterBar from '~/components/orders/OrderFilterBar.vue';
 import OrderStatCards from '~/components/orders/OrderStatCards.vue';
 import OrderTable from '~/components/orders/OrderTable.vue';
@@ -15,7 +16,12 @@ import { useInfiniteOrders } from '~/composables/useInfiniteOrders';
 import { useOrderListFilters } from '~/composables/useOrderListFilters';
 import { useOrderMutations } from '~/composables/useOrderMutations';
 import { ADMIN_PAGE_ROUTES } from '~/lib/admin-routes';
+import { unwrapLegacyPayload } from '~/lib/dashboard-api';
 import { downloadOrdersCsv } from '~/lib/order-export';
+import {
+  mapLegacyOrderToDetailsView,
+  type AdminOrderAdditionalItem,
+} from '~/lib/order-details';
 import {
   buildOrderPaymentStatusPatch,
   buildOrderStatusPatch,
@@ -49,6 +55,8 @@ const {
   updatePaymentStatus,
   cancelOrder,
   downloadOrderInvoice,
+  addOrderProducts,
+  updateOrderProducts,
 } = useOrderMutations();
 
 const searchQuery = ref('');
@@ -56,6 +64,72 @@ const debouncedSearch = useDebounce(searchQuery, 500);
 const cancelDialogOpen = ref(false);
 const cancelTarget = ref<AdminOrderListItem | null>(null);
 const selectedIds = ref<string[]>([]);
+
+// Add/edit items drawer (triggered from a row's actions menu).
+const itemsDrawerOpen = ref(false);
+const itemsDrawerMode = ref<'add' | 'edit'>('add');
+const itemsOrderId = ref('');
+const itemsExisting = ref<AdminOrderAdditionalItem[]>([]);
+// Id of the order whose items are being fetched — drives the row's menu spinner.
+const itemsLoadingOrderId = ref<string | null>(null);
+
+async function openItemsDrawer(order: AdminOrderListItem, mode: 'add' | 'edit') {
+  if (itemsLoadingOrderId.value) return;
+  itemsLoadingOrderId.value = order.id;
+  try {
+    const payload = await $fetch<unknown>(`/api/orders/${order.id}`);
+    const raw = unwrapLegacyPayload(payload);
+    const view =
+      raw && typeof raw === 'object'
+        ? mapLegacyOrderToDetailsView(raw as Record<string, unknown>)
+        : null;
+    itemsExisting.value = view?.additionalItems ?? [];
+    itemsOrderId.value = order.id;
+    itemsDrawerMode.value = mode;
+    itemsDrawerOpen.value = true;
+  } catch {
+    toast.error('Unable to load order items');
+  } finally {
+    itemsLoadingOrderId.value = null;
+  }
+}
+
+function onAddItems(order: AdminOrderListItem) {
+  void openItemsDrawer(order, 'add');
+}
+
+function onEditItems(order: AdminOrderListItem) {
+  void openItemsDrawer(order, 'edit');
+}
+
+async function onConfirmAddItems(
+  products: { product: string; unit: string; quantity: number }[],
+) {
+  try {
+    await addOrderProducts(itemsOrderId.value, products);
+    itemsDrawerOpen.value = false;
+    await refresh();
+  } catch {
+    // toast handled in composable
+  }
+}
+
+async function onConfirmUpdateItems(
+  products: {
+    cartId: string;
+    productId: string;
+    newQuantity: number;
+    unit: string;
+  }[],
+) {
+  try {
+    await updateOrderProducts(itemsOrderId.value, products);
+    itemsDrawerOpen.value = false;
+    await refresh();
+  } catch {
+    // toast handled in composable
+  }
+}
 
 watch(
   () => filters.value.reference,
@@ -135,9 +209,15 @@ async function onCancelConfirm(reason: string) {
   }
 }
 
-async function onDownload(order: AdminOrderListItem) {
+async function onDownload(
+  order: AdminOrderListItem,
+  variant: 'combined' | 'original' | 'added' = 'combined',
+) {
   try {
-    await downloadOrderInvoice(order.id, order.reference);
+    const suffix =
+      variant === 'added' ? 'added' : variant === 'original' ? 'original' : undefined;
+    const reference = [order.reference, suffix].filter(Boolean).join('-');
+    await downloadOrderInvoice(order.id, reference || order.reference, variant);
   } catch {
     // toast handled in composable
   }
@@ -243,12 +323,15 @@ updateHeader({
         :loading-more="loadingMore"
         :has-more="hasMore"
         :updating-order-id="updatingOrderId"
+        :items-loading-order-id="itemsLoadingOrderId"
         @load-more="loadMore"
         @row-click="onRowClick"
         @update-order-status="onUpdateOrderStatus"
         @update-payment-status="onUpdatePaymentStatus"
         @download="onDownload"
         @cancel="onCancelRequest"
+        @add-items="onAddItems"
+        @edit-items="onEditItems"
       />
     </template>
 
@@ -257,6 +340,15 @@ updateHeader({
       :order-reference="cancelTarget?.referenceLabel"
       :loading="Boolean(cancelTarget && updatingOrderId === cancelTarget.id)"
       @confirm="onCancelConfirm"
+    />
+
+    <OrderEditItemsDrawer
+      v-model:open="itemsDrawerOpen"
+      :mode="itemsDrawerMode"
+      :existing-items="itemsExisting"
+      :loading="updatingOrderId === itemsOrderId"
+      @add="onConfirmAddItems"
+      @update="onConfirmUpdateItems"
     />
   </div>
 </template>

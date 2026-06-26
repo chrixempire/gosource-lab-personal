@@ -15,4 +15,19 @@ export const ADMIN_LIST_CACHE_URLS = {
   creditRepaymentSchedulesOverdue: '/api/credit/repayment-schedules/overdue',
   admins: '/api/admins',
   roles: '/api/roles',
+  messages: '/api/messages',
+  messageStats: '/api/messages/stats',
 } as const;
+
+/**
+ * Optional `key` overrides on `useAdminListFetch` that use a different page-cache
+ * namespace than the fetch URL. Invalidation must clear both.
+ */
+export const ADMIN_LIST_CACHE_KEY_ALIASES: Partial<
+  Record<
+    (typeof ADMIN_LIST_CACHE_URLS)[keyof typeof ADMIN_LIST_CACHE_URLS],
+    readonly string[]
+  >
+> = {
+  [ADMIN_LIST_CACHE_URLS.products]: ['inventory-products'],
+};

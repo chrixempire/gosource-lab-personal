@@ -10,13 +10,16 @@ import {
   PurchaseOrder,
   PurchaseOrderDocument,
 } from './entities/purchaseorder.entity';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ProductStockUpdatedEvent } from '../product/events/product-stock-updated.event';
 import {
   Product,
   ProductDocument,
 } from '../../product/entities/product.entity';
+import {
+  Category,
+} from '../../category/entities/category.entity';
 import { ReceivedItemsDto } from './dto/other.dto';
 import { EmailService } from '../../notification/email/email.service';
 import { PurchaseOrderStatus } from './interface/purchaseorder.interface';
@@ -40,6 +43,7 @@ export class PurchaseOrderService {
     @InjectModel(PurchaseOrder.name)
     private purchaseOrderModel: Model<PurchaseOrder>,
     @InjectModel(Product.name) private productModel: Model<Product>,
+    @InjectModel(Category.name) private categoryModel: Model<Category>,
     private emailService: EmailService,
     @InjectModel(ActivityLog.name) private activityLogModel: Model<ActivityLog>,
     private eventEmitter: EventEmitter2,
@@ -388,27 +392,116 @@ export class PurchaseOrderService {
    * @param id - The purchase order ID
    * @returns Object with status, message, and detailed purchase order data
    */
-  async getSinglePurchaseOrder(id: string) {
-    const purchaseOrder: PurchaseOrderDocument = await this.purchaseOrderModel
+  async getSinglePurchaseOrder(id: string): Promise<{
+    status: boolean;
+    message: string;
+    data: Record<string, unknown>;
+  }> {
+    const purchaseOrderDoc: PurchaseOrderDocument = await this.purchaseOrderModel
       .findOne({
         _id: id,
       })
       .populate('products.product')
-      .populate('products.product.category')
-      .populate('products.product.categoryInfo')
       .populate('suppliers')
       .populate('creator')
       .exec();
 
-    if (!purchaseOrder) {
+    if (!purchaseOrderDoc) {
       throw new NotFoundException('Purchase Order not found');
     }
+
+    const embeddedProducts = (purchaseOrderDoc.products ?? [])
+      .map((item) => item.product)
+      .filter((product) => Boolean(product) && typeof product === 'object')
+      .map((product) => product as { category?: unknown });
+
+    await this.enrichEmbeddedProductCategories(embeddedProducts);
+
+    const purchaseOrder = purchaseOrderDoc.toObject({ virtuals: true });
 
     return {
       status: true,
       message: 'Purchase Order fetched successfully',
       data: purchaseOrder,
     };
+  }
+
+  /**
+   * Product.category is Mixed (Category ObjectId or legacy name string).
+   * Resolve ObjectId refs to `{ _id, name }` for admin UI; leave name strings as-is.
+   */
+  private async enrichEmbeddedProductCategories(
+    products: Array<{ category?: unknown }>,
+  ): Promise<void> {
+    const categoryIds = [
+      ...new Set(
+        products
+          .map((product) => this.resolveCategoryObjectId(product.category))
+          .filter((categoryId): categoryId is string => Boolean(categoryId)),
+      ),
+    ];
+
+    if (categoryIds.length === 0) {
+      return;
+    }
+
+    const categories = await this.categoryModel
+      .find({ _id: { $in: categoryIds.map((categoryId) => new Types.ObjectId(categoryId)) } })
+      .select('name _id')
+      .lean()
+      .exec();
+
+    const categoriesById = new Map(
+      categories.map((category) => [String(category._id), category]),
+    );
+
+    for (const product of products) {
+      const categoryId = this.resolveCategoryObjectId(product.category);
+      if (!categoryId) {
+        continue;
+      }
+
+      const resolved = categoriesById.get(categoryId);
+      if (resolved) {
+        product.category = {
+          _id: String(resolved._id),
+          name: resolved.name,
+        };
+      }
+    }
+  }
+
+  private resolveCategoryObjectId(category: unknown): string | null {
+    if (!category) {
+      return null;
+    }
+
+    if (category instanceof Types.ObjectId) {
+      return String(category);
+    }
+
+    if (typeof category === 'object') {
+      if ('name' in category && '_id' in category) {
+        return this.resolveCategoryObjectId((category as { _id: unknown })._id);
+      }
+
+      if ('_id' in category) {
+        return this.resolveCategoryObjectId((category as { _id: unknown })._id);
+      }
+
+      return null;
+    }
+
+    if (typeof category === 'string') {
+      try {
+        const objectId = new Types.ObjectId(category);
+        return String(objectId) === category ? category : null;
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
   }
 
   /**

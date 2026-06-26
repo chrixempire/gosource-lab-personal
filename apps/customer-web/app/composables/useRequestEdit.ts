@@ -146,8 +146,11 @@ export function useRequestEdit() {
     }
 
     if (!hasRequestProductDraftChanges(editBaseline.value, editDraft.value)) {
+      // No changes: return the baseline BEFORE cancel clears it, otherwise the
+      // caller receives null and stays stuck in the edit view.
+      const baseline = editBaseline.value;
       cancelProductEdit();
-      return editBaseline.value;
+      return baseline;
     }
 
     const { removedLineIds, quantityPatches, addedLines } = diffRequestProductEdits(

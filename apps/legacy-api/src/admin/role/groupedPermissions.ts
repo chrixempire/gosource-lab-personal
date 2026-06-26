@@ -51,6 +51,16 @@ export const GroupedPermissions = {
       'Can activate/deactivate promotion',
   },
 
+  messaging: {
+    [RequiredPermission.VIEW_MESSAGES]: 'Can view messages',
+    [RequiredPermission.CREATE_MESSAGES]: 'Can create messages',
+    [RequiredPermission.EDIT_MESSAGES]: 'Can edit alert messages',
+    [RequiredPermission.RESEND_MESSAGES]: 'Can resend email messages',
+    [RequiredPermission.TOGGLE_MESSAGES]:
+      'Can activate/deactivate alert messages',
+    [RequiredPermission.DELETE_MESSAGES]: 'Can delete messages',
+  },
+
   customer: {
     [RequiredPermission.VIEW_CUSTOMER]: 'Can view customer',
     [RequiredPermission.MODIFY_CUSTOMER]: 'Can modify customer information',

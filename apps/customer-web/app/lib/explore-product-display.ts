@@ -1,5 +1,5 @@
 import type { MarketProduct } from '~/lib/marketplace-data';
-import { defaultUnitForProduct, getMarketUnitPrice } from '~/lib/marketplace-data';
+import { defaultUnitForProduct, getMarketUnitChoice } from '~/lib/marketplace-data';
 
 export function exploreProductDiscountLabel(product: MarketProduct): string | null {
   if (product.discountPct && product.discountPct > 0) {
@@ -47,7 +47,8 @@ export function exploreProductUnitLine(product: MarketProduct): string | null {
     return null;
   }
 
-  const price = getMarketUnitPrice(product, unit);
+  const choice = getMarketUnitChoice(product, unit);
+  const price = choice?.priceNaira ?? product.priceNaira;
   if (!Number.isFinite(price) || price <= 0) {
     return unit;
   }

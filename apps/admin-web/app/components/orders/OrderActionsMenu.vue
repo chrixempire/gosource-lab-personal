@@ -17,8 +17,10 @@ defineProps<{
 
 const emit = defineEmits<{
   view: [];
-  download: [];
+  download: [variant: 'combined' | 'original' | 'added'];
   cancel: [];
+  addItems: [];
+  editItems: [];
 }>();
 </script>
 
@@ -39,7 +41,29 @@ const emit = defineEmits<{
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" class="w-52">
         <DropdownMenuItem @select="emit('view')">View details</DropdownMenuItem>
-        <DropdownMenuItem @select="emit('download')">Download invoice</DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="order.isEditable"
+          @select="emit('addItems')"
+        >
+          Add items
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="order.isEditable && order.hasAdditionalItems"
+          @select="emit('editItems')"
+        >
+          Edit added items
+        </DropdownMenuItem>
+        <template v-if="order.hasAdditionalItems">
+          <DropdownMenuItem @select="emit('download', 'original')">
+            Download invoice (order items)
+          </DropdownMenuItem>
+          <DropdownMenuItem @select="emit('download', 'added')">
+            Download invoice (added items)
+          </DropdownMenuItem>
+        </template>
+        <DropdownMenuItem v-else @select="emit('download', 'combined')">
+          Download invoice
+        </DropdownMenuItem>
         <DropdownMenuItem
           v-if="isOrderCancellable(order)"
           class="text-negative-500"

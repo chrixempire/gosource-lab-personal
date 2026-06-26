@@ -59,7 +59,7 @@ export async function withAdminLegacyAuthRetry<T>(
 
     try {
       await refreshAdminSession(event);
-      accessToken = getAccessTokenCookie(event);
+      accessToken = getAccessTokenCookie(event) ?? '';
 
       if (!accessToken) {
         throw error;

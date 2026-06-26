@@ -12,7 +12,7 @@ export function getLegacyReceiptEmailHost(event: H3Event) {
 
   return new URL(getAdminLegacyApiBaseUrl(event)).host;
 }
-import { forwardApiError } from './forward-api-error';
+import { throwForwardedApiError } from './forward-api-error';
 import { withAdminLegacyAuthRetry } from './admin-legacy-proxy-auth';
 
 type LegacyQueryValue =
@@ -23,6 +23,18 @@ type LegacyQueryValue =
   | number[]
   | undefined
   | null;
+
+// Resolve $fetch lazily at call time. Capturing the auto-imported global in a
+// module-level const is fragile under Nitro dev HMR (the module can re-evaluate
+// before $fetch is installed, throwing "ReferenceError: $fetch is not defined").
+const legacyFetch = <T>(
+  url: string,
+  options?: Record<string, unknown>,
+): Promise<T> =>
+  ($fetch as unknown as <R>(u: string, o?: Record<string, unknown>) => Promise<R>)<T>(
+    url,
+    options,
+  );
 
 export async function fetchAdminLegacyApi<T>(
   event: H3Event,
@@ -47,12 +59,12 @@ export async function fetchAdminLegacyApi<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         query,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
     const code =
@@ -66,11 +78,11 @@ export async function fetchAdminLegacyApi<T>(
           'Legacy API is not reachable. Start apps/legacy-api (pnpm dev) and confirm NUXT_PUBLIC_LEGACY_API_BASE_URL matches its PORT.',
       });
     }
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -84,20 +96,20 @@ export async function patchAdminLegacyApi<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -111,21 +123,21 @@ export async function postAdminLegacyApi<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
           ...options?.headers,
         },
         body,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -147,20 +159,20 @@ export async function patchAdminLegacyFormData<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body: formData,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -182,20 +194,20 @@ export async function postAdminLegacyFormData<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body: formData,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -209,20 +221,20 @@ export async function deleteAdminLegacyApi<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -236,20 +248,20 @@ export async function postAdminLegacyMultipart<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body: formData,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -263,20 +275,20 @@ export async function patchAdminLegacyMultipart<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body: formData,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -290,20 +302,20 @@ export async function putAdminLegacyMultipart<T>(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch(`${baseUrl}${path}`, {
+      legacyFetch<T>(`${baseUrl}${path}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body: formData,
-      }) as Promise<T>,
+      }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }
 
@@ -316,7 +328,7 @@ export async function fetchAdminLegacyBinary(
 
   try {
     return await withAdminLegacyAuthRetry(event, (accessToken) =>
-      $fetch<ArrayBuffer>(`${baseUrl}${path}`, {
+      legacyFetch<ArrayBuffer>(`${baseUrl}${path}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -324,10 +336,10 @@ export async function fetchAdminLegacyBinary(
       }),
     );
   } catch (error) {
-    return forwardApiError(
+    throwForwardedApiError(
       event,
       error,
       options?.fallbackMessage ?? 'Legacy admin request failed',
-    ) as never;
+    );
   }
 }

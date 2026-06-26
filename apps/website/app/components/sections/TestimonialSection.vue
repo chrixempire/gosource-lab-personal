@@ -3,25 +3,31 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const testimonials = [
   {
+    brandLogo: '/images/testimonials/spicy-corner.png',
+    brandAlt: 'Spicy Corner',
+    quote:
+      'We no longer have to deal with multiple suppliers or chasing people with phone calls to supply us on time. Take take out orders and we expect delivery within 24hours. The service and experience is brilliant.',
+    name: 'Busayo',
+    role: 'Co-founder, Spicy Corner',
+    avatar: '/images/testimonials/spicycornerceo.png',
+  },
+  {
+    brandLogo: '/images/testimonials/redg.png',
+    brandAlt: 'Red Gourmet Kitchen',
     quote:
       'GoSource is efficient, cost effective and most importantly their staff are always ready to proffer solutions to the regular issues Lagos will present you with. As a small business owner this is invaluable.',
     name: 'Seun Adebajo',
     role: 'Co-founder, Red Gourmet Kitchen',
-    avatar: '/images/testimonials/avatar-seun.png',
+    avatar: '/images/testimonials/redceo.png',
   },
   {
+    brandLogo: '/images/testimonials/citysub.png',
+    brandAlt: 'City Subs',
     quote:
-      'We cut our procurement time in half. Ordering in bulk used to take a full day of phone calls — now it is a few taps and the supplies arrive the next morning. Game-changing for our kitchen.',
-    name: 'Amaka Obi',
-    role: 'Operations Lead, Lagoon Hotels',
-    avatar: '/images/testimonials/avatar-amaka.png',
-  },
-  {
-    quote:
-      'The credit option keeps our cash flow healthy. We stock up ahead of busy weekends and pay later without stress, and the dashboard shows us exactly where every naira goes.',
-    name: 'Chioma Okafor',
-    role: 'Owner, Spice Route Catering',
-    avatar: '/images/testimonials/avatar-chioma.png',
+      'GoSource has shown they love my business and it’s clear from the way they operate. They also provide the logistics service we use daily. It has given us time to focus on selling great food to our customers.',
+    name: 'Demi Odunubi',
+    role: 'Co-founder, City Subs',
+    avatar: '/images/testimonials/citysubceo.png',
   },
 ];
 
@@ -82,13 +88,16 @@ onBeforeUnmount(() => {
   <section class="overflow-hidden bg-grey-50 py-20 lg:py-28">
     <div class="site-container">
       <div class="mx-auto flex max-w-[52rem] flex-col items-center text-center">
-        <!-- Red Gourmet Kitchen stamp -->
-        <img
-          v-reveal
-          src="/images/testimonials/gourmet-stamp.png"
-          alt="Red Gourmet Kitchen"
-          class="h-16 w-auto"
-        />
+        <!-- Brand logo -->
+        <Transition name="slide" mode="out-in">
+          <img
+            :key="active"
+            v-reveal
+            :src="current.brandLogo"
+            :alt="current.brandAlt"
+            class="h-16 w-auto"
+          />
+        </Transition>
 
         <!-- Quote — words animate grey → black, then slide away -->
         <Transition name="slide" mode="out-in">

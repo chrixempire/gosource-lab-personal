@@ -111,8 +111,9 @@ export type LegacyPurchaseOrderRow = {
       id?: string;
       name?: string;
       image?: string;
-      category?: { name?: string };
-      categoryInfo?: { name?: string };
+      images?: Array<{ url?: string }>;
+      category?: { _id?: string; name?: string } | string;
+      categoryInfo?: { name?: string } | string;
     };
     quantity?: number;
     quantityReceived?: number;

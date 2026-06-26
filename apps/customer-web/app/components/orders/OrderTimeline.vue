@@ -73,7 +73,7 @@ function formatTimelineTitle(title: string) {
             {{ event.description }}
           </p>
           <p class="mt-2 text-xs text-grey-300">
-            {{ formatOrderDateTime(event.updatedAt || event.createdAt) }}
+            {{ formatOrderDateTime(event.createdAt) }}
           </p>
         </div>
       </li>

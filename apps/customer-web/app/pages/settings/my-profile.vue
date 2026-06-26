@@ -1,18 +1,56 @@
 <script setup lang="ts">
-import type { CustomerMeResponse } from '@gosource/api-client';
-import { Button, Input, toast } from '@gosource/ui';
+import type { BranchRecord, CustomerMeResponse } from '@gosource/api-client';
+import { Button, Input, SegmentedControl, toast } from '@gosource/ui';
 import { isBusinessOwnerSession } from '~/lib/customer-roles';
-import { useCustomerProfileService } from '~/services/profile.service';
+import {
+  formatBranchAddress,
+  formatSettingsDate,
+  useCustomerProfileService,
+} from '~/services/profile.service';
+import { useCustomerBranchService } from '~/services/branch.service';
 import {
   validatePhoneNumber,
   validateRequiredText,
 } from '~/utils/auth-validation';
 
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
-const { updateMyProfile } = useCustomerProfileService();
+const { updateMyProfile, getBusinessAccount } = useCustomerProfileService();
+const { getBranch } = useCustomerBranchService();
+const route = useRoute();
+const router = useRouter();
+
+type ProfileTab = 'personal' | 'business';
+
+const profileTabs = [
+  { label: 'Personal profile', value: 'personal' },
+  { label: 'Business profile', value: 'business' },
+];
+
+const activeTab = computed<ProfileTab>(() =>
+  route.query.tab === 'business' ? 'business' : 'personal',
+);
+
+function setActiveTab(value: string) {
+  const tab: ProfileTab = value === 'business' ? 'business' : 'personal';
+  void router.replace({
+    query: {
+      ...route.query,
+      tab: tab === 'business' ? 'business' : undefined,
+    },
+  });
+}
 
 const loading = ref(true);
 const saving = ref(false);
+const businessLoading = ref(true);
+const businessName = ref('—');
+const branch = ref<BranchRecord | null>(null);
+
+const isOwner = computed(() => isBusinessOwnerSession(session.value));
+const branchName = computed(() => branch.value?.branchName ?? '—');
+const branchCode = computed(() => branch.value?.branchCode ?? '—');
+const businessAddress = computed(() => formatBranchAddress(branch.value));
+const dateCreated = computed(() => formatSettingsDate(branch.value?.createdAt ?? null));
 
 const form = reactive({
   firstName: '',
@@ -77,6 +115,36 @@ async function loadProfile() {
   }
 }
 
+async function loadBusinessProfile() {
+  businessLoading.value = true;
+  try {
+    let branchId =
+      session.value?.data && 'branchId' in session.value.data
+        ? String(session.value.data.branchId ?? '').trim()
+        : '';
+
+    if (isOwner.value) {
+      const account = await getBusinessAccount();
+      if (account?.businessName) {
+        businessName.value = account.businessName;
+      }
+      if (account?.branchId) {
+        branchId = account.branchId;
+      }
+    }
+
+    if (!branchId) {
+      branch.value = null;
+      return;
+    }
+
+    const response = await getBranch(branchId);
+    branch.value = response.data ?? null;
+  } finally {
+    businessLoading.value = false;
+  }
+}
+
 function validateForm() {
   errors.firstName = validateRequiredText(form.firstName, 'First name');
   errors.lastName = validateRequiredText(form.lastName, 'Last name');
@@ -108,37 +176,44 @@ watch(session, applySession, { immediate: true });
 
 onMounted(() => {
   void loadProfile();
+  void loadBusinessProfile();
 });
 </script>
 
 <template>
   <div class="flex w-full max-w-2xl flex-col gap-2">
-    <div>
+    <SegmentedControl
+      class="mb-2 w-full max-w-sm"
+      :model-value="activeTab"
+      :options="profileTabs"
+      @update:model-value="setActiveTab"
+    />
+
+    <template v-if="activeTab === 'personal'">
       <p class="text-sm text-grey-300">
         Update your name and phone number. Your phone is required for checkout and order updates.
       </p>
-    </div>
 
-    <section
-      v-if="loading"
-      class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
-      aria-busy="true"
-    >
-      <div class="space-y-5">
-        <div
-          v-for="index in 4"
-          :key="index"
-          class="h-12 animate-pulse rounded-[16px] bg-grey-55"
-        />
-        <div class="h-11 w-36 animate-pulse rounded-[16px] bg-grey-55" />
-      </div>
-    </section>
+      <section
+        v-if="loading"
+        class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
+        aria-busy="true"
+      >
+        <div class="space-y-5">
+          <div
+            v-for="index in 4"
+            :key="index"
+            class="h-12 animate-pulse rounded-[16px] bg-grey-55"
+          />
+          <div class="h-11 w-36 animate-pulse rounded-[16px] bg-grey-55" />
+        </div>
+      </section>
 
-    <form
-      v-else
-      class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
-      @submit.prevent="onSubmit"
-    >
+      <form
+        v-else
+        class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
+        @submit.prevent="onSubmit"
+      >
       <div class="space-y-5">
         <div class="grid gap-5 min-[560px]:grid-cols-2">
           <label class="block space-y-2">
@@ -202,6 +277,63 @@ onMounted(() => {
           Update details
         </Button>
       </div>
-    </form>
+      </form>
+    </template>
+
+    <template v-else>
+      <p class="text-sm text-grey-300">
+        {{
+          isOwner
+            ? 'Your registered business and primary branch details.'
+            : 'Branch details linked to your account.'
+        }}
+      </p>
+
+      <section
+        v-if="businessLoading"
+        class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
+        aria-busy="true"
+      >
+        <div class="space-y-5">
+          <div
+            v-for="index in 5"
+            :key="index"
+            class="h-12 animate-pulse rounded-[16px] bg-grey-55"
+          />
+        </div>
+      </section>
+
+      <section
+        v-else
+        class="rounded-[24px] border border-grey-50 bg-background-on-canvas p-6"
+      >
+        <div class="space-y-5">
+          <label v-if="isOwner" class="block space-y-2">
+            <span class="text-[13px] font-semibold text-grey-text">Business name</span>
+            <Input :model-value="businessName" disabled class="opacity-90" />
+          </label>
+
+          <label class="block space-y-2">
+            <span class="text-[13px] font-semibold text-grey-text">Branch</span>
+            <Input :model-value="branchName" disabled class="opacity-90" />
+          </label>
+
+          <label class="block space-y-2">
+            <span class="text-[13px] font-semibold text-grey-text">Business address</span>
+            <Input :model-value="businessAddress" disabled class="opacity-90" />
+          </label>
+
+          <label class="block space-y-2">
+            <span class="text-[13px] font-semibold text-grey-text">Date created</span>
+            <Input :model-value="dateCreated" disabled class="opacity-90" />
+          </label>
+
+          <label class="block space-y-2">
+            <span class="text-[13px] font-semibold text-grey-text">Branch code</span>
+            <Input :model-value="branchCode" disabled class="opacity-90" />
+          </label>
+        </div>
+      </section>
+    </template>
   </div>
 </template>

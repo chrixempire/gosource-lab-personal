@@ -2,17 +2,13 @@
 definePageMeta({ layout: 'customer-market' });
 
 import type { BranchRecord, RequestRecord } from '@gosource/api-client';
-import {
-  Button,
-  ViewToggle,
-  toast,
-} from '@gosource/ui';
+import { Button, StatusTag, ViewToggle, toast } from '@gosource/ui';
 import { useDebounceFn } from '@vueuse/core';
 import BranchPickerDropdown from '~/components/branches/BranchPickerDropdown.vue';
 import MemberConfirmOverlay from '~/components/members/MemberConfirmOverlay.vue';
 import RequestActionsMenu from '~/components/requests/RequestActionsMenu.vue';
 import type { RequestListItem } from '~/components/requests/RequestCards.vue';
-import RequestDetailsPanel from '~/components/requests/RequestDetailsPanel.vue';
+import RequestDetailsDrawerContent from '~/components/requests/RequestDetailsDrawerContent.vue';
 import RequestDetailsSlidePanel from '~/components/requests/RequestDetailsSlidePanel.vue';
 import RequestRejectOverlay from '~/components/requests/RequestRejectOverlay.vue';
 import RequestBranchSetupBanner from '~/components/requests/RequestBranchSetupBanner.vue';
@@ -32,6 +28,7 @@ import {
   resolveCurrentActorId,
 } from '~/lib/request-edit';
 import { useRequestEdit } from '~/composables/useRequestEdit';
+import { useCustomerListReturn } from '~/composables/useCustomerListReturn';
 import { useCollectionRouteState } from '~/composables/useCollectionRouteState';
 import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import { usePageBranchFilter } from '~/composables/usePageBranchFilter';
@@ -50,15 +47,24 @@ import {
 } from '~/lib/request-list-filters';
 
 const { session, whenReady } = useCustomerSession();
-const isEmployeeSession = computed(() => session.value?.user_type === 'employee');
+const isEmployeeSession = computed(
+  () => session.value?.user_type === 'employee',
+);
 const isSuperAdmin = computed(() => isBusinessOwnerSession(session.value));
 const currentActorId = computed(() => {
   const data = session.value?.data;
-  return data && typeof data === 'object' && 'id' in data ? String(data.id) : '';
+  return data && typeof data === 'object' && 'id' in data
+    ? String(data.id)
+    : '';
 });
 const employeeBranchId = computed(() => {
   const data = session.value?.data;
-  if (!isEmployeeSession.value || !data || typeof data !== 'object' || !('branchId' in data)) {
+  if (
+    !isEmployeeSession.value
+    || !data
+    || typeof data !== 'object'
+    || !('branchId' in data)
+  ) {
     return '';
   }
   return String(data.branchId ?? '');
@@ -67,7 +73,8 @@ const employeeBranchId = computed(() => {
 const { hasBranch, fetchBranchesInBackground } = useMarketBranchGate();
 const { clearDismissalForSession } = useMarketBranchSetupDismissal();
 const { listBranches } = useCustomerBranchService();
-const { listRequests, getRequest, cancelRequest, rejectRequest } = useCustomerRequestService();
+const { listRequests, getRequest, cancelRequest, rejectRequest } =
+  useCustomerRequestService();
 const {
   setActiveRequest,
   clearActiveRequest,
@@ -82,6 +89,13 @@ const {
 } = useRequestEdit();
 const route = useRoute();
 const router = useRouter();
+const { rememberManageRequestsListPath } = useCustomerListReturn();
+
+watch(
+  () => route.fullPath,
+  () => rememberManageRequestsListPath(route),
+  { immediate: true },
+);
 const {
   effectiveView,
   routeView,
@@ -162,7 +176,7 @@ const requestsListKeyParts = computed(() => [
   listFilters.value.amountMin ?? '',
   listFilters.value.amountMax ?? '',
   listFilters.value.status.join(','),
-  apiBranchId.value ?? '',
+  pageBranch.viewingAllBranches.value ? '__all__' : (apiBranchId.value ?? ''),
 ]);
 
 const {
@@ -185,10 +199,13 @@ const {
       };
     }
 
-    const requestedBranchId = !isEmployeeSession.value ? apiBranchId.value?.trim() : '';
+    const requestedBranchId = !isEmployeeSession.value
+      ? apiBranchId.value?.trim()
+      : '';
     const scopedBranchId =
       requestedBranchId
-      && (branchRows.length === 0 || branchRows.some((branch) => branch.id === requestedBranchId))
+      && (branchRows.length === 0
+        || branchRows.some((branch) => branch.id === requestedBranchId))
         ? requestedBranchId
         : undefined;
 
@@ -208,7 +225,9 @@ const {
       branches: branchRows,
       requests: isSuperAdmin.value
         ? rows
-        : rows.filter((request) => request.initiator.accountId === currentActorId.value),
+        : rows.filter(
+            (request) => request.initiator.accountId === currentActorId.value,
+          ),
       meta: requestsResponse.meta ?? { ...defaultMeta },
     };
   },
@@ -219,10 +238,12 @@ const {
       meta: { ...defaultMeta },
     }),
   },
-  );
+);
 
 const hasFinishedInitialFetch = computed(
-  () => requestsFetchStatus.value === 'success' || requestsFetchStatus.value === 'error',
+  () =>
+    requestsFetchStatus.value === 'success'
+    || requestsFetchStatus.value === 'error',
 );
 
 watch(hasBranch, (next, prev) => {
@@ -242,7 +263,8 @@ onMounted(() => {
 const branchesLoading = computed(
   () =>
     pageBranchesLoading.value
-    || (requestsLoading.value && (!Array.isArray(branches.value) || branches.value.length === 0)),
+    || (requestsLoading.value
+      && (!Array.isArray(branches.value) || branches.value.length === 0)),
 );
 
 watch(
@@ -260,7 +282,8 @@ watch(
 
 async function openRequestFromQuery() {
   const raw = route.query.open;
-  const requestId = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : '';
+  const requestId =
+    typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : '';
   if (!requestId) {
     return;
   }
@@ -292,13 +315,36 @@ const requestItems = computed<RequestListItem[]>(() =>
 
 /** Owner with zero branches after the first list fetch — show setup banner + empty table. */
 const showNoBranchSetup = computed(
-  () => isSuperAdmin.value && hasFinishedInitialFetch.value && branches.value.length === 0,
+  () =>
+    isSuperAdmin.value
+    && hasFinishedInitialFetch.value
+    && branches.value.length === 0,
 );
 
-const tableRequests = computed(() => (showNoBranchSetup.value ? [] : requestItems.value));
+const tableRequests = computed(() =>
+  showNoBranchSetup.value ? [] : requestItems.value,
+);
+
+const requestsStaleForBranchFilter = computed(() => {
+  if (pageBranch.viewingAllBranches.value) {
+    return false;
+  }
+
+  const filterBranchId = apiBranchId.value?.trim();
+  if (!filterBranchId || requests.value.length === 0) {
+    return false;
+  }
+
+  return requests.value.some((request) => request.branchId !== filterBranchId);
+});
 
 const tableLoading = computed(
-  () => requestsLoading.value || branchesLoading.value || showNoBranchSetup.value,
+  () =>
+    (requestsLoading.value
+      && (requestItems.value.length === 0
+        || requestsStaleForBranchFilter.value))
+    || (branchesLoading.value && branches.value.length === 0)
+    || showNoBranchSetup.value,
 );
 
 const tableEmptyMessage = computed(() =>
@@ -355,20 +401,7 @@ async function navigateToRequestDetails(
     return;
   }
 
-  if (!isSuperAdmin.value) {
-    await openRequestDetails(requestId, options);
-    return;
-  }
-
-  const query: Record<string, string> = {};
-  if (options?.edit) {
-    query.edit = '1';
-  }
-
-  await navigateTo({
-    path: `/manage-requests/${requestId}`,
-    query: Object.keys(query).length ? query : undefined,
-  });
+  await openRequestDetails(requestId, options);
 }
 
 async function openRequestDetails(
@@ -471,7 +504,10 @@ const canCancel = computed(() => {
     return true;
   }
 
-  return selectedRequest.value.initiator.accountId === resolveCurrentActorId(session.value);
+  return (
+    selectedRequest.value.initiator.accountId
+    === resolveCurrentActorId(session.value)
+  );
 });
 
 const canEditProducts = computed(() =>
@@ -480,7 +516,9 @@ const canEditProducts = computed(() =>
 
 const canAddMoreItems = computed(() => canEditProducts.value);
 
-const productsEditable = computed(() => canEditProducts.value && isEditingProducts.value);
+const productsEditable = computed(
+  () => canEditProducts.value && isEditingProducts.value,
+);
 
 function startEditingProducts() {
   if (selectedRequest.value) {
@@ -492,10 +530,14 @@ function startEditingProducts() {
 
 async function finishEditingProducts(save: boolean) {
   if (save && selectedRequest.value) {
-    const next = await saveProductEdit(selectedRequest.value.id);
-    if (next) {
-      syncRequestInList(next);
+    const previous = selectedRequest.value;
+    const next = await saveProductEdit(previous.id);
+    if (!next) {
+      return;
     }
+    // The line-item mutation endpoints return a request without a populated
+    // initiator/branch, so merge with the previous record to keep them on the row.
+    syncRequestInList(mergeRequestMutationResult(previous, next));
   } else {
     cancelProductEdit();
   }
@@ -523,7 +565,9 @@ function syncRequestInList(next: RequestRecord) {
       };
     }
   } else if (index >= 0) {
-    requests.value = requests.value.map((item) => (item.id === next.id ? next : item));
+    requests.value = requests.value.map((item) =>
+      item.id === next.id ? next : item,
+    );
   }
 
   if (selectedRequest.value?.id === next.id) {
@@ -587,19 +631,98 @@ function handleCancel() {
     return;
   }
 
+  // Close the details panel first, then pop the cancel confirmation on its own.
+  // Keep selectedRequest set (closeDetails() would clear it) so the action can run.
+  detailsOpen.value = false;
+  isEditingProducts.value = false;
+
   openConfirm({
     title: 'Cancel request',
     description: 'This request will no longer be actionable.',
     message: `Cancel request ${selectedRequest.value.reference}?`,
     confirmLabel: 'Cancel request',
     action: async () => {
-      const response = await cancelRequest(selectedRequest.value!.id);
+      const previous = selectedRequest.value!;
+      const response = await cancelRequest(previous.id);
       if (response.data) {
-        syncRequestInList(response.data);
+        syncRequestInList(mergeRequestMutationResult(previous, response.data));
+        toast.success('Request cancelled successfully');
+        void refreshRequestsData();
         closeDetails();
       }
     },
   });
+}
+
+function openSelectedReject() {
+  if (!selectedRequest.value) {
+    return;
+  }
+
+  // Close the details panel first, then pop the reject modal on its own.
+  // Keep selectedRequest set (closeDetails() would clear it) so submitReject can run.
+  detailsOpen.value = false;
+  isEditingProducts.value = false;
+
+  rejectReason.value = '';
+  rejectOpen.value = true;
+}
+
+function checkoutSelectedRequest() {
+  const requestId = selectedRequest.value?.id;
+  if (!requestId) {
+    return;
+  }
+
+  void navigateTo(`/checkout/${requestId}`);
+}
+
+async function editSelectedRejectedRequest() {
+  const previous = selectedRequest.value;
+  if (!previous) {
+    return;
+  }
+
+  const next = await reopenRejected(previous.id);
+  if (!next) {
+    return;
+  }
+
+  // The reopen response can carry a thin initiator/branch; merge with the
+  // previous record so the row and edit view keep initiator and branch.
+  const merged = mergeRequestMutationResult(previous, next);
+  syncRequestInList(merged);
+  beginProductEdit(merged);
+  isEditingProducts.value = true;
+}
+
+function mergeRequestMutationResult(
+  previous: RequestRecord,
+  next: RequestRecord,
+): RequestRecord {
+  const nextRecord = next as unknown as Partial<RequestRecord>;
+  // Mutation responses (reject/reopen/line edits) often return a thin initiator
+  // (accountId only, no email/name). Keep the previous, fully-populated one
+  // unless the incoming initiator is actually populated.
+  const nextInitiator = nextRecord.initiator;
+  return {
+    ...previous,
+    ...nextRecord,
+    initiator:
+      nextInitiator?.accountId
+      && (nextInitiator.email || nextInitiator.firstName || nextInitiator.lastName)
+        ? nextInitiator
+        : previous.initiator,
+    branchId: nextRecord.branchId || previous.branchId,
+    branchName: nextRecord.branchName || previous.branchName,
+    branchCode: nextRecord.branchCode ?? previous.branchCode,
+    address: nextRecord.address?.streetAddress
+      ? nextRecord.address
+      : previous.address,
+    products: Array.isArray(nextRecord.products)
+      ? nextRecord.products
+      : previous.products,
+  };
 }
 
 function requestRecordForListItem(request: RequestListItem) {
@@ -635,7 +758,10 @@ function rowCanCancel(request: RequestListItem) {
 }
 
 function rowCanEdit(request: RequestListItem) {
-  return requestCanEditProducts(requestRecordForListItem(request), session.value);
+  return requestCanEditProducts(
+    requestRecordForListItem(request),
+    session.value,
+  );
 }
 
 function rowCanAddMore(request: RequestListItem) {
@@ -643,7 +769,10 @@ function rowCanAddMore(request: RequestListItem) {
 }
 
 function rowCanReopen(request: RequestListItem) {
-  return requestCanReopenRejected(requestRecordForListItem(request), session.value);
+  return requestCanReopenRejected(
+    requestRecordForListItem(request),
+    session.value,
+  );
 }
 
 async function handleRequestViewDetails(request: RequestListItem) {
@@ -665,12 +794,14 @@ async function handleRequestAddMore(request: RequestListItem) {
 
 async function handleRequestReopen(request: RequestListItem) {
   if (isSuperAdmin.value) {
+    const previous = requestRecordForListItem(request);
     const next = await reopenRejected(request.id);
     if (!next) {
       return;
     }
 
-    syncRequestInList(next);
+    // Preserve initiator/branch when the reopen response returns them thin.
+    syncRequestInList(previous ? mergeRequestMutationResult(previous, next) : next);
     clearNuxtData(
       `manage-request-detail:${getCustomerSessionCacheSignature(session.value)}:${request.id}`,
     );
@@ -714,146 +845,127 @@ async function submitReject(reason: string) {
     return;
   }
 
+  const previous = selectedRequest.value;
   rejectLoading.value = true;
   try {
-    const response = await rejectRequest(selectedRequest.value.id, {
+    const response = await rejectRequest(previous.id, {
       rejectionReasons: reason,
     });
     if (response.data) {
-      syncRequestInList(response.data);
+      syncRequestInList(mergeRequestMutationResult(previous, response.data));
       rejectOpen.value = false;
       rejectReason.value = '';
+      toast.success('Request rejected successfully');
+      void refreshRequestsData();
+      closeDetails();
     }
   } finally {
     rejectLoading.value = false;
   }
 }
-
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
-    <div class="flex w-full flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between">
-        <div
-          v-if="!isEmployeeSession"
-          class="flex w-full flex-col gap-2 min-[1000px]:max-w-md"
-        >
-          <BranchPickerDropdown
-            :model-value="selectedBranchId"
-            :branches="branches"
-            :loading="branchesLoading"
-            :disabled="requestsLoading"
-            :show-all-branches-option="showAllBranchesOption"
-            @update:model-value="(id) => setPageBranchFilter(id, { resetPage: true })"
-          />
-          <SearchField
-            v-model="searchValue"
-            placeholder="Search request, branch, initiator, or product"
-            :disabled="requestsLoading"
-          />
-        </div>
-
-        <div v-else class="w-full min-[1000px]:max-w-md">
-          <SearchField
-            v-model="searchValue"
-            placeholder="Search request, branch, initiator, or product"
-            :disabled="requestsLoading"
-          />
-        </div>
-
-        <ViewToggle
-          class="shrink-0 self-end min-[1000px]:self-auto"
-          :model-value="routeView"
-          @update:model-value="setView"
+    <div
+      class="flex w-full flex-col gap-2 min-[1000px]:flex-row min-[1000px]:items-center min-[1000px]:justify-between"
+    >
+      <div
+        v-if="!isEmployeeSession"
+        class="flex w-full flex-col gap-2 min-[1000px]:max-w-md"
+      >
+        <BranchPickerDropdown
+          :model-value="selectedBranchId"
+          :branches="branches"
+          :loading="branchesLoading"
+          :disabled="requestsLoading"
+          :show-all-branches-option="showAllBranchesOption"
+          @update:model-value="
+            (id) => setPageBranchFilter(id, { resetPage: true })
+          "
+        />
+        <SearchField
+          v-model="searchValue"
+          placeholder="Search request, branch, initiator, or product"
+          :disabled="requestsLoading"
         />
       </div>
 
-      <RequestFilterBar
-        v-if="!showNoBranchSetup"
-        :filters="listFilters"
-        :search="debouncedSearch"
-        @apply="onApplyRequestFilters"
-        @clear-all="clearAllRequestFilters"
-      />
+      <div v-else class="w-full min-[1000px]:max-w-md">
+        <SearchField
+          v-model="searchValue"
+          placeholder="Search request, branch, initiator, or product"
+          :disabled="requestsLoading"
+        />
+      </div>
 
-      <RequestBranchSetupBanner
-        :branch-count="branches.length"
-        :branches-ready="hasFinishedInitialFetch"
+      <ViewToggle
+        class="shrink-0 self-end min-[1000px]:self-auto"
+        :model-value="routeView"
+        @update:model-value="setView"
       />
+    </div>
 
-      <RequestTable
-        :requests="tableRequests"
-        :layout="effectiveView"
-        :page="page"
-        :total-pages="meta.totalPages"
-        :total-items="meta.total"
-        :page-size="limit"
-        :has-next-page="meta.hasNextPage"
-        :has-prev-page="meta.hasPrevPage"
-        :loading="tableLoading"
-        :empty-message="tableEmptyMessage"
-        :can-approve-reject="rowCanApproveReject"
-        :can-cancel="rowCanCancel"
-        :can-edit="rowCanEdit"
-        :can-add-more="rowCanAddMore"
-        :can-reopen="rowCanReopen"
-        :can-checkout="rowCanCheckout"
-        @page="setPage"
-        @page-size="setLimit"
-        @row-click="handleRequestClick"
-        @view-details="handleRequestViewDetails"
-        @edit="handleRequestEdit"
-        @add-more="handleRequestAddMore"
-        @reopen="handleRequestReopen"
-        @checkout="handleRequestCheckout"
-        @approve="handleRequestApprove"
-        @reject="handleRequestReject"
-        @cancel="handleRequestCancel"
-      />
+    <RequestFilterBar
+      v-if="!showNoBranchSetup"
+      :filters="listFilters"
+      :search="debouncedSearch"
+      @apply="onApplyRequestFilters"
+      @clear-all="clearAllRequestFilters"
+    />
+
+    <RequestBranchSetupBanner
+      :branch-count="branches.length"
+      :branches-ready="hasFinishedInitialFetch"
+    />
+
+    <RequestTable
+      :requests="tableRequests"
+      :layout="effectiveView"
+      :page="page"
+      :total-pages="meta.totalPages"
+      :total-items="meta.total"
+      :page-size="limit"
+      :has-next-page="meta.hasNextPage"
+      :has-prev-page="meta.hasPrevPage"
+      :loading="tableLoading"
+      :empty-message="tableEmptyMessage"
+      :can-approve-reject="rowCanApproveReject"
+      :can-cancel="rowCanCancel"
+      :can-edit="rowCanEdit"
+      :can-add-more="rowCanAddMore"
+      :can-reopen="rowCanReopen"
+      :can-checkout="rowCanCheckout"
+      @page="setPage"
+      @page-size="setLimit"
+      @row-click="handleRequestClick"
+      @view-details="handleRequestViewDetails"
+      @edit="handleRequestEdit"
+      @add-more="handleRequestAddMore"
+      @reopen="handleRequestReopen"
+      @checkout="handleRequestCheckout"
+      @approve="handleRequestApprove"
+      @reject="handleRequestReject"
+      @cancel="handleRequestCancel"
+    />
 
     <RequestDetailsSlidePanel
-      v-if="!isSuperAdmin"
       :open="detailsOpen"
+      :title="requestDetailsView?.reference || 'Request details'"
       @update:open="!$event && closeDetails()"
     >
       <template #actions>
-        <div
-          v-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton && isEditingProducts && canEditProducts"
-          class="flex shrink-0 items-center gap-2"
+        <StatusTag
+          v-if="requestDetailsView && !showRequestDetailsSkeleton"
+          :variant="requestDetailsView.statusVariant"
+          size="medium"
+          class="rounded-full px-3 py-1 text-xs font-semibold normal-case"
         >
-          <Button
-            variant="neutral"
-            size="small"
-            class="!w-auto"
-            :disabled="lineMutationLoading"
-            @click="finishEditingProducts(false)"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            size="small"
-            class="!w-auto"
-            :loading="lineMutationLoading"
-            @click="finishEditingProducts(true)"
-          >
-            Save
-          </Button>
-        </div>
-        <RequestActionsMenu
-          v-else-if="selectedRequest && requestDetailsView && !showRequestDetailsSkeleton"
-          trigger-variant="icon"
-          :show-view-details="false"
-          :can-cancel="canCancel"
-          :can-edit="canEditProducts"
-          :can-add-more="canAddMoreItems"
-          @edit="startEditingProducts"
-          @add-more="handleAddMoreItems"
-          @cancel="handleCancel"
-        />
+          {{ requestDetailsView.statusLabel }}
+        </StatusTag>
       </template>
 
-      <RequestDetailsPanel
+      <RequestDetailsDrawerContent
         :view="requestDetailsView"
         :loading="showRequestDetailsSkeleton"
         :refreshing="isRequestDetailsRefreshing"
@@ -862,7 +974,127 @@ async function submitReject(reason: string) {
         :format-currency="formatRequestCurrency"
         @quantity-change="handleProductQuantityChange"
         @remove-line="handleProductRemove"
-      />
+      >
+        <template #actions>
+          <RequestActionsMenu
+            v-if="
+              selectedRequest
+              && requestDetailsView
+              && !showRequestDetailsSkeleton
+              && !isEditingProducts
+            "
+            trigger-variant="icon"
+            content-class="z-[100]"
+            :show-view-details="false"
+            :can-approve-reject="
+              isSuperAdmin && selectedRequest.status === 'pending'
+            "
+            :show-approve-action="false"
+            :show-reject-action="false"
+            :can-cancel="canCancel || selectedRequest.status === 'rejected'"
+            :can-edit="canEditProducts"
+            :can-add-more="canAddMoreItems"
+            :can-reopen="
+              isSuperAdmin && selectedRequest.status === 'rejected'
+            "
+            @edit="startEditingProducts"
+            @reopen="editSelectedRejectedRequest"
+            @add-more="handleAddMoreItems"
+            @reject="openSelectedReject"
+            @cancel="handleCancel"
+          />
+        </template>
+      </RequestDetailsDrawerContent>
+
+      <template #footer>
+        <div
+          v-if="requestDetailsView"
+          class="mb-3 flex items-center justify-between gap-4 rounded-xl bg-grey-55 px-4 py-3 text-sm"
+        >
+          <span class="font-medium text-grey-900">
+            {{ requestDetailsView.products.length }}
+            {{ requestDetailsView.products.length === 1 ? 'item' : 'items' }}
+          </span>
+          <span class="font-semibold text-grey-900">
+            <span class="font-medium text-grey-300">Subtotal:</span>
+            {{ formatRequestCurrency(requestDetailsView.subtotal) }}
+          </span>
+        </div>
+
+        <div v-if="isEditingProducts && canEditProducts" class="grid grid-cols-2 gap-3">
+          <Button
+            variant="neutral"
+            size="medium"
+            class="w-full"
+            :disabled="lineMutationLoading"
+            @click="finishEditingProducts(false)"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="medium"
+            class="w-full"
+            :loading="lineMutationLoading"
+            @click="finishEditingProducts(true)"
+          >
+            Edit
+          </Button>
+        </div>
+
+        <div
+          v-else-if="isSuperAdmin && selectedRequest?.status === 'pending'"
+          class="grid grid-cols-2 gap-3"
+        >
+          <Button
+            variant="destructive"
+            size="medium"
+            class="w-full"
+            @click="openSelectedReject"
+          >
+            Reject
+          </Button>
+          <Button
+            variant="primary"
+            size="medium"
+            class="w-full"
+            @click="checkoutSelectedRequest"
+          >
+            Checkout
+          </Button>
+        </div>
+
+        <div
+          v-else-if="isSuperAdmin && selectedRequest?.status === 'approved'"
+          class="flex items-center justify-center gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700"
+        >
+          <Icon name="lucide:check" class="size-5" />
+          Order has been approved
+        </div>
+
+        <div
+          v-else-if="isSuperAdmin && selectedRequest?.status === 'rejected'"
+          class="grid grid-cols-2 gap-3"
+        >
+          <Button
+            variant="primary"
+            size="medium"
+            class="w-full"
+            :loading="lineMutationLoading"
+            @click="editSelectedRejectedRequest"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="destructive"
+            size="medium"
+            class="w-full"
+            @click="handleCancel"
+          >
+            Cancel
+          </Button>
+        </div>
+      </template>
     </RequestDetailsSlidePanel>
 
     <MemberConfirmOverlay

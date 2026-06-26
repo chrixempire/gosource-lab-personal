@@ -41,11 +41,11 @@
   --customer-brand-hero-from: #0b3d12;
   --customer-brand-hero-to: #0f5c18;
   --customer-brand-hero-border: transparent;
-  --customer-product-total-bg: linear-gradient(135deg, #fff4dc 0%, #fff9ee 100%);
-  --customer-product-total-border: #e8a317;
+  --customer-product-total-bg: linear-gradient(135deg, #e8f3ea 0%, #f7fbf7 100%);
+  --customer-product-total-border: #b8d9be;
   --customer-product-total-label: #667085;
-  --customer-product-total-price: #7c4a03;
-  --customer-product-total-shadow: 0 4px 16px -6px rgba(232, 163, 23, 0.32);
+  --customer-product-total-price: #0f5c18;
+  --customer-product-total-shadow: 0 4px 16px -6px rgba(15, 92, 24, 0.18);
 }
 
 .dark {
@@ -75,11 +75,15 @@
   --customer-brand-hero-from: #0b3d12;
   --customer-brand-hero-to: #166534;
   --customer-brand-hero-border: rgba(34, 197, 94, 0.2);
-  --customer-product-total-bg: linear-gradient(135deg, #2a2418 0%, #1a1812 100%);
-  --customer-product-total-border: rgba(251, 191, 36, 0.42);
+  --customer-product-total-bg: linear-gradient(
+    135deg,
+    rgba(22, 101, 52, 0.22) 0%,
+    rgba(11, 61, 18, 0.16) 100%
+  );
+  --customer-product-total-border: rgba(34, 197, 94, 0.35);
   --customer-product-total-label: #cbd5e1;
-  --customer-product-total-price: #fcd34d;
-  --customer-product-total-shadow: 0 6px 24px -8px rgba(251, 191, 36, 0.22);
+  --customer-product-total-price: #86efac;
+  --customer-product-total-shadow: 0 6px 24px -8px rgba(15, 92, 24, 0.28);
 }
 
 /* Theme toggle: disable color transitions so shell + content swap together. */
@@ -214,5 +218,34 @@ html.customer-theme-switching *::after {
 
   .customer-image-discount-pill {
     @apply bg-primary-500 text-white shadow-[0_2px_8px_rgba(16,24,40,0.18)];
+  }
+
+  @keyframes customer-news-rail-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .customer-news-rail-track {
+    animation: customer-news-rail-scroll 60s linear infinite;
+  }
+
+  .customer-news-rail:hover .customer-news-rail-track {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .customer-news-rail {
+      overflow-x: auto;
+    }
+
+    .customer-news-rail-track {
+      animation: none;
+      flex-wrap: wrap;
+      width: 100%;
+    }
   }
 }

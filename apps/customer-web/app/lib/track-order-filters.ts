@@ -20,7 +20,7 @@ export const TRACK_ORDER_STATUS_OPTIONS: Array<{ value: OrderStatusFilter; label
 ];
 
 function readQueryString(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
   key: string,
 ) {
   const entry = query[key];
@@ -28,10 +28,10 @@ function readQueryString(
 }
 
 export function parseTrackOrderStatusFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
 ): OrderStatusFilter[] | null {
   const raw = readQueryString(query, 'status');
-  if (raw === undefined) {
+  if (raw == null) {
     return null;
   }
 
@@ -48,7 +48,7 @@ export function parseTrackOrderStatusFromQuery(
 }
 
 export function parseTrackOrderFiltersFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
 ): TrackOrderListFilters {
   const amountFrom = readQueryString(query, 'amountFrom');
   const amountTo = readQueryString(query, 'amountTo');

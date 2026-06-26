@@ -312,7 +312,7 @@ export function creditScheduleListFiltersToApiQuery(filters: CreditScheduleListF
     query.toDate = filters.endDate;
   }
   if (filters.status.length === 1) {
-    query.status = filters.status[0];
+    query.status = filters.status[0]!;
   }
 
   return query;

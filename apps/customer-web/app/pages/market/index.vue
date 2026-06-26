@@ -1,39 +1,51 @@
 <script setup lang="ts">
-import type { MarketProduct } from '~/lib/marketplace-data';
-import ExploreCategoryFilterBar from '~/components/explore/ExploreCategoryFilterBar.vue';
-import ExploreCategorySection from '~/components/explore/ExploreCategorySection.vue';
-import ExplorePageHero from '~/components/explore/ExplorePageHero.vue';
-import ExplorePromotionsSection from '~/components/explore/ExplorePromotionsSection.vue';
-import ExploreRecentOrdersSection from '~/components/explore/ExploreRecentOrdersSection.vue';
-import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
-import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
-import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
-import { useCustomerSession } from '~/composables/useCustomerSession';
-import { useExploreScrollSpy } from '~/composables/useExploreScrollSpy';
-import { useMarketCatalog } from '~/composables/useMarketCatalog';
+import type { MarketProduct } from "~/lib/marketplace-data";
+import ExploreCategoryFilterBar from "~/components/explore/ExploreCategoryFilterBar.vue";
+import ExploreCategorySection from "~/components/explore/ExploreCategorySection.vue";
+import ExplorePageHero from "~/components/explore/ExplorePageHero.vue";
+import ExplorePromotionsSection from "~/components/explore/ExplorePromotionsSection.vue";
+import ExploreRecentOrdersSection from "~/components/explore/ExploreRecentOrdersSection.vue";
+// import MarketNewsRail from "~/components/market/MarketNewsRail.vue";
+import MarketActiveAlert from "~/components/market/MarketActiveAlert.vue";
+import MarketProductDetailSlideModal from "~/components/market/MarketProductDetailSlideModal.vue";
+import { useAuthenticatedAsyncData } from "~/composables/useAuthenticatedAsyncData";
+import { useBusinessBranchContext } from "~/composables/useBusinessBranchContext";
+import { useCustomerSession } from "~/composables/useCustomerSession";
+import { useExploreScrollSpy } from "~/composables/useExploreScrollSpy";
+import { useMarketCatalog } from "~/composables/useMarketCatalog";
 import {
   ALL_EXPLORE_CATEGORIES_ID,
   buildExploreSections,
   mergeExploreRouteQuery,
   parseExploreFiltersFromRoute,
-} from '~/lib/explore-catalog-filters';
-import { categoriesWithProducts, type MarketPromotion } from '~/lib/marketplace-data';
-import { readCachedCategoriesFromStorage } from '~/services/market.service';
-import { useCustomerMarketService } from '~/services/market.service';
+} from "~/lib/explore-catalog-filters";
+import {
+  categoriesWithProducts,
+  type MarketPromotion,
+} from "~/lib/marketplace-data";
+import { readCachedCategoriesFromStorage } from "~/services/market.service";
+import { useCustomerMarketService } from "~/services/market.service";
 
 definePageMeta({
-  layout: 'customer-explore',
+  layout: "customer-explore",
 });
 
 const route = useRoute();
 const router = useRouter();
-const { session, sessionResolved, hasSession, whenReady } = useCustomerSession();
-const { branches, activeBranchId, hasSession: hasBranchSession, ensureBranchesLoaded, isReady: branchContextReady } =
-  useBusinessBranchContext();
+const { session, sessionResolved, hasSession, whenReady } =
+  useCustomerSession();
+const {
+  branches,
+  activeBranchId,
+  hasSession: hasBranchSession,
+  ensureBranchesLoaded,
+  isReady: branchContextReady,
+} = useBusinessBranchContext();
 
 const { categories, catalogList, hydrateFromStorage, setCategories } =
   useMarketCatalog();
-const { listCategories, listPromotions, listRecentOrders } = useCustomerMarketService();
+const { listCategories, listPromotions, listRecentOrders } =
+  useCustomerMarketService();
 
 if (import.meta.client) {
   const persisted = readCachedCategoriesFromStorage({ allowStale: true }) ?? [];
@@ -55,6 +67,37 @@ const recentOrdersPending = ref(false);
 const promotions = ref<MarketPromotion[]>([]);
 const promotionsPending = ref(false);
 
+type MarketAlert = {
+  id: string;
+  message: string;
+  theme?: string | null;
+};
+
+const activeAlertUrl: string = "/api/proxy/messaging/active-alert";
+
+const { data: activeAlertPayload } = await useAuthenticatedAsyncData<unknown>(
+  "market-active-alert",
+  () => $fetch<unknown>(activeAlertUrl),
+  {
+    fastNav: true,
+    revalidateOnFocus: true,
+  },
+);
+
+const activeAlert = computed<MarketAlert | null>(() => {
+  const payload = activeAlertPayload.value;
+  if (!payload || typeof payload !== "object") return null;
+  const data = (payload as { data?: unknown }).data;
+  if (!data || typeof data !== "object") return null;
+  const alert = data as Partial<MarketAlert>;
+  if (!alert.id || !alert.message) return null;
+  return {
+    id: alert.id,
+    message: alert.message,
+    theme: alert.theme,
+  };
+});
+
 let skipRouteSync = false;
 let pendingRouteCategoryScroll: string | null =
   initialRouteFilters.categoryId !== ALL_EXPLORE_CATEGORIES_ID
@@ -71,11 +114,11 @@ function onModalOpenChange(open: boolean) {
   }
 }
 
-provide('marketOpenAddModal', openProductAddModal);
+provide("marketOpenAddModal", openProductAddModal);
 
 const { data: catalogPayload, pending: catalogPending } =
   await useAuthenticatedAsyncData(
-    'market-catalog',
+    "market-catalog",
     async () => {
       const response = await listCategories({ force: true, quiet: true });
       return response.data ?? [];
@@ -121,7 +164,10 @@ const showPromotions = computed(
  * rely on `sessionResolved` for skeleton UI. Stay in loading until branch context
  * is ready after mount (visible on full page reload).
  */
-const heroGreetingReady = useState('market-explore-hero-greeting-ready', () => false);
+const heroGreetingReady = useState(
+  "market-explore-hero-greeting-ready",
+  () => false,
+);
 
 /** Show hero while session loads (skeleton) or for signed-in customers; hide for guests. */
 const showPersonalizedExploreHero = computed(
@@ -143,9 +189,6 @@ const heroSessionLoading = computed(() => {
 let heroBootstrapPromise: Promise<void> | null = null;
 
 async function bootstrapExploreHeroGreeting() {
-  const minSkeletonMs = 280;
-  const startedAt = Date.now();
-
   await whenReady();
 
   if (!hasSession.value) {
@@ -154,14 +197,6 @@ async function bootstrapExploreHeroGreeting() {
   }
 
   await ensureBranchesLoaded();
-
-  const elapsed = Date.now() - startedAt;
-  if (elapsed < minSkeletonMs) {
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, minSkeletonMs - elapsed);
-    });
-  }
-
   heroGreetingReady.value = true;
 }
 
@@ -187,22 +222,23 @@ function startExploreHeroBootstrap() {
 
 const greetingName = computed(() => {
   if (heroSessionLoading.value) {
-    return '';
+    return "";
   }
 
   const profile = session.value?.data;
   const first =
-    typeof profile?.firstName === 'string' ? profile.firstName.trim() : '';
+    typeof profile?.firstName === "string" ? profile.firstName.trim() : "";
   if (first) {
     return first;
   }
 
-  const last = typeof profile?.lastName === 'string' ? profile.lastName.trim() : '';
+  const last =
+    typeof profile?.lastName === "string" ? profile.lastName.trim() : "";
   if (last) {
     return last;
   }
 
-  return 'there';
+  return "there";
 });
 
 function syncFiltersToRoute() {
@@ -390,11 +426,20 @@ onUnmounted(() => {
 
 <template>
   <div data-testid="market-page" class="pb-28 sm:pb-32">
+    <MarketActiveAlert
+      v-if="activeAlert"
+      :message="activeAlert.message"
+      :theme="activeAlert.theme"
+    />
+
     <ExplorePageHero
       v-if="showPersonalizedExploreHero"
       :greeting-name="greetingName"
       :session-loading="heroSessionLoading"
+      :has-leading-alert="Boolean(activeAlert)"
     />
+
+    <!-- <MarketNewsRail class="mb-2" /> -->
 
     <div class="flex flex-col gap-2">
       <ExploreRecentOrdersSection

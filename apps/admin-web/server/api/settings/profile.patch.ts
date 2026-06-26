@@ -9,7 +9,7 @@ import { patchAdminLegacyApi } from '../../utils/admin-legacy-proxy';
 
 export default defineEventHandler(async (event) => {
   const body = (await readBody(event)) as Record<string, unknown>;
-  const response = await patchAdminLegacyApi(event, '/admin/admin/profile', body, {
+  const response = await patchAdminLegacyApi<Record<string, unknown>>(event, '/admin/admin/profile', body, {
     fallbackMessage: 'Unable to update profile',
   });
 

@@ -401,22 +401,39 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
           : undefined,
     };
   });
-  const effectiveUnitPrices = unitChoices?.map(
+  const listUnitPrices = unitChoices?.map((choice) => choice.priceNaira) ?? [];
+  const saleUnitPrices = unitChoices?.map(
     (choice) => choice.discountedPriceNaira ?? choice.priceNaira,
-  );
-  const effectivePrice =
-    effectiveUnitPrices?.length
-      ? Math.min(...effectiveUnitPrices)
-      : [discountPrice, actualPrice, marketPrice, totalPrice].find((price) => price > 0) ?? 0;
+  ) ?? [];
+
+  // Product card price (reference ProductCard): v2 uses list-unit min; v1 uses discountPrice || totalPrice.
+  const cardPrice =
+    listUnitPrices.length > 0
+      ? Math.min(...listUnitPrices)
+      : discountPrice > 0
+        ? discountPrice
+        : totalPrice > 0
+          ? totalPrice
+          : actualPrice > 0
+            ? actualPrice
+            : marketPrice > 0
+              ? marketPrice
+              : 0;
+
+  const saleMin = saleUnitPrices.length > 0 ? Math.min(...saleUnitPrices) : cardPrice;
+  const listMin = listUnitPrices.length > 0 ? Math.min(...listUnitPrices) : undefined;
+
+  // Compare-at is for walk-in savings / badges only — not shown on product cards.
   const compareAtNaira =
-    unitChoices?.length
-      ? Math.min(...unitChoices.map((choice) => choice.priceNaira))
-      : actualPrice > 0 && actualPrice > effectivePrice
+    listMin !== undefined && listMin > saleMin
+      ? listMin
+      : listMin === undefined && actualPrice > 0 && actualPrice > cardPrice
         ? actualPrice
         : undefined;
+
   const discountPct =
-    compareAtNaira && compareAtNaira > effectivePrice
-      ? Math.round(((compareAtNaira - effectivePrice) / compareAtNaira) * 100)
+    compareAtNaira !== undefined && compareAtNaira > cardPrice
+      ? Math.round(((compareAtNaira - cardPrice) / compareAtNaira) * 100)
       : undefined;
   const rawUnit = toStringValue(product.unit);
   const unit =
@@ -433,10 +450,10 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
   const categoryRaw = product.category;
   const categoryId = isRecord(categoryRaw)
     ? toStringValue(categoryRaw._id) || toStringValue(categoryRaw.id)
-    : '';
+    : toStringValue(categoryRaw);
   const categoryName = isRecord(categoryRaw)
     ? toStringValue(categoryRaw.name)
-    : toStringValue(categoryRaw);
+    : '';
   const inStock = toOptionalBoolean(product.inStock) ?? true;
   const promotionRaw = asRecord(product.promotion);
   const promotionDiscountValue = toNumber(promotionRaw.discountValue);
@@ -448,6 +465,8 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
         }
       : undefined;
 
+  const defaultUnitListPrice = unitChoices?.[0]?.priceNaira ?? cardPrice;
+
   return {
     id: toStringValue(product._id) || toStringValue(product.id),
     name,
@@ -455,7 +474,7 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
     imageUrl: firstImageUrl(product.images),
     longDescription: toStringValue(product.description) || undefined,
     brandLabel: toNullableString(product.brand) ?? undefined,
-    priceNaira: effectivePrice,
+    priceNaira: cardPrice,
     compareAtNaira,
     discountPct,
     promotion,
@@ -469,10 +488,10 @@ function normalizeLegacyMarketProduct(raw: unknown): MarketProduct {
         : toBoolean(product.isLowStock)
           ? 'Low stock'
           : 'Many in stock',
-    unitPriceBadge: unit ? `${unit} = ₦${effectivePrice.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined,
+    unitPriceBadge: unit ? `${unit} = ₦${defaultUnitListPrice.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined,
     categoryId: categoryId || undefined,
     categoryName: categoryName || undefined,
-  } as MarketProduct & { categoryId?: string; categoryName?: string };
+  };
 }
 
 function buildCategorySectionTitle(title: string) {
@@ -1659,6 +1678,7 @@ export function normalizeLegacyOrderListResponse(
   page = 1,
   limit = 10,
   search?: string,
+  filters: { amountFrom?: number; amountTo?: number } = {},
 ): OrderListResponse {
   const root = asRecord(payload);
   let items = asArray(root.data).map((item) => mapLegacyOrderRecord(asRecord(item)));
@@ -1680,6 +1700,14 @@ export function normalizeLegacyOrderListResponse(
     );
   }
 
+  if (filters.amountFrom != null && Number.isFinite(filters.amountFrom)) {
+    items = items.filter((order) => order.totalPrice >= filters.amountFrom!);
+  }
+
+  if (filters.amountTo != null && Number.isFinite(filters.amountTo)) {
+    items = items.filter((order) => order.totalPrice <= filters.amountTo!);
+  }
+
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
   const rootMeta = asRecord(root.meta);
@@ -1692,8 +1720,9 @@ export function normalizeLegacyOrderListResponse(
   }
 
   const observedMinimum = (safePage - 1) * safeLimit + pageItems.length;
+  const hasLocalFilters = Boolean(query) || filters.amountFrom != null || filters.amountTo != null;
   const total =
-    query && items.length > safeLimit
+    hasLocalFilters
       ? items.length
       : Number.isFinite(legacyTotal) && legacyTotal >= 0
         ? Math.max(legacyTotal, observedMinimum)

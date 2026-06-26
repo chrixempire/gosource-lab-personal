@@ -7,13 +7,13 @@ withDefaults(
     products: MarketProduct[];
     percentageBadgeOnly?: boolean;
     keyPrefix?: string;
-    /** Override card corner radius (default 8px). */
+    /** Override card corner radius (default 24px). */
     cardRoundedClass?: string;
   }>(),
   {
     percentageBadgeOnly: false,
     keyPrefix: '',
-    cardRoundedClass: 'rounded-[8px]',
+    cardRoundedClass: 'rounded-[24px]',
   },
 );
 </script>

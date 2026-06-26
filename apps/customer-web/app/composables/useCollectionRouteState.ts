@@ -3,24 +3,10 @@ import { useMediaQuery } from '@vueuse/core';
 type ViewMode = 'cards' | 'table';
 type SortDirection = 'asc' | 'desc';
 
-function readCompactViewport() {
-  if (import.meta.client && typeof window !== 'undefined') {
-    return window.matchMedia('(max-width: 999px)').matches;
-  }
-
-  return false;
-}
-
 export function useCollectionRouteState(defaultView: ViewMode = 'cards') {
   const route = useRoute();
   const router = useRouter();
   const isCompactViewport = useMediaQuery('(max-width: 999px)');
-
-  if (import.meta.client) {
-    onBeforeMount(() => {
-      isCompactViewport.value = readCompactViewport();
-    });
-  }
 
   const routeView = computed<ViewMode>(() => {
     if (route.query.view === 'table') {

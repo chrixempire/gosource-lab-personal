@@ -73,18 +73,26 @@ export type AdminOrderListItem = {
   paymentMethodLabel: string;
   paymentStatus: OrderPaymentStatus;
   paymentStatusLabel: string;
-  paymentStatusVariant: 'success' | 'negative' | 'warning';
+  paymentStatusVariant: 'default' | 'success' | 'negative' | 'warning';
   status: OrderStatus;
   statusLabel: string;
   statusVariant:
+    | 'default'
+    | 'info'
     | 'success'
     | 'negative'
     | 'warning'
+    | 'completed'
+    | 'glory'
     | 'ready'
     | 'partiallyDelivered'
     | 'accepted';
   customerId: string;
   customerName: string;
+  /** Whether the order's items can still be edited (not delivered/shipped/cancelled). */
+  isEditable: boolean;
+  /** Whether the order already has items added after creation. */
+  hasAdditionalItems: boolean;
 };
 
 export type OrderCustomerOption = {

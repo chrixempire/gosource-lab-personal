@@ -1,7 +1,11 @@
-export function readLegacyQueryValue(query: Record<string, unknown>, key: string) {
+export function readLegacyQueryValue(
+  query: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const value = query[key];
   if (Array.isArray(value)) {
-    return value.filter((entry) => entry != null && entry !== '').map(String);
+    const first = value.find((entry) => entry != null && entry !== '');
+    return first == null ? undefined : String(first);
   }
   if (value == null || value === '') {
     return undefined;

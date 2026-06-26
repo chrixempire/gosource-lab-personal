@@ -74,7 +74,8 @@ export function buildMonthlyCreditUsage(requests: Record<string, unknown>[]) {
     const eventDate = new Date(eventTime);
     if (eventDate.getFullYear() !== year) continue;
 
-    valuesNaira[eventDate.getMonth()] += amountKobo / 100;
+    const month = eventDate.getMonth();
+    valuesNaira[month] = (valuesNaira[month] ?? 0) + amountKobo / 100;
   }
 
   return {
@@ -167,7 +168,8 @@ export async function buildCreditAnalyticsCharts(
       const eventDate = new Date(eventTime);
       if (eventDate.getFullYear() !== year) continue;
 
-      valuesNaira[eventDate.getMonth()] += amountKobo / 100;
+      const month = eventDate.getMonth();
+      valuesNaira[month] = (valuesNaira[month] ?? 0) + amountKobo / 100;
     }
 
     creditUsage.valuesNaira = valuesNaira;

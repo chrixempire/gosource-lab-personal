@@ -78,11 +78,13 @@ function goBack() {
   void navigateTo('/orders');
 }
 
-function resolveInvoicePreview() {
+function resolveInvoicePreview(
+  variant: 'combined' | 'original' | 'added' = 'combined',
+) {
   if (!rawOrder.value || typeof rawOrder.value !== 'object') {
     return null;
   }
-  return buildOrderInvoicePreviewFromRaw(rawOrder.value);
+  return buildOrderInvoicePreviewFromRaw(rawOrder.value, variant);
 }
 
 async function handlePreviewInvoice() {
@@ -100,16 +102,23 @@ async function handlePreviewInvoice() {
   }
 }
 
-async function handleDownloadInvoice() {
+async function handleDownloadInvoice(
+  variant: 'combined' | 'original' | 'added' = 'combined',
+) {
   if (!orderId.value) {
     return;
   }
 
   invoiceLoading.value = true;
   try {
-    const preview = resolveInvoicePreview();
+    const preview = resolveInvoicePreview(variant);
     if (preview) {
-      await downloadOrderInvoiceFromPreview(preview, detailsView.value?.reference);
+      const suffix =
+        variant === 'added' ? 'added' : variant === 'original' ? 'original' : undefined;
+      const reference = [detailsView.value?.reference, suffix]
+        .filter(Boolean)
+        .join('-');
+      await downloadOrderInvoiceFromPreview(preview, reference || undefined);
       return;
     }
 
@@ -186,6 +195,7 @@ useHead({
         :order-id="orderId"
         :payment-status-updating="updatingOrderId === orderId"
         @update-payment-status="onUpdatePaymentStatus"
+        @line-items-updated="refresh()"
       />
 
       <div class="flex flex-col items-stretch gap-4 lg:flex-row">

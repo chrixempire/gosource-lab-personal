@@ -5,6 +5,13 @@ export type MarketUnitChoice = {
   discountedPriceNaira?: number;
 };
 
+export function hasUnitSalePrice(choice: MarketUnitChoice): boolean {
+  return (
+    choice.discountedPriceNaira !== undefined &&
+    choice.discountedPriceNaira < choice.priceNaira
+  );
+}
+
 export type MarketProductPromotion = {
   discountValue: number;
   isPercentageDiscounted: boolean;
@@ -14,6 +21,9 @@ export type MarketProduct = {
   id: string;
   name: string;
   description: string;
+  /** Owning category, used for product detail navigation and similar products. */
+  categoryId?: string;
+  categoryName?: string;
   imageUrl?: string;
   /** Active promotion discount badge (legacy `product.promotion`). */
   promotion?: MarketProductPromotion;

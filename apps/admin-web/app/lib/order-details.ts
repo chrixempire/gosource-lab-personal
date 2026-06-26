@@ -5,6 +5,7 @@ import {
   resolveOrderSubtotal,
   resolveOrderTotalPrice,
 } from '~/lib/order-line-pricing';
+import { parseUnitPriceMap } from '~/lib/product-details';
 import {
   displayOrDash,
   formatOrderActorName,
@@ -14,7 +15,13 @@ import {
   resolveOrderBusiness,
   resolveOrderInitiator,
 } from '~/lib/order-detail-compat';
-import { getOrderPaymentMethodLabel } from '~/lib/order-constants';
+import {
+  getOrderPaymentMethodLabel,
+  getOrderPaymentStatusLabel,
+  getOrderPaymentStatusTagVariant,
+  getOrderStatusLabel,
+  getOrderStatusTagVariant,
+} from '~/lib/order-constants';
 import type {
   AdminOrderListItem,
   LegacyOrderBusiness,
@@ -23,14 +30,20 @@ import type {
   OrderStatus,
 } from '~/types/orders';
 
-type OrderStatusTagVariant = AdminOrderListItem['statusVariant'];
+type OrderStatusTagVariantAlias = AdminOrderListItem['statusVariant'];
 type PaymentStatusTagVariant = AdminOrderListItem['paymentStatusVariant'];
 
-function formatStatusLabel(status: string) {
-  return status
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+export function getOrderStatusVariant(status: OrderStatus): OrderStatusTagVariantAlias {
+  return getOrderStatusTagVariant(status);
+}
+
+export function getOrderPaymentStatusVariant(
+  status: OrderPaymentStatus,
+): PaymentStatusTagVariant {
+  const variant = getOrderPaymentStatusTagVariant(status);
+  return ['default', 'success', 'negative', 'warning'].includes(variant)
+    ? (variant as PaymentStatusTagVariant)
+    : 'warning';
 }
 
 export function normalizeOrderStatus(status: string | undefined | null): OrderStatus {
@@ -63,44 +76,6 @@ export function formatOrderDateTime(value: string | undefined) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
-}
-
-export function getOrderStatusVariant(status: OrderStatus): OrderStatusTagVariant {
-  if (status === 'ready') {
-    return 'ready';
-  }
-
-  if (status === 'partially_delivered') {
-    return 'partiallyDelivered';
-  }
-
-  if (status === 'accepted') {
-    return 'accepted';
-  }
-
-  if (['delivered', 'completed'].includes(status)) {
-    return 'success';
-  }
-
-  if (['cancelled', 'returned', 'refunded'].includes(status)) {
-    return 'negative';
-  }
-
-  return 'warning';
-}
-
-export function getOrderPaymentStatusVariant(
-  status: OrderPaymentStatus,
-): PaymentStatusTagVariant {
-  if (status === 'paid') {
-    return 'success';
-  }
-
-  if (status === 'cancelled' || status === 'refunded') {
-    return 'negative';
-  }
-
-  return 'warning';
 }
 
 function resolveBusiness(order: LegacyOrderRow): LegacyOrderBusiness | null {
@@ -137,13 +112,19 @@ export function mapLegacyOrderToListItem(order: LegacyOrderRow): AdminOrderListI
     paymentMethod: String(order.paymentMethod ?? ''),
     paymentMethodLabel: getOrderPaymentMethodLabel(order.paymentMethod),
     paymentStatus,
-    paymentStatusLabel: formatStatusLabel(paymentStatus),
+    paymentStatusLabel: getOrderPaymentStatusLabel(paymentStatus),
     paymentStatusVariant: getOrderPaymentStatusVariant(paymentStatus),
     status,
-    statusLabel: formatStatusLabel(status),
+    statusLabel: getOrderStatusLabel(status),
     statusVariant: getOrderStatusVariant(status),
     customerId: business?._id ?? '',
     customerName: business?.businessName ?? '—',
+    isEditable: isOrderItemsEditable(status),
+    hasAdditionalItems: Array.isArray(
+      (order as Record<string, unknown>).additionalProducts,
+    )
+      ? ((order as Record<string, unknown>).additionalProducts as unknown[]).length > 0
+      : false,
   };
 }
 
@@ -154,7 +135,43 @@ export type AdminOrderLineItem = {
   unit: string;
   lineTotal: number;
   lineTotalLabel: string;
+  status: string;
+  isDelivered: boolean;
+  statusLabel: string;
+  statusVariant: 'success' | 'warning';
 };
+
+export function getLineItemStatusDisplay(item: Pick<AdminOrderLineItem, 'status' | 'isDelivered'>) {
+  if (item.isDelivered || item.status.trim().toLowerCase() === 'delivered') {
+    return { label: 'Delivered', variant: 'success' as const };
+  }
+
+  return { label: 'Pending', variant: 'warning' as const };
+}
+
+/** An item added to the order after creation (the order's `additionalProducts`). */
+export type AdminOrderAdditionalItem = {
+  cartId: string;
+  productId: string;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+  lineTotalLabel: string;
+  units: { key: string; price: number }[];
+  version: string;
+  trackQuantity: boolean;
+  stock: number;
+  imageUrl: string | null;
+};
+
+/** Statuses after which an order's items can no longer be edited. */
+const NON_EDITABLE_ORDER_STATUSES = ['delivered', 'shipped', 'cancelled'];
+
+export function isOrderItemsEditable(status: OrderStatus): boolean {
+  return !NON_EDITABLE_ORDER_STATUSES.includes(status);
+}
 
 export type AdminOrderTimelineEvent = {
   id: string;
@@ -169,10 +186,10 @@ export type AdminOrderDetailsView = {
   referenceLabel: string;
   status: OrderStatus;
   statusLabel: string;
-  statusVariant: OrderStatusTagVariant;
+  statusVariant: AdminOrderListItem['statusVariant'];
   paymentStatus: OrderPaymentStatus;
   paymentStatusLabel: string;
-  paymentStatusVariant: PaymentStatusTagVariant;
+  paymentStatusVariant: AdminOrderListItem['paymentStatusVariant'];
   paymentMethod: string | null;
   paymentMethodLabel: string;
   createdLabel: string;
@@ -191,6 +208,13 @@ export type AdminOrderDetailsView = {
   serviceCharge: number;
   discount: number;
   totalPrice: number;
+  businessId: string;
+  isEditable: boolean;
+  additionalItems: AdminOrderAdditionalItem[];
+  additionalTotalPrice: number;
+  additionalTotalLabel: string;
+  combinedTotalPrice: number;
+  combinedTotalLabel: string;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -231,16 +255,70 @@ export function mapLegacyOrderLineItems(order: Record<string, unknown>): AdminOr
       quantity: Number(line.quantity ?? 0),
       unit,
       lineTotal,
+      status: String(line.status ?? ''),
+      isDelivered: String(line.status ?? '').toLowerCase() === 'delivered',
     };
   });
 
   const fallbackSubtotal = resolveOrderSubtotal(order, rawLines);
   const pricedLines = applySubtotalFallbackToOrderLines(rawLines, fallbackSubtotal);
 
-  return pricedLines.map((line) => ({
-    ...line,
-    lineTotalLabel: formatDashboardCurrency(line.lineTotal),
-  }));
+  return pricedLines.map((line, index) => {
+    const originalLine = rawLines[index]!;
+    const mergedLine = { ...originalLine, ...line };
+    const statusDisplay = getLineItemStatusDisplay(mergedLine);
+
+    return {
+      ...mergedLine,
+      lineTotalLabel: formatDashboardCurrency(line.lineTotal),
+      statusLabel: statusDisplay.label,
+      statusVariant: statusDisplay.variant,
+    };
+  });
+}
+
+export function mapLegacyOrderAdditionalItems(
+  order: Record<string, unknown>,
+): AdminOrderAdditionalItem[] {
+  const items = Array.isArray(order.additionalProducts) ? order.additionalProducts : [];
+  const businessId = resolveOrderBusinessId(order);
+
+  return items.map((entry, index) => {
+    const line = asRecord(entry) ?? {};
+    const product = asRecord(line.product) ?? asRecord(line.cartProduct) ?? {};
+    const { lineTotal, unit } = resolveOrderLinePricing(line, businessId);
+    const quantity = Number(line.quantity ?? 0);
+    const storedUnitPrice = Number(line.unitPrice ?? line.price ?? 0);
+    const unitPrice =
+      storedUnitPrice > 0 ? storedUnitPrice : quantity > 0 ? lineTotal / quantity : 0;
+
+    const unitMap =
+      parseUnitPriceMap(product.discountedUnit) ?? parseUnitPriceMap(product.unit) ?? [];
+    let units = unitMap.map((option) => ({ key: option.key, price: option.price }));
+    if (units.length === 0) {
+      units = [{ key: unit, price: unitPrice }];
+    }
+
+    const images = Array.isArray(product.images) ? product.images : [];
+    const firstImage = asRecord(images[0]);
+
+    return {
+      cartId: String(line._id ?? `additional-${index}`),
+      productId: String(product._id ?? line.product ?? ''),
+      name: (typeof product.name === 'string' && product.name) || 'Product',
+      unit,
+      unitPrice,
+      quantity,
+      lineTotal,
+      lineTotalLabel: formatDashboardCurrency(lineTotal),
+      units,
+      version: String(product.version ?? ''),
+      trackQuantity: Boolean(product.trackQuantity),
+      stock: Number(product.quantity ?? 0),
+      imageUrl:
+        firstImage && typeof firstImage.url === 'string' ? firstImage.url : null,
+    };
+  });
 }
 
 export function mapLegacyOrderTimeline(order: Record<string, unknown>): AdminOrderTimelineEvent[] {
@@ -253,7 +331,9 @@ export function mapLegacyOrderTimeline(order: Record<string, unknown>): AdminOrd
 
       return {
         id: String(event._id ?? `timeline-${index}`),
-        title: formatStatusLabel(String(event.title ?? 'Update')),
+        title: String(event.title ?? 'Update')
+          .replace(/[_-]+/g, ' ')
+          .replace(/\b\w/g, (character) => character.toUpperCase()),
         description: String(event.description ?? ''),
         updatedAt,
       };
@@ -289,6 +369,15 @@ export function mapLegacyOrderToDetailsView(order: Record<string, unknown>): Adm
   const approvedByName = formatOrderActorName(approver) ?? customerFullName;
 
   const lineItems = mapLegacyOrderLineItems(order);
+  const totalPrice = resolveOrderTotalPrice(order, lineItems);
+
+  const additionalItems = mapLegacyOrderAdditionalItems(order);
+  const storedAdditionalTotal = Number(order.additionalTotalPrice ?? 0);
+  const additionalTotalPrice =
+    storedAdditionalTotal > 0
+      ? storedAdditionalTotal
+      : additionalItems.reduce((sum, item) => sum + item.lineTotal, 0);
+  const combinedTotalPrice = totalPrice + additionalTotalPrice;
 
   return {
     id: listItem.id,
@@ -320,6 +409,13 @@ export function mapLegacyOrderToDetailsView(order: Record<string, unknown>): Adm
     deliveryFee: Number(order.deliveryFee ?? 0),
     serviceCharge: Number(order.serviceCharge ?? 0),
     discount: Number(order.discount ?? 0),
-    totalPrice: resolveOrderTotalPrice(order, lineItems),
+    totalPrice,
+    businessId: resolveOrderBusinessId(order),
+    isEditable: isOrderItemsEditable(listItem.status),
+    additionalItems,
+    additionalTotalPrice,
+    additionalTotalLabel: formatDashboardCurrency(additionalTotalPrice),
+    combinedTotalPrice,
+    combinedTotalLabel: formatDashboardCurrency(combinedTotalPrice),
   };
 }

@@ -1,14 +1,25 @@
 <script setup lang="ts">
+import { Checkbox, StatusTag } from '@gosource/ui';
 import AdminMobileCardStat from '~/components/shared/AdminMobileCardStat.vue';
 import AdminMobileCardsSkeleton from '~/components/shared/AdminMobileCardsSkeleton.vue';
 import AdminTableRowIndex from '~/components/shared/AdminTableRowIndex.vue';
 import type { AdminOrderLineItem } from '~/lib/order-details';
 import { CREDIT_CARD_SHELL_CLASS, CREDIT_CARDS_GRID_CLASS } from '~/lib/credit-page-layout';
 
-defineProps<{
+const props = defineProps<{
   items: AdminOrderLineItem[];
   loading?: boolean;
+  selectable?: boolean;
+  selectedIds?: string[];
 }>();
+
+const emit = defineEmits<{
+  toggleSelect: [itemId: string, selected: boolean];
+}>();
+
+function isSelected(itemId: string) {
+  return props.selectedIds?.includes(itemId) ?? false;
+}
 </script>
 
 <template>
@@ -28,6 +39,12 @@ defineProps<{
       :class="[CREDIT_CARD_SHELL_CLASS, 'cursor-default hover:bg-white hover:border-grey-50']"
     >
       <div class="flex items-center gap-3">
+        <Checkbox
+          v-if="selectable"
+          :model-value="isSelected(item.id)"
+          :disabled="item.isDelivered"
+          @update:model-value="emit('toggleSelect', item.id, Boolean($event))"
+        />
         <AdminTableRowIndex :value="index + 1" />
         <p class="min-w-0 flex-1 text-sm font-semibold text-grey-900">{{ item.name }}</p>
       </div>
@@ -35,9 +52,16 @@ defineProps<{
       <div class="mt-4 grid w-full grid-cols-2 gap-3">
         <AdminMobileCardStat label="Qty">{{ item.quantity }}</AdminMobileCardStat>
         <AdminMobileCardStat label="Unit">{{ item.unit }}</AdminMobileCardStat>
-        <AdminMobileCardStat label="Total" class="col-span-2">
-          {{ item.lineTotalLabel }}
+        <AdminMobileCardStat label="Status">
+          <StatusTag
+            :variant="item.statusVariant"
+            size="medium"
+            class="rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold normal-case"
+          >
+            {{ item.statusLabel }}
+          </StatusTag>
         </AdminMobileCardStat>
+        <AdminMobileCardStat label="Total">{{ item.lineTotalLabel }}</AdminMobileCardStat>
       </div>
     </article>
   </div>

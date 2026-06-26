@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
-
 withDefaults(
   defineProps<{
     variant?: 'default' | 'about' | 'careers';
@@ -22,18 +20,7 @@ withDefaults(
             very easy for your business.
           </p>
         </div>
-        <div class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-          <AppButton variant="primary" size="lg" :href="CUSTOMER_REGISTER_URL">
-            Get started for free
-            <Icon name="lucide:chevron-right" class="size-4 transition-transform group-hover:translate-x-0.5" />
-          </AppButton>
-          <AppButton variant="white" size="lg" href="#">
-            <Icon name="lucide:apple" class="size-4" />
-            <span class="h-2.5 w-px bg-grey-200" />
-            <Icon name="lucide:smartphone" class="size-4" />
-            <span class="ml-1">Download app</span>
-          </AppButton>
-        </div>
+        <AppStoreBadges />
       </div>
     </div>
   </section>
@@ -50,18 +37,7 @@ withDefaults(
             very easy for your business.
           </p>
         </div>
-        <div class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-          <AppButton variant="primary" size="lg" :href="CUSTOMER_REGISTER_URL">
-            Get started for free
-            <Icon name="lucide:chevron-right" class="size-4 transition-transform group-hover:translate-x-0.5" />
-          </AppButton>
-          <AppButton variant="white" size="lg" href="#">
-            <Icon name="lucide:apple" class="size-4" />
-            <span class="h-2.5 w-px bg-grey-200" />
-            <Icon name="lucide:smartphone" class="size-4" />
-            <span class="ml-1">Download app</span>
-          </AppButton>
-        </div>
+        <AppStoreBadges />
       </div>
     </div>
   </section>
@@ -90,17 +66,8 @@ withDefaults(
             minutes — no setup fees, no commitments.
           </p>
 
-          <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <AppButton variant="primary" size="lg" :href="CUSTOMER_REGISTER_URL">
-              Get started for free
-              <Icon name="lucide:chevron-right" class="size-5 transition-transform group-hover:translate-x-0.5" />
-            </AppButton>
-            <AppButton variant="white" size="lg" href="#">
-              <Icon name="lucide:apple" class="size-5" />
-              <span class="h-4 w-px bg-grey-200" />
-              <Icon name="lucide:smartphone" class="size-5" />
-              <span class="ml-1">Download app</span>
-            </AppButton>
+          <div class="mt-9 flex justify-center">
+            <AppStoreBadges />
           </div>
         </div>
       </div>

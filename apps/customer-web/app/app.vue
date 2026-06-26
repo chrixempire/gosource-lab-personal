@@ -3,7 +3,7 @@ import { Toaster } from '@gosource/ui';
 </script>
 
 <template>
-  <NuxtLoadingIndicator color="#09420c" :height="3" :duration="2000" :throttle="80" />
+  <NuxtLoadingIndicator color="#09420c" :height="3" :duration="1800" :throttle="0" />
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>

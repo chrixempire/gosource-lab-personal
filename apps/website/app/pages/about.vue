@@ -5,7 +5,7 @@ useHead({ title: 'About GoSource — Transforming Africa\'s food supply with tec
 <template>
   <div>
     <AboutHero />
-    <TrustedBySection variant="about" />
+    <TrustedBySection />
     <WhoWeAreSection />
     <WhatWeDoSection />
     <WhyItMattersSection />

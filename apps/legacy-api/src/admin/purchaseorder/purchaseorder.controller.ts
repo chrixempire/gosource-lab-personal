@@ -58,7 +58,11 @@ export class PurchaseOrderController {
   @Get(':id')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.VIEW_PURCHASE_ORDERS)
   @UseGuards(AdminRolesGuard)
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<{
+    status: boolean;
+    message: string;
+    data: Record<string, unknown>;
+  }> {
     return this.purchaseOrderService.getSinglePurchaseOrder(id);
   }
 

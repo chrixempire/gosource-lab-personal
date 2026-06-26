@@ -63,15 +63,15 @@ export function buildPricingQuantityPerUnitDescription(
 
   if (!stockUnit) {
     return (
-      'Q/U is how many stock units make up one pricing unit. Set the unit in Stock inventory first — ' +
-      'for example, if stock is pieces and you sell by pack, enter 40 when 40 pieces make 1 pack.'
+      'Q/U is how many stock units make up one of this pricing unit. Set the unit in Stock inventory first — ' +
+      'for example, if stock is pieces and you sell by pack, enter 40 when 1 pack contains 40 pieces.'
     );
   }
 
   const stock = stockUnit.toLowerCase();
   return (
-    `Q/U is how many ${stock} make up one pricing unit. ` +
-    `Example: stock is counted in ${stock} and you sell by pack — enter 40 when 40 ${stock} = 1 pack.`
+    `Q/U is how many ${stock} make up one of this pricing unit. ` +
+    `Example: stock is counted in ${stock} and 1 pack contains 8 ${stock} — enter 8 for the pack (enter 1 if the unit is sold as a single ${stock}).`
   );
 }
 
@@ -206,11 +206,6 @@ export function updateIntegerField(
 }
 
 export function syncComputedTotalPrice(form: ProductItemFormValues) {
-  if (!form.trackQuantity) {
-    form.totalPrice = '';
-    return;
-  }
-
   const marketPrice = parseFormattedNumber(form.marketPrice) ?? 0;
   const quantity = parseFormattedNumber(form.quantity) ?? 0;
   const total = marketPrice * quantity;
@@ -456,23 +451,21 @@ export function validateProductItemForm(
       fieldErrors[`pricing.${index}.price`] = 'Price per unit is required';
     }
 
-    if (form.trackQuantity && parseFormattedNumber(row.quantityPerUnit) == null) {
+    if (parseFormattedNumber(row.quantityPerUnit) == null) {
       fieldErrors[`pricing.${index}.quantityPerUnit`] = 'Quantity per unit is required';
     }
   });
 
-  if (form.trackQuantity) {
-    if (!form.purchaseUnit) {
-      fieldErrors.purchaseUnit = 'Unit is required when tracking quantity';
-    }
+  if (!form.purchaseUnit) {
+    fieldErrors.purchaseUnit = 'Unit is required';
+  }
 
-    if (!isEdit && parseFormattedNumber(form.quantity) == null) {
-      fieldErrors.quantity = 'Quantity is required';
-    }
+  if (!isEdit && parseFormattedNumber(form.quantity) == null) {
+    fieldErrors.quantity = 'Quantity is required';
+  }
 
-    if (!isEdit && parseFormattedNumber(form.totalPrice) == null) {
-      fieldErrors.totalPrice = 'Total price is required';
-    }
+  if (!isEdit && parseFormattedNumber(form.totalPrice) == null) {
+    fieldErrors.totalPrice = 'Total price is required';
   }
 
   if (form.setLowStockLevel && parseFormattedNumber(form.stockLevel) == null) {
@@ -536,24 +529,25 @@ export function buildProductItemFormData(form: ProductItemFormValues, options?: 
     formData.append('marketPrice', String(marketPrice));
   }
 
-  if (form.trackQuantity) {
-    const quantity = parseFormattedNumber(form.quantity);
-    const totalPrice = parseFormattedNumber(form.totalPrice);
+  // Quantity, total price and Q/U are persisted regardless of trackQuantity —
+  // they feed the COGS/profit calculation. trackQuantity only governs whether
+  // stock is deducted on orders.
+  const quantity = parseFormattedNumber(form.quantity);
+  const totalPrice = parseFormattedNumber(form.totalPrice);
 
-    if (quantity != null) {
-      formData.append('quantity', String(quantity));
-    }
+  if (quantity != null) {
+    formData.append('quantity', String(quantity));
+  }
 
-    if (totalPrice != null) {
-      formData.append('totalPrice', String(totalPrice));
-    }
+  if (totalPrice != null) {
+    formData.append('totalPrice', String(totalPrice));
+  }
 
-    formData.append('isLowStock', String(form.setLowStockLevel));
+  formData.append('isLowStock', String(form.setLowStockLevel));
 
-    const stockLevel = parseFormattedNumber(form.stockLevel);
-    if (form.setLowStockLevel && stockLevel != null) {
-      formData.append('lowStockLevel', String(stockLevel));
-    }
+  const stockLevel = parseFormattedNumber(form.stockLevel);
+  if (form.setLowStockLevel && stockLevel != null) {
+    formData.append('lowStockLevel', String(stockLevel));
   }
 
   if (form.pricing.length > 0) {
@@ -572,7 +566,7 @@ export function buildProductItemFormData(form: ProductItemFormValues, options?: 
     const newUnit = form.pricing.map((row) => ({
       unit: row.unit.trim(),
       price: parseFormattedNumber(row.price),
-      quantity: form.trackQuantity ? parseFormattedNumber(row.quantityPerUnit) : null,
+      quantity: parseFormattedNumber(row.quantityPerUnit),
     }));
 
     formData.append('newUnit', JSON.stringify(newUnit));

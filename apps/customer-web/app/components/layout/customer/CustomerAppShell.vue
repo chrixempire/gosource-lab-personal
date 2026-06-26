@@ -31,10 +31,10 @@ import {
   CUSTOMER_MOBILE_NAV_DRAWER_Z,
 } from '~/lib/customer-overlay-z';
 import { resolveCustomerPageDescription } from '~/lib/customer-page-descriptions';
+import { useCustomerRouteLoading } from '~/composables/useCustomerRouteLoading';
 import { useCustomerPageHeader } from '~/composables/useCustomerPageHeader';
 import MarketHeaderCartButton from '~/components/market/MarketHeaderCartButton.vue';
 import MarketSearch from '~/components/market/MarketSearch.vue';
-import { getMarketCategoryById } from '~/lib/marketplace-data';
 import { useBusinessBranchContext } from '~/composables/useBusinessBranchContext';
 import { useMarketBranchSetupDismissal } from '~/composables/useMarketBranchSetupDismissal';
 import { useMarketplaceCart } from '~/composables/useMarketplaceCart';
@@ -43,6 +43,7 @@ import { useCustomerSignOut } from '~/composables/useCustomerSignOut';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
 const { session, clearSession } = useCustomerSession();
+const { isNavigating: routeNavigating } = useCustomerRouteLoading();
 const { beginIntentionalSignOut } = useCustomerSignOut();
 const { clearAllDismissals } = useMarketBranchSetupDismissal();
 const { resetCartState } = useMarketplaceCart();
@@ -93,7 +94,8 @@ const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/branches', title: 'Branches' },
   { match: '/members', title: 'Members' },
   { match: '/settings/my-profile', title: 'My Profile' },
-  { match: '/settings/business-profile', title: 'Business Profile' },
+  // Standalone Business Profile now redirects to the Business profile tab on My Profile.
+  // { match: '/settings/business-profile', title: 'Business Profile' },
   { match: '/settings/security', title: 'Security' },
   { match: '/settings/help-support', title: 'Help & Support' },
 ];
@@ -114,14 +116,6 @@ const pageDescription = computed(() =>
 const isMarketCategoryPage = computed(() => /^\/market\/category\/[^/]+$/.test(route.path));
 const isMarketProductPage = computed(() => /^\/market\/product\/[^/]+$/.test(route.path));
 const isMarketRecentOrdersPage = computed(() => route.path === '/market/recent-orders');
-
-const marketCategoryHeaderTitle = computed(() => {
-  const id = route.params.id;
-  if (typeof id !== 'string') {
-    return '';
-  }
-  return getMarketCategoryById(id)?.title ?? '';
-});
 
 /** Mobile header: route segment label only (e.g. "Category", not the category name). */
 const mobileHeaderTitle = computed(() => {
@@ -236,6 +230,12 @@ async function confirmLogout() {
     <TooltipProvider :delay-duration="200">
     <div>
       <div
+        v-if="routeNavigating"
+        class="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[3px] origin-left animate-pulse bg-primary-500"
+        role="progressbar"
+        aria-hidden="true"
+      />
+      <div
         class="customer-shell-bg flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden text-grey-900 lg:h-screen lg:max-h-screen"
       >
         <header
@@ -283,15 +283,7 @@ async function confirmLogout() {
             >
               <h1 class="min-w-0 truncate text-h5 lg:text-h3">
                 <span class="lg:hidden">{{ mobileHeaderTitle }}</span>
-                <span
-                  v-if="isMarketCategoryPage && marketCategoryHeaderTitle"
-                  class="hidden lg:contents"
-                >
-                  <span>Market</span>
-                  <span class="mx-1 font-normal">/</span>
-                  <span class="text-grey-300">{{ marketCategoryHeaderTitle }}</span>
-                </span>
-                <span v-else-if="isMarketRecentOrdersPage" class="hidden lg:contents">
+                <span v-if="isMarketRecentOrdersPage" class="hidden lg:contents">
                   <span>Market</span>
                   <span class="mx-1 font-normal">/</span>
                   <span class="text-grey-300">Recently ordered</span>
@@ -311,6 +303,7 @@ async function confirmLogout() {
 
             <div class="ml-auto flex shrink-0 items-center gap-2">
               <CustomerThemeToggle />
+              <!-- Notification bell is intentionally disabled until the in-app notification flow is implemented. -->
               <MarketHeaderCartButton v-if="showHeaderCart" />
             </div>
           </div>

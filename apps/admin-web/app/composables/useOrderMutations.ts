@@ -1,9 +1,11 @@
+import { extractApiErrorMessage } from '@gosource/api-client';
 import { toast } from '@gosource/ui';
 import { h } from 'vue';
 import OrderInvoicePreview from '~/components/orders/OrderInvoicePreview.vue';
 import { unwrapLegacyPayload } from '~/lib/dashboard-api';
+import { formatDashboardCurrency } from '~/lib/dashboard-date';
 import { downloadInvoicePdf, INVOICE_PREVIEW_ELEMENT_ID } from '~/lib/download-invoice-pdf';
-import { buildOrderInvoicePreview } from '~/lib/order-invoice';
+import { buildOrderInvoicePreview, type OrderInvoiceVariant } from '~/lib/order-invoice';
 import type { OrderInvoicePreview as OrderInvoicePreviewData } from '~/types/order-invoice';
 
 export function useOrderMutations() {
@@ -18,9 +20,7 @@ export function useOrderMutations() {
       });
       toast.success('Order status updated');
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unable to update order status';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to update order status'));
       throw error;
     } finally {
       updatingOrderId.value = null;
@@ -36,9 +36,7 @@ export function useOrderMutations() {
       });
       toast.success('Payment status updated');
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unable to update payment status';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to update payment status'));
       throw error;
     } finally {
       updatingOrderId.value = null;
@@ -54,8 +52,7 @@ export function useOrderMutations() {
       });
       toast.success('Order cancelled');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to cancel order';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to cancel order'));
       throw error;
     } finally {
       updatingOrderId.value = null;
@@ -76,7 +73,10 @@ export function useOrderMutations() {
     return `order_invoice_${safe}`;
   }
 
-  async function loadOrderInvoicePreview(orderId: string) {
+  async function loadOrderInvoicePreview(
+    orderId: string,
+    variant: OrderInvoiceVariant = 'combined',
+  ) {
     const payload = await $fetch<unknown>(`/api/orders/${orderId}`);
     const order = unwrapLegacyPayload(payload);
 
@@ -84,22 +84,28 @@ export function useOrderMutations() {
       throw new Error('Order not found');
     }
 
-    return buildOrderInvoicePreview(order);
+    return buildOrderInvoicePreview(order, variant);
   }
 
-  function buildOrderInvoicePreviewFromRaw(order: Record<string, unknown>) {
-    return buildOrderInvoicePreview(order);
+  function buildOrderInvoicePreviewFromRaw(
+    order: Record<string, unknown>,
+    variant: OrderInvoiceVariant = 'combined',
+  ) {
+    return buildOrderInvoicePreview(order, variant);
   }
 
-  async function downloadOrderInvoice(orderId: string, reference?: string) {
+  async function downloadOrderInvoice(
+    orderId: string,
+    reference?: string,
+    variant: OrderInvoiceVariant = 'combined',
+  ) {
     updatingOrderId.value = orderId;
     try {
-      const preview = await loadOrderInvoicePreview(orderId);
+      const preview = await loadOrderInvoicePreview(orderId, variant);
       await downloadInvoicePdf(invoiceFileName(reference, orderId), invoicePdfOptions(preview));
       toast.success('Invoice downloaded');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to download invoice';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to download invoice'));
       throw error;
     } finally {
       updatingOrderId.value = null;
@@ -114,9 +120,83 @@ export function useOrderMutations() {
       await downloadInvoicePdf(invoiceFileName(reference), invoicePdfOptions(preview));
       toast.success('Invoice downloaded');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to download invoice';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to download invoice'));
       throw error;
+    }
+  }
+
+  async function markProductsDelivered(orderId: string, cartIds: string[]) {
+    updatingOrderId.value = orderId;
+    try {
+      await $fetch(`/api/orders/${orderId}/mark-delivered-products`, {
+        method: 'PATCH',
+        body: { cartIds },
+      });
+      toast.success('Products marked as delivered');
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, 'Unable to mark products as delivered'));
+      throw error;
+    } finally {
+      updatingOrderId.value = null;
+    }
+  }
+
+  /** Add new (additional) products to an existing order. */
+  async function addOrderProducts(
+    orderId: string,
+    products: { product: string; unit: string; quantity: number }[],
+  ) {
+    updatingOrderId.value = orderId;
+    try {
+      await $fetch('/api/orders/add-products', {
+        method: 'PATCH',
+        body: { orderId, products },
+      });
+      toast.success('Items added to order');
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, 'Unable to add items to order'));
+      throw error;
+    } finally {
+      updatingOrderId.value = null;
+    }
+  }
+
+  /** Update quantities/units of the added items (omitted items are removed). */
+  async function updateOrderProducts(
+    orderId: string,
+    products: {
+      cartId: string;
+      productId: string;
+      newQuantity: number;
+      unit: string;
+    }[],
+    reason?: string,
+  ) {
+    updatingOrderId.value = orderId;
+    try {
+      const response = await $fetch<unknown>(
+        `/api/orders/${orderId}/update-order-products`,
+        {
+          method: 'PATCH',
+          body: { products, ...(reason ? { reason } : {}) },
+        },
+      );
+
+      // Surface any refund the backend computed for reduced/removed items.
+      const data = unwrapLegacyPayload(response) as { refundAmount?: number } | null;
+      const refund = Number(data?.refundAmount ?? 0);
+      if (refund > 0) {
+        toast.success(
+          `Order items updated · ${formatDashboardCurrency(refund)} refund recorded`,
+        );
+      } else {
+        toast.success('Order items updated');
+      }
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, 'Unable to update order items'));
+      throw error;
+    } finally {
+      updatingOrderId.value = null;
     }
   }
 
@@ -125,6 +205,9 @@ export function useOrderMutations() {
     updateOrderStatus,
     updatePaymentStatus,
     cancelOrder,
+    markProductsDelivered,
+    addOrderProducts,
+    updateOrderProducts,
     loadOrderInvoicePreview,
     buildOrderInvoicePreviewFromRaw,
     downloadOrderInvoice,

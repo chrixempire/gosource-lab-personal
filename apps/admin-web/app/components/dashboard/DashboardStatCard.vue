@@ -5,13 +5,14 @@ defineProps<{
   label: string;
   value: string;
   hint?: string;
+  inlineHint?: string;
   indicatorColor?: string;
   class?: string;
 }>();
 </script>
 
 <template>
-  <StatCard :value="value" :hint="hint" :class="class">
+  <StatCard :label="label" :value="value" :hint="hint" :inline-hint="inlineHint" :class="class">
     <template #label>
       <span class="flex items-center gap-2">
         <span

@@ -9,7 +9,7 @@ export const TRACK_ORDERS_TAB_OPTIONS = [
 ] as const;
 
 export function parseTrackOrdersTabFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
 ): TrackOrdersTab {
   const raw = Array.isArray(query.tab) ? query.tab[0] : query.tab;
   return raw === 'insight' ? 'insight' : 'orders';
@@ -20,7 +20,7 @@ export function trackOrdersTabToRouteQuery(tab: TrackOrdersTab): Record<string, 
 }
 
 function readQueryString(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
   key: string,
 ) {
   const entry = query[key];
@@ -28,7 +28,7 @@ function readQueryString(
 }
 
 export function parseInsightViewFromQuery(
-  query: Record<string, string | string[] | undefined | null>,
+  query: Record<string, string | Array<string | null> | undefined | null>,
   defaultView: InsightViewMode = DEFAULT_INSIGHT_VIEW,
 ): InsightViewMode {
   const raw = readQueryString(query, 'insightView');

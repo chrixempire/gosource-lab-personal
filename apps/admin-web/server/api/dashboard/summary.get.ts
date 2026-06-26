@@ -1,5 +1,6 @@
 import { getQuery } from 'h3';
 import { fetchAdminLegacyApi } from '../../utils/admin-legacy-proxy';
+import { resolveDashboardPurchaseOrderDateRange } from '../../utils/dashboard-date-range';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
@@ -30,6 +31,36 @@ async function fetchCustomerTotal(
   return response.meta?.totalDocuments ?? 0;
 }
 
+async function fetchPurchaseOrderSpend(
+  event: Parameters<typeof fetchAdminLegacyApi>[0],
+  filterQuery: { filterType?: string; startDate?: string; endDate?: string },
+) {
+  const dateRange = resolveDashboardPurchaseOrderDateRange(filterQuery);
+  const query: Record<string, string | number> = {
+    page: 1,
+    limit: 1,
+  };
+
+  if (dateRange?.startDate) {
+    query.startDate = dateRange.startDate;
+  }
+  if (dateRange?.endDate) {
+    query.endDate = dateRange.endDate;
+  }
+
+  const response = await fetchAdminLegacyApi(event, '/admin/purchase-order', {
+    query,
+    fallbackMessage: 'Unable to load purchase order spend',
+  });
+
+  const body = unwrapPayload(response);
+  const stats = asRecord(body?.stats);
+  const totalPrice = Number(stats?.totalPrice) || 0;
+  const totalLogistics = Number(stats?.totalLogistics) || 0;
+
+  return totalPrice + totalLogistics;
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const filterQuery = {
@@ -38,29 +69,45 @@ export default defineEventHandler(async (event) => {
     endDate: query.endDate as string | undefined,
   };
 
-  const [metricsResult, activeResult, inactiveResult] = await Promise.allSettled([
+  const [metricsResult, activeResult, inactiveResult, purchaseOrderSpendResult] =
+    await Promise.allSettled([
     fetchAdminLegacyApi(event, '/admin/order/dashboard-metrics', {
       query: filterQuery,
       fallbackMessage: 'Unable to load order summary',
     }),
     fetchCustomerTotal(event, 'true'),
     fetchCustomerTotal(event, 'false'),
+    fetchPurchaseOrderSpend(event, filterQuery),
   ]);
 
   const metricsBody =
     metricsResult.status === 'fulfilled' ? unwrapPayload(metricsResult.value) : null;
   const trends = asRecord(metricsBody?.trends);
   const summary = asRecord(trends?.summary);
+  const financials = asRecord(metricsBody?.financials);
 
   return {
     orders: Number(summary?.orderCount) || 0,
     totalOrdersAmount: Number(summary?.totalValue) || 0,
     activeCustomers: activeResult.status === 'fulfilled' ? activeResult.value : 0,
     inactiveCustomers: inactiveResult.status === 'fulfilled' ? inactiveResult.value : 0,
+    purchaseOrderSpend:
+      purchaseOrderSpendResult.status === 'fulfilled' ? purchaseOrderSpendResult.value : 0,
+    revenue: Number(financials?.revenue) || 0,
+    grossProfit: Number(financials?.grossProfit) || 0,
+    grossMarginPercent: Number(financials?.grossMarginPercent) || 0,
+    historicalProfitCoveragePercent:
+      Number(financials?.historicalCoveragePercent) || 0,
+    qualifyingRevenueOrderCount: Number(financials?.qualifyingOrderCount) || 0,
+    unverifiedProfitOrderCount:
+      Number(financials?.unverifiedProfitOrderCount) || 0,
     permissions: {
       orders: metricsResult.status === 'fulfilled',
       activeCustomers: activeResult.status === 'fulfilled',
       inactiveCustomers: inactiveResult.status === 'fulfilled',
+      purchaseOrders: purchaseOrderSpendResult.status === 'fulfilled',
+      financials:
+        metricsResult.status === 'fulfilled' && Boolean(financials),
     },
   };
 });

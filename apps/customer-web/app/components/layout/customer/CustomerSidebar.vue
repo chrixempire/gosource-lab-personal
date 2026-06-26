@@ -113,7 +113,8 @@ const navItems: NavLeaf[] = [
 
 const settingsItems = [
   { label: 'My Profile', icon: NotebookPen, path: '/settings/my-profile' },
-  { label: 'Business Profile', icon: Store, path: '/settings/business-profile' },
+  // Business Profile is now the second tab on My Profile.
+  // { label: 'Business Profile', icon: Store, path: '/settings/business-profile' },
   { label: 'Security', icon: ShieldCheck, path: '/settings/security' },
   { label: 'Help & Support', icon: MessageCircleQuestion, path: '/settings/help-support' },
 ];

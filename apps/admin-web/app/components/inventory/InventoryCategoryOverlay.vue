@@ -37,7 +37,7 @@ const isMobile = useMediaQuery('(max-width: 767px)');
   <Drawer v-if="isMobile" v-model:open="open">
     <DrawerContent class="flex max-h-[92vh] flex-col">
       <DrawerHeader>
-        <DrawerTitle :class="['min-w-0 flex-1 pr-2', ADMIN_MODAL_TITLE_CLASS]">
+        <DrawerTitle :class="`min-w-0 flex-1 pr-2 ${ADMIN_MODAL_TITLE_CLASS}`">
           {{ title }}
         </DrawerTitle>
         <DrawerClose class="shrink-0" />
@@ -56,7 +56,7 @@ const isMobile = useMediaQuery('(max-width: 767px)');
   <Dialog v-else v-model:open="open">
     <DialogContent :class="dialogClass">
       <DialogHeader>
-        <DialogTitle :class="['min-w-0 flex-1 pr-2', ADMIN_MODAL_TITLE_CLASS]">
+        <DialogTitle :class="`min-w-0 flex-1 pr-2 ${ADMIN_MODAL_TITLE_CLASS}`">
           {{ title }}
         </DialogTitle>
         <DialogClose class="shrink-0" />

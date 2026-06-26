@@ -7,14 +7,14 @@ export async function postAdminAuth<T>(
   path: string,
   body: unknown,
   fallbackMessage: string,
-) {
+): Promise<T> {
   const baseUrl = getAdminLegacyApiBaseUrl(event);
 
   try {
-    return await $fetch<T>(`${baseUrl}/admin/auth/${path}`, {
+    return (await $fetch<T>(`${baseUrl}/admin/auth/${path}`, {
       method: 'POST',
-      body,
-    });
+      body: body as Record<string, unknown>,
+    })) as T;
   } catch (error) {
     return forwardApiError(event, error, fallbackMessage) as never;
   }
@@ -26,17 +26,17 @@ export async function patchAdminAuth<T>(
   body: unknown,
   accessToken: string,
   fallbackMessage: string,
-) {
+): Promise<T> {
   const baseUrl = getAdminLegacyApiBaseUrl(event);
 
   try {
-    return await $fetch<T>(`${baseUrl}/admin/auth/${path}`, {
+    return (await $fetch<T>(`${baseUrl}/admin/auth/${path}`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-      body,
-    });
+      body: body as Record<string, unknown>,
+    })) as T;
   } catch (error) {
     return forwardApiError(event, error, fallbackMessage) as never;
   }

@@ -75,7 +75,7 @@ onUnmounted(() => {
       <aside
         v-if="open"
         data-testid="request-details-slide-panel"
-        class="fixed right-3 top-[5%] z-[90] flex h-[90dvh] w-[calc(100%-1.5rem)] max-w-[560px] flex-col overflow-hidden rounded-[24px] border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300 sm:right-4 sm:w-[min(calc(100%-2rem),560px)]"
+        class="fixed right-3 top-[2.5%] z-[90] flex h-[95dvh] w-[calc(100%-1.5rem)] max-w-[560px] flex-col overflow-hidden rounded-[24px] border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300 sm:right-4 sm:w-[min(calc(100%-2rem),560px)]"
         role="dialog"
         aria-modal="true"
         :aria-label="panelTitle"
@@ -84,25 +84,38 @@ onUnmounted(() => {
         <header
           class="flex shrink-0 items-center gap-3 border-b border-grey-50 px-4 py-4 sm:px-5"
         >
-          <h2 class="min-w-0 flex-1 text-xl font-semibold text-grey-900 sm:text-2xl">
-            {{ panelTitle }}
-          </h2>
-          <div class="flex shrink-0 items-center gap-2">
-            <slot name="actions" />
-            <button
-              type="button"
-              class="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-background-on-canvas text-grey-900 transition hover:bg-grey-55"
-              aria-label="Close request details"
-              @click="close"
+          <div
+            class="flex min-w-0 flex-1 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3"
+          >
+            <h2
+              class="min-w-0 max-w-full text-xl font-semibold text-grey-900 sm:flex-1 sm:text-2xl"
             >
-              <X class="size-5" />
-            </button>
+              {{ panelTitle }}
+            </h2>
+            <slot name="actions" />
           </div>
+          <button
+            type="button"
+            class="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-grey-50 bg-background-on-canvas text-grey-900 transition hover:bg-grey-55"
+            aria-label="Close request details"
+            @click="close"
+          >
+            <X class="size-5" />
+          </button>
         </header>
 
-        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-5">
+        <div
+          class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-5"
+        >
           <slot />
         </div>
+
+        <footer
+          v-if="$slots.footer"
+          class="shrink-0 border-t border-grey-50 bg-background-on-canvas px-4 py-4 shadow-[0_-6px_16px_rgba(71,83,103,0.05)] sm:px-5"
+        >
+          <slot name="footer" />
+        </footer>
       </aside>
     </Transition>
   </Teleport>
