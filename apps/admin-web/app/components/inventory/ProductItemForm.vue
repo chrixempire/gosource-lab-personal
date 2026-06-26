@@ -278,17 +278,7 @@ watch(
     <section class="rounded-[20px] border border-grey-50 bg-white p-5 md:p-6">
       <h2 class="text-base font-semibold text-grey-900">Stock inventory</h2>
       <div class="mt-5 space-y-5">
-        <label class="flex items-start gap-3 text-sm text-grey-800">
-          <Checkbox v-model="form.trackQuantity" :disabled="submitting" class="mt-0.5" />
-          <span>
-            <span class="font-medium">Track quantity</span>
-            <span class="mt-1 block text-xs text-grey-500">
-              Keeps track of stock and notifies you when this item is low or out of stock.
-            </span>
-          </span>
-        </label>
-
-        <div v-if="form.trackQuantity">
+        <div>
           <label class="mb-1.5 block text-sm font-medium text-grey-800">Unit</label>
           <InventorySearchableSelect
             v-model="form.purchaseUnit"
@@ -297,6 +287,7 @@ watch(
             :invalid="Boolean(fieldErrors.purchaseUnit)"
             :disabled="submitting"
           />
+          <p class="mt-1 text-xs text-grey-500">Set smallest possible unit for this product</p>
           <p v-if="fieldErrors.purchaseUnit" class="mt-1 text-xs text-negative-500">
             {{ fieldErrors.purchaseUnit }}
           </p>
@@ -320,7 +311,7 @@ watch(
             </p>
           </div>
 
-          <div v-if="form.trackQuantity">
+          <div>
             <label class="mb-1.5 block text-sm font-medium text-grey-800">Quantity</label>
             <Input
               :model-value="form.quantity"
@@ -336,7 +327,7 @@ watch(
             </p>
           </div>
 
-          <div v-if="form.trackQuantity">
+          <div>
             <label class="mb-1.5 block text-sm font-medium text-grey-800">Total price</label>
             <Input
               :model-value="form.totalPrice"
@@ -351,16 +342,28 @@ watch(
           </div>
         </div>
 
-        <div v-if="form.trackQuantity" class="space-y-4">
-          <label class="flex items-start gap-3 text-sm text-grey-800">
-            <Checkbox v-model="form.setLowStockLevel" :disabled="submitting" class="mt-0.5" />
-            <span>
-              <span class="font-medium">Set low stock level</span>
-              <span class="mt-1 block text-xs text-grey-500">
-                Get notified when stock reaches this level or below.
+        <div class="space-y-4">
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <label class="flex flex-1 items-start gap-3 text-sm text-grey-800">
+              <Checkbox v-model="form.setLowStockLevel" :disabled="submitting" class="mt-0.5" />
+              <span>
+                <span class="font-medium">Set low stock level</span>
+                <span class="mt-1 block text-xs text-grey-500">
+                  Get notified when stock reaches this level or below.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+
+            <label class="flex flex-1 items-start gap-3 text-sm text-grey-800">
+              <Checkbox v-model="form.trackQuantity" :disabled="submitting" class="mt-0.5" />
+              <span>
+                <span class="font-medium">Track quantity</span>
+                <span class="mt-1 block text-xs text-grey-500">
+                  Keeps track of stock and notifies you when this item is low or out of stock.
+                </span>
+              </span>
+            </label>
+          </div>
 
           <div v-if="form.setLowStockLevel">
             <label class="mb-1.5 block text-sm font-medium text-grey-800">Low stock level</label>
@@ -387,10 +390,7 @@ watch(
         Pricing
         <Info class="size-4 text-grey-400" />
       </h2>
-      <p
-        v-if="form.trackQuantity"
-        class="mt-2 text-sm leading-6 text-grey-600"
-      >
+      <p class="mt-2 text-sm leading-6 text-grey-600">
         {{ pricingQuantityPerUnitDescription }}
       </p>
       <p v-if="fieldErrors.pricing" class="mt-2 text-xs text-negative-500">{{ fieldErrors.pricing }}</p>
@@ -431,7 +431,7 @@ watch(
             </p>
           </div>
 
-          <div v-if="form.trackQuantity">
+          <div>
             <label class="mb-1.5 block text-sm font-medium text-grey-800">Q/U</label>
             <Input
               :model-value="row.quantityPerUnit"
