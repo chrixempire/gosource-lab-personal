@@ -27,6 +27,9 @@ const props = defineProps<{
   confirmLabel: string;
   destructive?: boolean;
   loading?: boolean;
+  /** Raise the dialog/drawer above a host overlay (e.g. a slide panel). */
+  contentClass?: string;
+  overlayClass?: string;
 }>();
 
 const emit = defineEmits<{
@@ -36,6 +39,10 @@ const emit = defineEmits<{
 
 const isMobile = useMediaQuery('(max-width: 600px)');
 
+const drawerContentClass = computed(() =>
+  ['max-h-[92vh]', props.contentClass].filter(Boolean).join(' '),
+);
+
 function close() {
   emit('update:open', false);
 }
@@ -43,7 +50,7 @@ function close() {
 
 <template>
   <Drawer v-if="isMobile" :open="open" @update:open="emit('update:open', $event)">
-    <DrawerContent class="max-h-[92vh]">
+    <DrawerContent :class="drawerContentClass" :overlay-class="overlayClass">
       <DrawerHeader>
         <div class="flex flex-col gap-1">
           <DrawerTitle>
@@ -79,7 +86,7 @@ function close() {
   </Drawer>
 
   <Dialog v-else :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent>
+    <DialogContent :class="contentClass" :overlay-class="overlayClass">
       <DialogHeader>
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
           <DialogTitle>
