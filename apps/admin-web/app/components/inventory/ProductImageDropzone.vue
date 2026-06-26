@@ -1,8 +1,41 @@
 <script setup lang="ts">
+import { toast } from '@gosource/ui';
 import { Pencil, Plus, Trash2 } from 'lucide-vue-next';
 import type { ProductImageFormItem } from '~/lib/product-form';
 
 const SLOT_SIZE_CLASS = 'size-[7.5rem]';
+
+// Mirror the backend image filter (cloudinary/utils/multer.ts) so invalid files
+// are rejected on the client instead of round-tripping to a 400.
+const ACCEPTED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'svg'];
+const ACCEPT_ATTR = '.jpg,.jpeg,.png,.svg';
+const MAX_IMAGE_SIZE_BYTES = 8_000_000;
+
+function hasAcceptedExtension(file: File) {
+  const ext = file.name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
+  return ext ? ACCEPTED_IMAGE_EXTENSIONS.includes(ext) : false;
+}
+
+/** Keeps only valid images, toasting a reason for each rejected file. */
+function validateImageFiles(files: File[]): File[] {
+  const valid: File[] = [];
+
+  for (const file of files) {
+    if (!hasAcceptedExtension(file)) {
+      toast.error(`${file.name}: unsupported format. Use JPG, JPEG, PNG or SVG.`);
+      continue;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error(`${file.name}: file is too large. Maximum size is 8MB.`);
+      continue;
+    }
+
+    valid.push(file);
+  }
+
+  return valid;
+}
 
 const props = withDefaults(
   defineProps<{
@@ -50,20 +83,23 @@ function onFilesSelected(event: Event) {
   const files = Array.from(input.files ?? []);
   input.value = '';
 
-  const file = files[0];
-  if (!file) {
+  if (files.length === 0) {
     return;
   }
 
   if (replaceIndex.value != null) {
-    emit('replace', replaceIndex.value, file);
+    const [file] = validateImageFiles(files.slice(0, 1));
+    if (file) {
+      emit('replace', replaceIndex.value, file);
+    }
     replaceIndex.value = null;
     return;
   }
 
+  const valid = validateImageFiles(files);
   const remaining = props.maxImages - props.images.length;
-  if (remaining > 0) {
-    emit('add', files.slice(0, remaining));
+  if (valid.length > 0 && remaining > 0) {
+    emit('add', valid.slice(0, remaining));
   }
 }
 
@@ -75,16 +111,14 @@ function onDrop(event: DragEvent) {
     return;
   }
 
-  const files = Array.from(event.dataTransfer?.files ?? []).filter((file) =>
-    file.type.startsWith('image/'),
-  );
+  const valid = validateImageFiles(Array.from(event.dataTransfer?.files ?? []));
 
-  if (files.length === 0) {
+  if (valid.length === 0) {
     return;
   }
 
   const remaining = props.maxImages - props.images.length;
-  emit('add', files.slice(0, remaining));
+  emit('add', valid.slice(0, remaining));
 }
 
 function onDragOver(event: DragEvent) {
@@ -108,7 +142,7 @@ function isUploading(image: ProductImageFormItem) {
     <input
       ref="inputRef"
       type="file"
-      accept="image/*"
+      :accept="ACCEPT_ATTR"
       :multiple="maxImages > 1"
       class="hidden"
       :disabled="disabled"
