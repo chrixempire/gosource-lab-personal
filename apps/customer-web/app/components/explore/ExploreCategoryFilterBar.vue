@@ -129,8 +129,19 @@ function categoryChipClass(categoryId: string) {
   return [
     "group flex w-[100px] shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl p-1.5 text-center transition",
     isCategoryActive(categoryId)
-      ? "bg-primary-50/80 text-primary-500 dark:bg-primary-500/10 dark:text-primary-300"
-      : "text-grey-700 hover:bg-grey-50 dark:text-grey-200 dark:hover:bg-white/5",
+      ? "text-primary-500 dark:text-primary-300"
+      : "text-grey-700 dark:text-grey-200",
+  ];
+}
+
+// Active and hover both give the icon a green circular background; the only
+// difference is the active state also draws a primary-green ring around it.
+function categoryIconClass(categoryId: string) {
+  return [
+    "flex items-center justify-center overflow-hidden rounded-full transition-all duration-200",
+    isCategoryActive(categoryId)
+      ? "size-11 bg-primary-50/80 ring-2 ring-primary-500 dark:bg-primary-500/10 dark:ring-primary-400"
+      : "size-9 group-hover:size-11 group-hover:bg-primary-50/80 dark:group-hover:bg-primary-500/10",
   ];
 }
 
@@ -294,12 +305,19 @@ watch(
             @click="selectCategory(ALL_EXPLORE_CATEGORIES_ID)"
           >
             <span
-              class="flex size-[18px] items-center justify-center text-[18px] leading-none"
+              :class="categoryIconClass(ALL_EXPLORE_CATEGORIES_ID)"
               aria-hidden="true"
             >
-              🛒
+              <span class="text-[22px] leading-none">🛒</span>
             </span>
-            <span :class="categoryLabelClass">
+            <span
+              :class="[
+                categoryLabelClass,
+                isCategoryActive(ALL_EXPLORE_CATEGORIES_ID)
+                  ? '!text-primary-500'
+                  : 'group-hover:!text-primary-700',
+              ]"
+            >
               All categories
             </span>
           </button>
@@ -315,14 +333,14 @@ watch(
             @click="selectCategory(category.id)"
           >
             <span
-              class="flex size-[24px] items-center justify-center overflow-hidden"
+              :class="categoryIconClass(category.id)"
               aria-hidden="true"
             >
               <img
                 v-if="categoryHasImage(category)"
                 :src="category.imageUrl"
                 :alt="category.title"
-                class="size-full object-contain transition-transform duration-200 group-hover:scale-105"
+                class="size-6 object-contain transition-transform duration-200 group-hover:scale-105"
                 loading="lazy"
                 @error="markCategoryImageFailed(category.id)"
               >
@@ -333,7 +351,9 @@ watch(
             <span
               :class="[
                 categoryLabelClass,
-                isCategoryActive(category.id) ? '!text-primary-500' : '',
+                isCategoryActive(category.id)
+                  ? '!text-primary-500'
+                  : 'group-hover:!text-primary-700',
               ]"
             >
               {{ category.title }}
