@@ -2,6 +2,7 @@
 import { SidebarRail, SidebarTrigger } from '@gosource/ui';
 import { Menu } from 'lucide-vue-next';
 import AdminPageTitleInfo from '~/components/shell/AdminPageTitleInfo.vue';
+import OrderSoundToggle from '~/components/shell/OrderSoundToggle.vue';
 import type { AdminHeaderOptions } from '~/composables/useAdminHeader';
 import { resolveAdminPageDescription } from '~/lib/admin-page-descriptions';
 
@@ -70,6 +71,8 @@ const pageDescription = computed(() => {
       </div>
 
       <component :is="header.rightComponent" v-if="header.rightComponent" />
+
+      <OrderSoundToggle />
     </div>
   </header>
 </template>

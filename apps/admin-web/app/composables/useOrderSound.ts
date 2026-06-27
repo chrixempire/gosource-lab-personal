@@ -19,6 +19,8 @@ export function useOrderSound() {
 
   // Bumped on each new order so list pages can refresh their data live.
   const newOrderSignal = useNewOrderSignal();
+  const { enabled } = useOrderSoundPref();
+  const audioUnlocked = useAudioUnlocked();
 
   function getAudio() {
     if (!audio) {
@@ -34,6 +36,8 @@ export function useOrderSound() {
     if (unlocked) {
       return;
     }
+    // A user gesture occurred — the browser now permits audio; clear the hint.
+    audioUnlocked.value = true;
     const el = getAudio();
     el.muted = true;
     el
@@ -68,7 +72,10 @@ export function useOrderSound() {
       try {
         const payload = JSON.parse(event.data) as { type?: string };
         if (payload?.type === 'order.created') {
-          playSound();
+          if (enabled.value) {
+            playSound();
+          }
+          // Always refresh lists, even when the sound is muted.
           newOrderSignal.value += 1;
         }
       } catch {
