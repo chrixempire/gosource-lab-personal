@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { OrderListener } from './listeners/order.listener';
 import { OrderController } from './order.controller';
+import { OrderEventsController } from './order-events.controller';
 import { Order, OrderSchema } from '../../order/entities/order.entity';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EmailService } from '../../notification/email/email.service';
@@ -50,6 +51,6 @@ import {
     NotificationModule,
   ],
   providers: [OrderService, EmailService, OrderListener],
-  controllers: [OrderController],
+  controllers: [OrderController, OrderEventsController],
 })
 export class AdminOrderModule {}
