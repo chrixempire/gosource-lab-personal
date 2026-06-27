@@ -141,6 +141,8 @@ const paymentReadOnly = computed(() => props.view?.status === 'cancelled');
       :order-id="orderId"
       :order-status="view.status"
       :payment-status="view.paymentStatus"
+      :additional-items="view.additionalItems"
+      :editable="view.isEditable"
       :disabled="paymentStatusUpdating"
       @updated="emit('lineItemsUpdated')"
     />

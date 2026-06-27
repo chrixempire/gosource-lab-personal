@@ -1,4 +1,5 @@
 import { toast } from '@gosource/ui';
+import { extractApiErrorMessage } from '@gosource/api-client';
 import { adminApiFetch } from '~/composables/useAdminApiFetch';
 import { ADMIN_LIST_CACHE_URLS } from '~/lib/admin-list-cache-urls';
 import { invalidateAdminListCache } from '~/lib/invalidate-admin-list-cache';
@@ -22,8 +23,7 @@ export function useProductMutations() {
       invalidateProductListCache();
       toast.success('Product activated');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to activate product';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to activate product'));
       throw error;
     } finally {
       updatingProductId.value = null;
@@ -37,8 +37,7 @@ export function useProductMutations() {
       invalidateProductListCache();
       toast.success('Product deactivated');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to deactivate product';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to deactivate product'));
       throw error;
     } finally {
       updatingProductId.value = null;
@@ -52,8 +51,7 @@ export function useProductMutations() {
       invalidateProductListCache();
       toast.success('Product marked in stock');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to mark product in stock';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to mark product in stock'));
       throw error;
     } finally {
       updatingProductId.value = null;
@@ -71,8 +69,7 @@ export function useProductMutations() {
       toast.success('Item created');
       return response;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create product';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to create product'));
       throw error;
     } finally {
       updatingProductId.value = null;
@@ -89,8 +86,7 @@ export function useProductMutations() {
       invalidateProductListCache();
       toast.success('Product updated');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to update product';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to update product'));
       throw error;
     } finally {
       updatingProductId.value = null;
@@ -104,9 +100,7 @@ export function useProductMutations() {
       invalidateProductListCache();
       toast.success('Product marked out of stock');
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unable to mark product out of stock';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to mark product out of stock'));
       throw error;
     } finally {
       updatingProductId.value = null;
@@ -126,8 +120,7 @@ export function useProductMutations() {
       invalidateProductListCache();
       toast.success('Stock added successfully');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to add stock';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to add stock'));
       throw error;
     } finally {
       updatingProductId.value = null;
@@ -147,8 +140,7 @@ export function useProductMutations() {
       invalidateProductListCache();
       toast.success('Stock removed successfully');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to remove stock';
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, 'Unable to remove stock'));
       throw error;
     } finally {
       updatingProductId.value = null;

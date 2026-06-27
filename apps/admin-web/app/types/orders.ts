@@ -89,6 +89,10 @@ export type AdminOrderListItem = {
     | 'accepted';
   customerId: string;
   customerName: string;
+  /** Whether the order's items can still be edited (not delivered/shipped/cancelled). */
+  isEditable: boolean;
+  /** Whether the order already has items added after creation. */
+  hasAdditionalItems: boolean;
 };
 
 export type OrderCustomerOption = {

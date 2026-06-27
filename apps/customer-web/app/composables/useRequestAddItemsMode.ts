@@ -73,8 +73,10 @@ export function useRequestAddItemsMode() {
       activeRequest.value?.status === 'pending',
   );
 
+  const isBusinessOwner = computed(() => isBusinessOwnerSession(session.value));
+
   const primaryActionLabel = computed(() =>
-    isBusinessOwnerSession(session.value) ? 'Checkout' : 'Update order request',
+    isBusinessOwner.value ? 'Checkout' : 'Update order request',
   );
 
   function normalizeUnit(unit: string | null | undefined) {
@@ -238,17 +240,20 @@ export function useRequestAddItemsMode() {
   }
 
   async function finishAddingToRequest() {
-    await commitDraftForPrimaryAction();
+    await updateRequestAndOpen();
   }
 
-  async function commitDraftForPrimaryAction() {
+  // Commit the in-progress draft to the server. Returns the request id on
+  // success (drawer closed, caches dropped) or null on failure/no-op, so callers
+  // decide where to navigate next.
+  async function commitDraft(): Promise<string | null> {
     const id = requestId.value;
     if (!id) {
       pendingOpenRequestDrawer.value = false;
       cartDrawerOpen.value = false;
       clearActiveRequest();
       await router.push('/manage-requests');
-      return;
+      return null;
     }
 
     // Run the update first so the CTA can show its loading state. Keep the
@@ -256,7 +261,7 @@ export function useRequestAddItemsMode() {
     const next = await saveProductEdit(id);
     if (!next) {
       toast.error('Unable to update request right now');
-      return;
+      return null;
     }
 
     setActiveRequest(next);
@@ -268,8 +273,15 @@ export function useRequestAddItemsMode() {
     // updated item count instead of serving stale rows until a manual reload.
     invalidateManageRequestsListCache();
 
-    if (isBusinessOwnerSession(session.value)) {
-      await router.push(`/manage-requests/${id}`);
+    return id;
+  }
+
+  // "Update request" — commit, then reopen the request's slide-in modal so the
+  // user sees the updated items (and can check out from there). Used by the
+  // owner's secondary action and the member's primary action.
+  async function updateRequestAndOpen() {
+    const id = await commitDraft();
+    if (!id) {
       return;
     }
 
@@ -277,6 +289,21 @@ export function useRequestAddItemsMode() {
       path: '/manage-requests',
       query: { open: id },
     });
+  }
+
+  // "Checkout" — commit, then route the business owner straight to payment.
+  async function checkoutRequest() {
+    const id = await commitDraft();
+    if (!id) {
+      return;
+    }
+
+    await router.push(`/checkout/${id}`);
+  }
+
+  // Back-compat alias for the previous primary action (the member update path).
+  async function commitDraftForPrimaryAction() {
+    await updateRequestAndOpen();
   }
 
   function cancelAddingToRequest() {
@@ -336,6 +363,7 @@ export function useRequestAddItemsMode() {
     requestServiceCharge,
     requestDiscount,
     requestTotalPrice,
+    isBusinessOwner,
     primaryActionLabel,
     isCommittingRequest: lineMutationLoading,
     getQtyForUnit,
@@ -346,6 +374,8 @@ export function useRequestAddItemsMode() {
     bootstrapFromRoute,
     finishAddingToRequest,
     commitDraftForPrimaryAction,
+    updateRequestAndOpen,
+    checkoutRequest,
     cancelAddingToRequest,
   };
 }
