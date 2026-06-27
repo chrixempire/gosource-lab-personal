@@ -175,24 +175,92 @@ export function getBestSellerProductName(row: DashboardBestSeller): string {
   return '—';
 }
 
+const isPositiveNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0;
+
+/** Parse a v2 unit price map that may arrive as an object or a JSON string. */
+function parseUnitMap(unit: unknown): Record<string, number> | null {
+  let map: Record<string, unknown> | null = null;
+  if (unit && typeof unit === 'object') {
+    map = unit as Record<string, unknown>;
+  } else if (typeof unit === 'string' && unit.trim()) {
+    try {
+      const parsed = JSON.parse(unit);
+      map = parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+      map = null;
+    }
+  }
+  if (!map) {
+    return null;
+  }
+  const out: Record<string, number> = {};
+  for (const [key, value] of Object.entries(map)) {
+    out[key.trim().toLowerCase()] = Number(value);
+  }
+  return out;
+}
+
+/** Price of a specific ordered unit (e.g. "pack") from a v2 map. */
+function priceForUnit(unit: unknown, soldUnit: string | undefined): number {
+  const map = parseUnitMap(unit);
+  if (!map || !soldUnit) {
+    return 0;
+  }
+  const price = map[soldUnit.trim().toLowerCase()];
+  return isPositiveNumber(price) ? price : 0;
+}
+
+/** Lowest positive unit price — last-resort representative when the sold unit is unknown. */
+function lowestUnitPrice(unit: unknown): number {
+  const map = parseUnitMap(unit);
+  if (!map) {
+    return 0;
+  }
+  const prices = Object.values(map).filter(isPositiveNumber);
+  return prices.length ? Math.min(...prices) : 0;
+}
+
 export function getBestSellerProductPrice(row: DashboardBestSeller): number {
   const fromProduct = row.product;
-  if (fromProduct?.discountPrice != null) {
-    return fromProduct.discountPrice;
+
+  // Best match: the price of the exact unit the product was ordered in (e.g.
+  // "pack"), preferring the sale-price map. This matches the order details.
+  const soldUnitPrice =
+    priceForUnit(fromProduct?.discountedUnit, row.soldUnit) ||
+    priceForUnit(fromProduct?.unit, row.soldUnit);
+  if (isPositiveNumber(soldUnitPrice)) {
+    return soldUnitPrice;
   }
-  if (fromProduct?.actualPrice != null) {
-    return fromProduct.actualPrice;
+
+  // Next: the effective price actually charged (works when line totals exist).
+  if (isPositiveNumber(row.totalRevenue) && isPositiveNumber(row.totalQuantitySold)) {
+    return row.totalRevenue / row.totalQuantitySold;
+  }
+
+  // Legacy (v1) list price.
+  if (isPositiveNumber(fromProduct?.discountPrice)) {
+    return fromProduct!.discountPrice!;
+  }
+  if (isPositiveNumber(fromProduct?.actualPrice)) {
+    return fromProduct!.actualPrice!;
   }
 
   const rawId = row._id as unknown;
   if (rawId && typeof rawId === 'object') {
     const embedded = rawId as ProductLike;
-    if (embedded.discountPrice != null) {
+    if (isPositiveNumber(embedded.discountPrice)) {
       return embedded.discountPrice;
     }
-    if (embedded.actualPrice != null) {
+    if (isPositiveNumber(embedded.actualPrice)) {
       return embedded.actualPrice;
     }
+  }
+
+  // Last resort: cheapest unit price when the ordered unit is unknown.
+  const fromUnit = lowestUnitPrice(fromProduct?.unit);
+  if (isPositiveNumber(fromUnit)) {
+    return fromUnit;
   }
 
   return 0;

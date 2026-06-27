@@ -49,6 +49,12 @@ const {
   patchOrder,
 } = useInfiniteOrders(filters);
 
+// Refresh the list live whenever a new order arrives over SSE.
+const newOrderSignal = useNewOrderSignal();
+watch(newOrderSignal, () => {
+  refresh();
+});
+
 const {
   updatingOrderId,
   updateOrderStatus,

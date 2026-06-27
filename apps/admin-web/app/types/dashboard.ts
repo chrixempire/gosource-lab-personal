@@ -102,7 +102,13 @@ export type DashboardBestSeller = {
     name?: string;
     actualPrice?: number;
     discountPrice?: number;
+    /** v2 selling-price map, e.g. { pieces: 3000, pack: 35000 }. May arrive as JSON string. */
+    unit?: Record<string, number> | string;
+    /** v2 sale-price map (overrides `unit` when present). May arrive as JSON string. */
+    discountedUnit?: Record<string, number> | string;
   };
+  /** The unit the product was ordered in, e.g. "pack". */
+  soldUnit?: string;
   totalOrders: number;
   totalQuantitySold: number;
   totalRevenue: number;

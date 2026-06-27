@@ -711,6 +711,15 @@ export class RequestService {
       // Commit the transaction
       await session.commitTransaction();
 
+      // Notify connected admin dashboards (SSE) so they can play a new-order
+      // alert. Emitted post-commit so a rolled-back order never fires it.
+      this.eventEmitter.emit('order.created', {
+        orderId: String(order._id),
+        reference: request.reference,
+        total: order.totalPrice,
+        createdAt: new Date().toISOString(),
+      });
+
       // Send email notifications for the approved request
       if (order) {
         const emailData: NewEmailInterface = {
