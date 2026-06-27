@@ -25,9 +25,11 @@ import { FilterPurchaseOrderDto } from './dto/filter - purchaseorder.dto';
 import { plainToInstance } from 'class-transformer';
 import { RequiredPermission } from '../role/enum/required-permission';
 import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/purchase-order')
 @AdminAuth()
+@SkipActivityLog() // writes its own rich activity logs
 export class PurchaseOrderController {
   constructor(private readonly purchaseOrderService: PurchaseOrderService) {}
 

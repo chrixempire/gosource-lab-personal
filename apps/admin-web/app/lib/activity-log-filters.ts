@@ -15,9 +15,13 @@ export const ACTIVITY_LOG_ACTION_OPTIONS: { value: ActivityLogAction; label: str
   { value: 'CREATE', label: 'Create' },
   { value: 'UPDATE', label: 'Update' },
   { value: 'DELETE', label: 'Delete' },
-  { value: 'VIEW', label: 'View' },
+  { value: 'ACTIVATE', label: 'Activate' },
+  { value: 'DEACTIVATE', label: 'Deactivate' },
+  { value: 'STOCK_IN', label: 'Stock in' },
+  { value: 'STOCK_OUT', label: 'Stock out' },
   { value: 'LOGIN', label: 'Login' },
   { value: 'LOGOUT', label: 'Logout' },
+  { value: 'LOGIN_FAILED', label: 'Failed login' },
   { value: 'OTHERS', label: 'Other' },
 ];
 
@@ -123,6 +127,27 @@ export function inventoryActivityLogApiQuery(filters: ActivityLogListFilters) {
     modules: INVENTORY_ACTIVITY_MODULES.join(','),
   };
 }
+
+/**
+ * Module dropdown options for the standalone (global) activity-log page —
+ * spans every area of admin-web. Values match the backend `module` strings.
+ */
+export const GLOBAL_ACTIVITY_MODULE_OPTIONS: {
+  value: string;
+  label: string;
+}[] = [
+  { value: 'Auth', label: 'Authentication' },
+  { value: 'Product', label: 'Items' },
+  { value: 'Category', label: 'Categories' },
+  { value: 'Purchase Order', label: 'Purchase orders' },
+  { value: 'Order', label: 'Orders' },
+  { value: 'Customers', label: 'Customers' },
+  { value: 'Credit', label: 'Credit' },
+  { value: 'Messages', label: 'Messages' },
+  { value: 'Coupon', label: 'Coupons' },
+  { value: 'Promotions', label: 'Promotions' },
+  { value: 'Admins', label: 'Admins & roles' },
+];
 
 export function hasActiveActivityLogFilters(filters: ActivityLogListFilters) {
   return Boolean(

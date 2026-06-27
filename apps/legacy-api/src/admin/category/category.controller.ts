@@ -25,9 +25,11 @@ import { FilterCategoryDto } from './dto/filter-category.dto';
 import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
 import { RequiredPermission } from '../role/enum/required-permission';
 import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/category')
 @AdminAuth()
+@SkipActivityLog() // writes its own rich activity logs
 export class CategoryController {
   constructor(private categoryService: CategoryService) {}
 

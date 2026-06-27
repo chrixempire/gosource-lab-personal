@@ -31,9 +31,11 @@ import {
 import { Admin } from '../auth/decorator/admin.decorator';
 import { RequiredPermission } from '../role/enum/required-permission';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/product')
 @AdminAuth()
+@SkipActivityLog() // writes its own rich activity logs
 export class ProductController {
   constructor(private productService: ProductService) {}
 

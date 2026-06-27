@@ -10,26 +10,37 @@ import {
   TableShell,
   TableSkeleton,
 } from '@gosource/ui';
+import { useIntersectionObserver } from '@vueuse/core';
+import { LoaderCircle } from 'lucide-vue-next';
 import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
-import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
 import { ACTIVITY_LOG_TABLE_GRID } from '~/lib/activity-log-table-layout';
 import { CREDIT_LIST_PANEL_CLASS } from '~/lib/credit-table-layout';
 import type { AdminActivityLogItem } from '~/types/activity-log';
-import type { InventoryTableMeta } from '~/types/inventory';
 
 defineProps<{
   rows: AdminActivityLogItem[];
-  meta: InventoryTableMeta;
   loading?: boolean;
+  loadingMore?: boolean;
+  hasMore?: boolean;
 }>();
 
 const emit = defineEmits<{
-  page: [page: number];
-  pageSize: [pageSize: number];
+  loadMore: [];
   rowClick: [row: AdminActivityLogItem];
 }>();
 
 const gridStyle = { gridTemplateColumns: ACTIVITY_LOG_TABLE_GRID };
+
+const sentinelRef = ref<HTMLElement | null>(null);
+useIntersectionObserver(
+  sentinelRef,
+  (entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      emit('loadMore');
+    }
+  },
+  { threshold: 0 },
+);
 
 const skeletonColumns = [
   { kind: 'line' as const, lineClass: 'w-28' }, // Time
@@ -138,14 +149,19 @@ function initiatorTypeLabel(type: string) {
           <span v-else class="text-sm text-grey-400">—</span>
         </TableCell>
       </TableRow>
+      <div ref="sentinelRef" class="h-px w-full shrink-0" aria-hidden="true" />
     </TableBody>
 
     <TableFooter v-if="!loading && rows.length > 0">
-      <CreditTablePagination
-        :meta="meta"
-        @page="emit('page', $event)"
-        @page-size="emit('pageSize', $event)"
-      />
+      <div
+        class="flex shrink-0 items-center justify-center gap-2 border-t border-grey-50 bg-[#FAFBFC] px-4 py-3 text-sm text-grey-300"
+      >
+        <span v-if="loadingMore" class="flex items-center gap-2 text-primary-500">
+          <LoaderCircle class="size-4 animate-spin" />
+          <span>Loading more activity…</span>
+        </span>
+        <span v-else-if="!hasMore">No more activity</span>
+      </div>
     </TableFooter>
   </TableShell>
 </template>

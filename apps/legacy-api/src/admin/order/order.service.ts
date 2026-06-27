@@ -14,6 +14,8 @@ import {
 import { Timeline } from '../../order/entities/timeline.entity';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OrderStatusChangedEvent } from './events/order-status-changed.event';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
 import { ProductStockUpdatedEvent } from '../product/events/product-stock-updated.event';
 import {
   AddNewProductsDto,
@@ -476,6 +478,19 @@ export class OrderService {
       await this.businessModel.findById(order.business);
 
     if (updateOrder) {
+      try {
+        await this.activityLogModel.create({
+          ...adminInitiator(admin),
+          action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+          module: 'Order',
+          objectId: orderId,
+          description: `Order ${(order as any).reference ?? orderId} status: ${order.status} → ${message}`,
+          metadata: { changes: { status: { old: order.status, new: message } } },
+        });
+      } catch {
+        /* logging must never break the order update */
+      }
+
       // Emit event
       this.eventEmitter.emit(
         'order.status.changed',
@@ -549,6 +564,22 @@ export class OrderService {
     const subject = 'Your order has been cancelled';
 
     if (updateOrder) {
+      try {
+        await this.activityLogModel.create({
+          ...adminInitiator(admin),
+          action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+          module: 'Order',
+          objectId: orderId,
+          description: `Cancelled order ${(order as any).reference ?? orderId}${details?.reason ? ` — ${details.reason}` : ''}`,
+          metadata: {
+            changes: { status: { old: order.status, new: ORDER_STATUS.CANCELLED } },
+            reason: details?.reason ?? null,
+          },
+        });
+      } catch {
+        /* logging must never break the cancellation */
+      }
+
       // Emit event
       this.eventEmitter.emit(
         'order.status.changed',
@@ -671,6 +702,21 @@ export class OrderService {
         description: `Payment status updated from ${order.paymentStatus} to ${status}`,
         initiator: `${admin.firstName} ${admin.lastName}`,
       });
+
+      try {
+        await this.activityLogModel.create({
+          ...adminInitiator(admin),
+          action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+          module: 'Order',
+          objectId: orderId,
+          description: `Order ${(order as any).reference ?? orderId} payment: ${order.paymentStatus} → ${status}`,
+          metadata: {
+            changes: { paymentStatus: { old: order.paymentStatus, new: status } },
+          },
+        });
+      } catch {
+        /* logging must never break the payment update */
+      }
 
       return {
         status: true,

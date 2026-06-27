@@ -5,7 +5,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterActivityDto } from './dto/filter-activity.dto';
 import { AdminUser } from '../admin/auth/schema/adminUser.schema';
 import { BusinessCustomer } from '../business/schema/business.schema';
-import { INITIATOR_TYPE } from './interface/activityLog.interface';
+import {
+  IActivityLog,
+  INITIATOR_TYPE,
+} from './interface/activityLog.interface';
 
 @Injectable()
 export class ActivityService {
@@ -15,6 +18,21 @@ export class ActivityService {
     @InjectModel(BusinessCustomer.name)
     private businessModel: Model<BusinessCustomer>,
   ) {}
+
+  /**
+   * Write an activity-log entry. Fire-and-forget and fully guarded: a logging
+   * failure must never break the action that triggered it.
+   */
+  async record(entry: IActivityLog): Promise<void> {
+    try {
+      await this.activityModel.create({
+        ...entry,
+        initiatorType: entry.initiatorType ?? INITIATOR_TYPE.ADMIN,
+      });
+    } catch (error) {
+      console.error('Failed to write activity log:', error);
+    }
+  }
 
   async findAll(queryParams: FilterActivityDto): Promise<any> {
     const filterDto = Object.assign(new FilterActivityDto(), queryParams);

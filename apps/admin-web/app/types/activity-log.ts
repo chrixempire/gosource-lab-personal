@@ -3,8 +3,13 @@ export type ActivityLogAction =
   | 'VIEW'
   | 'UPDATE'
   | 'DELETE'
+  | 'ACTIVATE'
+  | 'DEACTIVATE'
+  | 'STOCK_IN'
+  | 'STOCK_OUT'
   | 'LOGIN'
   | 'LOGOUT'
+  | 'LOGIN_FAILED'
   | 'OTHERS';
 
 export type ActivityLogInitiatorType = 'ADMIN' | 'BUSINESS';

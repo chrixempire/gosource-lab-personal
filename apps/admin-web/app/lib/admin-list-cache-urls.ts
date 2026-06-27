@@ -31,5 +31,5 @@ export const ADMIN_LIST_CACHE_KEY_ALIASES: Partial<
   >
 > = {
   [ADMIN_LIST_CACHE_URLS.products]: ['inventory-products'],
-  [ADMIN_LIST_CACHE_URLS.activityLogs]: ['inventory-activity-log'],
+  [ADMIN_LIST_CACHE_URLS.activityLogs]: ['inventory-activity-log', 'global-activity-log'],
 };

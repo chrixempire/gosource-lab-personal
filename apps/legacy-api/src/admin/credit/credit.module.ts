@@ -35,6 +35,7 @@ import {
   CreditPaymentReferenceSchema,
 } from '../../credit/schema/creditPaymentReference.schema';
 import { AccountingModule } from '../../accounting/accounting.module';
+import { ActivityModule } from '../../activity/activity.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { AccountingModule } from '../../accounting/accounting.module';
     CreditRepaymentsModule,
     JobsModule,
     AccountingModule,
+    ActivityModule,
   ],
   providers: [
     CreditService,

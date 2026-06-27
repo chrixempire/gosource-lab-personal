@@ -4,8 +4,10 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdminActivityInterceptor } from './activity/admin-activity.interceptor';
 import * as dotenv from 'dotenv';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -109,7 +111,11 @@ dotenv.config();
     AdminMessagingModule,
   ],
   controllers: [AppController],
-  providers: [AppService, ExternalService],
+  providers: [
+    AppService,
+    ExternalService,
+    { provide: APP_INTERCEPTOR, useClass: AdminActivityInterceptor },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

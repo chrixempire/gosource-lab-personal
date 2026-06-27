@@ -20,9 +20,12 @@ import {
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
 import { RequiredPermission } from '../role/enum/required-permission';
 import { DateFilterDto } from '../product/dto/create-product.dto';
+import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/customer')
 @AdminAuth()
+@SkipActivityLog() // writes its own rich activity logs
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
@@ -113,8 +116,8 @@ export class CustomerController {
     RequiredPermission.ENABLE_DISABLE_CUSTOMER_CREDIT,
   )
   @UseGuards(AdminRolesGuard)
-  async enableCredit(@Param('id') customerId: string) {
-    return await this.customerService.enableCredit(customerId);
+  async enableCredit(@Param('id') customerId: string, @Admin() admin: any) {
+    return await this.customerService.enableCredit(customerId, undefined, admin);
   }
 
   @Patch('disable-credit/:id')
@@ -123,15 +126,15 @@ export class CustomerController {
     RequiredPermission.ENABLE_DISABLE_CUSTOMER_CREDIT,
   )
   @UseGuards(AdminRolesGuard)
-  async disableCredit(@Param('id') customerId: string) {
-    return await this.customerService.disableCredit(customerId);
+  async disableCredit(@Param('id') customerId: string, @Admin() admin: any) {
+    return await this.customerService.disableCredit(customerId, admin);
   }
 
   @Post(':id/reset-password')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MODIFY_CUSTOMER)
   @UseGuards(AdminRolesGuard)
-  async resetPassword(@Param('id') customerId: string) {
-    return await this.customerService.resetCustomerPassword(customerId);
+  async resetPassword(@Param('id') customerId: string, @Admin() admin: any) {
+    return await this.customerService.resetCustomerPassword(customerId, admin);
   }
 
   @Patch(':id/activate')
@@ -140,8 +143,8 @@ export class CustomerController {
     RequiredPermission.ACTIVATE_DEACTIVATE_CUSTOMER,
   )
   @UseGuards(AdminRolesGuard)
-  async activateCustomer(@Param('id') customerId: string) {
-    return await this.customerService.setCustomerActive(customerId, true);
+  async activateCustomer(@Param('id') customerId: string, @Admin() admin: any) {
+    return await this.customerService.setCustomerActive(customerId, true, admin);
   }
 
   @Patch(':id/deactivate')
@@ -150,14 +153,14 @@ export class CustomerController {
     RequiredPermission.ACTIVATE_DEACTIVATE_CUSTOMER,
   )
   @UseGuards(AdminRolesGuard)
-  async deactivateCustomer(@Param('id') customerId: string) {
-    return await this.customerService.setCustomerActive(customerId, false);
+  async deactivateCustomer(@Param('id') customerId: string, @Admin() admin: any) {
+    return await this.customerService.setCustomerActive(customerId, false, admin);
   }
 
   @Delete(':id')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.DELETE_CUSTOMER)
   @UseGuards(AdminRolesGuard)
-  async deleteCustomer(@Param('id') customerId: string) {
-    return await this.customerService.deleteCustomer(customerId);
+  async deleteCustomer(@Param('id') customerId: string, @Admin() admin: any) {
+    return await this.customerService.deleteCustomer(customerId, admin);
   }
 }

@@ -43,6 +43,9 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JOB_NAMES, QUEUE_NAMES } from '../../jobs/constants';
 import { AccountingService } from '../../accounting/accounting.service';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
 
 @Injectable()
 export class CreditService {
@@ -57,6 +60,7 @@ export class CreditService {
     @InjectConnection() private readonly connection: Connection,
     @InjectQueue(QUEUE_NAMES.CREDIT_REPAYMENT) private creditQueue: Queue,
     private accountingService: AccountingService,
+    private activityService: ActivityService,
   ) {}
 
   /**
@@ -103,6 +107,18 @@ export class CreditService {
     });
 
     await creditApplication.save();
+
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Credit',
+      objectId: creditId,
+      description: `Rejected credit application for ${(creditApplication.business as any)?.businessName ?? ''}`.trim(),
+      metadata: {
+        changes: { status: { old: CreditStatus.PENDING, new: CreditStatus.REJECTED } },
+        reason: rejectionReason ?? null,
+      },
+    });
 
     // Send email to business with rejection reason
     await this.sendCreditNotification(
@@ -494,6 +510,18 @@ export class CreditService {
       });
 
       await session.commitTransaction();
+
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Credit',
+        objectId: creditId,
+        description: `Approved credit for ${(creditApplication.business as any)?.businessName ?? ''} — ${approvedAmountInMoney.format()}`.trim(),
+        metadata: {
+          changes: { status: { old: CreditStatus.PENDING, new: CreditStatus.APPROVED } },
+          approvedAmount: approvedAmountInMoney.format(),
+        },
+      });
 
       // Send email to business with approval details (AFTER COMMIT)
       await this.sendCreditNotification(

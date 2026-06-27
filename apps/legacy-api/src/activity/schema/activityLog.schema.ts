@@ -56,3 +56,16 @@ export class ActivityLog {
 }
 
 export const ActivityLogSchema = SchemaFactory.createForClass(ActivityLog);
+
+// Indexes for the activity-log list filters (newest-first, by module/action/actor).
+ActivityLogSchema.index({ createdAt: -1 });
+ActivityLogSchema.index({ module: 1, createdAt: -1 });
+ActivityLogSchema.index({ action: 1, createdAt: -1 });
+ActivityLogSchema.index({ initiator: 1, createdAt: -1 });
+
+// Retention: auto-expire entries after 12 months so the global log doesn't grow
+// unbounded (Mongo's TTL monitor removes them in the background).
+ActivityLogSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 60 * 60 * 24 * 365 },
+);

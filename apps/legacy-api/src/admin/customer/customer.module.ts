@@ -28,6 +28,7 @@ import {
   CreditAccount,
   CreditAccountSchema,
 } from '../../credit/schema/creditAccount.schema';
+import { ActivityModule } from '../../activity/activity.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import {
     ]),
     WalletModule,
     AuthModule,
+    ActivityModule,
   ],
   providers: [CustomerService, BranchService, EmployeeService],
   controllers: [CustomerController],

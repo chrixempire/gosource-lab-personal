@@ -54,6 +54,7 @@ import { RepaymentSchedule } from '../../credit/schema/repaymentSchedule.schema'
 import { CreditRepaymentService } from '../../credit-repayment/credit-repayment.service';
 import { CreditPaymentReference } from '../../credit/schema/creditPaymentReference.schema';
 import { RequiredPermission } from '../role/enum/required-permission';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
 
 @Controller('admin/credit')
@@ -252,6 +253,7 @@ export class CreditController {
     type: Credit,
   })
   @ApiOperation({ summary: 'Reject credit application' })
+  @SkipActivityLog() // logged explicitly with status change
   async rejectCredit(
     @Param('creditId') creditId: string,
     @Body() rejectionDetails: RejectApplicationDto,
@@ -272,6 +274,7 @@ export class CreditController {
     type: Credit,
   })
   @ApiOperation({ summary: 'Approve credit application' })
+  @SkipActivityLog() // logged explicitly with status change
   async approveCredit(
     @Param('creditId') creditId: string,
     @Body() approveDetails: ApproveApplicationDto,

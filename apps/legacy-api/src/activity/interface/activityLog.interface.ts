@@ -9,6 +9,7 @@ export interface IActivityLog {
   initiatorType: string;
   module?: string;
   action?: string;
+  ipAddress?: string | null;
   metadata?: Record<string, any>;
 }
 
@@ -17,8 +18,13 @@ export enum ACTIVITY_LOG_ACTION_TYPE {
   VIEW = 'VIEW',
   UPDATE = 'UPDATE',
   DELETE = 'DELETE',
+  ACTIVATE = 'ACTIVATE',
+  DEACTIVATE = 'DEACTIVATE',
+  STOCK_IN = 'STOCK_IN',
+  STOCK_OUT = 'STOCK_OUT',
   LOGIN = 'LOGIN',
   LOGOUT = 'LOGOUT',
+  LOGIN_FAILED = 'LOGIN_FAILED',
   OTHERS = 'OTHERS',
 }
 

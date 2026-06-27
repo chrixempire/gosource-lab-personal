@@ -9,8 +9,8 @@ import { useActivityLogFilters } from '~/composables/useActivityLogFilters';
 import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useInfiniteActivityLog } from '~/composables/useInfiniteActivityLog';
 import {
-  INVENTORY_ACTIVITY_MODULE_OPTIONS,
-  inventoryActivityLogApiQuery,
+  GLOBAL_ACTIVITY_MODULE_OPTIONS,
+  activityLogFiltersToApiQuery,
 } from '~/lib/activity-log-filters';
 import type { AdminActivityLogItem } from '~/types/activity-log';
 
@@ -27,9 +27,9 @@ const debouncedSearch = useDebounce(searchQuery, 400);
 const detailOpen = ref(false);
 const selectedLog = ref<AdminActivityLogItem | null>(null);
 
-// Inventory-scoped (items, categories, purchase orders), infinite-scroll.
+// Global page — no module scoping; show every admin action, infinite-scroll.
 const { rows, loading, loadingMore, hasMore, error, loadMore, refresh } =
-  useInfiniteActivityLog(filters, inventoryActivityLogApiQuery);
+  useInfiniteActivityLog(filters, activityLogFiltersToApiQuery);
 
 watch(
   () => filters.value.search,
@@ -49,6 +49,8 @@ watch(debouncedSearch, (value) => {
   replaceFilters({ search: trimmed, page: 1 });
 });
 
+// Pages aren't kept alive, so this runs on every navigation back — refetch so a
+// freshly logged activity shows without a manual reload.
 onMounted(() => {
   void refresh();
 });
@@ -70,12 +72,12 @@ function onRowClick(row: AdminActivityLogItem) {
       <SearchField
         v-model="searchQuery"
         class="w-full max-w-lg"
-        placeholder="Search activity"
+        placeholder="Search all admin activity"
       />
 
       <ActivityLogFilterBar
         :filters="filters"
-        :module-options="INVENTORY_ACTIVITY_MODULE_OPTIONS"
+        :module-options="GLOBAL_ACTIVITY_MODULE_OPTIONS"
         @apply="replaceFilters"
         @clear-all="onClearAllFilters"
       />

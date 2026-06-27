@@ -22,5 +22,6 @@ import {
   ],
   providers: [ActivityService],
   controllers: [ActivityController],
+  exports: [ActivityService],
 })
 export class ActivityModule {}
