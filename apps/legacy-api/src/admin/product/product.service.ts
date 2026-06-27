@@ -1136,6 +1136,11 @@ export class ProductService {
           productDetails: {
             $first: '$products.cartProduct',
           },
+          // The unit the product was ordered in (e.g. "pack"), so the price
+          // column can show the price of that unit, not the cheapest one.
+          soldUnit: {
+            $first: '$products.unit',
+          },
         },
       },
 
@@ -1149,11 +1154,16 @@ export class ProductService {
         },
       },
 
-      // Add computed fields and merge product info
+      // Add computed fields and merge product info. Use the authoritative
+      // looked-up product as the base (so v2 fields like the `unit` price map
+      // are always present) and overlay the cart snapshot where available.
       {
         $addFields: {
           product: {
-            $ifNull: ['$productDetails', { $arrayElemAt: ['$productInfo', 0] }],
+            $mergeObjects: [
+              { $arrayElemAt: ['$productInfo', 0] },
+              { $ifNull: ['$productDetails', {}] },
+            ],
           },
           averageQuantityPerOrder: {
             $divide: ['$totalQuantitySold', '$totalOrders'],
@@ -1183,11 +1193,13 @@ export class ProductService {
                   actualPrice: 1,
                   discountPrice: 1,
                   unit: 1,
+                  discountedUnit: 1,
                   brand: 1,
                   images: 1,
                   slug: 1,
                   category: 1,
                 },
+                soldUnit: 1,
                 totalQuantitySold: 1,
                 totalRevenue: 1,
                 totalOrders: 1,
