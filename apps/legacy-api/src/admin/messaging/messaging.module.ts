@@ -4,6 +4,7 @@ import {
   BusinessCustomer,
   BusinessCustomerSchema,
 } from '../../business/schema/business.schema';
+import { ActivityModule } from '../../activity/activity.module';
 import { JobsModule } from '../../jobs/jobs.module';
 import { NotificationModule } from '../../notification/notification.module';
 import { AdminMessagingController } from './messaging.controller';
@@ -20,6 +21,7 @@ import { AdminMessage, AdminMessageSchema } from './schema/message.schema';
     ]),
     JobsModule,
     NotificationModule,
+    ActivityModule,
   ],
   controllers: [AdminMessagingController, PublicMessagingController],
   providers: [AdminMessagingService, AdminMessagingEmailProcessor],

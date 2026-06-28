@@ -188,6 +188,15 @@ export class RoleService {
     if (before?.name !== after?.name) {
       changes.name = { old: before?.name, new: after?.name };
     }
+    if ((before?.description ?? '') !== (after?.description ?? '')) {
+      changes.description = {
+        old: before?.description ?? null,
+        new: after?.description ?? null,
+      };
+    }
+    if (Boolean(before?.isActive) !== Boolean(after?.isActive)) {
+      changes.isActive = { old: before?.isActive, new: after?.isActive };
+    }
     if (added.length || removed.length) {
       changes.permissions = { old: beforePerms, new: afterPerms };
     }

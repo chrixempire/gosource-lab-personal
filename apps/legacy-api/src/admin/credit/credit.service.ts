@@ -181,6 +181,20 @@ export class CreditService {
 
     await credit.save();
 
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Credit',
+      objectId: creditId,
+      description: 'Reopened credit application to pending',
+      metadata: {
+        changes: {
+          status: { old: CreditStatus.REJECTED, new: CreditStatus.PENDING },
+        },
+        reason: data.reason ?? null,
+      },
+    });
+
     return successResponse(
       'Credit application status updated to pending successfully',
       credit,
@@ -374,6 +388,20 @@ export class CreditService {
       { _id: request.business._id },
       { $inc: { creditRequestRejectCounts: 1 } },
     );
+
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Credit',
+      objectId: requestId,
+      description: `Rejected credit request for ${(request.business as any)?.businessName ?? ''}`.trim(),
+      metadata: {
+        changes: {
+          status: { old: CreditStatus.PENDING, new: CreditStatus.REJECTED },
+        },
+        reason: rejectionReason ?? null,
+      },
+    });
 
     await this.sendCreditNotification(
       request.business._id,
@@ -790,6 +818,31 @@ export class CreditService {
       );
 
       await session.commitTransaction();
+
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Credit',
+        objectId: String(creditRequest._id),
+        description: `Approved credit request for ${(creditRequest.business as any)?.businessName ?? ''}`.trim(),
+        metadata: {
+          changes: {
+            status: { old: CreditStatus.PENDING, new: CreditStatus.APPROVED },
+          },
+          terms: {
+            approvedAmountKobo: creditRequest.approvedAmountKobo,
+            repaymentFrequency: creditRequest.repaymentFrequency,
+            repaymentDuration: creditRequest.repaymentDuration,
+            customFrequencyDays: creditRequest.customFrequencyDays,
+            interestRate: creditRequest.interestRate,
+            gracePeriodDays: creditRequest.gracePeriodDays,
+            overdueChargeRate: creditRequest.overdueChargeRate,
+            firstPaymentDate: creditRequest.firstPaymentDate,
+            finalPaymentDate: creditRequest.finalPaymentDate,
+            totalRepaymentAmountKobo: creditRequest.totalRepaymentAmountKobo,
+          },
+        },
+      });
 
       // SEND APPROVAL EMAIL TO BUSINESS
       await this.sendRequestApprovalNotifications(schedules, creditRequest);

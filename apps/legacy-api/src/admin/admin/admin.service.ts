@@ -147,18 +147,21 @@ export class AdminService {
       {
         firstName: before?.firstName,
         lastName: before?.lastName,
+        phoneNumber: before?.phoneNumber,
         role: before?.roleId?.name,
         status: before?.status,
       },
       {
         firstName: getAdmin.firstName,
         lastName: getAdmin.lastName,
+        phoneNumber: getAdmin.phoneNumber,
         role: getAdmin.role,
         status: getAdmin.status,
       },
       [
         { key: 'firstName', label: 'first name' },
         { key: 'lastName', label: 'last name' },
+        { key: 'phoneNumber', label: 'phone number' },
         { key: 'role', label: 'role' },
         { key: 'status', label: 'status' },
       ],

@@ -22,6 +22,40 @@ function normalize(value: unknown, format?: (value: unknown) => unknown) {
   return v === undefined ? null : v;
 }
 
+/** Normalise a date-ish value to YYYY-MM-DD for stable, readable before→after diffs. */
+export function formatLogDate(value: unknown): unknown {
+  if (value == null || value === '') return null;
+  const date = new Date(value as string | number | Date);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString().slice(0, 10);
+}
+
+/**
+ * Normalise a ref field (ObjectId/populated doc, or an array of them) to a
+ * sorted list of id strings so array order / population shape never makes an
+ * unchanged field look "changed".
+ */
+export function formatIdList(value: unknown): unknown {
+  const toId = (v: unknown): string => {
+    if (v == null) return '';
+    if (typeof v === 'object') {
+      const obj = v as Record<string, unknown>;
+      return String(obj._id ?? obj.id ?? v);
+    }
+    return String(v);
+  };
+  if (Array.isArray(value)) {
+    return value.map(toId).sort();
+  }
+  return value == null ? null : toId(value);
+}
+
+/** Normalise a boolean-ish value (handles the "true"/"false" strings forms send). */
+export function formatBool(value: unknown): unknown {
+  if (value == null) return null;
+  if (typeof value === 'string') return value.trim().toLowerCase() === 'true';
+  return Boolean(value);
+}
+
 /**
  * Compare two records over the given fields and return only the ones that
  * actually changed, as { label: { old, new } }.

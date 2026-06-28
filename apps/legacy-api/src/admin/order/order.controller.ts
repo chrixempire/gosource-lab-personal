@@ -60,8 +60,9 @@ export class OrderController {
   @Patch('/add-products')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.UPDATE_ORDER_ITEMS)
   @UseGuards(AdminRolesGuard)
-  async addProducts(@Body() details: AddNewProductsDto) {
-    return await this.orderService.addProductsToOrder(details);
+  @SkipActivityLog() // logged explicitly with the added items
+  async addProducts(@Body() details: AddNewProductsDto, @Admin() admin: any) {
+    return await this.orderService.addProductsToOrder(details, admin);
   }
 
   @Get(':id/invoice')
@@ -140,6 +141,7 @@ export class OrderController {
   @Patch(':orderId/update-order-products')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.UPDATE_ORDER_ITEMS)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with item old→new + refund
   async updateOrderProducts(
     @Param('orderId') orderId: string,
     @Body() updateOrderProductsDto: UpdateOrderProductsDto,
@@ -155,6 +157,7 @@ export class OrderController {
   @Patch(':orderId/fees')
   @Roles(AdminRoles.SUPER_ADMIN)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with fee field old→new
   async updateOrderFees(
     @Param('orderId') orderId: string,
     @Body() updateOrderFeesDto: UpdateOrderFeesDto,
@@ -184,6 +187,7 @@ export class OrderController {
     RequiredPermission.UPDATE_ORDER_ITEMS,
   )
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with status + delivered items
   async markDeliveredProducts(
     @Param('orderId') id: string,
     @Body() body: MarkDeliveredProductsDto,

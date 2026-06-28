@@ -36,6 +36,35 @@ import {
 import { ActivityLog } from '../../activity/schema/activityLog.schema';
 import { createMoney } from '../../utils/money';
 import { adminInitiator } from '../../utils/activity-initiator.util';
+import {
+  buildChanges,
+  describeChanges,
+  formatLogDate,
+  formatIdList,
+} from '../../utils/activity-changes.util';
+
+const formatPoLines = (value: unknown) => {
+  if (!Array.isArray(value)) return value ?? null;
+  return value
+    .map((line: any) => {
+      const product = line?.product;
+      const id =
+        product && typeof product === 'object'
+          ? String(product._id ?? product.id ?? product)
+          : String(product ?? '');
+      return `${id}×${line?.quantity ?? ''}`;
+    })
+    .sort();
+};
+
+const PURCHASE_ORDER_LOG_FIELDS = [
+  { key: 'suppliers', label: 'suppliers', format: formatIdList },
+  { key: 'note', label: 'note' },
+  { key: 'expectedDate', label: 'expected date', format: formatLogDate },
+  { key: 'productType', label: 'product type' },
+  { key: 'logisticsAmount', label: 'logistics amount' },
+  { key: 'products', label: 'items', format: formatPoLines },
+];
 
 @Injectable()
 export class PurchaseOrderService {
@@ -864,11 +893,16 @@ export class PurchaseOrderService {
       .populate('products.product');
 
     if (update) {
+      const changes = buildChanges(
+        purchaseOrder.toObject() as unknown as Record<string, unknown>,
+        update.toObject() as unknown as Record<string, unknown>,
+        PURCHASE_ORDER_LOG_FIELDS,
+      );
       await this.activityLogModel.create({
         objectId: purchaseOrderId,
-        description: 'Updated purchase order',
+        description: describeChanges('purchase order', undefined, changes),
         ...adminInitiator(admin),
-        metadata: { fields: Object.keys(purchaseOrderData ?? {}) },
+        metadata: { changes },
         action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
         module: PurchaseOrder.name,
       } as IActivityLog);

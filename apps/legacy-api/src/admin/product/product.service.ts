@@ -387,10 +387,12 @@ export class ProductService {
     const changes: Record<string, { old: unknown; new: unknown }> = {};
 
     const numericChangeFields: { key: string; label: string }[] = [
-      { key: 'marketPrice', label: 'Market price' },
+      { key: 'marketPrice', label: 'Market price (cost)' },
       { key: 'totalPrice', label: 'Total price' },
       { key: 'actualPrice', label: 'Actual price' },
       { key: 'discountPrice', label: 'Discount price' },
+      { key: 'quantity', label: 'Quantity' },
+      { key: 'lowStockLevel', label: 'Low-stock level' },
     ];
 
     for (const { key, label } of numericChangeFields) {
@@ -402,6 +404,68 @@ export class ProductService {
       if (Number.isFinite(newNum) && oldNum !== newNum) {
         changes[label] = { old: product[key] ?? null, new: newProductDetails[key] };
       }
+    }
+
+    // Text fields — compare as strings so DB/form type differences don't lie.
+    const textChangeFields: { key: string; label: string }[] = [
+      { key: 'name', label: 'Name' },
+      { key: 'description', label: 'Description' },
+      { key: 'brand', label: 'Brand' },
+      { key: 'purchaseUnit', label: 'Stock unit' },
+    ];
+    for (const { key, label } of textChangeFields) {
+      if (!(key in newProductDetails)) {
+        continue;
+      }
+      const oldVal = product[key] ?? null;
+      const newVal = newProductDetails[key] ?? null;
+      if (String(oldVal ?? '') !== String(newVal ?? '')) {
+        changes[label] = { old: oldVal, new: newVal };
+      }
+    }
+
+    // Boolean flags — the multipart form sends "true"/"false" strings.
+    const toBool = (v: unknown) =>
+      typeof v === 'string' ? v.trim().toLowerCase() === 'true' : Boolean(v);
+    const boolChangeFields: { key: string; label: string }[] = [
+      { key: 'trackQuantity', label: 'Track quantity' },
+      { key: 'isLowStock', label: 'Low-stock tracking' },
+    ];
+    for (const { key, label } of boolChangeFields) {
+      if (!(key in newProductDetails)) {
+        continue;
+      }
+      const oldBool = toBool(product[key]);
+      const newBool = toBool(newProductDetails[key]);
+      if (oldBool !== newBool) {
+        changes[label] = { old: oldBool, new: newBool };
+      }
+    }
+
+    // Category change — resolve both ids to names for a readable old → new.
+    const categoryId = (v: unknown): string => {
+      if (v == null) return '';
+      if (typeof v === 'object') {
+        const o = v as Record<string, unknown>;
+        return String(o._id ?? o.id ?? v);
+      }
+      return String(v);
+    };
+    const oldCategoryId = categoryId(product.category);
+    const newCategoryId = categoryId(newProductDetails.category);
+    if ('category' in newProductDetails && oldCategoryId !== newCategoryId) {
+      const [oldCat, newCat] = await Promise.all([
+        oldCategoryId
+          ? this.categoryModel.findById(oldCategoryId).select('name').lean()
+          : null,
+        newCategoryId
+          ? this.categoryModel.findById(newCategoryId).select('name').lean()
+          : null,
+      ]);
+      changes['Category'] = {
+        old: oldCat?.name ?? oldCategoryId ?? null,
+        new: newCat?.name ?? newCategoryId ?? null,
+      };
     }
 
     // Selling-unit price changes (the per-unit prices, not the cost/market price).
@@ -440,6 +504,19 @@ export class ProductService {
           changes[`${unitName} (selling price)`] = { old: oldPrice, new: newPrice };
         }
       }
+    }
+
+    // Images — `newProductDetails.images` is only set when files were added or
+    // images removed, so its presence already means the gallery changed.
+    if ('images' in newProductDetails) {
+      const oldCount = Array.isArray(product.images) ? product.images.length : 0;
+      const newCount = Array.isArray(newProductDetails.images)
+        ? newProductDetails.images.length
+        : 0;
+      changes['Images'] = {
+        old: `${oldCount} image(s)`,
+        new: `${newCount} image(s)`,
+      };
     }
 
     const changeKeys = Object.keys(changes);

@@ -98,6 +98,7 @@ export class CreditController {
   @Patch('requests/:requestId/reject')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_CREDIT)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with status change
   @ApiOkResponse({
     description: 'Reject credit request by id.',
     type: CreditRequest,
@@ -175,6 +176,7 @@ export class CreditController {
   @Patch('requests/:requestId/approve')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_CREDIT)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with approval terms
   @ApiOperation({ summary: 'Update credit request with repayment' })
   async approveCreditRequestWithRepayment(
     @Param('requestId') requestId: string,
@@ -290,6 +292,7 @@ export class CreditController {
   @Patch(':creditId/update-status')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_CREDIT)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with status change
   @ApiOkResponse({
     description: 'Update a rejected credit application status to pending.',
     type: Credit,

@@ -17,6 +17,9 @@ import { ObjectCannedACL, PutObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client } from '../../s3Client';
 import { Cache } from 'cache-manager';
 import { successResponse } from '../../utils/responses';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
 
 @Injectable()
 export class ItemService {
@@ -25,6 +28,7 @@ export class ItemService {
     @InjectModel(Category.name) private categoryModel: Model<Category>,
     @InjectModel(Unit.name) private unitModel: Model<Unit>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly activityService: ActivityService,
   ) {}
 
   /**
@@ -34,7 +38,11 @@ export class ItemService {
    * @param files
    * @returns
    */
-  async addProduct(productData: CreateItemDto, files: any): Promise<any> {
+  async addProduct(
+    productData: CreateItemDto,
+    files: any,
+    admin?: any,
+  ): Promise<any> {
     const { category } = productData;
 
     const categoryDetails: CategoryDocument =
@@ -84,6 +92,30 @@ export class ItemService {
         this.cacheManager.del('all_products_sorted'),
         this.cacheManager.del('categories_with_products'),
       ]);
+
+      try {
+        await this.activityService.record({
+          ...adminInitiator(admin),
+          action: ACTIVITY_LOG_ACTION_TYPE.CREATE,
+          module: 'Inventory',
+          objectId: addProduct.id,
+          description: `Created item "${(addProduct as any).name ?? ''}"`.trim(),
+          metadata: {
+            submitted: {
+              name: (addProduct as any).name,
+              category: categoryDetails.name,
+              brand: (addProduct as any).brand ?? null,
+              marketPrice: (addProduct as any).marketPrice ?? null,
+              purchaseUnit: (addProduct as any).purchaseUnit ?? null,
+              quantity: (addProduct as any).quantity ?? null,
+              trackQuantity: (addProduct as any).trackQuantity ?? null,
+              imageCount: uploadedProductImages.length,
+            },
+          },
+        });
+      } catch {
+        /* logging must never break item creation */
+      }
 
       return successResponse('New product added successfully', addProduct);
     }

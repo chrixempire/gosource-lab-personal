@@ -24,14 +24,33 @@ import {
 import { ActivityService } from '../../activity/activity.service';
 import { adminInitiator } from '../../utils/activity-initiator.util';
 import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
-import { buildChanges, describeChanges } from '../../utils/activity-changes.util';
+import {
+  buildChanges,
+  describeChanges,
+  formatLogDate,
+  formatIdList,
+} from '../../utils/activity-changes.util';
 
+// Coupon expiry is stored on `endDate` (what the admin form's "Set expiry
+// date" field writes, and what apply-time enforcement reads first via
+// `endDate ?? expiryDate`). `expiryDate` is a legacy fallback the UI never
+// edits, so track `endDate` here or expiry changes go unrecorded.
+// Track every editable field so any change shows up in the audit log.
 const COUPON_LOG_FIELDS = [
   { key: 'code', label: 'code' },
-  { key: 'discount', label: 'discount' },
+  { key: 'title', label: 'title' },
   { key: 'type', label: 'type' },
-  { key: 'expiryDate', label: 'expiry date' },
+  { key: 'category', label: 'category' },
+  { key: 'target', label: 'target' },
+  { key: 'discount', label: 'discount' },
+  { key: 'minimumOrderAmount', label: 'minimum order amount' },
   { key: 'usageLimit', label: 'usage limit' },
+  { key: 'loyaltyPointsRequired', label: 'loyalty points required' },
+  { key: 'startDate', label: 'start date', format: formatLogDate },
+  { key: 'endDate', label: 'expiry date', format: formatLogDate },
+  { key: 'categoryId', label: 'applicable category', format: formatIdList },
+  { key: 'applicableItems', label: 'applicable items', format: formatIdList },
+  { key: 'comboItems', label: 'combo items', format: formatIdList },
 ];
 
 @Injectable()

@@ -223,6 +223,9 @@ export class CategoryService {
     ) {
       changes.description = { old: category.desc ?? '', new: categoryData.desc };
     }
+    if (imageUrl !== category.image) {
+      changes.image = { old: category.image ?? null, new: imageUrl };
+    }
 
     categoryData['image'] = imageUrl;
 

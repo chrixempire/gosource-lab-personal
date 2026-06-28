@@ -22,14 +22,22 @@ import {
 import { ActivityService } from '../../activity/activity.service';
 import { adminInitiator } from '../../utils/activity-initiator.util';
 import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
-import { buildChanges, describeChanges } from '../../utils/activity-changes.util';
+import {
+  buildChanges,
+  describeChanges,
+  formatLogDate,
+  formatIdList,
+} from '../../utils/activity-changes.util';
 
 const PROMOTION_LOG_FIELDS = [
   { key: 'name', label: 'name' },
-  { key: 'discountValue', label: 'discount value' },
+  { key: 'description', label: 'description' },
+  { key: 'icon', label: 'icon' },
+  { key: 'startDate', label: 'start date', format: formatLogDate },
+  { key: 'endDate', label: 'end date', format: formatLogDate },
   { key: 'isPercentageDiscounted', label: 'percentage discount' },
-  { key: 'startDate', label: 'start date' },
-  { key: 'endDate', label: 'end date' },
+  { key: 'discountValue', label: 'discount value' },
+  { key: 'products', label: 'items', format: formatIdList },
 ];
 
 @Injectable()
