@@ -140,7 +140,7 @@ function categoryIconClass(categoryId: string) {
   return [
     "flex items-center justify-center overflow-hidden rounded-full transition-all duration-200",
     isCategoryActive(categoryId)
-      ? "size-11 bg-primary-50/80 ring-2 ring-primary-500 dark:bg-primary-500/10 dark:ring-primary-400"
+      ? "size-11 bg-primary-50/80 ring-2 ring-primary-500 dark:bg-primary-500/20 dark:ring-[#22c55e]"
       : "size-9 group-hover:size-11 group-hover:bg-primary-50/80 dark:group-hover:bg-primary-500/10",
   ];
 }
@@ -314,8 +314,8 @@ watch(
               :class="[
                 categoryLabelClass,
                 isCategoryActive(ALL_EXPLORE_CATEGORIES_ID)
-                  ? '!text-primary-500'
-                  : 'group-hover:!text-primary-700',
+                  ? '!text-primary-500 dark:!text-[#22c55e]'
+                  : 'group-hover:!text-primary-700 dark:!text-white',
               ]"
             >
               All categories
@@ -352,8 +352,8 @@ watch(
               :class="[
                 categoryLabelClass,
                 isCategoryActive(category.id)
-                  ? '!text-primary-500'
-                  : 'group-hover:!text-primary-700',
+                  ? '!text-primary-500 dark:!text-[#22c55e]'
+                  : 'group-hover:!text-primary-700 dark:!text-white',
               ]"
             >
               {{ category.title }}
