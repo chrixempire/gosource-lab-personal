@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ExploreCategorySection } from '~/lib/explore-catalog-filters';
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ChevronRight } from 'lucide-vue-next';
+import { isMarketProductInStock } from '~/lib/marketplace-data';
 import ExploreMobileProductTripleGrid from '~/components/explore/ExploreMobileProductTripleGrid.vue';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
 
@@ -8,55 +9,73 @@ const props = defineProps<{
   section: ExploreCategorySection;
 }>();
 
-const mobileGridRef = ref<InstanceType<typeof ExploreMobileProductTripleGrid> | null>(null);
+const MAX_VISIBLE_PRODUCTS = 15;
+
+const totalProducts = computed(() => props.section.products.length);
+
+// Preview only in-stock items (up to 15); "View all" leads to the full category.
+const inStockProducts = computed(() =>
+  props.section.products.filter((product) => isMarketProductInStock(product)),
+);
+const visibleProducts = computed(() =>
+  inStockProducts.value.slice(0, MAX_VISIBLE_PRODUCTS),
+);
 </script>
 
 <template>
   <section
     :id="`explore-section-${section.id}`"
     :data-category-id="section.id"
-    class="scroll-mt-[4rem] border-b border-grey-50/80 pb-0 pt-0 last:border-b-0"
+    class="scroll-mt-[4rem] border-b border-grey-50/80 pb-2 pt-0 last:border-b-0"
   >
-    <header class="mb-3 flex items-center justify-between gap-2">
-      <h2 class="min-w-0 truncate text-base font-semibold text-grey-900 sm:text-lg min-[900px]:text-xl">
-        {{ section.title }}
-      </h2>
-
-      <div v-if="mobileGridRef?.canScroll" class="flex shrink-0 gap-1 min-[900px]:hidden">
-        <button
-          type="button"
-          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
-          :disabled="!mobileGridRef?.canScrollLeft"
-          :aria-label="`Scroll ${section.title} left`"
-          @click="mobileGridRef?.scrollByDirection(-1)"
+    <header class="mb-3 flex items-center justify-between gap-3 rounded-lg bg-[#EAECF0] p-2">
+      <div class="flex min-w-0 items-center gap-2 pl-2">
+        <h2 class="min-w-0 truncate text-[14px] font-semibold text-black">
+          {{ section.title }}
+        </h2>
+        <span
+          class="inline-flex size-[24px] shrink-0 items-center justify-center"
+          aria-hidden="true"
         >
-          <ChevronLeft class="size-5" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
-          :disabled="!mobileGridRef?.canScrollRight"
-          :aria-label="`Scroll ${section.title} right`"
-          @click="mobileGridRef?.scrollByDirection(1)"
-        >
-          <ChevronRight class="size-5" aria-hidden="true" />
-        </button>
+          <img
+            v-if="section.imageUrl"
+            :src="section.imageUrl"
+            :alt="section.title"
+            class="size-[24px] shrink-0 rounded-[4px] object-contain"
+          >
+          <span v-else-if="section.emoji" class="text-[24px] leading-none">
+            {{ section.emoji }}
+          </span>
+        </span>
       </div>
+
+      <NuxtLink
+        :to="`/market/category/${section.id}`"
+        class="flex shrink-0 cursor-pointer items-center gap-0.5 whitespace-nowrap p-1 px-2.5 text-sm font-medium text-black transition-colors hover:text-primary-500"
+      >
+        View all ({{ totalProducts }})
+        <ChevronRight class="size-4" aria-hidden="true" />
+      </NuxtLink>
     </header>
 
-    <ExploreMobileProductTripleGrid
-      ref="mobileGridRef"
-      :products="section.products"
-      class="min-[900px]:hidden"
-    />
-
-    <div class="explore-products-grid">
-      <ExploreProductCard
-        v-for="product in section.products"
-        :key="`desktop-${product.id}`"
-        :product="product"
+    <template v-if="visibleProducts.length > 0">
+      <ExploreMobileProductTripleGrid
+        :products="visibleProducts"
+        class="min-[900px]:hidden"
       />
-    </div>
+
+      <div class="explore-products-grid">
+        <ExploreProductCard
+          v-for="product in visibleProducts"
+          :key="`desktop-${product.id}`"
+          :product="product"
+        />
+      </div>
+    </template>
+
+    <p v-else class="px-2 py-4 text-sm text-grey-400">
+      No items in stock right now — tap “View all” to see the full category.
+    </p>
   </section>
 </template>
 

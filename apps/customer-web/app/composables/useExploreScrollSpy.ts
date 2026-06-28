@@ -5,6 +5,9 @@ type ExploreSectionRef = {
   id: string;
 };
 
+// Slack (px) below the sticky-bar marker when deciding the active section.
+const ACTIVE_MARKER_TOLERANCE = 8;
+
 export function useExploreScrollSpy(options: {
   sections: Ref<ExploreSectionRef[]>;
   activeCategoryId: Ref<string>;
@@ -42,7 +45,11 @@ export function useExploreScrollSpy(options: {
     }
 
     const rootRect = root.getBoundingClientRect();
-    const marker = rootRect.top + scrollOffsetPx();
+    // A few px of slack: clicking a category scrolls its section top to exactly
+    // the marker, and sub-pixel rounding / smooth-scroll settle can leave it a
+    // hair below — without this tolerance the spy would re-select the previous
+    // section (off-by-one).
+    const marker = rootRect.top + scrollOffsetPx() + ACTIVE_MARKER_TOLERANCE;
     let nextId = ALL_EXPLORE_CATEGORIES_ID;
 
     const catalogStart = document.getElementById('explore-catalog-start');
