@@ -27,7 +27,7 @@ function onSelect() {
   <button
     type="button"
     data-testid="explore-recent-order-compact-card"
-    class="group flex h-[72px] w-full cursor-pointer items-center gap-3 rounded-[8px] border border-grey-50 bg-background-on-canvas p-2 text-left transition-[transform,border-color,background-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary-500/45"
+    class="group flex h-[72px] w-full cursor-pointer items-center gap-3 rounded-[8px] border border-grey-50 bg-background-on-canvas p-2 text-left transition-[border-color,background-color,box-shadow] duration-300 ease-out hover:border-primary-500/45 hover:shadow-[0_8px_20px_-16px_rgba(16,24,40,0.28)]"
     @click="onSelect"
   >
     <span

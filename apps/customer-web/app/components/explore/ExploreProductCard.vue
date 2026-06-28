@@ -9,7 +9,7 @@ import {
   exploreProductDiscountLabel,
   exploreProductUnitLine,
 } from "~/lib/explore-product-display";
-import { Button } from "@gosource/ui";
+import { Plus } from "lucide-vue-next";
 import {
   formatNaira,
   useMarketplaceCart,
@@ -28,7 +28,7 @@ const props = withDefaults(
   }>(),
   {
     percentageBadgeOnly: false,
-    roundedClass: 'rounded-[8px]',
+    roundedClass: 'rounded-[24px]',
   },
 );
 
@@ -64,18 +64,14 @@ const showAddButton = computed(
 );
 
 const discountLabel = computed(() => {
-  if (!props.percentageBadgeOnly) {
-    return exploreProductDiscountLabel(props.product);
-  }
-
-  return null;
-});
-
-const discountPercent = computed(() => {
-  if (!props.percentageBadgeOnly) {
+  if (props.percentageBadgeOnly || discountPercent.value) {
     return null;
   }
 
+  return exploreProductDiscountLabel(props.product);
+});
+
+const discountPercent = computed(() => {
   if (props.product.discountPct && props.product.discountPct > 0) {
     return props.product.discountPct;
   }
@@ -114,7 +110,7 @@ async function onAdd(e: MouseEvent) {
   <article
     data-testid="explore-product-card"
     :class="[
-      `flex h-full min-w-0 flex-col overflow-hidden text-left ${props.roundedClass} border bg-background-on-canvas transition-[transform,border-color,background-color] duration-300 ease-out hover:-translate-y-1`,
+      `flex h-full min-w-0 flex-col overflow-hidden p-2.5 text-left ${props.roundedClass} border bg-background-on-canvas transition-[border-color,background-color,box-shadow] duration-300 ease-out hover:shadow-[0_10px_24px_-16px_rgba(16,24,40,0.28)]`,
       inCartHighlight
         ? 'border-2 border-primary-500 bg-primary-50/40 dark:border-primary-500/50 dark:bg-primary-500/12'
         : 'border border-grey-50 hover:border-primary-500/35 dark:hover:border-primary-500/25',
@@ -128,30 +124,37 @@ async function onAdd(e: MouseEvent) {
       @keydown.enter.prevent="onCardClick"
     >
       <div
-        class="group relative aspect-[1.12/1] w-full shrink-0 overflow-hidden bg-grey-55"
+        class="group relative aspect-square w-full shrink-0 overflow-hidden rounded-[20px] bg-grey-55"
       >
         <MarketProductImage
           :src="product.imageUrl"
           :alt="product.name"
           :hover-zoom="true"
-          :class="{ grayscale: !inStock }"
+          :class="{ 'grayscale opacity-60': !inStock }"
           logo-class="w-[72%] max-w-[8rem]"
         />
 
         <MarketProductDiscountRibbon
-          v-if="discountPercent"
+          v-if="inStock && discountPercent"
           :percent="discountPercent"
         />
 
         <span
-          v-else-if="discountLabel"
-          class="customer-image-discount-pill absolute left-2 top-2 z-10 rounded-full px-2 py-1 text-[11px] font-bold leading-none"
+          v-else-if="inStock && discountLabel"
+          class="customer-image-discount-pill absolute right-3 top-3 z-10 rounded-full px-2 py-1 text-[11px] font-bold leading-none"
         >
           {{ discountLabel }}
         </span>
+
+        <span
+          v-if="!inStock"
+          class="absolute right-3 top-3 z-10 rounded-full bg-[#FEE4E2] px-2.5 py-1.5 text-[11px] font-medium leading-none text-[#D92D20] shadow-sm"
+        >
+          Out of stock
+        </span>
       </div>
 
-      <div class="flex w-full flex-1 flex-col items-start gap-1.5 px-3 pb-2.5 pt-2.5">
+      <div class="flex w-full flex-1 flex-col items-start gap-1.5 px-0.5 pb-0 pt-3">
         <h3
           class="w-full line-clamp-2 text-left text-[14px] font-medium leading-snug text-grey-900"
         >
@@ -179,29 +182,26 @@ async function onAdd(e: MouseEvent) {
       </div>
     </div>
 
-    <div class="w-full shrink-0 border-t border-grey-50" role="presentation" />
-
-    <div class="w-full shrink-0 px-3 pb-2.5 pt-2.5" @click.stop>
-      <Button
+    <div class="w-full shrink-0 px-0 pb-0 pt-2.5" @click.stop>
+      <button
         v-if="!inStock"
-        size="small"
-        variant="destructive"
-        class="!h-9 !w-full !max-w-full !rounded-full !px-3 !text-xs !font-semibold"
         type="button"
         disabled
+        class="flex h-10 w-full shrink-0 cursor-not-allowed items-center justify-center gap-1 self-stretch rounded-[100px] border-2 border-white bg-[#F0F2F5] px-4 text-base font-bold text-[#98A2B3] shadow-[0_4px_8px_0_rgba(71,83,103,0.10)] dark:border-grey-700 dark:bg-grey-800 dark:text-grey-400"
       >
-        Out of stock
-      </Button>
+        <Plus class="size-[18px] stroke-[3]" aria-hidden="true" />
+        Add
+      </button>
 
-      <Button
+      <button
         v-else-if="showAddButton"
-        size="small"
-        class="!h-9 !w-full !max-w-full !rounded-full !px-3 !text-sm !font-semibold shadow-[0_8px_18px_-10px_rgba(4,85,11,0.58)] dark:shadow-none"
         type="button"
+        class="flex h-10 w-full shrink-0 cursor-pointer items-center justify-center gap-1 self-stretch rounded-[100px] border-2 border-white bg-[#F0F2F5] px-4 text-base font-bold text-[#101928] shadow-[0_4px_8px_0_rgba(71,83,103,0.10)] transition-colors hover:bg-[#E4E7EC] dark:border-grey-700 dark:bg-grey-800 dark:text-white dark:hover:bg-grey-700"
         @click="onAdd"
       >
-        + Add
-      </Button>
+        <Plus class="size-[18px] stroke-[3]" aria-hidden="true" />
+        Add
+      </button>
 
       <div v-else-if="showQtyStrip" class="w-full">
         <MarketProductQtyStrip

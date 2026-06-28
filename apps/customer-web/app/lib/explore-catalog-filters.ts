@@ -8,7 +8,7 @@ export const ALL_EXPLORE_CATEGORIES_ID = "__all__";
 
 /** Sticks flush under CustomerAppShell header (explore layout uses flush main top padding). */
 export const EXPLORE_CATEGORY_FILTER_STICKY_CLASS =
-  "sticky -top-px z-40 -mx-4 border-b border-grey-50 bg-background-on-canvas py-2 sm:-mx-5 lg:-mx-6";
+  "sticky -top-px z-40 -mx-4 border-b border-grey-50 bg-background-on-canvas py-1.5 sm:-mx-5 lg:-mx-6";
 
 /** Accent dots for category chips (matches explore redesign). */
 export const EXPLORE_CATEGORY_DOT_COLORS = [
