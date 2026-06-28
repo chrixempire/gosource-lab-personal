@@ -21,12 +21,15 @@ const props = withDefaults(
     priceMax?: number | null;
     /** Hide the in-stock/price filter cluster so the bar is a pure category rail. */
     hideFilters?: boolean;
+    /** Hide only the "In stock only" toggle while keeping the price filter. */
+    hideInStockFilter?: boolean;
   }>(),
   {
     inStockOnly: false,
     priceMin: null,
     priceMax: null,
     hideFilters: false,
+    hideInStockFilter: false,
   },
 );
 
@@ -369,6 +372,7 @@ watch(
 
         <div v-if="!hideFilters" class="flex shrink-0 items-center gap-2">
           <button
+            v-if="!hideInStockFilter"
             type="button"
             class="shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-sm font-medium transition"
             :class="
