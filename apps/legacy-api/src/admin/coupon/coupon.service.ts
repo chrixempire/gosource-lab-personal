@@ -21,6 +21,18 @@ import {
   isScopedItemCoupon,
   resolveEligibleSubtotal,
 } from './coupon-apply.helpers';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
+import { buildChanges, describeChanges } from '../../utils/activity-changes.util';
+
+const COUPON_LOG_FIELDS = [
+  { key: 'code', label: 'code' },
+  { key: 'discount', label: 'discount' },
+  { key: 'type', label: 'type' },
+  { key: 'expiryDate', label: 'expiry date' },
+  { key: 'usageLimit', label: 'usage limit' },
+];
 
 @Injectable()
 export class CouponService {
@@ -28,6 +40,7 @@ export class CouponService {
     @InjectModel(Coupon.name) private couponModel: Model<Coupon>,
     @InjectModel(Request.name) private requestModel: Model<Request>,
     @InjectModel(Order.name) private orderModel: Model<Order>,
+    private readonly activityService: ActivityService,
   ) {}
 
   /**
@@ -123,7 +136,11 @@ export class CouponService {
    * @param couponData
    * @returns
    */
-  async updateCoupon(couponId: string, couponData: any): Promise<any> {
+  async updateCoupon(
+    couponId: string,
+    couponData: any,
+    admin?: any,
+  ): Promise<any> {
     const coupon: CouponDocument = await this.couponModel.findById(couponId);
 
     if (!coupon) {
@@ -139,6 +156,20 @@ export class CouponService {
     );
 
     if (update) {
+      const changes = buildChanges(
+        coupon.toObject() as unknown as Record<string, unknown>,
+        update.toObject() as unknown as Record<string, unknown>,
+        COUPON_LOG_FIELDS,
+      );
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Coupon',
+        objectId: couponId,
+        description: describeChanges('coupon', coupon.code, changes),
+        metadata: { changes },
+      });
+
       return {
         status: true,
         message: 'Coupon updated successfully',

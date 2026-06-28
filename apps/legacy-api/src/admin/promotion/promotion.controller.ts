@@ -22,6 +22,8 @@ import {
 } from './dto/promotion.dto';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Promotion } from '../../promotion/schemas/promotion.schema';
+import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/promotion')
 @AdminAuth()
@@ -65,11 +67,13 @@ export class PromotionController {
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CREATE_UPDATE_PROMOTION)
   @UseGuards(AdminRolesGuard)
   @ApiOkResponse({ type: Promotion })
+  @SkipActivityLog() // logged explicitly with field old→new
   async update(
     @Param('id') id: string,
     @Body() updatePromotionDto: UpdatePromotionDto,
+    @Admin() admin: any,
   ) {
-    return await this.promotionService.update(id, updatePromotionDto);
+    return await this.promotionService.update(id, updatePromotionDto, admin);
   }
 
   @Patch(':id/activate')
