@@ -196,7 +196,7 @@ async function onAdd(e: MouseEvent) {
       <button
         v-else-if="showAddButton"
         type="button"
-        class="flex h-10 w-full shrink-0 cursor-pointer items-center justify-center gap-1 self-stretch rounded-[100px] border-2 border-white bg-[#F0F2F5] px-4 text-base font-bold text-[#101928] shadow-[0_4px_8px_0_rgba(71,83,103,0.10)] transition-colors hover:bg-[#E4E7EC] dark:border-grey-700 dark:bg-grey-800 dark:text-white dark:hover:bg-grey-700"
+        class="flex h-10 w-full shrink-0 cursor-pointer items-center justify-center gap-1 self-stretch rounded-[100px] border-2 border-white bg-[#F0F2F5] px-4 text-base font-bold text-[#101928] shadow-[0_4px_8px_0_rgba(71,83,103,0.10)] transition-colors hover:bg-[#E4E7EC] dark:border-primary-500/40 dark:bg-primary-500/12 dark:text-[#22c55e] dark:shadow-none dark:hover:bg-primary-500/20"
         @click="onAdd"
       >
         <Plus class="size-[18px] stroke-[3]" aria-hidden="true" />
