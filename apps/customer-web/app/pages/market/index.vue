@@ -459,11 +459,10 @@ onUnmounted(() => {
         v-if="hasCatalog"
         :categories="visibleCategories"
         :active-category-id="activeCategoryId"
-        :in-stock-only="inStockOnly"
+        hide-in-stock-filter
         :price-min="priceMin"
         :price-max="priceMax"
         @select-category="onSelectCategory"
-        @update:in-stock-only="inStockOnly = $event"
         @apply-price="onApplyPrice"
       />
 
