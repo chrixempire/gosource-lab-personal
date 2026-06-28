@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ExploreCategorySection } from '~/lib/explore-catalog-filters';
 import { ChevronRight } from 'lucide-vue-next';
+import { isMarketProductInStock } from '~/lib/marketplace-data';
 import ExploreMobileProductTripleGrid from '~/components/explore/ExploreMobileProductTripleGrid.vue';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
 
@@ -8,11 +9,16 @@ const props = defineProps<{
   section: ExploreCategorySection;
 }>();
 
-const MAX_VISIBLE_PRODUCTS = 10;
+const MAX_VISIBLE_PRODUCTS = 15;
 
 const totalProducts = computed(() => props.section.products.length);
+
+// Preview only in-stock items (up to 15); "View all" leads to the full category.
+const inStockProducts = computed(() =>
+  props.section.products.filter((product) => isMarketProductInStock(product)),
+);
 const visibleProducts = computed(() =>
-  props.section.products.slice(0, MAX_VISIBLE_PRODUCTS),
+  inStockProducts.value.slice(0, MAX_VISIBLE_PRODUCTS),
 );
 </script>
 
@@ -52,18 +58,24 @@ const visibleProducts = computed(() =>
       </NuxtLink>
     </header>
 
-    <ExploreMobileProductTripleGrid
-      :products="visibleProducts"
-      class="min-[900px]:hidden"
-    />
-
-    <div class="explore-products-grid">
-      <ExploreProductCard
-        v-for="product in visibleProducts"
-        :key="`desktop-${product.id}`"
-        :product="product"
+    <template v-if="visibleProducts.length > 0">
+      <ExploreMobileProductTripleGrid
+        :products="visibleProducts"
+        class="min-[900px]:hidden"
       />
-    </div>
+
+      <div class="explore-products-grid">
+        <ExploreProductCard
+          v-for="product in visibleProducts"
+          :key="`desktop-${product.id}`"
+          :product="product"
+        />
+      </div>
+    </template>
+
+    <p v-else class="px-2 py-4 text-sm text-grey-400">
+      No items in stock right now — tap “View all” to see the full category.
+    </p>
   </section>
 </template>
 
