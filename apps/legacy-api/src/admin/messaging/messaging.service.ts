@@ -146,7 +146,25 @@ export class AdminMessagingService {
 
   async findOne(messageId: string) {
     const message = await this.findMessage(messageId);
-    return successResponse('Message fetched successfully', message);
+    // Populate recipient names for display (e.g. the resend confirmation).
+    let recipients: string[] = [];
+    try {
+      if (Array.isArray(message.users) && message.users.length) {
+        const users = await this.customerModel
+          .find({ _id: { $in: message.users } })
+          .select('businessName email')
+          .lean();
+        recipients = users
+          .map((user: any) => user.businessName || user.email)
+          .filter(Boolean);
+      }
+    } catch {
+      /* best-effort recipient resolution */
+    }
+    return successResponse('Message fetched successfully', {
+      ...message.toObject(),
+      recipients,
+    });
   }
 
   async updateAlert(messageId: string, dto: UpdateAdminAlertDto) {
