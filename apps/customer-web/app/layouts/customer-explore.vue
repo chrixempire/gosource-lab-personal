@@ -10,9 +10,13 @@ const CustomerMarketOverlays = defineAsyncComponent(
 <template>
   <CustomerAppShell show-market-header-cart flush-main-top-padding>
     <slot />
+    <template #floating-actions>
+      <ClientOnly>
+        <ExploreFloatingCartButton inline />
+      </ClientOnly>
+    </template>
     <template #overlays>
       <ClientOnly>
-        <ExploreFloatingCartButton />
         <CustomerMarketOverlays />
       </ClientOnly>
     </template>

@@ -24,6 +24,7 @@ import { Menu } from 'lucide-vue-next';
 import CustomerPageTitleInfo from '~/components/layout/customer/CustomerPageTitleInfo.vue';
 import CustomerSidebar from '~/components/layout/customer/CustomerSidebar.vue';
 import CustomerThemeToggle from '~/components/layout/customer/CustomerThemeToggle.vue';
+import CustomerFeedbackWidget from '~/components/feedback/CustomerFeedbackWidget.vue';
 import {
   CUSTOMER_FLOATING_CONTENT_Z,
   CUSTOMER_FLOATING_OVERLAY_Z,
@@ -379,6 +380,17 @@ async function confirmLogout() {
       </div>
 
       <slot name="overlays" />
+
+      <!-- Floating actions: feedback on every page; the cart joins it (to the
+           right, 8px apart) on market pages via the floating-actions slot. -->
+      <div
+        class="fixed z-40 flex items-center gap-2 bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))] sm:bottom-6 sm:right-6"
+      >
+        <ClientOnly>
+          <CustomerFeedbackWidget />
+        </ClientOnly>
+        <slot name="floating-actions" />
+      </div>
 
       <Dialog :open="logoutConfirmOpen" @update:open="onLogoutDialogOpenChange">
         <DialogContent :overlay-class="CUSTOMER_FLOATING_OVERLAY_Z" :class="CUSTOMER_FLOATING_CONTENT_Z">
