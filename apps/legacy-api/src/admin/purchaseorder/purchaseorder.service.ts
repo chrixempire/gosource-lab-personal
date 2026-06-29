@@ -48,11 +48,11 @@ const formatPoLines = (value: unknown) => {
   return value
     .map((line: any) => {
       const product = line?.product;
-      const id =
+      const name =
         product && typeof product === 'object'
-          ? String(product._id ?? product.id ?? product)
-          : String(product ?? '');
-      return `${id}×${line?.quantity ?? ''}`;
+          ? (product.name ?? product._id ?? product)
+          : (product ?? '');
+      return `${name} (×${line?.quantity ?? ''})`;
     })
     .sort();
 };
@@ -876,7 +876,9 @@ export class PurchaseOrderService {
     admin?: any,
   ): Promise<any> {
     const purchaseOrder: PurchaseOrderDocument =
-      await this.purchaseOrderModel.findById(purchaseOrderId);
+      await this.purchaseOrderModel
+        .findById(purchaseOrderId)
+        .populate('products.product');
 
     if (!purchaseOrder) {
       throw new NotFoundException('PurchaseOrder not found');

@@ -26,7 +26,7 @@ import {
   buildChanges,
   describeChanges,
   formatLogDate,
-  formatIdList,
+  formatNameList,
 } from '../../utils/activity-changes.util';
 
 const PROMOTION_LOG_FIELDS = [
@@ -37,7 +37,7 @@ const PROMOTION_LOG_FIELDS = [
   { key: 'endDate', label: 'end date', format: formatLogDate },
   { key: 'isPercentageDiscounted', label: 'percentage discount' },
   { key: 'discountValue', label: 'discount value' },
-  { key: 'products', label: 'items', format: formatIdList },
+  { key: 'products', label: 'items', format: formatNameList },
 ];
 
 @Injectable()

@@ -49,6 +49,26 @@ export function formatIdList(value: unknown): unknown {
   return value == null ? null : toId(value);
 }
 
+/**
+ * Normalise a ref field to a sorted list of human names. Use when the
+ * before/after docs are populated (objects with `name`/`title`); falls back to
+ * id when only a raw ref is present.
+ */
+export function formatNameList(value: unknown): unknown {
+  const toName = (v: unknown): string => {
+    if (v == null) return '';
+    if (typeof v === 'object') {
+      const obj = v as Record<string, unknown>;
+      return String(obj.name ?? obj.title ?? obj._id ?? obj.id ?? v);
+    }
+    return String(v);
+  };
+  if (Array.isArray(value)) {
+    return value.map(toName).sort();
+  }
+  return value == null ? null : toName(value);
+}
+
 /** Normalise a boolean-ish value (handles the "true"/"false" strings forms send). */
 export function formatBool(value: unknown): unknown {
   if (value == null) return null;
