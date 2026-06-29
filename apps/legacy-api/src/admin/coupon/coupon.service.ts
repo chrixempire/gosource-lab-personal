@@ -12,6 +12,8 @@ import { ApplyCouponDto, CreateCouponDto } from './dto/create-coupon.dto';
 import { RequestDocument, Request } from '../../request/schema/request.schema';
 import { CouponType, CouponCategory } from './coupon.enum';
 import { Order } from '../../order/entities/order.entity';
+import { Product } from '../../product/entities/product.entity';
+import { Category } from '../../category/entities/category.entity';
 import { calculateTotalPrice, calculateDeliveryFee, calculateFrozenDeliveryFee } from '../../utils/helpers';
 import { successResponse } from '../../utils/responses';
 import { RequestStatus } from '../../request/enum/request.enum';
@@ -59,6 +61,8 @@ export class CouponService {
     @InjectModel(Coupon.name) private couponModel: Model<Coupon>,
     @InjectModel(Request.name) private requestModel: Model<Request>,
     @InjectModel(Order.name) private orderModel: Model<Order>,
+    @InjectModel(Product.name) private productModel: Model<Product>,
+    @InjectModel(Category.name) private categoryModel: Model<Category>,
     private readonly activityService: ActivityService,
   ) {}
 
@@ -186,7 +190,7 @@ export class CouponService {
         module: 'Coupon',
         objectId: couponId,
         description: describeChanges('coupon', coupon.code, changes),
-        metadata: { changes },
+        metadata: { changes, details: await this.buildCouponDetails(update) },
       });
 
       return {
@@ -195,6 +199,47 @@ export class CouponService {
         data: update,
       };
     }
+  }
+
+  /** Full current-state snapshot of a coupon for the activity-log details. */
+  private async buildCouponDetails(
+    coupon: any,
+  ): Promise<Record<string, unknown>> {
+    const applicableItems: any[] = coupon.applicableItems ?? [];
+    const productNames = applicableItems.length
+      ? (
+          await this.productModel
+            .find({ _id: { $in: applicableItems } })
+            .select('name')
+            .lean()
+        )
+          .map((product: any) => product.name)
+          .filter(Boolean)
+      : [];
+    const categoryName = coupon.categoryId
+      ? (
+          await this.categoryModel
+            .findById(coupon.categoryId)
+            .select('name')
+            .lean()
+        )?.name
+      : null;
+
+    return {
+      code: coupon.code,
+      title: coupon.title,
+      type: coupon.type,
+      category: coupon.category,
+      target: coupon.target,
+      discount: coupon.discount,
+      status: coupon.isActive ? 'active' : 'inactive',
+      'minimum order amount': coupon.minimumOrderAmount,
+      'usage limit': coupon.usageLimit,
+      'start date': formatLogDate(coupon.startDate),
+      'expiry date': formatLogDate(coupon.endDate),
+      'applicable category': categoryName ?? '',
+      products: productNames.join(', '),
+    };
   }
 
   async removeCoupon(couponId: string): Promise<any> {
