@@ -165,19 +165,24 @@ export class AdminMessagingService {
     message: AdminMessageDocument,
   ): Promise<Record<string, unknown>> {
     if (message.type === AdminMessageType.EMAIL) {
+      // Recipient-name resolution is best-effort; never let it break the action.
       let recipientSummary = '';
-      if (Array.isArray(message.users) && message.users.length) {
-        const recipients = await this.customerModel
-          .find({ _id: { $in: message.users } })
-          .select('businessName email')
-          .lean();
-        const names = recipients
-          .map((recipient: any) => recipient.businessName || recipient.email)
-          .filter(Boolean);
-        recipientSummary =
-          names.length > 25
-            ? `${names.slice(0, 25).join(', ')}, +${names.length - 25} more`
-            : names.join(', ');
+      try {
+        if (Array.isArray(message.users) && message.users.length) {
+          const recipients = await this.customerModel
+            .find({ _id: { $in: message.users } })
+            .select('businessName email')
+            .lean();
+          const names = recipients
+            .map((recipient: any) => recipient.businessName || recipient.email)
+            .filter(Boolean);
+          recipientSummary =
+            names.length > 25
+              ? `${names.slice(0, 25).join(', ')}, +${names.length - 25} more`
+              : names.join(', ');
+        }
+      } catch {
+        /* best-effort recipient resolution */
       }
       return {
         subject: message.subject,

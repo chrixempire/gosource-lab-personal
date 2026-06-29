@@ -205,25 +205,31 @@ export class CouponService {
   private async buildCouponDetails(
     coupon: any,
   ): Promise<Record<string, unknown>> {
-    const applicableItems: any[] = coupon.applicableItems ?? [];
-    const productNames = applicableItems.length
-      ? (
-          await this.productModel
-            .find({ _id: { $in: applicableItems } })
-            .select('name')
-            .lean()
-        )
+    // Name resolution is best-effort: a lookup failure must never break the
+    // update response, so fall back to omitting the resolved names.
+    let productNames: string[] = [];
+    let categoryName: string | null = null;
+    try {
+      const applicableItems: any[] = coupon.applicableItems ?? [];
+      if (applicableItems.length) {
+        const products = await this.productModel
+          .find({ _id: { $in: applicableItems } })
+          .select('name')
+          .lean();
+        productNames = products
           .map((product: any) => product.name)
-          .filter(Boolean)
-      : [];
-    const categoryName = coupon.categoryId
-      ? (
-          await this.categoryModel
-            .findById(coupon.categoryId)
-            .select('name')
-            .lean()
-        )?.name
-      : null;
+          .filter(Boolean);
+      }
+      if (coupon.categoryId) {
+        const category = await this.categoryModel
+          .findById(coupon.categoryId)
+          .select('name')
+          .lean();
+        categoryName = category?.name ?? null;
+      }
+    } catch {
+      /* best-effort name resolution */
+    }
 
     return {
       code: coupon.code,

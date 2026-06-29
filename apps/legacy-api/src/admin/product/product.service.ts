@@ -454,17 +454,26 @@ export class ProductService {
     const oldCategoryId = categoryId(product.category);
     const newCategoryId = categoryId(newProductDetails.category);
     if ('category' in newProductDetails && oldCategoryId !== newCategoryId) {
-      const [oldCat, newCat] = await Promise.all([
-        oldCategoryId
-          ? this.categoryModel.findById(oldCategoryId).select('name').lean()
-          : null,
-        newCategoryId
-          ? this.categoryModel.findById(newCategoryId).select('name').lean()
-          : null,
-      ]);
+      // Name resolution is best-effort; fall back to ids if a lookup fails.
+      let oldName: string | null = null;
+      let newName: string | null = null;
+      try {
+        const [oldCat, newCat] = await Promise.all([
+          oldCategoryId
+            ? this.categoryModel.findById(oldCategoryId).select('name').lean()
+            : null,
+          newCategoryId
+            ? this.categoryModel.findById(newCategoryId).select('name').lean()
+            : null,
+        ]);
+        oldName = oldCat?.name ?? null;
+        newName = newCat?.name ?? null;
+      } catch {
+        /* best-effort category-name resolution */
+      }
       changes['Category'] = {
-        old: oldCat?.name ?? oldCategoryId ?? null,
-        new: newCat?.name ?? newCategoryId ?? null,
+        old: oldName ?? oldCategoryId ?? null,
+        new: newName ?? newCategoryId ?? null,
       };
     }
 
