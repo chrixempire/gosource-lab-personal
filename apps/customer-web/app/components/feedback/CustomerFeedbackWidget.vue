@@ -7,7 +7,12 @@ import {
   DropdownMenuTrigger,
   toast,
 } from '@gosource/ui';
-import { onClickOutside, useEventListener } from '@vueuse/core';
+import {
+  onClickOutside,
+  StorageSerializers,
+  useEventListener,
+  useLocalStorage,
+} from '@vueuse/core';
 import { Check, ChevronDown, MessageSquarePlus, X } from 'lucide-vue-next';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
@@ -17,6 +22,8 @@ const CATEGORIES = [
   { value: 'feature', label: 'Feature request' },
   { value: 'other', label: 'Other' },
 ] as const;
+
+const FAB_SIZE = 52;
 
 const route = useRoute();
 const { findCategoryById } = useMarketCatalog();
@@ -49,6 +56,7 @@ const message = ref('');
 const category = ref<string>('general');
 const categoryOpen = ref(false);
 const rootRef = ref<HTMLElement | null>(null);
+const fabRef = ref<HTMLElement | null>(null);
 
 const canSubmit = computed(() => message.value.trim().length > 0);
 const selectedCategoryLabel = computed(
@@ -69,26 +77,127 @@ function toggle() {
   open.value ? close() : (open.value = true);
 }
 
-// Close on outside click (but ignore clicks while the teleported category
-// dropdown is open) and on Escape.
-onClickOutside(rootRef, () => {
-  if (open.value && !submitting.value && !categoryOpen.value) {
-    open.value = false;
+/* ---- Draggable FAB ------------------------------------------------------ */
+// Position persists across sessions. `null` = default (grouped with the cart).
+const dragPos = useLocalStorage<{ x: number; y: number } | null>(
+  'customer-feedback-fab-pos',
+  null,
+  // Force the JSON serializer — the default "any" serializer (used when the
+  // initial value is null) would persist the object as "[object Object]".
+  { serializer: StorageSerializers.object },
+);
+const dragging = ref(false);
+let moved = false;
+let startX = 0;
+let startY = 0;
+let originLeft = 0;
+let originTop = 0;
+
+// When a position is stored, the FAB floats freely (fixed); otherwise it stays
+// a normal flex item in the floating stack next to the cart.
+const fabStyle = computed(() =>
+  dragPos.value
+    ? {
+        position: 'fixed' as const,
+        left: `${dragPos.value.x}px`,
+        top: `${dragPos.value.y}px`,
+      }
+    : {},
+);
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function onPointerMove(event: PointerEvent) {
+  const dx = event.clientX - startX;
+  const dy = event.clientY - startY;
+  if (!moved && Math.hypot(dx, dy) > 4) moved = true;
+  if (!moved) return;
+  dragPos.value = {
+    x: clamp(originLeft + dx, 8, window.innerWidth - FAB_SIZE - 8),
+    y: clamp(originTop + dy, 8, window.innerHeight - FAB_SIZE - 8),
+  };
+  if (open.value) positionPanel();
+}
+
+function onPointerUp() {
+  window.removeEventListener('pointermove', onPointerMove);
+  dragging.value = false;
+}
+
+function onPointerDown(event: PointerEvent) {
+  if (event.button != null && event.button !== 0) return;
+  const rect = fabRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  originLeft = rect.left;
+  originTop = rect.top;
+  startX = event.clientX;
+  startY = event.clientY;
+  moved = false;
+  dragging.value = true;
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp, { once: true });
+}
+
+// A drag ends with a click event too — ignore that click so it doesn't toggle.
+function onClick() {
+  if (moved) {
+    moved = false;
+    return;
   }
+  toggle();
+}
+
+/* ---- Popover positioning (anchored to the FAB, clamped to viewport) ----- */
+const panelStyle = ref<Record<string, string>>({});
+function positionPanel() {
+  const rect = fabRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  const width = Math.min(360, window.innerWidth - 24);
+  const left = clamp(rect.right - width, 12, window.innerWidth - width - 12);
+  // Anchor the panel's bottom just above the FAB so it grows upward.
+  const bottom = window.innerHeight - rect.top + 12;
+  panelStyle.value = {
+    left: `${left}px`,
+    bottom: `${bottom}px`,
+    width: `${width}px`,
+  };
+}
+
+function clampDragPos() {
+  if (!dragPos.value) return;
+  dragPos.value = {
+    x: clamp(dragPos.value.x, 8, window.innerWidth - FAB_SIZE - 8),
+    y: clamp(dragPos.value.y, 8, window.innerHeight - FAB_SIZE - 8),
+  };
+}
+
+watch(open, (value) => {
+  if (value) nextTick(positionPanel);
+  else resetForm();
+});
+onMounted(clampDragPos);
+useEventListener(window, 'resize', () => {
+  clampDragPos();
+  if (open.value) positionPanel();
+});
+
+/* ---- Dismissal + scroll shrink ------------------------------------------ */
+onClickOutside(rootRef, () => {
+  if (open.value && !submitting.value && !categoryOpen.value) open.value = false;
 });
 useEventListener(window, 'keydown', (event: KeyboardEvent) => {
   if (event.key === 'Escape' && open.value && !categoryOpen.value) close();
 });
 
-// Shrink/fade the button while the page is scrolling, restore when it settles
-// (capture phase so it catches scrolls in any nested scroll container).
 const isScrolling = ref(false);
 let scrollIdleTimer: ReturnType<typeof setTimeout> | null = null;
 useEventListener(
   window,
   'scroll',
   () => {
-    if (open.value) return;
+    if (open.value || dragging.value) return;
     isScrolling.value = true;
     if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
     scrollIdleTimer = setTimeout(() => {
@@ -97,10 +206,6 @@ useEventListener(
   },
   { passive: true, capture: true },
 );
-
-watch(open, (value) => {
-  if (!value) resetForm();
-});
 
 async function submit() {
   if (!canSubmit.value || submitting.value) return;
@@ -129,16 +234,19 @@ async function submit() {
 </script>
 
 <template>
-  <div ref="rootRef" class="relative">
+  <div ref="rootRef" :class="dragPos ? 'z-40' : 'relative'" :style="fabStyle">
     <button
+      ref="fabRef"
       type="button"
       :class="[
-        'inline-flex size-[52px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-500 text-white shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5)] transition-all duration-200 hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500',
+        'inline-flex size-[52px] shrink-0 cursor-pointer touch-none select-none items-center justify-center rounded-full bg-primary-500 text-white shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5)] transition-all duration-200 hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500',
         isScrolling && !open ? 'scale-90 opacity-60' : 'scale-100 opacity-100',
+        dragging ? 'cursor-grabbing' : '',
       ]"
       :aria-label="open ? 'Close feedback' : 'Send feedback'"
       :aria-expanded="open"
-      @click="toggle"
+      @pointerdown="onPointerDown"
+      @click="onClick"
     >
       <X v-if="open" class="size-6" aria-hidden="true" />
       <MessageSquarePlus v-else class="size-6" aria-hidden="true" />
@@ -154,7 +262,8 @@ async function submit() {
     >
       <div
         v-if="open"
-        class="fixed left-3 right-3 z-[130] origin-bottom-right overflow-hidden rounded-2xl border border-grey-50 bg-background-on-canvas text-left shadow-[0_24px_60px_-20px_rgba(16,24,40,0.45)] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:left-auto sm:right-6 sm:w-[22.5rem]"
+        :style="panelStyle"
+        class="fixed z-[130] max-h-[70vh] origin-bottom-right overflow-y-auto rounded-2xl border border-grey-50 bg-background-on-canvas text-left shadow-[0_24px_60px_-20px_rgba(16,24,40,0.45)]"
       >
         <div class="flex items-start justify-between gap-2 border-b border-grey-50 px-4 py-3.5">
           <div class="min-w-0">

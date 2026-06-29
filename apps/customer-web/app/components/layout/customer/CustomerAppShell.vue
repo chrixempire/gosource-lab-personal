@@ -220,6 +220,11 @@ async function confirmLogout() {
   clearActiveBranchForLogout();
   resetCartState();
   clearSession();
+  // Reset the feedback button to its default (grouped) position on sign-out —
+  // drag placement is treated as a within-session nudge, not a permanent pref.
+  if (import.meta.client) {
+    localStorage.removeItem('customer-feedback-fab-pos');
+  }
   mobileNavOpen.value = false;
 
   await navigateTo('/auth/sign-in');
