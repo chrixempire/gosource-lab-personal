@@ -449,11 +449,24 @@ onUnmounted(() => {
         @select="openProductAddModal"
       />
 
-      <ExplorePromotionsSection
-        v-if="showPromotions"
-        :promotions="promotions"
-        :loading="promotionsPending"
-      />
+      <div v-if="showPromotions" class="flex flex-col gap-4">
+        <div
+          v-if="promotionsPending && promotions.length === 0"
+          class="flex gap-4 overflow-x-auto pb-1"
+        >
+          <div
+            v-for="index in 5"
+            :key="index"
+            class="h-[270px] w-[220px] shrink-0 animate-pulse rounded-[8px] border border-grey-50 bg-grey-55"
+          />
+        </div>
+
+        <ExplorePromotionsSection
+          v-for="promotion in promotions"
+          :key="promotion.id"
+          :promotion="promotion"
+        />
+      </div>
 
       <ExploreCategoryFilterBar
         v-if="hasCatalog"
