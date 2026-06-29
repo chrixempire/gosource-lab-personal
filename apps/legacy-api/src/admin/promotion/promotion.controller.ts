@@ -79,17 +79,19 @@ export class PromotionController {
   @Patch(':id/activate')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.ACTIVATE_DEACTIVATE_PROMOTION)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with promotion details
   @ApiOkResponse({ type: Promotion })
-  async activate(@Param('id') id: string) {
-    return await this.promotionService.activate(id);
+  async activate(@Param('id') id: string, @Admin() admin: any) {
+    return await this.promotionService.activate(id, admin);
   }
 
   @Patch(':id/deactivate')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.ACTIVATE_DEACTIVATE_PROMOTION)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with promotion details
   @ApiOkResponse({ type: Promotion })
-  async deactivate(@Param('id') id: string) {
-    return await this.promotionService.deactivate(id);
+  async deactivate(@Param('id') id: string, @Admin() admin: any) {
+    return await this.promotionService.deactivate(id, admin);
   }
 
   @Delete(':id')

@@ -282,7 +282,39 @@ export class PromotionService {
     return successResponse('Delete promotion successfully');
   }
 
-  async activate(id: string) {
+  /** Record a promotion activate/deactivate with its full details. */
+  private async logPromotionToggle(
+    promotion: any,
+    activated: boolean,
+    admin?: any,
+  ) {
+    const names = formatNameList(promotion.products) as string[];
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: activated
+        ? ACTIVITY_LOG_ACTION_TYPE.ACTIVATE
+        : ACTIVITY_LOG_ACTION_TYPE.DEACTIVATE,
+      module: 'Promotions',
+      objectId: String(promotion._id),
+      description: `${activated ? 'Activated' : 'Deactivated'} promotion "${promotion.name ?? ''}"`.trim(),
+      metadata: {
+        changes: {
+          status: {
+            old: activated ? 'inactive' : 'active',
+            new: activated ? 'active' : 'inactive',
+          },
+        },
+        details: {
+          name: promotion.name,
+          items: Array.isArray(names) ? names.join(', ') : '',
+          'start date': formatLogDate(promotion.startDate),
+          'end date': formatLogDate(promotion.endDate),
+        },
+      },
+    });
+  }
+
+  async activate(id: string, admin?: any) {
     const promotion = await this.promotionModel
       .findById(id)
       .populate('products');
@@ -307,10 +339,12 @@ export class PromotionService {
 
     await this.applyDiscounts(promotion);
 
+    await this.logPromotionToggle(promotion, true, admin);
+
     return successResponse('Promotion activated successfully', promotion);
   }
 
-  async deactivate(id: string) {
+  async deactivate(id: string, admin?: any) {
     const promotion = await this.promotionModel
       .findById(id)
       .populate('products');
@@ -324,6 +358,8 @@ export class PromotionService {
     await promotion.save();
 
     await this.revertDiscounts(promotion);
+
+    await this.logPromotionToggle(promotion, false, admin);
 
     return successResponse('Promotion deactivated successfully', promotion);
   }
