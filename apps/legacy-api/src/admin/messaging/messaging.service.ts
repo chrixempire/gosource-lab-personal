@@ -157,6 +157,45 @@ export class AdminMessagingService {
     });
   }
 
+  /**
+   * Build a details block (subject/body/dates + recipients) for any message
+   * action, so every log shows the email/alert content and who it reached.
+   */
+  private async buildMessageDetails(
+    message: AdminMessageDocument,
+  ): Promise<Record<string, unknown>> {
+    if (message.type === AdminMessageType.EMAIL) {
+      let recipientSummary = '';
+      if (Array.isArray(message.users) && message.users.length) {
+        const recipients = await this.customerModel
+          .find({ _id: { $in: message.users } })
+          .select('businessName email')
+          .lean();
+        const names = recipients
+          .map((recipient: any) => recipient.businessName || recipient.email)
+          .filter(Boolean);
+        recipientSummary =
+          names.length > 25
+            ? `${names.slice(0, 25).join(', ')}, +${names.length - 25} more`
+            : names.join(', ');
+      }
+      return {
+        subject: message.subject,
+        message: message.message,
+        recipients: recipientSummary,
+        'recipient count': message.recipientCount,
+      };
+    }
+
+    return {
+      message: message.message,
+      theme: message.theme,
+      audience: message.audience,
+      'start date': formatLogDate(message.startDate),
+      'end date': formatLogDate(message.endDate),
+    };
+  }
+
   async findAll(query: AdminMessageQueryDto) {
     const filter: Record<string, unknown> = {};
     if (query.type) filter.type = query.type;
@@ -252,7 +291,7 @@ export class AdminMessagingService {
       ACTIVITY_LOG_ACTION_TYPE.UPDATE,
       message,
       describeChanges('alert', this.messageLabel(message), changes),
-      { changes },
+      { changes, details: await this.buildMessageDetails(message) },
     );
 
     return successResponse('Message updated successfully', message);
@@ -290,6 +329,7 @@ export class AdminMessagingService {
       ACTIVITY_LOG_ACTION_TYPE.UPDATE,
       message,
       `Resent email "${this.messageLabel(message)}" to ${message.recipientCount} recipient(s)`,
+      { details: await this.buildMessageDetails(message) },
     );
     return successResponse('Message queued for resend successfully', message);
   }
@@ -313,6 +353,7 @@ export class AdminMessagingService {
       ACTIVITY_LOG_ACTION_TYPE.ACTIVATE,
       message,
       `Activated alert "${this.messageLabel(message)}"`,
+      { details: await this.buildMessageDetails(message) },
     );
     return successResponse('Message activated successfully', message);
   }
@@ -326,6 +367,7 @@ export class AdminMessagingService {
       ACTIVITY_LOG_ACTION_TYPE.DEACTIVATE,
       message,
       `Deactivated alert "${this.messageLabel(message)}"`,
+      { details: await this.buildMessageDetails(message) },
     );
     return successResponse('Message deactivated successfully', message);
   }
@@ -339,13 +381,16 @@ export class AdminMessagingService {
     }
     const label = this.messageLabel(message);
     const removedId = message.id;
+    const isAlert = message.type === AdminMessageType.ALERT;
+    const details = await this.buildMessageDetails(message);
     await message.deleteOne();
     await this.activityService.record({
       ...adminInitiator(admin),
       action: ACTIVITY_LOG_ACTION_TYPE.DELETE,
       module: 'Messaging',
       objectId: removedId,
-      description: `Deleted ${message.type === AdminMessageType.ALERT ? 'alert' : 'email'} "${label}"`,
+      description: `Deleted ${isAlert ? 'alert' : 'email'} "${label}"`,
+      metadata: { details },
     });
     return successResponse('Message deleted successfully');
   }
