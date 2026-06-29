@@ -3,6 +3,7 @@ import {
   Button,
   Dialog,
   DialogBody,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -70,9 +71,23 @@ const parsed = computed(() =>
 );
 const rows = computed(() => parsed.value.rows);
 const meta = computed(() => parsed.value.meta);
-const stats = computed(() => parseMessageStats(statsData.value));
+// Hold the last good stats so a transient empty payload during a refresh
+// (or a fetch-key change) never blanks the cards to 0 until a full reload.
+const lastStats = ref<ReturnType<typeof parseMessageStats> | null>(null);
+const stats = computed(() => {
+  if (statsData.value == null) {
+    return lastStats.value ?? { total: 0, alerts: 0, emails: 0 };
+  }
+  const parsed = parseMessageStats(statsData.value);
+  lastStats.value = parsed;
+  return parsed;
+});
 const tableLoading = computed(() => pending.value && rows.value.length === 0);
-const statsLoading = computed(() => statsPending.value);
+// Show the skeleton only on the very first load (no data and nothing cached).
+const statsLoading = computed(
+  () =>
+    statsPending.value && statsData.value == null && lastStats.value == null,
+);
 const hasPendingDeliveries = computed(() =>
   rows.value.some((row) => row.status === "pending"),
 );
@@ -106,42 +121,125 @@ function setSort(key: SortKey) {
   sortOrder.value = "asc";
 }
 
-async function toggleStatus(row: AdminMessageRow) {
-  if (row.type !== "alert") return;
+// Confirmation modal: stays open while the action runs and on failure;
+// closes only when the endpoint succeeds.
+type ConfirmAction = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  destructive?: boolean;
+  showRecipients?: boolean;
+  run: () => Promise<void>;
+};
+const confirmOpen = ref(false);
+const confirmLoading = ref(false);
+const confirmError = ref<string | null>(null);
+const confirmAction = ref<ConfirmAction | null>(null);
+const confirmRecipients = ref<string[] | null>(null);
+const confirmRecipientsLoading = ref(false);
+
+function requestConfirm(action: ConfirmAction) {
+  confirmAction.value = action;
+  confirmError.value = null;
+  confirmRecipients.value = null;
+  confirmRecipientsLoading.value = false;
+  confirmOpen.value = true;
+}
+
+async function loadConfirmRecipients(id: string) {
+  confirmRecipients.value = null;
+  confirmRecipientsLoading.value = true;
   try {
-    await runMessageAction(
-      row.id,
-      row.status === "active" ? "deactivate" : "activate",
+    const res = await $fetch<{ data?: { recipients?: string[] } }>(
+      `/api/messages/${id}`,
     );
-    await refresh();
+    const recipients = res?.data?.recipients;
+    confirmRecipients.value = Array.isArray(recipients) ? recipients : [];
   } catch {
-    // toast in composable
+    confirmRecipients.value = [];
+  } finally {
+    confirmRecipientsLoading.value = false;
   }
 }
 
-async function resendMessage(row: AdminMessageRow) {
-  try {
-    await runMessageAction(row.id, "resend");
-    await refresh();
-  } catch {
-    // toast in composable
+function onConfirmOpenChange(open: boolean) {
+  // Block dismissal while the action is in flight.
+  if (confirmLoading.value) return;
+  confirmOpen.value = open;
+  if (!open) {
+    confirmAction.value = null;
+    confirmError.value = null;
   }
+}
+
+async function runConfirm() {
+  if (!confirmAction.value) return;
+  confirmLoading.value = true;
+  confirmError.value = null;
+  try {
+    await confirmAction.value.run();
+    confirmLoading.value = false;
+    confirmOpen.value = false; // success → close
+    confirmAction.value = null;
+  } catch (err: unknown) {
+    confirmLoading.value = false;
+    const data = (err as { data?: { message?: string } })?.data;
+    confirmError.value =
+      data?.message ||
+      (err as { message?: string })?.message ||
+      "Something went wrong. Please try again.";
+    // failure → modal stays open so the action can be retried
+  }
+}
+
+function toggleStatus(row: AdminMessageRow) {
+  if (row.type !== "alert") return;
+  const activating = row.status !== "active";
+  requestConfirm({
+    title: activating ? "Activate alert?" : "Deactivate alert?",
+    description: activating
+      ? "This alert will become visible to customers."
+      : "This alert will be hidden from customers.",
+    confirmLabel: activating ? "Activate" : "Deactivate",
+    run: async () => {
+      await runMessageAction(row.id, activating ? "activate" : "deactivate");
+      await refresh();
+    },
+  });
+}
+
+function resendMessage(row: AdminMessageRow) {
+  requestConfirm({
+    title: "Resend email?",
+    description: `Resend "${row.subject || row.message}" to its recipients.`,
+    confirmLabel: "Resend",
+    showRecipients: true,
+    run: async () => {
+      await runMessageAction(row.id, "resend");
+      await refresh();
+    },
+  });
+  void loadConfirmRecipients(row.id);
 }
 
 function editMessage(row: AdminMessageRow) {
   void navigateTo(messageAlertEditPath(row.id));
 }
 
-async function deleteMessage(id: string) {
-  try {
-    await removeMessage(id);
-    selectedIds.value = selectedIds.value.filter(
-      (selectedId) => selectedId !== id,
-    );
-    await Promise.all([refresh(), refreshStats()]);
-  } catch {
-    // toast in composable
-  }
+function deleteMessage(id: string) {
+  requestConfirm({
+    title: "Delete message?",
+    description: "This permanently deletes the message and cannot be undone.",
+    confirmLabel: "Delete",
+    destructive: true,
+    run: async () => {
+      await removeMessage(id);
+      selectedIds.value = selectedIds.value.filter(
+        (selectedId) => selectedId !== id,
+      );
+      await Promise.all([refresh(), refreshStats()]);
+    },
+  });
 }
 
 function openSendDialog() {
@@ -470,6 +568,74 @@ updateHeader({ title: "Messages" });
         @toggle-status="toggleStatus"
         @delete="deleteMessage"
       />
+
+      <Dialog :open="confirmOpen" @update:open="onConfirmOpenChange">
+        <DialogContent class="z-[100]">
+          <DialogHeader>
+            <div class="flex min-w-0 flex-1 flex-col gap-1 pr-2 text-left">
+              <DialogTitle>{{ confirmAction?.title }}</DialogTitle>
+            </div>
+            <DialogClose class="shrink-0" :disabled="confirmLoading" />
+          </DialogHeader>
+
+          <DialogBody class="flex flex-col gap-3">
+            <p class="text-sm text-grey-text">
+              {{ confirmAction?.description }}
+            </p>
+
+            <div v-if="confirmAction?.showRecipients">
+              <p
+                class="text-xs font-medium uppercase tracking-wide text-grey-500"
+              >
+                Recipients
+              </p>
+              <p
+                v-if="confirmRecipientsLoading"
+                class="mt-1 text-sm text-grey-400"
+              >
+                Loading recipients…
+              </p>
+              <p
+                v-else-if="confirmRecipients && confirmRecipients.length"
+                class="mt-1 break-words text-sm text-grey-700"
+              >
+                {{ confirmRecipients.join(", ") }}
+              </p>
+              <p v-else class="mt-1 text-sm text-grey-400">
+                No recipients found.
+              </p>
+            </div>
+
+            <p
+              v-if="confirmError"
+              class="rounded-lg bg-negative-50 px-3 py-2 text-sm text-negative-600"
+            >
+              {{ confirmError }}
+            </p>
+          </DialogBody>
+
+          <DialogFooter class="grid grid-cols-2 gap-3">
+            <Button
+              variant="neutral"
+              size="medium"
+              class="w-full"
+              :disabled="confirmLoading"
+              @click="onConfirmOpenChange(false)"
+            >
+              Cancel
+            </Button>
+            <Button
+              :variant="confirmAction?.destructive ? 'destructive' : 'primary'"
+              size="medium"
+              class="w-full"
+              :loading="confirmLoading"
+              @click="runConfirm"
+            >
+              {{ confirmAction?.confirmLabel }}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog v-model:open="sendDialogOpen">
         <DialogContent>
