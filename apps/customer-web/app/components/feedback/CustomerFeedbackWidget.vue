@@ -57,6 +57,24 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
   if (event.key === 'Escape' && open.value && !categoryOpen.value) close();
 });
 
+// Shrink/fade the button while the page is scrolling, restore when it settles
+// (capture phase so it catches scrolls in any nested scroll container).
+const isScrolling = ref(false);
+let scrollIdleTimer: ReturnType<typeof setTimeout> | null = null;
+useEventListener(
+  window,
+  'scroll',
+  () => {
+    if (open.value) return;
+    isScrolling.value = true;
+    if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = setTimeout(() => {
+      isScrolling.value = false;
+    }, 600);
+  },
+  { passive: true, capture: true },
+);
+
 watch(open, (value) => {
   if (!value) resetForm();
 });
@@ -91,7 +109,10 @@ async function submit() {
   <div ref="rootRef" class="relative">
     <button
       type="button"
-      class="inline-flex size-[52px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-500 text-white shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5)] transition hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+      :class="[
+        'inline-flex size-[52px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-500 text-white shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5)] transition-all duration-200 hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500',
+        isScrolling && !open ? 'scale-90 opacity-60' : 'scale-100 opacity-100',
+      ]"
       :aria-label="open ? 'Close feedback' : 'Send feedback'"
       :aria-expanded="open"
       @click="toggle"
