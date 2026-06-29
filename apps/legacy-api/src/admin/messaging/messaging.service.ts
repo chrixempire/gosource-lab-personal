@@ -90,6 +90,14 @@ export class AdminMessagingService {
         ACTIVITY_LOG_ACTION_TYPE.CREATE,
         alert,
         `Created alert "${this.messageLabel(alert)}"`,
+        {
+          details: {
+            message: alert.message,
+            theme: alert.theme,
+            'start date': formatLogDate(alert.startDate),
+            'end date': formatLogDate(alert.endDate),
+          },
+        },
       );
       return successResponse('Message created successfully', alert);
     }
@@ -107,11 +115,26 @@ export class AdminMessagingService {
     });
 
     await this.enqueueEmail(email, recipients);
+    const recipientNames = recipients
+      .map((recipient: any) => recipient.businessName || recipient.email || '')
+      .filter(Boolean);
+    const recipientSummary =
+      recipientNames.length > 25
+        ? `${recipientNames.slice(0, 25).join(', ')}, +${recipientNames.length - 25} more`
+        : recipientNames.join(', ');
     await this.logMessageActivity(
       admin,
       ACTIVITY_LOG_ACTION_TYPE.CREATE,
       email,
       `Sent email "${this.messageLabel(email)}" to ${email.recipientCount} recipient(s)`,
+      {
+        details: {
+          subject: email.subject,
+          message: email.message,
+          recipients: recipientSummary,
+          'recipient count': email.recipientCount,
+        },
+      },
     );
     return successResponse('Message queued successfully', email);
   }
