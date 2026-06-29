@@ -198,8 +198,19 @@ useEventListener(window, 'resize', () => {
 });
 
 /* ---- Dismissal + scroll shrink ------------------------------------------ */
+// The category dropdown renders in a portal *outside* rootRef, so closing it
+// (item select or toggling the trigger) registers as an outside click. Since
+// `categoryOpen` has already flipped to false by the time this fires, remember
+// when it last closed and ignore outside clicks for a short window after.
+let categoryClosedAt = 0;
+watch(categoryOpen, (isOpen, wasOpen) => {
+  if (wasOpen && !isOpen) categoryClosedAt = Date.now();
+});
+
 onClickOutside(rootRef, () => {
-  if (open.value && !submitting.value && !categoryOpen.value) open.value = false;
+  if (!open.value || submitting.value || categoryOpen.value) return;
+  if (Date.now() - categoryClosedAt < 300) return;
+  open.value = false;
 });
 useEventListener(window, 'keydown', (event: KeyboardEvent) => {
   if (event.key === 'Escape' && open.value && !categoryOpen.value) close();
