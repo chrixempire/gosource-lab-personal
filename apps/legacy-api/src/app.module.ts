@@ -29,6 +29,7 @@ import { AdminCategoryModule } from './admin/category/category.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { RequestModule } from './request/request.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { ReviewModule } from './review/review.module';
 import { AdminOrderModule } from './admin/order/order.module';
 import { CustomerModule } from './admin/customer/customer.module';
 import { AdminModule } from './admin/admin/admin.module';
@@ -83,6 +84,7 @@ dotenv.config();
     AnalyticsModule,
     RequestModule,
     FeedbackModule,
+    ReviewModule,
     ActivityModule,
     CustomerModule,
     NotificationModule,
