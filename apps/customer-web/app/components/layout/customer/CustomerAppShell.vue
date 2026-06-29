@@ -389,7 +389,7 @@ async function confirmLogout() {
       <!-- Floating actions: feedback on every page; the cart joins it (to the
            right, 8px apart) on market pages via the floating-actions slot. -->
       <div
-        class="fixed z-40 flex items-center gap-2 bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))] sm:bottom-6 sm:right-6"
+        class="fixed z-[60] flex items-center gap-2 bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))] sm:bottom-6 sm:right-6"
       >
         <ClientOnly>
           <CustomerFeedbackWidget />

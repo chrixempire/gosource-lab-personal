@@ -13,7 +13,7 @@ import {
   useEventListener,
   useLocalStorage,
 } from '@vueuse/core';
-import { Check, ChevronDown, MessageSquarePlus, X } from 'lucide-vue-next';
+import { Check, ChevronDown, MessageCircle, X } from 'lucide-vue-next';
 import { extractApiErrorMessage } from '~/utils/api-error';
 
 const CATEGORIES = [
@@ -57,11 +57,15 @@ const category = ref<string>('general');
 const categoryOpen = ref(false);
 const rootRef = ref<HTMLElement | null>(null);
 const fabRef = ref<HTMLElement | null>(null);
+const panelRef = ref<HTMLElement | null>(null);
 
 const canSubmit = computed(() => message.value.trim().length > 0);
 const selectedCategoryLabel = computed(
   () => CATEGORIES.find((option) => option.value === category.value)?.label ?? '',
 );
+// Show the "Feedback" label when idle & closed (CSS also hides it on mobile);
+// collapses to an icon-only circle while scrolling or when the panel is open.
+const showLabel = computed(() => !open.value && !isScrolling.value);
 
 function resetForm() {
   message.value = '';
@@ -114,9 +118,11 @@ function onPointerMove(event: PointerEvent) {
   const dy = event.clientY - startY;
   if (!moved && Math.hypot(dx, dy) > 4) moved = true;
   if (!moved) return;
+  const w = fabRef.value?.offsetWidth ?? FAB_SIZE;
+  const h = fabRef.value?.offsetHeight ?? FAB_SIZE;
   dragPos.value = {
-    x: clamp(originLeft + dx, 8, window.innerWidth - FAB_SIZE - 8),
-    y: clamp(originTop + dy, 8, window.innerHeight - FAB_SIZE - 8),
+    x: clamp(originLeft + dx, 8, window.innerWidth - w - 8),
+    y: clamp(originTop + dy, 8, window.innerHeight - h - 8),
   };
   if (open.value) positionPanel();
 }
@@ -154,22 +160,30 @@ const panelStyle = ref<Record<string, string>>({});
 function positionPanel() {
   const rect = fabRef.value?.getBoundingClientRect();
   if (!rect) return;
+  const gap = 12;
   const width = Math.min(360, window.innerWidth - 24);
   const left = clamp(rect.right - width, 12, window.innerWidth - width - 12);
-  // Anchor the panel's bottom just above the FAB so it grows upward.
-  const bottom = window.innerHeight - rect.top + 12;
-  panelStyle.value = {
-    left: `${left}px`,
-    bottom: `${bottom}px`,
-    width: `${width}px`,
-  };
+  const panelHeight = panelRef.value?.offsetHeight ?? 0;
+  const spaceAbove = rect.top - gap;
+  const spaceBelow = window.innerHeight - rect.bottom - gap;
+  // Flip downward when there isn't room above but there is below.
+  const openDown = panelHeight > spaceAbove && spaceBelow > spaceAbove;
+  panelStyle.value = openDown
+    ? { left: `${left}px`, top: `${rect.bottom + gap}px`, width: `${width}px` }
+    : {
+        left: `${left}px`,
+        bottom: `${window.innerHeight - rect.top + gap}px`,
+        width: `${width}px`,
+      };
 }
 
 function clampDragPos() {
   if (!dragPos.value) return;
+  const w = fabRef.value?.offsetWidth ?? FAB_SIZE;
+  const h = fabRef.value?.offsetHeight ?? FAB_SIZE;
   dragPos.value = {
-    x: clamp(dragPos.value.x, 8, window.innerWidth - FAB_SIZE - 8),
-    y: clamp(dragPos.value.y, 8, window.innerHeight - FAB_SIZE - 8),
+    x: clamp(dragPos.value.x, 8, window.innerWidth - w - 8),
+    y: clamp(dragPos.value.y, 8, window.innerHeight - h - 8),
   };
 }
 
@@ -239,8 +253,9 @@ async function submit() {
       ref="fabRef"
       type="button"
       :class="[
-        'inline-flex size-[52px] shrink-0 cursor-pointer touch-none select-none items-center justify-center rounded-full bg-primary-500 text-white shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5)] transition-all duration-200 hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500',
-        isScrolling && !open ? 'scale-90 opacity-60' : 'scale-100 opacity-100',
+        'inline-flex h-[52px] shrink-0 cursor-pointer touch-none select-none items-center justify-center rounded-full bg-primary-500 text-white shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5)] transition-all duration-200 hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500',
+        showLabel ? 'w-[52px] sm:w-auto sm:gap-2 sm:px-5' : 'w-[52px]',
+        isScrolling && !open ? 'opacity-70' : 'opacity-100',
         dragging ? 'cursor-grabbing' : '',
       ]"
       :aria-label="open ? 'Close feedback' : 'Send feedback'"
@@ -248,8 +263,14 @@ async function submit() {
       @pointerdown="onPointerDown"
       @click="onClick"
     >
-      <X v-if="open" class="size-6" aria-hidden="true" />
-      <MessageSquarePlus v-else class="size-6" aria-hidden="true" />
+      <X v-if="open" class="size-6 shrink-0" aria-hidden="true" />
+      <MessageCircle v-else class="size-6 shrink-0" aria-hidden="true" />
+      <span
+        v-if="showLabel"
+        class="hidden whitespace-nowrap text-sm font-semibold sm:inline"
+      >
+        Feedback
+      </span>
     </button>
 
     <Transition
@@ -262,6 +283,7 @@ async function submit() {
     >
       <div
         v-if="open"
+        ref="panelRef"
         :style="panelStyle"
         class="fixed z-[130] max-h-[70vh] origin-bottom-right overflow-y-auto rounded-2xl border border-grey-50 bg-background-on-canvas text-left shadow-[0_24px_60px_-20px_rgba(16,24,40,0.45)]"
       >
