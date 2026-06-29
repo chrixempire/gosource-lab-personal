@@ -19,6 +19,29 @@ const CATEGORIES = [
 ] as const;
 
 const route = useRoute();
+const { findCategoryById } = useMarketCatalog();
+
+// Store a human-readable page: swap a category id in the URL for its name.
+function resolvePage(): string {
+  const queryCategory =
+    typeof route.query.category === 'string' ? route.query.category : '';
+  if (route.path === '/market' && queryCategory) {
+    const name = findCategoryById(queryCategory)?.title;
+    if (name) {
+      const rest = Object.entries(route.query)
+        .filter(([key]) => key !== 'category')
+        .map(([key, value]) => `${key}=${Array.isArray(value) ? value.join(',') : value}`)
+        .join('&');
+      return `/market?category=${name}${rest ? `&${rest}` : ''}`;
+    }
+  }
+  const pathMatch = route.path.match(/^\/market\/category\/([^/]+)$/);
+  if (pathMatch?.[1]) {
+    const name = findCategoryById(pathMatch[1])?.title;
+    if (name) return `/market/category/${name}`;
+  }
+  return route.fullPath;
+}
 
 const open = ref(false);
 const submitting = ref(false);
@@ -88,7 +111,7 @@ async function submit() {
       body: {
         message: message.value.trim(),
         category: category.value,
-        page: route.fullPath,
+        page: resolvePage(),
       },
     });
     toast.success('Thanks for your feedback! 🙌');
