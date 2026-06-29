@@ -91,6 +91,12 @@ function renderValue(key: string, value: unknown): string {
   return formatScalar(key, parsed);
 }
 
+/** True when a value is an image URL we should render as a thumbnail. */
+function isImageUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  return /^https?:\/\/\S+\.(jpe?g|png|webp|gif|svg)(\?\S*)?$/i.test(value.trim());
+}
+
 type ChangeRow = { label: string; old: string; new: string };
 type KvRow = { label: string; value: string };
 type Group = { title: string; rows: KvRow[] };
@@ -248,9 +254,28 @@ const hasDetails = computed(
             class="flex flex-wrap items-center gap-2 text-sm"
           >
             <span class="text-grey-600">{{ row.label }}</span>
-            <span class="text-grey-400 line-through">{{ row.old }}</span>
-            <span aria-hidden="true" class="text-grey-400">→</span>
-            <span class="font-semibold text-grey-900">{{ row.new }}</span>
+            <template v-if="isImageUrl(row.old) || isImageUrl(row.new)">
+              <img
+                v-if="isImageUrl(row.old)"
+                :src="row.old"
+                alt="previous image"
+                class="size-12 rounded-md object-cover opacity-60 ring-1 ring-grey-100"
+              >
+              <span v-else class="text-grey-400 line-through">{{ row.old }}</span>
+              <span aria-hidden="true" class="text-grey-400">→</span>
+              <img
+                v-if="isImageUrl(row.new)"
+                :src="row.new"
+                alt="new image"
+                class="size-12 rounded-md object-cover ring-1 ring-grey-100"
+              >
+              <span v-else class="font-semibold text-grey-900">{{ row.new }}</span>
+            </template>
+            <template v-else>
+              <span class="text-grey-400 line-through">{{ row.old }}</span>
+              <span aria-hidden="true" class="text-grey-400">→</span>
+              <span class="font-semibold text-grey-900">{{ row.new }}</span>
+            </template>
           </li>
         </ul>
       </section>
@@ -265,7 +290,15 @@ const hasDetails = computed(
         <dl class="mt-3 space-y-3">
           <div v-for="row in scalarRows" :key="row.label">
             <dt class="text-xs text-grey-500">{{ row.label }}</dt>
-            <dd class="mt-0.5 break-words text-sm text-grey-900">{{ row.value }}</dd>
+            <dd class="mt-0.5 break-words text-sm text-grey-900">
+              <img
+                v-if="isImageUrl(row.value)"
+                :src="row.value"
+                alt="image"
+                class="size-16 rounded-md object-cover ring-1 ring-grey-100"
+              >
+              <template v-else>{{ row.value }}</template>
+            </dd>
           </div>
         </dl>
       </section>
@@ -283,7 +316,15 @@ const hasDetails = computed(
             <dt v-if="row.label" class="text-xs text-grey-500">{{ row.label }}</dt>
             <dd
               class="mt-0.5 whitespace-pre-wrap break-words text-sm text-grey-900"
-            >{{ row.value }}</dd>
+            >
+              <img
+                v-if="isImageUrl(row.value)"
+                :src="row.value"
+                alt="image"
+                class="size-16 rounded-md object-cover ring-1 ring-grey-100"
+              >
+              <template v-else>{{ row.value }}</template>
+            </dd>
           </div>
         </dl>
       </section>
