@@ -175,7 +175,7 @@ onUnmounted(() => {
       <aside
         v-if="open && product"
         data-testid="market-product-detail-slide-modal"
-        class="fixed right-3 top-[5%] z-[90] flex h-[90dvh] w-[calc(100%-1.5rem)] max-w-[420px] flex-col overflow-hidden rounded-[24px] border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300 sm:right-4 sm:w-[min(100%-2rem,420px)]"
+        class="fixed right-2 top-2 bottom-2 z-[90] flex w-[calc(100%-1rem)] max-w-[500px] flex-col overflow-hidden rounded-[12px] border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300"
         role="dialog"
         aria-modal="true"
         :aria-label="modalTitle"
