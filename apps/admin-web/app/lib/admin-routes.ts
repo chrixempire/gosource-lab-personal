@@ -84,7 +84,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     to: ADMIN_PAGE_ROUTES.MESSAGES,
   },
   { label: 'Customers', icon: 'i-lucide-users', to: ADMIN_PAGE_ROUTES.CUSTOMERS },
-  { label: 'Feedback', icon: 'i-lucide-message-circle-heart', to: ADMIN_PAGE_ROUTES.FEEDBACK },
+  { label: 'Feedbacks & reviews', icon: 'i-lucide-message-circle-heart', to: ADMIN_PAGE_ROUTES.FEEDBACK },
   // { label: 'Activity log', icon: 'i-lucide-scroll-text', to: ADMIN_PAGE_ROUTES.ACTIVITY_LOG },
 ];
 
