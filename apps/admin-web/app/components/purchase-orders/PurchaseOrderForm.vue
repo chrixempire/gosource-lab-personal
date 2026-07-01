@@ -23,6 +23,7 @@ import PurchaseOrderLineItemsMobileEditor from '~/components/purchase-orders/Pur
 import PurchaseOrderSupplierSelect from '~/components/purchase-orders/PurchaseOrderSupplierSelect.vue';
 import { useAdminCompactViewport } from '~/composables/useAdminCompactViewport';
 import {
+  blockExtraDecimal,
   PRODUCT_ITEM_INPUT_CLASS,
   PRODUCT_ITEM_TEXTAREA_CLASS,
   PRODUCT_ITEM_SELECT_TRIGGER_CLASS,
@@ -215,7 +216,8 @@ function updateLineQuantity(index: number, value: string) {
     return;
   }
 
-  const quantity = Math.max(1, Math.round(parseFormattedNumber(value)) || 1);
+  // Quantity accepts decimals (e.g. 1.5); keep a minimum of 1.
+  const quantity = Math.max(1, parseFormattedNumber(value) || 1);
   item.quantity = quantity;
   item.totalPrice = quantity * item.unitPrice;
 }
@@ -471,8 +473,9 @@ function clearProductSearch() {
                 <TableCell>
                   <Input
                     :model-value="String(item.quantity)"
-                    inputmode="numeric"
+                    inputmode="decimal"
                     :class="PRODUCT_ITEM_INPUT_CLASS"
+                    @keypress="blockExtraDecimal"
                     @update:model-value="updateLineQuantity(index, $event)"
                   />
                 </TableCell>

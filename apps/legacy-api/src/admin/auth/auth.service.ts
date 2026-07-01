@@ -155,7 +155,9 @@ export class AuthService {
 
     const access_token = await this.jwtService.signAsync(
       { ...payload, tokenType: 'access' },
-      { expiresIn: '15m' },
+      // Honor JWT_EXPIRES_IN (e.g. "1d") so the access-token lifetime is
+      // configurable; falls back to 15m when unset.
+      { expiresIn: process.env.JWT_EXPIRES_IN || '15m' },
     );
 
     const refresh_token = await this.jwtService.signAsync(
