@@ -11,6 +11,7 @@ import {
   DialogTitle,
   Input,
 } from '@gosource/ui';
+import { blockExtraDecimal } from '~/lib/product-form';
 import type { PurchaseOrderReceiveRow } from '~/types/purchase-orders';
 
 const open = defineModel<boolean>('open', { default: false });
@@ -215,12 +216,13 @@ function onConfirm() {
               <Input
                 v-model="row.toReceive"
                 type="text"
-                inputmode="numeric"
+                inputmode="decimal"
                 min="0"
                 :max="remainingToReceive(row)"
                 :invalid="Boolean(row.error)"
                 :aria-label="`Quantity to receive for ${row.name}`"
                 class="!h-9 [-moz-appearance:textfield] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                @keypress="blockExtraDecimal"
                 @input="onToReceiveInput(row)"
                 @blur="validateRow(row)"
               />
