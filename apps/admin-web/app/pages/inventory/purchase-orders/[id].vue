@@ -19,6 +19,7 @@ import {
 } from '~/lib/purchase-order-form';
 
 const route = useRoute();
+const router = useRouter();
 const orderId = computed(() => String(route.params.id ?? ''));
 
 const { updateHeader } = useAdminHeader();
@@ -69,6 +70,11 @@ watch(
 );
 
 function goBack() {
+  // Preserve the list's page/limit/filters by returning to the referrer URL.
+  if (import.meta.client && window.history.length > 1) {
+    router.back();
+    return;
+  }
   void navigateTo(ADMIN_PAGE_ROUTES.PURCHASE_ORDERS);
 }
 
@@ -82,8 +88,7 @@ async function onSubmit() {
 
   try {
     await updatePurchaseOrder(orderId.value, form);
-    await refresh();
-    await navigateTo(ADMIN_PAGE_ROUTES.PURCHASE_ORDERS);
+    goBack();
   } catch {
     // toast in composable
   }

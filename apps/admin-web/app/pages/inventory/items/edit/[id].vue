@@ -99,7 +99,10 @@ async function onSubmit() {
   submitting.value = true;
   try {
     await updateProduct(productId.value, form);
-    await navigateTo(ADMIN_PAGE_ROUTES.INVENTORY);
+    // Return to the list preserving the page/limit/filters the user was on
+    // (router.back restores the exact referrer URL) rather than resetting to
+    // the default page 1 / limit 10.
+    goBack();
   } catch {
     // toast in composable
   } finally {
