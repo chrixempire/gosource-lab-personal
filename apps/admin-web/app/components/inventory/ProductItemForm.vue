@@ -14,6 +14,7 @@ import {
   createEmptySpecialPriceRow,
   PRODUCT_ITEM_INPUT_CLASS,
   PRODUCT_ITEM_TEXTAREA_CLASS,
+  blockExtraDecimal,
   syncComputedTotalPrice,
   updateCurrencyField,
   updateIntegerField,
@@ -318,8 +319,9 @@ watch(
               :disabled="submitting || isEdit"
               :invalid="Boolean(fieldErrors.quantity)"
               :class="PRODUCT_ITEM_INPUT_CLASS"
-              inputmode="numeric"
+              inputmode="decimal"
               placeholder="0"
+              @keypress="blockExtraDecimal"
               @update:model-value="updateIntegerField(form, 'quantity', form, $event)"
             />
             <p v-if="fieldErrors.quantity" class="mt-1 text-xs text-negative-500">
@@ -438,8 +440,9 @@ watch(
               :disabled="submitting"
               :invalid="Boolean(fieldErrors[`pricing.${index}.quantityPerUnit`])"
               :class="PRODUCT_ITEM_INPUT_CLASS"
-              inputmode="numeric"
+              inputmode="decimal"
               placeholder="0"
+              @keypress="blockExtraDecimal"
               @update:model-value="updateIntegerField(form, 'quantityPerUnit', row, $event)"
             />
             <p
