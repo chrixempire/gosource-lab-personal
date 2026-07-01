@@ -3,7 +3,7 @@ import { Minus, Plus, X, ChevronLeft, Check, Heart } from 'lucide-vue-next';
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { formatNaira } from '~/composables/useMarketplaceCart';
 import { useDesignLabCart } from '~/composables/useDesignLabCart';
-import { designLabUnits, designLabIsMultiUnit } from '~/lib/design-lab';
+import { designLabUnits, designLabIsMultiUnit, designLabCategories, designLabCategoryEmoji, designLabDiscount } from '~/lib/design-lab';
 import DesignLabAddControl from '~/components/design-lab/DesignLabAddControl.vue';
 import DesignLabCartBar from '~/components/design-lab/DesignLabCartBar.vue';
 import DesignLabUnitPicker from '~/components/design-lab/DesignLabUnitPicker.vue';
@@ -17,6 +17,15 @@ const pdp = ref<MarketProduct | null>(null);
 const qty = ref(1);
 const selUnit = ref('');
 const added = ref(false);
+
+// Category rail (Sprouts farmers-market filter chips).
+const activeCat = ref('All');
+const categories = computed(() => designLabCategories(props.products));
+const visibleProducts = computed(() =>
+  activeCat.value === 'All'
+    ? props.products
+    : props.products.filter((p) => p.categoryName === activeCat.value),
+);
 
 const activeProduct = computed(() => pdp.value ?? selected.value);
 const units = computed(() => (activeProduct.value ? designLabUnits(activeProduct.value) : []));
@@ -44,9 +53,45 @@ const font = 'font-family:Inter,"Helvetica Neue",Arial,sans-serif';
 <template>
   <div :style="font" class="rounded-xl bg-[#FFF4E0] p-4 text-[#1f2a1f]">
     <DesignLabCartBar :count="cart.count.value" :total="cart.total.value" :accent="ACCENT" :fg="FG" />
+
+    <!-- Sprouts category rail: farmers-market chips, green on cream -->
+    <div class="-mx-4 mb-4 overflow-x-auto px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div class="flex w-max gap-2">
+        <button
+          type="button"
+          class="shrink-0 rounded-full border px-4 py-1.5 text-[13px] font-semibold transition"
+          :class="activeCat === 'All'
+            ? 'border-[#007932] bg-[#007932] text-white'
+            : 'border-[#007932]/35 bg-[#FFF9EF] text-[#007932] hover:border-[#007932] hover:bg-[#FDF0D8]'"
+          @click="activeCat = 'All'"
+        >
+          🧺 All
+        </button>
+        <button
+          v-for="c in categories"
+          :key="c"
+          type="button"
+          class="shrink-0 rounded-full border px-4 py-1.5 text-[13px] font-semibold transition"
+          :class="activeCat === c
+            ? 'border-[#007932] bg-[#007932] text-white'
+            : 'border-[#007932]/35 bg-[#FFF9EF] text-[#007932] hover:border-[#007932] hover:bg-[#FDF0D8]'"
+          @click="activeCat = c"
+        >
+          {{ designLabCategoryEmoji(c) }} {{ c }}
+        </button>
+      </div>
+    </div>
+
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      <div v-for="p in products" :key="p.id" class="rounded-[8px] border bg-white p-3 transition" :class="cart.qtyOfProduct(p.id) ? 'border-[#007932] ring-1 ring-[#007932]' : 'border-[#E8E9EB]'">
+      <div v-for="p in visibleProducts" :key="p.id" class="rounded-[8px] border bg-white p-3 transition" :class="cart.qtyOfProduct(p.id) ? 'border-[#007932] ring-1 ring-[#007932]' : 'border-[#E8E9EB]'">
         <div class="relative">
+          <!-- Discount price tag, top-left (farmers-market style) -->
+          <span
+            v-if="designLabDiscount(p)"
+            class="absolute left-1 top-1 z-10 rounded-[4px] bg-[#007932] px-1.5 py-0.5 text-[11px] font-bold leading-none text-[#FFF4E0] shadow-sm"
+          >
+            {{ designLabDiscount(p)!.pct }}% off
+          </span>
           <button class="absolute right-1 top-1 z-10 text-[#007932]"><Heart class="size-4" /></button>
           <div class="flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-md bg-white" @click="openModal(p)">
             <img v-if="p.imageUrl" :src="p.imageUrl" :alt="p.name" class="h-full w-full object-contain" /><span v-else class="text-4xl">🛒</span>
@@ -55,7 +100,10 @@ const font = 'font-family:Inter,"Helvetica Neue",Arial,sans-serif';
             <DesignLabAddControl :qty="designLabIsMultiUnit(p) ? cart.qtyOfProduct(p.id) : qtyCard(p)" :accent="ACCENT" :fg="FG" variant="circle" :multi-unit="designLabIsMultiUnit(p)" @inc="addCard(p)" @dec="addCard(p, -1)" @set="setCard(p, $event)" @open="openModal(p)" />
           </div>
         </div>
-        <p class="mt-2 text-[16px] font-bold leading-none">{{ formatNaira(p.priceNaira) }}</p>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <p class="text-[16px] font-bold leading-none" :class="designLabDiscount(p) ? 'text-[#007932]' : ''">{{ formatNaira(p.priceNaira) }}</p>
+          <span v-if="designLabDiscount(p)?.compareNaira" class="text-[12px] text-[#9aa39a] line-through">{{ formatNaira(designLabDiscount(p)!.compareNaira!) }}</span>
+        </div>
         <p v-if="p.unitPriceBadge" class="mt-0.5 text-[12px] text-[#6b736b]">{{ p.unitPriceBadge }}</p>
         <p class="mt-1 line-clamp-2 cursor-pointer text-[14px] leading-tight hover:underline" @click="openModal(p)">{{ p.name }}</p>
         <p class="mt-0.5 text-[12px] text-[#6b736b]">{{ p.unit }}</p>
@@ -66,8 +114,14 @@ const font = 'font-family:Inter,"Helvetica Neue",Arial,sans-serif';
       <div v-if="selected" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4" @click.self="selected = null">
         <div :style="font" class="relative w-full max-w-[420px] rounded-2xl bg-white p-5 text-[#1f2a1f] shadow-2xl">
           <button class="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full hover:bg-[#FFF4E0]" @click="selected = null"><X class="size-5" /></button>
-          <div class="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-[#FAFAF7] p-3"><img v-if="selected.imageUrl" :src="selected.imageUrl" class="h-full w-full object-contain" /><span v-else class="text-6xl">🛒</span></div>
-          <p class="mt-3 text-[20px] font-bold leading-none">{{ formatNaira(selPrice) }}</p>
+          <div class="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-[#FAFAF7] p-3">
+            <span v-if="designLabDiscount(selected)" class="absolute left-2 top-2 rounded-[4px] bg-[#007932] px-2 py-1 text-[12px] font-bold leading-none text-[#FFF4E0]">{{ designLabDiscount(selected)!.pct }}% off</span>
+            <img v-if="selected.imageUrl" :src="selected.imageUrl" class="h-full w-full object-contain" /><span v-else class="text-6xl">🛒</span>
+          </div>
+          <div class="mt-3 flex items-baseline gap-2">
+            <p class="text-[20px] font-bold leading-none" :class="designLabDiscount(selected) ? 'text-[#007932]' : ''">{{ formatNaira(selPrice) }}</p>
+            <span v-if="designLabDiscount(selected)?.compareNaira" class="text-[14px] text-[#9aa39a] line-through">{{ formatNaira(designLabDiscount(selected)!.compareNaira!) }}</span>
+          </div>
           <p v-if="selected.unitPriceBadge" class="mt-0.5 text-[12px] text-[#6b736b]">{{ selected.unitPriceBadge }}</p>
           <h3 class="mt-1 text-[16px] leading-snug">{{ selected.name }}</h3>
           <p class="text-[12px] text-[#6b736b]">{{ selected.unit }}</p>
@@ -102,7 +156,11 @@ const font = 'font-family:Inter,"Helvetica Neue",Arial,sans-serif';
             <div>
               <h1 class="text-[26px] font-semibold leading-tight">{{ pdp.name }}</h1>
               <p class="mt-1 text-[14px] text-[#6b736b]">{{ pdp.unit }}</p>
-              <p class="mt-3 text-[28px] font-bold leading-none">{{ formatNaira(selPrice) }}</p>
+              <div class="mt-3 flex items-baseline gap-2">
+                <p class="text-[28px] font-bold leading-none" :class="designLabDiscount(pdp) ? 'text-[#007932]' : ''">{{ formatNaira(selPrice) }}</p>
+                <span v-if="designLabDiscount(pdp)?.compareNaira" class="text-[16px] text-[#9aa39a] line-through">{{ formatNaira(designLabDiscount(pdp)!.compareNaira!) }}</span>
+                <span v-if="designLabDiscount(pdp)" class="rounded-[4px] bg-[#007932] px-2 py-1 text-[12px] font-bold leading-none text-[#FFF4E0]">{{ designLabDiscount(pdp)!.pct }}% off</span>
+              </div>
               <p v-if="pdp.unitPriceBadge" class="mt-0.5 text-[13px] text-[#6b736b]">{{ pdp.unitPriceBadge }}</p>
               <DesignLabUnitPicker
                 v-if="units.length > 1"

@@ -13,7 +13,6 @@ import { Plus } from 'lucide-vue-next';
 import { formatNaira, useMarketplaceCart } from '~/composables/useMarketplaceCart';
 import { useRequestAddItemsMode } from '~/composables/useRequestAddItemsMode';
 import MarketProductImage from '~/components/market/MarketProductImage.vue';
-import MarketProductDiscountRibbon from '~/components/market/MarketProductDiscountRibbon.vue';
 import ExploreSproutQtyStrip from '~/components/explore/ExploreSproutQtyStrip.vue';
 
 const props = defineProps<{
@@ -79,8 +78,8 @@ async function onAdd(e: MouseEvent) {
   <!-- Sprouts-style card: white, clean, rounded; no favourite icon. -->
   <article
     data-testid="explore-sprout-card"
-    class="flex h-full min-w-0 flex-col rounded-[10px] border bg-white p-3 text-left transition"
-    :class="inCartHighlight ? 'border-primary-500 ring-1 ring-primary-500' : 'border-grey-50 hover:border-grey-100'"
+    class="flex h-full min-w-0 flex-col rounded-[10px] border bg-white p-1 text-left transition"
+    :class="inCartHighlight ? 'border-primary-500 ring-1 ring-primary-500' : 'border-grey-50 hover:border-primary-500'"
   >
     <div
       class="flex min-h-0 flex-1 cursor-pointer flex-col"
@@ -97,7 +96,15 @@ async function onAdd(e: MouseEvent) {
           :class="{ 'grayscale opacity-60': !inStock }"
           logo-class="w-[72%] max-w-[8rem]"
         />
-        <MarketProductDiscountRibbon v-if="inStock && discountPercent" :percent="discountPercent" />
+        <!-- Promotion ribbon: top-left, flush in the image corner (4px from the
+             card edge via the card's p-1). Banner shape with a swooped bottom-right. -->
+        <span
+          v-if="inStock && discountPercent"
+          class="pointer-events-none absolute left-0 top-0 z-10 rounded-br-[12px] rounded-tl-[8px] bg-negative-500 px-2.5 py-1.5 text-[13px] font-extrabold uppercase leading-none tracking-wide text-white shadow-sm"
+          aria-hidden="true"
+        >
+          {{ discountPercent }}% OFF
+        </span>
         <span
           v-if="!inStock"
           class="absolute right-3 top-3 z-10 rounded-full bg-[#FEE4E2] px-2.5 py-1.5 text-[11px] font-medium leading-none text-[#D92D20] shadow-sm"

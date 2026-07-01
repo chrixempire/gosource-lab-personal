@@ -3,7 +3,7 @@ import { Minus, Plus, X, ChevronLeft, Check } from 'lucide-vue-next';
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { formatNaira } from '~/composables/useMarketplaceCart';
 import { useDesignLabCart } from '~/composables/useDesignLabCart';
-import { designLabUnits, designLabIsMultiUnit } from '~/lib/design-lab';
+import { designLabUnits, designLabIsMultiUnit, designLabDiscount, designLabCategories } from '~/lib/design-lab';
 import DesignLabAddControl from '~/components/design-lab/DesignLabAddControl.vue';
 import DesignLabCartBar from '~/components/design-lab/DesignLabCartBar.vue';
 import DesignLabUnitPicker from '~/components/design-lab/DesignLabUnitPicker.vue';
@@ -39,15 +39,33 @@ function qtyCard(p: MarketProduct) { const u = designLabUnits(p)[0]; return u ? 
 
 const related = computed(() => props.products.filter((x) => x.id !== pdp.value?.id).slice(0, 6));
 const font = 'font-family:Poppins,"SF Pro Text",Roboto,sans-serif';
+
+// Deal-forward category rail (Weee! filters the grid by category chip).
+const activeCat = ref('All');
+const categories = computed(() => ['All', ...designLabCategories(props.products)]);
+const visibleProducts = computed(() =>
+  activeCat.value === 'All' ? props.products : props.products.filter((p) => p.categoryName === activeCat.value),
+);
 </script>
 
 <template>
   <div :style="font" class="text-[#111111]">
     <DesignLabCartBar :count="cart.count.value" :total="cart.total.value" :accent="ACCENT" :fg="FG" />
+
+    <!-- Category rail (Weee! deal-blue chips) -->
+    <div class="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <button
+        v-for="c in categories" :key="c" type="button"
+        class="shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] font-bold transition-colors"
+        :class="activeCat === c ? 'bg-[#027FFF] text-white' : 'bg-[#E6F2FF] text-[#027FFF] hover:bg-[#d4e8ff]'"
+        @click="activeCat = c"
+      >{{ c }}</button>
+    </div>
+
     <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-      <div v-for="p in products" :key="p.id" class="rounded-[10px] border bg-white p-2" :class="cart.qtyOfProduct(p.id) ? 'ring-1 ring-[#027FFF] border-[#027FFF]' : 'border-[#EAEAEA]'">
+      <div v-for="p in visibleProducts" :key="p.id" class="rounded-[10px] border bg-white p-2" :class="cart.qtyOfProduct(p.id) ? 'ring-1 ring-[#027FFF] border-[#027FFF]' : 'border-[#EAEAEA]'">
         <div class="relative">
-          <span v-if="p.discountPct" class="absolute left-0 top-0 z-10 rounded-md bg-[#EC4143] px-1.5 py-0.5 text-[11px] font-bold text-white">{{ p.discountPct }}% OFF</span>
+          <span v-if="designLabDiscount(p)" class="absolute left-0 top-0 z-10 rounded-md bg-[#E1251B] px-1.5 py-0.5 text-[11px] font-bold text-white shadow-sm">🔥 {{ designLabDiscount(p)!.pct }}% OFF</span>
           <div class="flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-md bg-white" @click="openModal(p)">
             <img v-if="p.imageUrl" :src="p.imageUrl" :alt="p.name" class="h-full w-full object-contain" /><span v-else class="text-4xl">🛒</span>
           </div>
@@ -60,8 +78,8 @@ const font = 'font-family:Poppins,"SF Pro Text",Roboto,sans-serif';
           </div>
         </div>
         <div class="mt-1.5 flex items-baseline gap-1">
-          <span class="text-[16px] font-bold text-[#EC4143]">{{ formatNaira(p.priceNaira) }}</span>
-          <span v-if="p.compareAtNaira" class="text-[11px] text-[#9299AE] line-through">{{ formatNaira(p.compareAtNaira) }}</span>
+          <span class="text-[18px] font-extrabold text-[#E1251B]">{{ formatNaira(p.priceNaira) }}</span>
+          <span v-if="designLabDiscount(p)?.compareNaira" class="text-[11px] text-[#9299AE] line-through">{{ formatNaira(designLabDiscount(p)!.compareNaira!) }}</span>
         </div>
         <p v-if="p.unitPriceBadge" class="text-[10px] text-[#52667D]">{{ p.unitPriceBadge }}</p>
         <p class="mt-0.5 line-clamp-2 cursor-pointer text-[13px] leading-tight" @click="openModal(p)">{{ p.name }}</p>
@@ -73,10 +91,13 @@ const font = 'font-family:Poppins,"SF Pro Text",Roboto,sans-serif';
       <div v-if="selected" class="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 sm:items-center" @click.self="selected = null">
         <div :style="font" class="relative w-full max-w-[420px] rounded-t-2xl bg-white p-5 text-[#111] shadow-2xl sm:rounded-2xl">
           <button class="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full hover:bg-[#f2f2f2]" @click="selected = null"><X class="size-5" /></button>
-          <div class="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-[#F3F3F3]"><img v-if="selected.imageUrl" :src="selected.imageUrl" class="h-full w-full object-contain" /><span v-else class="text-6xl">🛒</span></div>
+          <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-[#F3F3F3]">
+            <span v-if="designLabDiscount(selected)" class="absolute left-0 top-0 z-10 rounded-md bg-[#E1251B] px-2 py-0.5 text-[12px] font-bold text-white shadow-sm">🔥 {{ designLabDiscount(selected)!.pct }}% OFF</span>
+            <img v-if="selected.imageUrl" :src="selected.imageUrl" class="h-full w-full object-contain" /><span v-else class="text-6xl">🛒</span>
+          </div>
           <div class="mt-3 flex items-baseline gap-2">
-            <span class="text-[22px] font-bold text-[#EC4143]">{{ formatNaira(selPrice) }}</span>
-            <span v-if="selected.compareAtNaira" class="text-[13px] text-[#9299AE] line-through">{{ formatNaira(selected.compareAtNaira) }}</span>
+            <span class="text-[24px] font-extrabold text-[#E1251B]">{{ formatNaira(selPrice) }}</span>
+            <span v-if="designLabDiscount(selected)?.compareNaira" class="text-[13px] text-[#9299AE] line-through">{{ formatNaira(designLabDiscount(selected)!.compareNaira!) }}</span>
           </div>
           <h3 class="mt-1 text-[15px] font-medium">{{ selected.name }}</h3>
           <p class="text-[12px] text-[#52667D]">{{ selected.unit }}</p>
@@ -112,8 +133,9 @@ const font = 'font-family:Poppins,"SF Pro Text",Roboto,sans-serif';
               <h1 class="text-[24px] font-semibold leading-tight">{{ pdp.name }}</h1>
               <p class="mt-1 text-[14px] text-[#52667D]">{{ pdp.unit }}</p>
               <div class="mt-3 flex items-baseline gap-2">
-                <span class="text-[30px] font-bold text-[#EC4143]">{{ formatNaira(selPrice) }}</span>
-                <span v-if="pdp.compareAtNaira" class="text-[15px] text-[#9299AE] line-through">{{ formatNaira(pdp.compareAtNaira) }}</span>
+                <span class="text-[32px] font-extrabold text-[#E1251B]">{{ formatNaira(selPrice) }}</span>
+                <span v-if="designLabDiscount(pdp)?.compareNaira" class="text-[15px] text-[#9299AE] line-through">{{ formatNaira(designLabDiscount(pdp)!.compareNaira!) }}</span>
+                <span v-if="designLabDiscount(pdp)" class="rounded-md bg-[#E1251B] px-2 py-0.5 text-[12px] font-bold text-white">🔥 {{ designLabDiscount(pdp)!.pct }}% OFF</span>
               </div>
               <p v-if="pdp.unitPriceBadge" class="text-[12px] text-[#52667D]">{{ pdp.unitPriceBadge }}</p>
               <DesignLabUnitPicker
@@ -142,7 +164,7 @@ const font = 'font-family:Poppins,"SF Pro Text",Roboto,sans-serif';
             <div class="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
               <div v-for="r in related" :key="r.id" class="rounded-[10px] border border-[#EAEAEA] bg-white p-2">
                 <div class="flex aspect-square items-center justify-center overflow-hidden rounded bg-white"><img v-if="r.imageUrl" :src="r.imageUrl" class="h-full w-full object-contain" /><span v-else class="text-2xl">🛒</span></div>
-                <p class="mt-1 text-[13px] font-bold text-[#EC4143]">{{ formatNaira(r.priceNaira) }}</p>
+                <p class="mt-1 text-[13px] font-bold text-[#E1251B]">{{ formatNaira(r.priceNaira) }}</p>
                 <p class="line-clamp-1 text-[12px]">{{ r.name }}</p>
               </div>
             </div>

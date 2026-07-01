@@ -175,7 +175,7 @@ onUnmounted(() => {
       <aside
         v-if="open && product"
         data-testid="market-product-detail-slide-modal"
-        class="fixed right-2 top-2 bottom-2 z-[90] flex w-[calc(100%-1rem)] max-w-[500px] flex-col overflow-hidden rounded-[12px] border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300"
+        class="fixed right-2 top-2 bottom-2 z-[90] flex w-[calc(100%-1rem)] max-w-[500px] flex-col overflow-hidden border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300"
         role="dialog"
         aria-modal="true"
         :aria-label="modalTitle"
@@ -252,23 +252,25 @@ onUnmounted(() => {
               <RadioGroup
                 v-model="selectedUnit"
                 :name="`market-slide-unit-${product.id}`"
-                class="flex w-full flex-col gap-2"
+                class="grid w-full grid-cols-2 gap-2"
               >
                 <label
                   v-for="opt in displayUnitChoices"
                   :key="opt!.name"
                   :class="[
-                    'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-3 transition-colors',
+                    'flex cursor-pointer flex-col gap-1 rounded-[12px] border px-3 py-2.5 transition-colors',
                     selectedUnit === opt!.name
                       ? 'border-primary-500 bg-primary-50/80 dark:border-primary-500/45 dark:bg-primary-500/12'
                       : 'border-grey-50 bg-background-on-canvas hover:border-primary-300/60 hover:bg-primary-50/30 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/8',
                   ]"
                 >
-                  <RadioGroupItem :value="opt!.name" />
-                  <span class="min-w-0 flex-1 text-[15px] font-medium capitalize text-grey-900">
-                    {{ opt!.name }}
-                  </span>
-                  <span class="shrink-0 text-right text-[13px] font-semibold tabular-nums">
+                  <div class="flex items-center gap-2">
+                    <RadioGroupItem :value="opt!.name" />
+                    <span class="min-w-0 flex-1 text-[15px] font-medium capitalize text-grey-900">
+                      {{ opt!.name }}
+                    </span>
+                  </div>
+                  <span class="text-[13px] font-semibold tabular-nums">
                     <span
                       v-if="hasUnitSalePrice(opt!)"
                       class="text-grey-300 line-through"

@@ -20,6 +20,52 @@ export function designLabIsMultiUnit(p: MarketProduct): boolean {
   return designLabUnits(p).length > 1;
 }
 
+/** Normalized discount for a product: percentage + original (compare-at) price.
+ * Sourced from discountPct → promotion → compare-at, filling in whichever the
+ * payload omits so brand cards can render a "% off" badge and a strikethrough. */
+export type DesignLabDiscount = { pct: number; compareNaira: number | null };
+
+export function designLabDiscount(p: MarketProduct): DesignLabDiscount | null {
+  let pct = p.discountPct && p.discountPct > 0 ? p.discountPct : 0;
+  if (!pct && p.promotion?.isPercentageDiscounted && p.promotion.discountValue > 0) {
+    pct = p.promotion.discountValue;
+  }
+  let compareNaira = p.compareAtNaira && p.compareAtNaira > p.priceNaira ? p.compareAtNaira : null;
+  if (!pct && compareNaira) {
+    pct = Math.round((1 - p.priceNaira / compareNaira) * 100);
+  }
+  if (pct > 0 && !compareNaira) {
+    compareNaira = Math.round(p.priceNaira / (1 - pct / 100));
+  }
+  return pct > 0 ? { pct, compareNaira } : null;
+}
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  Grains: '🌾', Oils: '🫗', Canned: '🥫', Baking: '🧁',
+  'Dairy & Eggs': '🥚', Pasta: '🍝', Beverages: '🥤', Seasoning: '🧂',
+  Fruits: '🍎', Vegetables: '🥦', Snacks: '🍪', Meat: '🥩',
+  Seafood: '🐟', Frozen: '🧊', Bakery: '🍞', Drinks: '🧃',
+};
+
+export function designLabCategoryEmoji(name?: string): string {
+  if (!name) return '🛒';
+  return CATEGORY_EMOJI[name] ?? '🛒';
+}
+
+/** Distinct category names across the supplied products, in first-seen order. */
+export function designLabCategories(products: MarketProduct[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of products) {
+    const c = p.categoryName?.trim();
+    if (c && !seen.has(c)) {
+      seen.add(c);
+      out.push(c);
+    }
+  }
+  return out;
+}
+
 // Food/grocery storefront design lab — faithful replicas of how award-winning
 // grocery & B2B food platforms build the product card, quick-view modal, and
 // product detail page. Cards are wired to REAL GoSource products; a built-in
@@ -49,6 +95,16 @@ export const PLATFORMS: Platform[] = [
   { id: 'sprouts', label: 'Sprouts', accent: '#007932', note: 'Farmers market — green on cream surfaces' },
   { id: 'hellofresh', label: 'HelloFresh', accent: '#91C813', note: 'Appetizing, recipe-forward, lime green' },
   { id: 'jumia', label: 'Jumia', accent: '#F68B1E', note: 'Nigerian marketplace — orange, dense, ratings' },
+  { id: 'wolt', label: 'Wolt', accent: '#009DE0', note: 'Award-winning minimalism — Wolt blue, clean white' },
+  { id: 'deliveroo', label: 'Deliveroo', accent: '#00CCBC', note: 'Teal + navy, rounded friendly cards' },
+  { id: 'ubereats', label: 'Uber Eats', accent: '#06C167', note: 'Black + Uber green, bold high-contrast' },
+  { id: 'doordash', label: 'DoorDash', accent: '#EB1700', note: 'DashMart — scarlet red on clean white' },
+  { id: 'rappi', label: 'Rappi', accent: '#FF441F', note: 'LatAm super-app — orange→pink gradient, Turbo' },
+  { id: 'blinkit', label: 'Blinkit', accent: '#F8CB46', note: 'India 10-min — bright yellow, green savings flags' },
+  { id: 'glovo', label: 'Glovo', accent: '#FFC244', note: 'Africa/EU — Glovo yellow + teal-green accent' },
+  { id: 'chowdeck', label: 'Chowdeck', accent: '#ED5E3B', note: 'Nigerian delivery — orange + forest green' },
+  { id: 'twiga', label: 'Twiga Foods', accent: '#FCCC08', note: 'Kenya B2B — navy + gold, bulk list rows' },
+  { id: 'wasoko', label: 'Wasoko', accent: '#873FB7', note: 'Africa B2B dukas — purple + teal, bulk ordering' },
 ];
 
 const img = (id: string, w = 700) =>

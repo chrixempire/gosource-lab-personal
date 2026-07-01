@@ -16,6 +16,16 @@ import DesignLabFlink from '~/components/design-lab/DesignLabFlink.vue';
 import DesignLabSprouts from '~/components/design-lab/DesignLabSprouts.vue';
 import DesignLabHellofresh from '~/components/design-lab/DesignLabHellofresh.vue';
 import DesignLabJumia from '~/components/design-lab/DesignLabJumia.vue';
+import DesignLabWolt from '~/components/design-lab/DesignLabWolt.vue';
+import DesignLabDeliveroo from '~/components/design-lab/DesignLabDeliveroo.vue';
+import DesignLabUbereats from '~/components/design-lab/DesignLabUbereats.vue';
+import DesignLabDoordash from '~/components/design-lab/DesignLabDoordash.vue';
+import DesignLabRappi from '~/components/design-lab/DesignLabRappi.vue';
+import DesignLabBlinkit from '~/components/design-lab/DesignLabBlinkit.vue';
+import DesignLabGlovo from '~/components/design-lab/DesignLabGlovo.vue';
+import DesignLabChowdeck from '~/components/design-lab/DesignLabChowdeck.vue';
+import DesignLabTwiga from '~/components/design-lab/DesignLabTwiga.vue';
+import DesignLabWasoko from '~/components/design-lab/DesignLabWasoko.vue';
 
 definePageMeta({ layout: false });
 useHead({ title: 'Food Storefront Design Lab' });
@@ -36,6 +46,16 @@ const REGISTRY: Record<string, unknown> = {
   sprouts: DesignLabSprouts,
   hellofresh: DesignLabHellofresh,
   jumia: DesignLabJumia,
+  wolt: DesignLabWolt,
+  deliveroo: DesignLabDeliveroo,
+  ubereats: DesignLabUbereats,
+  doordash: DesignLabDoordash,
+  rappi: DesignLabRappi,
+  blinkit: DesignLabBlinkit,
+  glovo: DesignLabGlovo,
+  chowdeck: DesignLabChowdeck,
+  twiga: DesignLabTwiga,
+  wasoko: DesignLabWasoko,
 };
 
 const { products, loading, usingFallback } = useDesignLabProducts(15);

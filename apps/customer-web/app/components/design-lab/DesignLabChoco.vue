@@ -3,7 +3,7 @@ import { Minus, Plus, X, ChevronLeft, Search, ChevronDown, Check } from 'lucide-
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { formatNaira } from '~/composables/useMarketplaceCart';
 import { useDesignLabCart } from '~/composables/useDesignLabCart';
-import { designLabUnits, designLabIsMultiUnit } from '~/lib/design-lab';
+import { designLabUnits, designLabIsMultiUnit, designLabCategories, designLabDiscount } from '~/lib/design-lab';
 import DesignLabCartBar from '~/components/design-lab/DesignLabCartBar.vue';
 import DesignLabUnitPicker from '~/components/design-lab/DesignLabUnitPicker.vue';
 
@@ -36,9 +36,16 @@ function addRow(p: MarketProduct, n = 1) { const u = designLabUnits(p)[0]; if (u
 function qtyRow(p: MarketProduct) { const u = designLabUnits(p)[0]; return u ? cart.qtyOf(p.id, u.name) : 0; }
 
 const related = computed(() => props.products.filter((x) => x.id !== pdp.value?.id).slice(0, 6));
+
+const activeCat = ref('All');
+const categories = computed(() => designLabCategories(props.products));
+const visibleProducts = computed(() =>
+  activeCat.value === 'All' ? props.products : props.products.filter((p) => p.categoryName === activeCat.value),
+);
+
 const groups = computed(() => {
   const map = new Map<string, MarketProduct[]>();
-  for (const p of props.products) {
+  for (const p of visibleProducts.value) {
     const key = p.brandLabel || p.categoryName || 'GoSource Supplier';
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(p);
@@ -56,6 +63,17 @@ const font = 'font-family:Inter,system-ui,sans-serif';
     </div>
 
     <DesignLabCartBar :count="cart.count.value" :total="cart.total.value" :accent="ACCENT" :fg="FG" label="View order" />
+
+    <!-- CATEGORY FILTER: businesslike segmented tab row -->
+    <div class="mb-3 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <button
+        v-for="cat in ['All', ...categories]"
+        :key="cat"
+        class="shrink-0 rounded-md px-3.5 py-2 text-[13px] font-semibold transition"
+        :class="activeCat === cat ? 'bg-[#3D6BFF] text-white' : 'bg-[#F1F4FF] text-[#475569] hover:bg-[#E4EAFF]'"
+        @click="activeCat = cat"
+      >{{ cat }}</button>
+    </div>
 
     <div class="overflow-hidden rounded-lg border border-[#E5E7EB] bg-white">
       <template v-for="[supplier, items] in groups" :key="supplier">
@@ -79,7 +97,13 @@ const font = 'font-family:Inter,system-ui,sans-serif';
           </div>
           <div class="shrink-0 text-right">
             <p class="text-[15px] font-semibold">{{ formatNaira(p.priceNaira) }}</p>
-            <p class="text-[11px] text-[#78716C]">{{ designLabIsMultiUnit(p) ? 'from' : 'per unit' }}</p>
+            <template v-if="designLabDiscount(p)">
+              <div class="mt-0.5 flex items-center justify-end gap-1.5">
+                <span class="rounded bg-[#3D6BFF]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#3D6BFF]">{{ designLabDiscount(p)!.pct }}% off</span>
+                <span v-if="designLabDiscount(p)!.compareNaira" class="text-[11px] text-[#78716C] line-through">{{ formatNaira(designLabDiscount(p)!.compareNaira!) }}</span>
+              </div>
+            </template>
+            <p v-else class="text-[11px] text-[#78716C]">{{ designLabIsMultiUnit(p) ? 'from' : 'per unit' }}</p>
           </div>
           <!-- MULTI-UNIT: open picker. SINGLE-UNIT: inline stepper -->
           <div class="flex shrink-0 items-center gap-2">
@@ -115,7 +139,13 @@ const font = 'font-family:Inter,system-ui,sans-serif';
           <div class="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-[#F3F4F6]"><img v-if="selected.imageUrl" :src="selected.imageUrl" class="h-full w-full object-cover" /><span v-else class="text-6xl">🛒</span></div>
           <p class="mt-3 text-[12px] font-bold uppercase tracking-wide text-[#78716C]">{{ selected.brandLabel || selected.categoryName }}</p>
           <h3 class="text-[17px] font-bold uppercase leading-tight">{{ selected.name }}</h3>
-          <p class="mt-2 text-[22px] font-bold">{{ formatNaira(selPrice) }}</p>
+          <div class="mt-2 flex items-center gap-2">
+            <p class="text-[22px] font-bold">{{ formatNaira(selPrice) }}</p>
+            <template v-if="designLabDiscount(selected)">
+              <span class="rounded bg-[#3D6BFF]/10 px-1.5 py-0.5 text-[11px] font-bold text-[#3D6BFF]">{{ designLabDiscount(selected)!.pct }}% off</span>
+              <span v-if="designLabDiscount(selected)!.compareNaira" class="text-[13px] text-[#78716C] line-through">{{ formatNaira(designLabDiscount(selected)!.compareNaira!) }}</span>
+            </template>
+          </div>
           <DesignLabUnitPicker v-if="units.length > 1" class="mt-3" :units="units" :selected="selUnit" :accent="ACCENT" :in-cart="(u) => cart.qtyOf(selected!.id, u)" @select="selUnit = $event" />
           <div class="mt-4 flex items-center gap-3">
             <div class="inline-flex items-center rounded-full border border-[#E5E7EB]">
@@ -144,6 +174,10 @@ const font = 'font-family:Inter,system-ui,sans-serif';
               <p class="text-[12px] font-bold uppercase tracking-wide text-[#78716C]">{{ pdp.brandLabel || pdp.categoryName }}</p>
               <h1 class="text-[26px] font-bold uppercase leading-tight">{{ pdp.name }}</h1>
               <p class="mt-3 text-[26px] font-bold">{{ formatNaira(selPrice) }} <span class="text-[13px] font-normal text-[#78716C]">per {{ selUnit }}</span></p>
+              <div v-if="designLabDiscount(pdp)" class="mt-1.5 flex items-center gap-2">
+                <span class="rounded bg-[#3D6BFF]/10 px-1.5 py-0.5 text-[12px] font-bold text-[#3D6BFF]">{{ designLabDiscount(pdp)!.pct }}% off</span>
+                <span v-if="designLabDiscount(pdp)!.compareNaira" class="text-[14px] text-[#78716C] line-through">{{ formatNaira(designLabDiscount(pdp)!.compareNaira!) }}</span>
+              </div>
               <DesignLabUnitPicker v-if="units.length > 1" class="mt-4" :units="units" :selected="selUnit" :accent="ACCENT" :in-cart="(u) => cart.qtyOf(pdp!.id, u)" @select="selUnit = $event" />
               <div class="mt-6 flex items-center gap-3">
                 <div class="inline-flex items-center rounded-full border border-[#E5E7EB]">

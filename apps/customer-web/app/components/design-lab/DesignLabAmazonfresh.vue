@@ -3,7 +3,7 @@ import { Minus, Plus, X, ChevronLeft, Star, Leaf, Check } from 'lucide-vue-next'
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { formatNaira } from '~/composables/useMarketplaceCart';
 import { useDesignLabCart } from '~/composables/useDesignLabCart';
-import { designLabUnits, designLabIsMultiUnit } from '~/lib/design-lab';
+import { designLabUnits, designLabIsMultiUnit, designLabCategories, designLabDiscount } from '~/lib/design-lab';
 import DesignLabAddControl from '~/components/design-lab/DesignLabAddControl.vue';
 import DesignLabCartBar from '~/components/design-lab/DesignLabCartBar.vue';
 import DesignLabUnitPicker from '~/components/design-lab/DesignLabUnitPicker.vue';
@@ -40,21 +40,44 @@ function qtyCard(p: MarketProduct) { const u = designLabUnits(p)[0]; return u ? 
 const related = computed(() => props.products.filter((x) => x.id !== pdp.value?.id).slice(0, 6));
 const font = 'font-family:"Amazon Ember",Arial,Helvetica,sans-serif';
 const stars = [1, 2, 3, 4, 5];
+
+// Category rail (Amazon Fresh green): "All" + distinct categories, filters grid.
+const GREEN = '#067D62';
+const activeCat = ref('All');
+const categories = computed(() => ['All', ...designLabCategories(props.products)]);
+const visibleProducts = computed(() =>
+  activeCat.value === 'All'
+    ? props.products
+    : props.products.filter((p) => p.categoryName === activeCat.value),
+);
 </script>
 
 <template>
   <div :style="font" class="text-[#0F1111]">
     <div class="mb-4 inline-flex items-center gap-1.5 text-[14px] font-bold text-[#067D62]"><Leaf class="size-4" /> Amazon Fresh · Delivery by 9 PM</div>
     <DesignLabCartBar :count="cart.count.value" :total="cart.total.value" :accent="ACCENT" :fg="FG" />
+
+    <div class="mb-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <button
+        v-for="c in categories"
+        :key="c"
+        class="shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors"
+        :style="activeCat === c ? `background:${GREEN};color:#fff` : ''"
+        :class="activeCat === c ? '' : 'bg-[#F0F2F2] text-[#0F1111] hover:bg-[#E3E6E6]'"
+        @click="activeCat = c"
+      >{{ c }}</button>
+    </div>
+
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      <div v-for="p in products" :key="p.id" class="rounded-[8px] border bg-white p-3" :class="cart.qtyOfProduct(p.id) ? 'ring-1 ring-[#FFD814] border-[#FFD814]' : 'border-[#D5D9D9]'">
-        <span v-if="p.discountPct" class="inline-block rounded-sm bg-[#CC0C39] px-1.5 py-0.5 text-[11px] font-bold text-white">Limited time deal</span>
+      <div v-for="p in visibleProducts" :key="p.id" class="rounded-[8px] border bg-white p-3" :class="cart.qtyOfProduct(p.id) ? 'ring-1 ring-[#FFD814] border-[#FFD814]' : 'border-[#D5D9D9]'">
+        <span v-if="designLabDiscount(p)" class="inline-block rounded-sm bg-[#CC0C39] px-1.5 py-0.5 text-[11px] font-bold text-white">-{{ designLabDiscount(p)!.pct }}%</span>
         <div class="flex aspect-square cursor-pointer items-center justify-center overflow-hidden bg-white" @click="openModal(p)">
           <img v-if="p.imageUrl" :src="p.imageUrl" :alt="p.name" class="h-full w-full object-contain" /><span v-else class="text-4xl">🛒</span>
         </div>
         <div class="flex items-baseline gap-1">
-          <span class="text-[11px]">₦</span><span class="text-[20px] font-medium leading-none" :class="p.discountPct ? 'text-[#CC0C39]' : ''">{{ p.priceNaira.toLocaleString() }}</span>
+          <span class="text-[11px]" :class="designLabDiscount(p) ? 'text-[#CC0C39]' : ''">₦</span><span class="text-[20px] font-medium leading-none" :class="designLabDiscount(p) ? 'text-[#CC0C39]' : ''">{{ p.priceNaira.toLocaleString() }}</span>
         </div>
+        <p v-if="designLabDiscount(p)?.compareNaira" class="text-[12px] text-[#565959]">Was <span class="line-through">{{ formatNaira(designLabDiscount(p)!.compareNaira!) }}</span></p>
         <p v-if="p.unitPriceBadge" class="text-[12px] text-[#565959]">({{ p.unitPriceBadge }})</p>
         <a class="mt-1 line-clamp-2 block cursor-pointer text-[14px] leading-tight text-[#007185] hover:text-[#C7511F]" @click="openModal(p)">{{ p.name }}</a>
         <div class="mt-0.5 flex items-center gap-1"><div class="flex text-[#DE7921]"><Star v-for="s in stars" :key="s" class="size-3.5" fill="#DE7921" stroke="#DE7921" /></div></div>
@@ -76,7 +99,9 @@ const stars = [1, 2, 3, 4, 5];
           <div>
             <a class="block text-[17px] leading-snug text-[#007185]">{{ selected.name }}</a>
             <div class="mt-1 flex text-[#DE7921]"><Star v-for="s in stars" :key="s" class="size-4" fill="#DE7921" stroke="#DE7921" /></div>
-            <div class="mt-2 flex items-baseline gap-0.5"><span class="text-[12px]">₦</span><span class="text-[26px] leading-none" :class="selected.discountPct ? 'text-[#CC0C39]' : ''">{{ selPrice.toLocaleString() }}</span></div>
+            <span v-if="designLabDiscount(selected)" class="mt-2 inline-block rounded-sm bg-[#CC0C39] px-1.5 py-0.5 text-[11px] font-bold text-white">Save {{ designLabDiscount(selected)!.pct }}%</span>
+            <div class="mt-2 flex items-baseline gap-0.5"><span class="text-[12px]" :class="designLabDiscount(selected) ? 'text-[#CC0C39]' : ''">₦</span><span class="text-[26px] leading-none" :class="designLabDiscount(selected) ? 'text-[#CC0C39]' : ''">{{ selPrice.toLocaleString() }}</span></div>
+            <p v-if="designLabDiscount(selected)?.compareNaira" class="text-[12px] text-[#565959]">Was <span class="line-through">{{ formatNaira(designLabDiscount(selected)!.compareNaira!) }}</span></p>
             <p class="text-[12px] text-[#565959]">{{ selected.unit }}</p>
             <DesignLabUnitPicker
               v-if="units.length > 1"
@@ -107,7 +132,9 @@ const stars = [1, 2, 3, 4, 5];
               <div>
                 <h1 class="text-[22px] font-normal leading-snug">{{ pdp.name }}</h1>
                 <div class="mt-1 flex text-[#DE7921]"><Star v-for="s in stars" :key="s" class="size-4" fill="#DE7921" stroke="#DE7921" /></div>
-                <div class="mt-2 flex items-baseline gap-0.5 border-t border-[#E7E7E7] pt-2"><span class="text-[13px]">₦</span><span class="text-[28px] leading-none" :class="pdp.discountPct ? 'text-[#CC0C39]' : ''">{{ selPrice.toLocaleString() }}</span></div>
+                <span v-if="designLabDiscount(pdp)" class="mt-2 inline-block rounded-sm bg-[#CC0C39] px-1.5 py-0.5 text-[11px] font-bold text-white">Save {{ designLabDiscount(pdp)!.pct }}%</span>
+                <div class="mt-2 flex items-baseline gap-0.5 border-t border-[#E7E7E7] pt-2"><span class="text-[13px]" :class="designLabDiscount(pdp) ? 'text-[#CC0C39]' : ''">₦</span><span class="text-[28px] leading-none" :class="designLabDiscount(pdp) ? 'text-[#CC0C39]' : ''">{{ selPrice.toLocaleString() }}</span></div>
+                <p v-if="designLabDiscount(pdp)?.compareNaira" class="text-[12px] text-[#565959]">Was <span class="line-through">{{ formatNaira(designLabDiscount(pdp)!.compareNaira!) }}</span></p>
                 <p v-if="pdp.unitPriceBadge" class="text-[12px] text-[#565959]">({{ pdp.unitPriceBadge }})</p>
                 <DesignLabUnitPicker
                   v-if="units.length > 1"

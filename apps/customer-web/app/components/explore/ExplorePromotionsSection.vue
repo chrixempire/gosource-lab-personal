@@ -221,7 +221,9 @@ watch(
   gap: 1rem;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  padding-bottom: 0.25rem;
+  /* Top/left/right padding so an in-cart card's border + ring (and the
+     promotion badge) aren't clipped by the scroller's overflow at the edges. */
+  padding: 3px 3px 0.25rem;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
