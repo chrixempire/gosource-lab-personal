@@ -3,7 +3,7 @@ import {
   clearAdminAuthCookies,
   getAccessTokenCookie,
   getRefreshTokenCookie,
-  refreshAdminSession,
+  refreshAdminSessionWithToken,
 } from './admin-auth-session';
 
 function isUnauthorizedApiError(error: unknown) {
@@ -30,8 +30,9 @@ export async function resolveAdminAccessToken(event: H3Event) {
   const refreshToken = getRefreshTokenCookie(event);
 
   if (!accessToken && refreshToken) {
-    await refreshAdminSession(event);
-    accessToken = getAccessTokenCookie(event);
+    // Use the token returned by the refresh — re-reading the cookie here would
+    // return the stale request value (setCookie only updates the response).
+    ({ accessToken } = await refreshAdminSessionWithToken(event));
   }
 
   if (!accessToken) {
@@ -58,8 +59,10 @@ export async function withAdminLegacyAuthRetry<T>(
     }
 
     try {
-      await refreshAdminSession(event);
-      accessToken = getAccessTokenCookie(event) ?? '';
+      // Use the freshly returned token, not a re-read of the request cookie
+      // (which still holds the old, expired token within this request).
+      const refreshed = await refreshAdminSessionWithToken(event);
+      accessToken = refreshed.accessToken;
 
       if (!accessToken) {
         throw error;
