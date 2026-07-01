@@ -25,9 +25,19 @@ if (!slug.value) {
   await navigateTo(ADMIN_PAGE_ROUTES.DISCOUNTS);
 }
 
+const router = useRouter();
 const { updateDiscount, busyDiscountId } = useDiscountMutations();
 const form = reactive(createEmptyDiscountFormValues());
 const fieldErrors = reactive<Record<string, string>>({});
+
+function goBack() {
+  // Preserve the list's page/limit/filters by returning to the referrer URL.
+  if (import.meta.client && window.history.length > 1) {
+    router.back();
+    return;
+  }
+  void navigateTo(ADMIN_PAGE_ROUTES.DISCOUNTS);
+}
 const submitting = computed(() => busyDiscountId.value === discountId.value);
 
 const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
@@ -76,8 +86,7 @@ async function onSubmit() {
 
   try {
     await updateDiscount(discountId.value, slug.value, form, productIdsInCategory);
-    await refresh();
-    await navigateTo(ADMIN_PAGE_ROUTES.DISCOUNTS);
+    goBack();
   } catch {
     // toast in composable
   }
@@ -95,7 +104,7 @@ useAdminHeader().updateHeader({ title: 'Edit discount' });
         size="small"
         class="!w-fit"
         :left-icon="ArrowLeft"
-        @click="navigateTo(ADMIN_PAGE_ROUTES.DISCOUNTS)"
+        @click="goBack()"
       >
         Back
       </Button>
