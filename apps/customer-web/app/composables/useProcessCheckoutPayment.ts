@@ -28,7 +28,16 @@ export function useProcessCheckoutPayment() {
 
     submitting.value = true;
     try {
-      const response = await approveRequest(requestId, { paymentMethod: method });
+      const reference = options?.paystackCharged
+        ? options.paystackReference?.trim()
+        : undefined;
+      const response = await approveRequest(requestId, {
+        paymentMethod: method,
+        // Pass the confirmed Paystack reference so the backend can verify the
+        // charge server-side and mark the order paid without relying on the
+        // (environment-dependent) webhook.
+        ...(reference ? { paystackReference: reference } : {}),
+      });
 
       if (!response?.data) {
         toast.error(formatPaymentFailedMessage(null, 'Unable to complete payment'));
