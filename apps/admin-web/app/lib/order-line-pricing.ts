@@ -121,6 +121,21 @@ export function resolveOrderLinePricing(
     return { lineTotal: storedTotal, unit };
   }
 
+  const quantity = Math.max(0, toNumber(line.quantity));
+
+  // Prefer the price the order was actually placed at, snapshotted on the line
+  // (financialSnapshotVersion). Recomputing from the live product below would
+  // show the product's *current* price, not what the customer was charged — so
+  // if the price later changed, the order detail would silently drift.
+  const snapshotLineRevenue = toNumber(line.grossLineRevenue);
+  if (snapshotLineRevenue > 0) {
+    return { lineTotal: snapshotLineRevenue, unit };
+  }
+  const snapshotUnitPrice = toNumber(line.unitSellingPrice);
+  if (quantity > 0 && snapshotUnitPrice > 0) {
+    return { lineTotal: quantity * snapshotUnitPrice, unit };
+  }
+
   if (product) {
     const calculated = calculateLegacyOrderLineTotal(line, product, businessId);
     if (calculated > 0) {
@@ -128,7 +143,6 @@ export function resolveOrderLinePricing(
     }
   }
 
-  const quantity = Math.max(0, toNumber(line.quantity));
   const unitPrice = toNumber(line.unitPrice ?? line.price);
   if (quantity > 0 && unitPrice > 0) {
     return { lineTotal: quantity * unitPrice, unit };
