@@ -1063,12 +1063,23 @@ function mapLegacyRequestProducts(
     const quantity = Math.max(0, toNumber(item.quantity));
     const unit = productRaw ? resolveRequestLineUnit(item, product) : 'Standard pack';
     const storedLineTotal = toNumber(item.totalPrice);
+    // Prefer the price the order was placed at, snapshotted on the line
+    // (financialSnapshotVersion). Recomputing from the live product below would
+    // show its *current* price — so after a price change a placed order would
+    // silently display the new price instead of what the customer was charged.
+    // Pending requests carry no snapshot, so they still reflect live pricing.
+    const snapshotLineTotal = toNumber(item.grossLineRevenue);
+    const snapshotUnitPrice = toNumber(item.unitSellingPrice);
     const lineTotal =
       storedLineTotal > 0
         ? storedLineTotal
-        : productRaw
-          ? calculateLegacyRequestLineTotal(item, product, businessId)
-          : 0;
+        : snapshotLineTotal > 0
+          ? snapshotLineTotal
+          : quantity > 0 && snapshotUnitPrice > 0
+            ? quantity * snapshotUnitPrice
+            : productRaw
+              ? calculateLegacyRequestLineTotal(item, product, businessId)
+              : 0;
     const unitPrice = quantity > 0 ? lineTotal / quantity : lineTotal;
 
     const inStock = toOptionalBoolean(product.inStock);
