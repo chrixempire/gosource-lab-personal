@@ -326,10 +326,17 @@ export class OrderService {
     orderId: string,
     paymentReference: string,
   ): Promise<any> {
-    const [order, request] = await Promise.all([
+    // Paystack order payments carry the REQUEST id in metadata (the order does
+    // not exist yet at payment time), so resolve the order by its own id OR by
+    // the request it was created from — otherwise a webhook that arrives after
+    // approval can never mark the created order paid, leaving it stuck PENDING.
+    const [orderById, request] = await Promise.all([
       this.orderModel.findById(orderId),
       this.requestModel.findById(orderId),
     ]);
+
+    const order =
+      orderById ?? (await this.orderModel.findOne({ request: orderId }));
 
     if (!order && !request) {
       return;
@@ -348,7 +355,7 @@ export class OrderService {
         // deduct base + additional products; other methods already deducted the
         // base at creation, so we only deduct additional products here. Mirrors
         // the admin updatePaymentStatus path; gated per-product by trackQuantity.
-        const populatedOrder = await this.orderModel.findById(orderId).populate([
+        const populatedOrder = await this.orderModel.findById(order._id).populate([
           { path: 'products.product', model: 'Product' },
           { path: 'additionalProducts.product', model: 'Product' },
         ]);
