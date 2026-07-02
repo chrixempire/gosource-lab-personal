@@ -50,7 +50,6 @@ import {
 import { ActivityLog } from '../../activity/schema/activityLog.schema';
 import { InventoryMovement } from '../../product/entities/inventoryMovement.entity';
 import { RequestService } from '../../request/request.service';
-import { PaymentMethod } from '../../request/enum/request.enum';
 import { randomUUID } from 'crypto';
 import { createMoney } from '../../utils/money';
 import { buildOrderInvoiceViewModel } from '../../utils/order-invoice-view';
@@ -623,17 +622,27 @@ export class OrderService {
           0,
         ),
       ];
-      // Deduct product quantities from inventory once paid
-      const initialCustomerPaymentMethod = order.paymentMethod;
-      if (
-        initialCustomerPaymentMethod === PaymentMethod.TRANSFER &&
-        order.paymentCount < 1
-      ) {
-        await this.requestService.deductProductQuantity(combinedProducts as any);
-      } else {
-        await this.requestService.deductProductQuantity(
-          order.additionalProducts || [],
-        );
+      // Deduct product quantities from inventory once paid — but ONLY on the
+      // first transition to paid. Re-marking an order that is already paid (e.g.
+      // the Paystack webhook confirmed it first) must not deduct again. The
+      // paymentCount gate (not the payment method) decides base-vs-additional so
+      // a Paystack order that was unconfirmed at approval still gets its base
+      // deducted here.
+      const alreadyPaid = order.paymentStatus === ORDER_PAYMENT_STATUS.PAID;
+      let nextPaymentCount = order.paymentCount || 0;
+      if (!alreadyPaid) {
+        if ((order.paymentCount || 0) < 1) {
+          // Base stock not yet deducted → deduct base + additional.
+          await this.requestService.deductProductQuantity(
+            combinedProducts as any,
+          );
+        } else {
+          // Base already deducted at approval → only additional.
+          await this.requestService.deductProductQuantity(
+            order.additionalProducts || [],
+          );
+        }
+        nextPaymentCount = (order.paymentCount || 0) + 1;
       }
 
       // Add additional total price to main total price
@@ -647,7 +656,7 @@ export class OrderService {
         totalPrice: updatedTotalPrice,
         additionalProducts: [],
         additionalTotalPrice: 0,
-        paymentCount: (order.paymentCount || 0) + 1,
+        paymentCount: nextPaymentCount,
         paidAt: order.paidAt ?? new Date(),
       };
     } else {

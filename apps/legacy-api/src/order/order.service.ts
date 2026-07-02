@@ -360,30 +360,47 @@ export class OrderService {
           { path: 'additionalProducts.product', model: 'Product' },
         ]);
         if (populatedOrder) {
-          if (
-            order.paymentMethod === PaymentMethod.TRANSFER &&
-            (order.paymentCount || 0) < 1
-          ) {
+          if ((order.paymentCount || 0) < 1) {
+            // Base stock not yet deducted (Transfer, or a Paystack order that
+            // was unconfirmed at approval) → deduct base + additional now.
             await this.deductProductQuantity([
               ...((populatedOrder.products as any[]) || []),
               ...((populatedOrder.additionalProducts as any[]) || []),
             ]);
           } else {
+            // Base already deducted at approval → only newly-added additional.
             await this.deductProductQuantity(
               (populatedOrder.additionalProducts as any[]) || [],
             );
           }
         }
 
-        // Persist the payment transition on the un-populated document, exactly
-        // as before (plus paymentCount for idempotency parity with the admin path).
+        // Persist the payment transition. Fold any additional products into the
+        // main lines and clear them, so a later admin "mark as paid" cannot
+        // deduct the same additional products again (mirrors updatePaymentStatus).
+        const hadAdditional =
+          Array.isArray(order.additionalProducts) &&
+          (order.additionalProducts as any[]).length > 0;
         order.paymentStatus = ORDER_PAYMENT_STATUS.PAID;
         order.paidAt = order.paidAt ?? new Date();
-        order.products = snapshotOrderFinancialLines(
-          order.products as any[],
-          order.business,
-          order.discount,
-        ) as any;
+        order.products = [
+          ...snapshotOrderFinancialLines(
+            order.products as any[],
+            order.business,
+            order.discount,
+          ),
+          ...snapshotOrderFinancialLines(
+            (order.additionalProducts as any[]) || [],
+            order.business,
+            0,
+          ),
+        ] as any;
+        if (hadAdditional) {
+          order.totalPrice =
+            (order.totalPrice || 0) + (order.additionalTotalPrice || 0);
+          order.additionalProducts = [] as any;
+          order.additionalTotalPrice = 0;
+        }
         order.paymentCount = (order.paymentCount || 0) + 1;
         await order.save();
       }

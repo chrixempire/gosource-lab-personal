@@ -695,17 +695,14 @@ export class RequestService {
         paymentStatus,
         paidAt: paymentStatus === PaymentStatus.PAID ? new Date() : undefined,
         discount,
-        paymentCount:
-          requestDetails.paymentMethod === PaymentMethod.TRANSFER ? 0 : 1,
+        // paymentCount == 1 means base stock has already been deducted. We set
+        // it only when payment is confirmed at approval (see the post-commit
+        // deduction below); otherwise 0 so the paid-transition deducts it once.
+        paymentCount: paymentStatus === PaymentStatus.PAID ? 1 : 0,
       };
 
       const order: OrderDocument = new this.orderModel(newOrder);
       await order.save({ session });
-
-      // Deduct product quantity if trackQuantity is enabled
-      if (requestDetails.paymentMethod !== PaymentMethod.TRANSFER) {
-        this.deductProductQuantity(request.products, business.id);
-      }
 
       // Remove the used coupon if applicable
       if (coupon && couponObj) {
@@ -732,6 +729,23 @@ export class RequestService {
 
       // Commit the transaction
       await session.commitTransaction();
+
+      // Deduct base stock ONLY once payment is actually confirmed at approval:
+      // Credit/Wallet, an already-paid request, or a verified Paystack charge
+      // (paymentStatus === PAID). Transfer and unconfirmed/partial Paystack
+      // orders are left to the paid-transition (webhook / admin mark-paid) so an
+      // unpaid checkout never depletes stock. Runs post-commit and awaited, so a
+      // rolled-back order never deducts and failures surface instead of leaking.
+      if (paymentStatus === PaymentStatus.PAID) {
+        try {
+          await this.deductProductQuantity(request.products, business.id);
+        } catch (error) {
+          console.error(
+            `Stock deduction after approving order ${order._id} failed:`,
+            error,
+          );
+        }
+      }
 
       // Notify connected admin dashboards (SSE) so they can play a new-order
       // alert. Emitted post-commit so a rolled-back order never fires it.
