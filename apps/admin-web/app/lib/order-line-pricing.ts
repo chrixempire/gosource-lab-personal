@@ -137,7 +137,14 @@ export function resolveOrderLinePricing(
   }
 
   if (product) {
-    const calculated = calculateLegacyOrderLineTotal(line, product, businessId);
+    // No snapshot (e.g. a pending request): `cartProduct` is the product as it
+    // was priced when the line was added — the price the order is charged at on
+    // approval — so prefer it over the live product, which may have since
+    // changed. Fall back to the live product when the cart snapshot lacks pricing.
+    const cartProduct = asRecord(line.cartProduct);
+    const pricingProduct =
+      cartProduct && hasLegacyProductPricing(cartProduct) ? cartProduct : product;
+    const calculated = calculateLegacyOrderLineTotal(line, pricingProduct, businessId);
     if (calculated > 0) {
       return { lineTotal: calculated, unit };
     }

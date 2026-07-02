@@ -1062,6 +1062,14 @@ function mapLegacyRequestProducts(
     const product = asRecord(productRaw);
     const quantity = Math.max(0, toNumber(item.quantity));
     const unit = productRaw ? resolveRequestLineUnit(item, product) : 'Standard pack';
+    // Requests carry no financial snapshot, but `cartProduct` is the product as
+    // it was priced when the line was added — and that's the price the order is
+    // charged at on approval. Price from it so a later product-price change
+    // doesn't retroactively rewrite what the customer requested. Fall back to
+    // the live product only when the cart snapshot has no usable pricing.
+    const cartProduct = isRecord(item.cartProduct) ? item.cartProduct : null;
+    const pricingProduct =
+      cartProduct && hasLegacyProductPricing(cartProduct) ? cartProduct : product;
     const storedLineTotal = toNumber(item.totalPrice);
     // Prefer the price the order was placed at, snapshotted on the line
     // (financialSnapshotVersion). Recomputing from the live product below would
@@ -1078,7 +1086,7 @@ function mapLegacyRequestProducts(
           : quantity > 0 && snapshotUnitPrice > 0
             ? quantity * snapshotUnitPrice
             : productRaw
-              ? calculateLegacyRequestLineTotal(item, product, businessId)
+              ? calculateLegacyRequestLineTotal(item, pricingProduct, businessId)
               : 0;
     const unitPrice = quantity > 0 ? lineTotal / quantity : lineTotal;
 
