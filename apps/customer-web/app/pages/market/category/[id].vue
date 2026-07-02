@@ -9,7 +9,7 @@ import { useMarketBranchGate } from '~/composables/useMarketBranchGate';
 import MarketProductDetailSlideModal from '~/components/market/MarketProductDetailSlideModal.vue';
 import MarketProductSection from '~/components/market/MarketProductSection.vue';
 import ExploreCategoryFilterBar from '~/components/explore/ExploreCategoryFilterBar.vue';
-import { ALL_EXPLORE_CATEGORIES_ID } from '~/lib/explore-catalog-filters';
+import { ALL_EXPLORE_CATEGORIES_ID, filterExploreProduct } from '~/lib/explore-catalog-filters';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useMarketCatalog } from '~/composables/useMarketCatalog';
 import { useCustomerMarketService } from '~/services/market.service';
@@ -117,6 +117,34 @@ const {
 
 const hasProducts = computed(() => (category.value?.products?.length ?? 0) > 0);
 
+// Full-catalog view: in-stock + price filters narrow the displayed products.
+const inStockOnly = ref(false);
+const priceMin = ref<number | null>(null);
+const priceMax = ref<number | null>(null);
+
+function onApplyPrice(payload: { priceMin: number | null; priceMax: number | null }) {
+  priceMin.value = payload.priceMin;
+  priceMax.value = payload.priceMax;
+}
+
+const filteredCategory = computed<MarketCategory | null>(() => {
+  if (!category.value) {
+    return null;
+  }
+  return {
+    ...category.value,
+    products: (category.value.products ?? []).filter((product) =>
+      filterExploreProduct(product, {
+        inStockOnly: inStockOnly.value,
+        priceMin: priceMin.value,
+        priceMax: priceMax.value,
+      }),
+    ),
+  };
+});
+
+const hasMatches = computed(() => (filteredCategory.value?.products.length ?? 0) > 0);
+
 const modalProduct = ref<MarketProduct | null>(null);
 
 function openProductAddModal(product: MarketProduct) {
@@ -155,8 +183,12 @@ onMounted(async () => {
       <ExploreCategoryFilterBar
         :categories="categories"
         :active-category-id="categoryId"
-        hide-filters
+        :in-stock-only="inStockOnly"
+        :price-min="priceMin"
+        :price-max="priceMax"
         @select-category="onSelectCategory"
+        @update:in-stock-only="inStockOnly = $event"
+        @apply-price="onApplyPrice"
       />
 
       <MarketBranchSetupBanner />
@@ -193,7 +225,31 @@ onMounted(async () => {
         </div>
       </div>
 
-      <MarketProductSection v-if="hasProducts" :category="category" layout="grid" />
+      <template v-if="hasProducts">
+        <MarketProductSection
+          v-if="filteredCategory && hasMatches"
+          :category="filteredCategory"
+          layout="grid"
+        />
+
+        <div
+          v-else
+          class="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center"
+        >
+          <span
+            class="flex size-16 items-center justify-center rounded-full bg-grey-55 text-grey-300"
+            aria-hidden="true"
+          >
+            <PackageOpen class="size-12" />
+          </span>
+          <h2 class="text-base font-semibold text-grey-900">
+            No products match your filters
+          </h2>
+          <p class="max-w-sm text-sm text-grey-300">
+            Try adjusting the price range or turning off “In stock only” to see more products under {{ category.title }}.
+          </p>
+        </div>
+      </template>
 
       <div
         v-else

@@ -139,7 +139,7 @@ onUnmounted(() => {
     <header
       class="mb-3 flex items-center justify-between gap-2 px-1 sm:px-0"
     >
-      <h2 class="min-w-0 truncate text-base font-semibold text-grey-900 sm:text-lg">
+      <h2 class="min-w-0 truncate text-[15px] font-medium leading-[1.35] tracking-tight text-grey-900 sm:text-base">
         <span class="min-[720px]:hidden">Recently ordered</span>
         <span class="hidden min-[720px]:inline">Recently ordered items</span>
       </h2>

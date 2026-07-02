@@ -124,11 +124,21 @@ export class PaystackService {
    */
   async processPaystackWebhook(data: any, req: Request) {
     const verifyRequest = await this.verifyWebhook(data, req);
+    console.log('[paystack.webhook] received', {
+      event: data?.event,
+      signatureValid: verifyRequest,
+      reference: data?.data?.reference,
+      metadata: data?.data?.metadata,
+    });
 
     if (verifyRequest) {
       if (data.event === 'charge.success') {
         const reference = data.data.reference;
         const status = await this.verifyTransaction(reference);
+        console.log('[paystack.webhook] verifyTransaction', {
+          reference,
+          verified: Boolean(status),
+        });
         if (status) {
           if (data.data.metadata.invoiceId) {
             const invoiceId = data.data.metadata.invoiceId;
@@ -138,6 +148,7 @@ export class PaystackService {
             );
           } else if (data.data.metadata.orderId) {
             const orderId = data.data.metadata.orderId;
+            console.log('[paystack.webhook] order branch', { orderId });
             return await this.orderService.updateOrderFromWebhook(
               orderId,
               reference,

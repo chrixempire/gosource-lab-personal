@@ -26,10 +26,10 @@ const showMarketplaceCarousel = computed(
       <ExplorePageHeroGreetingSkeleton v-if="sessionLoading" />
       <h1
         v-else
-        class="text-[15px] font-medium leading-[1.35] tracking-tight sm:text-base"
+        class="text-base font-semibold sm:text-lg"
       >
-        <span class="text-grey-600">{{ timeGreeting }},</span>
-        <span class="font-semibold text-primary-600"> {{ greetingName }}.</span>
+        <span class="text-grey-600 dark:text-white">{{ timeGreeting }},</span>
+        <span class="font-semibold text-primary-600 dark:text-[#22c55e]"> {{ greetingName }}.</span>
       </h1>
     </div>
 

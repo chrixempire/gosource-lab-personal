@@ -2,7 +2,7 @@
 import { Button, Input } from '@gosource/ui';
 import { Minus, Plus, Trash2 } from 'lucide-vue-next';
 import { formatDashboardCurrency } from '~/lib/dashboard-date';
-import { PRODUCT_ITEM_INPUT_CLASS } from '~/lib/product-form';
+import { blockExtraDecimal, PRODUCT_ITEM_INPUT_CLASS } from '~/lib/product-form';
 import type { PurchaseOrderLineItem } from '~/types/purchase-orders';
 
 const lineItems = defineModel<PurchaseOrderLineItem[]>('lineItems', { required: true });
@@ -25,7 +25,8 @@ function updateQuantity(index: number, value: string) {
   const item = lineItems.value[index];
   if (!item) return;
 
-  const quantity = Math.max(1, Math.round(parseFormattedNumber(value)) || 1);
+  // Quantity accepts decimals (e.g. 1.5); keep a minimum of 1.
+  const quantity = Math.max(1, parseFormattedNumber(value) || 1);
   item.quantity = quantity;
   item.totalPrice = quantity * item.unitPrice;
 }
@@ -123,9 +124,10 @@ function removeLine(index: number) {
             </Button>
             <Input
               :model-value="String(item.quantity)"
-              inputmode="numeric"
+              inputmode="decimal"
               class="text-center"
               :class="PRODUCT_ITEM_INPUT_CLASS"
+              @keypress="blockExtraDecimal"
               @update:model-value="updateQuantity(index, $event)"
             />
             <Button

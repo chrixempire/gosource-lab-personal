@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MarketPromotion } from '~/lib/marketplace-data';
+import type { MarketProduct, MarketPromotion } from '~/lib/marketplace-data';
 import { useMediaQuery } from '@vueuse/core';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
@@ -9,20 +9,20 @@ import {
   exploreMobileTripleScrollMediaQuery,
 } from '~/lib/explore-product-layout';
 
+// Renders a single promotion as its own row: its title, its symbol/icon, and
+// its products. The parent renders one of these per active promotion.
 const props = defineProps<{
-  promotions: MarketPromotion[];
-  loading?: boolean;
+  promotion: MarketPromotion;
 }>();
 
-const headerIconHtml = computed(() => {
-  const firstWithIcon = props.promotions.find((promotion) => promotion.icon?.trim());
-  return firstWithIcon?.icon?.trim() ?? '';
-});
+const promotionTitle = computed(
+  () => props.promotion.name?.trim() || 'Promotion',
+);
+const headerIconHtml = computed(() => props.promotion.icon?.trim() ?? '');
 
 const visibleProducts = computed(() => {
-  const allProducts = props.promotions.flatMap((promotion) => promotion.products ?? []);
-  const deduped = new Map<string, (typeof allProducts)[number]>();
-  for (const product of allProducts) {
+  const deduped = new Map<string, MarketProduct>();
+  for (const product of props.promotion.products ?? []) {
     if (product?.id && !deduped.has(product.id)) {
       deduped.set(product.id, product);
     }
@@ -145,23 +145,23 @@ onUnmounted(() => {
 });
 
 watch(
-  () => [visibleProducts.value.length, props.loading] as const,
+  () => visibleProducts.value.length,
   () => scheduleScrollerStateUpdate(),
 );
 </script>
 
 <template>
   <section
-    v-if="loading || visibleProducts.length > 0"
+    v-if="visibleProducts.length > 0"
     class="m-0"
   >
     <header
       class="mb-3 flex items-center justify-between gap-2 rounded-lg bg-primary-50 p-2"
     >
       <div class="flex min-w-0 items-center gap-1.5 pl-2">
-        <h2 class="truncate text-base font-semibold text-success-700 sm:text-lg">
-          Deals combo for you
-        </h2>
+        <h4 class="truncate text-sm font-semibold text-success-700">
+          {{ promotionTitle }}
+        </h4>
         <span
           v-if="headerIconHtml"
           class="inline-flex size-4 shrink-0 items-center justify-center text-primary-500 [&_svg]:size-4"
@@ -172,38 +172,26 @@ watch(
       <div v-if="canScrollProducts" class="flex shrink-0 gap-1">
         <button
           type="button"
-          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+          class="customer-control-btn flex size-7 cursor-pointer items-center justify-center rounded-full shadow-sm"
           :disabled="!canScrollLeft"
           aria-label="Scroll promotions left"
           @click="scrollByDirection(-1)"
         >
-          <ChevronLeft class="size-5" aria-hidden="true" />
+          <ChevronLeft class="size-4" aria-hidden="true" />
         </button>
         <button
           type="button"
-          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+          class="customer-control-btn flex size-7 cursor-pointer items-center justify-center rounded-full shadow-sm"
           :disabled="!canScrollRight"
           aria-label="Scroll promotions right"
           @click="scrollByDirection(1)"
         >
-          <ChevronRight class="size-5" aria-hidden="true" />
+          <ChevronRight class="size-4" aria-hidden="true" />
         </button>
       </div>
     </header>
 
     <div
-      v-if="loading && visibleProducts.length === 0"
-      class="explore-promotions-scroller"
-    >
-      <div
-        v-for="index in 5"
-        :key="index"
-        class="explore-promotions-card-slot h-[270px] animate-pulse rounded-[8px] border border-grey-50 bg-grey-55"
-      />
-    </div>
-
-    <div
-      v-else
       ref="scrollerRef"
       class="explore-promotions-scroller"
     >

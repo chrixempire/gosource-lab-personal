@@ -10,6 +10,7 @@ import {
   validatePurchaseOrderForm,
 } from '~/lib/purchase-order-form';
 
+const router = useRouter();
 const { updateHeader } = useAdminHeader();
 const { createPurchaseOrder, busyOrderId } = usePurchaseOrderMutations();
 
@@ -18,6 +19,11 @@ const fieldErrors = reactive<Record<string, string>>({});
 const submitting = computed(() => busyOrderId.value === 'create');
 
 function goBack() {
+  // Preserve the list's page/limit/filters by returning to the referrer URL.
+  if (import.meta.client && window.history.length > 1) {
+    router.back();
+    return;
+  }
   void navigateTo(ADMIN_PAGE_ROUTES.PURCHASE_ORDERS);
 }
 
@@ -31,7 +37,7 @@ async function onSubmit() {
 
   try {
     await createPurchaseOrder(form);
-    await navigateTo(ADMIN_PAGE_ROUTES.PURCHASE_ORDERS);
+    goBack();
   } catch {
     // toast in composable
   }

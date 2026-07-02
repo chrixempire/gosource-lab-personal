@@ -16,10 +16,20 @@ if (!slug.value) {
   await navigateTo(ADMIN_PAGE_ROUTES.DISCOUNTS);
 }
 
+const router = useRouter();
 const { createDiscount, busyDiscountId } = useDiscountMutations();
 const form = reactive(createEmptyDiscountFormValues());
 const fieldErrors = reactive<Record<string, string>>({});
 const submitting = computed(() => busyDiscountId.value === 'create');
+
+function goBack() {
+  // Preserve the list's page/limit/filters by returning to the referrer URL.
+  if (import.meta.client && window.history.length > 1) {
+    router.back();
+    return;
+  }
+  void navigateTo(ADMIN_PAGE_ROUTES.DISCOUNTS);
+}
 
 async function fetchProductIdsForCategory(categoryId: string) {
   const payload = await $fetch<unknown>('/api/products/filtered', {
@@ -46,7 +56,7 @@ async function onSubmit() {
 
   try {
     await createDiscount(slug.value, form, productIdsInCategory);
-    await navigateTo(ADMIN_PAGE_ROUTES.DISCOUNTS);
+    goBack();
   } catch {
     // toast in composable
   }
@@ -64,7 +74,7 @@ useAdminHeader().updateHeader({ title: 'Create discount' });
         size="small"
         class="!w-fit"
         :left-icon="ArrowLeft"
-        @click="navigateTo(ADMIN_PAGE_ROUTES.DISCOUNTS)"
+        @click="goBack()"
       >
         Back
       </Button>

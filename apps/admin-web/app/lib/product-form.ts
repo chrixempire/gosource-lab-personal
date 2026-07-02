@@ -147,6 +147,14 @@ export function formatCurrencyFieldValue(value: number | undefined | null) {
   return formatNumericString(String(value), true);
 }
 
+export function formatDecimalFieldValue(value: number | undefined | null) {
+  if (value == null || !Number.isFinite(value)) {
+    return '';
+  }
+
+  return formatNumericString(String(value), true);
+}
+
 export function formatIntegerFieldValue(value: number | undefined | null) {
   if (value == null || !Number.isFinite(value)) {
     return '';
@@ -186,8 +194,11 @@ export function updateIntegerField(
   target: ProductItemFormValues | ProductPricingRow,
   value: string,
 ) {
-  const sanitized = stripToNumeric(value, false) || '';
-  const formatted = formatNumericString(sanitized, false);
+  // Quantity and quantity-per-unit accept decimals (e.g. 1.5 kg); the low-stock
+  // level stays a whole number.
+  const allowDecimal = field === 'quantity' || field === 'quantityPerUnit';
+  const sanitized = stripToNumeric(value, allowDecimal) || '';
+  const formatted = formatNumericString(sanitized, allowDecimal);
 
   if (field === 'quantity' && 'quantity' in target && !('unit' in target)) {
     (target as ProductItemFormValues).quantity = formatted;
@@ -202,6 +213,19 @@ export function updateIntegerField(
 
   if (field === 'quantityPerUnit' && 'quantityPerUnit' in target) {
     (target as ProductPricingRow).quantityPerUnit = formatted;
+  }
+}
+
+/**
+ * Blocks typing a second decimal point into a decimal field. The shared Input is
+ * controlled (`:value` + `@input`), so a stray "." that sanitizes back to the
+ * current value produces no model change and Vue won't repaint — leaving e.g.
+ * "0.7." visible in the box. Rejecting the keystroke prevents that.
+ */
+export function blockExtraDecimal(event: KeyboardEvent) {
+  const el = event.target as HTMLInputElement | null;
+  if (event.key === '.' && el?.value.includes('.')) {
+    event.preventDefault();
   }
 }
 
@@ -244,7 +268,7 @@ function parseNewUnitRows(value: unknown): ProductPricingRow[] {
       return {
         unit,
         price: formatCurrencyFieldValue(Number(record.price)),
-        quantityPerUnit: formatIntegerFieldValue(
+        quantityPerUnit: formatDecimalFieldValue(
           record.quantity != null ? Number(record.quantity) : undefined,
         ),
       };
@@ -388,7 +412,7 @@ export function mapLegacyProductToFormValues(
     trackQuantity: product.trackQuantity !== false,
     purchaseUnit: resolvePurchaseUnitSlug(product, unitOptions),
     marketPrice: formatCurrencyFieldValue(product.marketPrice),
-    quantity: formatIntegerFieldValue(product.quantity),
+    quantity: formatDecimalFieldValue(product.quantity),
     totalPrice: formatCurrencyFieldValue(product.totalPrice ?? product.marketPrice),
     setLowStockLevel: product.lowStockLevel != null,
     stockLevel: formatIntegerFieldValue(

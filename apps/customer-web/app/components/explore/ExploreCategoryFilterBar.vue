@@ -21,12 +21,15 @@ const props = withDefaults(
     priceMax?: number | null;
     /** Hide the in-stock/price filter cluster so the bar is a pure category rail. */
     hideFilters?: boolean;
+    /** Hide only the "In stock only" toggle while keeping the price filter. */
+    hideInStockFilter?: boolean;
   }>(),
   {
     inStockOnly: false,
     priceMin: null,
     priceMax: null,
     hideFilters: false,
+    hideInStockFilter: false,
   },
 );
 
@@ -140,7 +143,7 @@ function categoryIconClass(categoryId: string) {
   return [
     "flex items-center justify-center overflow-hidden rounded-full transition-all duration-200",
     isCategoryActive(categoryId)
-      ? "size-11 bg-primary-50/80 ring-2 ring-primary-500 dark:bg-primary-500/10 dark:ring-primary-400"
+      ? "size-11 bg-primary-50/80 ring-2 ring-primary-500 dark:bg-primary-500/20 dark:ring-[#22c55e]"
       : "size-9 group-hover:size-11 group-hover:bg-primary-50/80 dark:group-hover:bg-primary-500/10",
   ];
 }
@@ -314,8 +317,8 @@ watch(
               :class="[
                 categoryLabelClass,
                 isCategoryActive(ALL_EXPLORE_CATEGORIES_ID)
-                  ? '!text-primary-500'
-                  : 'group-hover:!text-primary-700',
+                  ? '!text-primary-500 dark:!text-[#22c55e]'
+                  : 'group-hover:!text-primary-700 dark:!text-white',
               ]"
             >
               All categories
@@ -352,8 +355,8 @@ watch(
               :class="[
                 categoryLabelClass,
                 isCategoryActive(category.id)
-                  ? '!text-primary-500'
-                  : 'group-hover:!text-primary-700',
+                  ? '!text-primary-500 dark:!text-[#22c55e]'
+                  : 'group-hover:!text-primary-700 dark:!text-white',
               ]"
             >
               {{ category.title }}
@@ -369,6 +372,7 @@ watch(
 
         <div v-if="!hideFilters" class="flex shrink-0 items-center gap-2">
           <button
+            v-if="!hideInStockFilter"
             type="button"
             class="shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-sm font-medium transition"
             :class="
