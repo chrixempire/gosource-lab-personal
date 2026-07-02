@@ -38,7 +38,7 @@ const emit = defineEmits<{
         >
           <LoaderCircle
             v-if="isReordering"
-            class="size-4 animate-spin"
+            class="size-4 animate-spin !text-primary-500"
           />
           <Ellipsis
             v-else
