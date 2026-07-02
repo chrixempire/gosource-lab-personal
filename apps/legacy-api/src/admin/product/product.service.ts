@@ -509,11 +509,13 @@ export class ProductService implements OnApplicationBootstrap {
       });
     };
 
-    return {
-      changed,
-      products: recompute(order?.products),
-      additionalProducts: recompute(order?.additionalProducts),
-    };
+    // NB: run both recompute() calls BEFORE reading `changed` — object literal
+    // properties evaluate in source order, so listing `changed` first would
+    // capture its initial `false` before recompute() flips it, making every
+    // heal a silent no-op.
+    const products = recompute(order?.products);
+    const additionalProducts = recompute(order?.additionalProducts);
+    return { changed, products, additionalProducts };
   }
 
   /**
