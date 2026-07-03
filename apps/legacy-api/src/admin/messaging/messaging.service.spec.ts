@@ -17,6 +17,7 @@ describe('AdminMessagingService', () => {
   };
   const customerModel = { find: jest.fn() };
   const emailQueue = { addBulk: jest.fn() };
+  const activityService = { record: jest.fn() };
 
   let service: AdminMessagingService;
 
@@ -26,6 +27,7 @@ describe('AdminMessagingService', () => {
       messageModel as any,
       customerModel as any,
       emailQueue as any,
+      activityService as any,
     );
   });
 
