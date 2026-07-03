@@ -12,6 +12,7 @@ export const DASHBOARD_DATE_PRESETS: Array<{
   { label: 'Last month', value: 'last_month' },
   { label: 'This year', value: 'this_year' },
   { label: 'Last year', value: 'last_year' },
+  { label: 'Custom range', value: 'custom_range' },
 ];
 
 const DASHBOARD_DATE_FILTER_TYPES: DashboardDateFilterType[] = [
@@ -47,6 +48,12 @@ export function parseDashboardDateFilterFromQuery(
   const endDate = Array.isArray(query.endDate) ? query.endDate[0] : query.endDate;
 
   if (filterType === 'custom_range') {
+    // Only honour a custom range when both endpoints are present; otherwise fall
+    // back to the default so we never emit an incomplete range (the API rejects
+    // custom_range without a valid start and end).
+    if (startDate && endDate) {
+      return { filterType: 'custom_range', startDate: String(startDate), endDate: String(endDate) };
+    }
     return createDefaultDashboardDateFilter();
   }
 

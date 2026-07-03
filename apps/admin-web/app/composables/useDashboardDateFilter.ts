@@ -26,8 +26,13 @@ export function useDashboardDateFilter() {
         filter: value.filterType,
       };
 
-      delete nextQuery.startDate;
-      delete nextQuery.endDate;
+      if (value.filterType === 'custom_range' && value.startDate && value.endDate) {
+        nextQuery.startDate = value.startDate;
+        nextQuery.endDate = value.endDate;
+      } else {
+        delete nextQuery.startDate;
+        delete nextQuery.endDate;
+      }
 
       router.replace({ query: nextQuery });
     },
