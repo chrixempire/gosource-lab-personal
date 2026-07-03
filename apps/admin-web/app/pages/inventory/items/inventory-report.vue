@@ -38,6 +38,10 @@ const { data, pending, error, refresh } = await useAdminListFetch<unknown>(
 /** Lazy list fetch keeps `pending` false until the first request starts; treat missing data as loading too. */
 const tableLoading = computed(() => pending.value || data.value == null);
 
+// Feed the shared date-filter Apply spinner while this report refetches.
+const { trackDashboardSection } = useDashboardLoading();
+trackDashboardSection('inventory-movement', pending);
+
 const parsed = computed(() =>
   parseInventoryMovementResponse(data.value, page.value, limit.value),
 );
