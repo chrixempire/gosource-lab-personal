@@ -27,7 +27,7 @@ async function onSubmit() {
 
   try {
     await createPromotion(form);
-    await navigateTo(ADMIN_PAGE_ROUTES.PROMOTIONS);
+    goBack();
   } catch {
     // toast in composable
   }

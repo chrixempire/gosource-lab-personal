@@ -4,9 +4,20 @@ import { formatNaira, useMarketplaceCart } from '~/composables/useMarketplaceCar
 import { useMarketplaceUi } from '~/composables/useMarketplaceUi';
 import { useRequestAddItemsMode } from '~/composables/useRequestAddItemsMode';
 
+const props = defineProps<{
+  /** When inline, the button sits in a shared floating stack instead of fixing itself. */
+  inline?: boolean;
+}>();
+
 const { totalItemCount, subtotalNaira } = useMarketplaceCart();
 const { isAddingToRequest, bootstrapFromRoute } = useRequestAddItemsMode();
 const { cartDrawerOpen } = useMarketplaceUi();
+
+const positionClass = computed(() =>
+  props.inline
+    ? ''
+    : 'fixed z-40 bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))] sm:bottom-6 sm:right-6',
+);
 
 const countLabel = computed(() => {
   const count = totalItemCount.value;
@@ -26,7 +37,10 @@ async function openCart() {
   <button
     type="button"
     data-testid="explore-floating-cart"
-    class="customer-brand-hero fixed z-40 flex max-w-[min(100vw-2rem,18.5rem)] cursor-pointer items-center gap-3 rounded-full py-2 pl-2 pr-3.5 text-left shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5),0_12px_32px_-12px_rgba(16,24,40,0.4)] transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background-on-canvas dark:shadow-[0_20px_48px_-16px_rgba(0,0,0,0.5)] bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))] sm:bottom-6 sm:right-6"
+    :class="[
+      'customer-brand-hero flex max-w-[min(100vw-2rem,18.5rem)] cursor-pointer items-center gap-3 rounded-full py-2 pl-2 pr-3.5 text-left shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5),0_12px_32px_-12px_rgba(16,24,40,0.4)] transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background-on-canvas dark:shadow-[0_20px_48px_-16px_rgba(0,0,0,0.5)]',
+      positionClass,
+    ]"
     :aria-label="isAddingToRequest ? 'View request items' : 'Open cart'"
     @click="openCart"
   >

@@ -23,6 +23,7 @@ export const ADMIN_PAGE_ROUTES = {
   MESSAGE_ALERT_CREATE: '/messages/alerts',
   MESSAGE_EMAIL_CREATE: '/messages/create-email',
   CUSTOMERS: '/customers',
+  FEEDBACK: '/feedback',
   ACTIVITY_LOG: '/activity-log',
   SETTINGS: '/settings',
   SETTINGS_SECURITY: '/settings/security',
@@ -85,6 +86,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     to: ADMIN_PAGE_ROUTES.MESSAGES,
   },
   { label: 'Customers', icon: 'i-lucide-users', to: ADMIN_PAGE_ROUTES.CUSTOMERS },
+  { label: 'Feedbacks & reviews', icon: 'i-lucide-message-circle-heart', to: ADMIN_PAGE_ROUTES.FEEDBACK },
   { label: 'Activity log', icon: 'i-lucide-scroll-text', to: ADMIN_PAGE_ROUTES.ACTIVITY_LOG },
 ];
 

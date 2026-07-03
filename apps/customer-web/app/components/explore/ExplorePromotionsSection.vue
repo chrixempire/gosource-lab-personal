@@ -159,9 +159,9 @@ watch(
       class="mb-3 flex items-center justify-between gap-2 rounded-lg bg-primary-50 p-2"
     >
       <div class="flex min-w-0 items-center gap-1.5 pl-2">
-        <h2 class="truncate text-base font-semibold text-success-700 sm:text-lg">
+        <h4 class="truncate text-sm font-semibold text-success-700">
           {{ promotionTitle }}
-        </h2>
+        </h4>
         <span
           v-if="headerIconHtml"
           class="inline-flex size-4 shrink-0 items-center justify-center text-primary-500 [&_svg]:size-4"
@@ -172,21 +172,21 @@ watch(
       <div v-if="canScrollProducts" class="flex shrink-0 gap-1">
         <button
           type="button"
-          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+          class="customer-control-btn flex size-7 cursor-pointer items-center justify-center rounded-full shadow-sm"
           :disabled="!canScrollLeft"
           aria-label="Scroll promotions left"
           @click="scrollByDirection(-1)"
         >
-          <ChevronLeft class="size-5" aria-hidden="true" />
+          <ChevronLeft class="size-4" aria-hidden="true" />
         </button>
         <button
           type="button"
-          class="customer-control-btn flex size-9 cursor-pointer items-center justify-center rounded-full shadow-sm"
+          class="customer-control-btn flex size-7 cursor-pointer items-center justify-center rounded-full shadow-sm"
           :disabled="!canScrollRight"
           aria-label="Scroll promotions right"
           @click="scrollByDirection(1)"
         >
-          <ChevronRight class="size-5" aria-hidden="true" />
+          <ChevronRight class="size-4" aria-hidden="true" />
         </button>
       </div>
     </header>

@@ -5,6 +5,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  type OnApplicationBootstrap,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ProductStockUpdatedEvent } from './events/product-stock-updated.event';
@@ -40,6 +41,14 @@ import { ActivityLog } from '../../activity/schema/activityLog.schema';
 import { parseISO } from 'date-fns';
 import { getDateFilter } from '../../utils/helpers';
 import { Order } from '../../order/entities/order.entity';
+import {
+  ORDER_FINANCIAL_SNAPSHOT_VERSION,
+  snapshotOrderFinancialLines,
+} from '../../order/order-financials';
+import {
+  ORDER_PAYMENT_STATUS,
+  ORDER_STATUS,
+} from '../../order/interface/order.interface';
 import { InventoryMovement } from '../../product/entities/inventoryMovement.entity';
 import { StockCount } from './schema/stockCount';
 import {
@@ -55,7 +64,7 @@ import { buildLowStockPatch } from '../../utils/low-stock.util';
 import { adminInitiator } from '../../utils/activity-initiator.util';
 
 @Injectable()
-export class ProductService {
+export class ProductService implements OnApplicationBootstrap {
   constructor(
     @InjectModel(Product.name) private productModel: Model<Product>,
     @InjectModel(ActivityLog.name) private activityLogModel: Model<ActivityLog>,
@@ -556,12 +565,192 @@ export class ProductService {
 
       await this.invalidateProductListCaches();
 
+      // Heal past PAID orders that were snapshotted with no cost (₦0 profit)
+      // whenever the product now carries a market price. Keyed on the price
+      // being present — not just changed — so re-saving an already-priced
+      // product also back-fills historical orders. Runs in the background so
+      // the product save stays fast; recompute is a no-op when nothing needs it.
+      if (Number((updatedProduct as { marketPrice?: unknown }).marketPrice) > 0) {
+        void this.recomputeOrderCogsForProduct(productId).catch((error) => {
+          console.error(
+            `Failed to recompute order COGS for product ${productId}:`,
+            error,
+          );
+        });
+      }
+
       return {
         status: true,
         message: 'Product updated successfully',
         data: syncedProduct,
       };
     }
+  }
+
+  /**
+   * Recompute COGS snapshots for a single order's lines. Only lines that lack a
+   * valid snapshot are recomputed (using the live product cost) — already
+   * verified lines keep their point-in-time snapshot. The order must be loaded
+   * with `products.product` / `additionalProducts.product` populated so cost can
+   * be resolved from the current product. Returns the new line arrays plus
+   * whether anything actually changed. Product refs are re-persisted as ids.
+   */
+  private applyOrderCogsRecompute(order: any): {
+    changed: boolean;
+    products: any[] | undefined;
+    additionalProducts: any[] | undefined;
+  } {
+    let changed = false;
+
+    const recompute = (lines: any[] | undefined): any[] | undefined => {
+      if (!Array.isArray(lines) || lines.length === 0) {
+        return lines;
+      }
+
+      const resnapped = snapshotOrderFinancialLines(
+        lines as any[],
+        order?.business,
+        order?.discount,
+      );
+
+      return lines.map((source, index) => {
+        const original =
+          typeof source?.toObject === 'function' ? source.toObject() : { ...source };
+        const alreadyValid =
+          Number(original.financialSnapshotVersion) >=
+          ORDER_FINANCIAL_SNAPSHOT_VERSION;
+        const recomputedNowValid =
+          Number(resnapped[index]?.financialSnapshotVersion) >=
+          ORDER_FINANCIAL_SNAPSHOT_VERSION;
+
+        const line =
+          !alreadyValid && recomputedNowValid ? resnapped[index] : original;
+        if (!alreadyValid && recomputedNowValid) {
+          changed = true;
+        }
+
+        // Persist the product as an id ref, never the populated document.
+        const product = (line as any).product;
+        if (product && typeof product === 'object' && product._id) {
+          (line as any).product = product._id;
+        }
+        return line;
+      });
+    };
+
+    // NB: run both recompute() calls BEFORE reading `changed` — object literal
+    // properties evaluate in source order, so listing `changed` first would
+    // capture its initial `false` before recompute() flips it, making every
+    // heal a silent no-op.
+    const products = recompute(order?.products);
+    const additionalProducts = recompute(order?.additionalProducts);
+    return { changed, products, additionalProducts };
+  }
+
+  /**
+   * Back-fill COGS snapshots for PAID orders that contain this product but were
+   * snapshotted without a cost (e.g. the product had no market price at sale
+   * time, so the order reported ₦0 profit).
+   */
+  private async recomputeOrderCogsForProduct(productId: string): Promise<void> {
+    let productObjectId: Types.ObjectId;
+    try {
+      productObjectId = new Types.ObjectId(productId);
+    } catch {
+      return;
+    }
+
+    const orders = await this.orderModel
+      .find({
+        paymentStatus: ORDER_PAYMENT_STATUS.PAID,
+        status: {
+          $nin: [
+            ORDER_STATUS.CANCELLED,
+            ORDER_STATUS.RETURNED,
+            ORDER_STATUS.REFUNDED,
+          ],
+        },
+        $or: [
+          { 'products.product': productObjectId },
+          { 'additionalProducts.product': productObjectId },
+        ],
+      })
+      .populate('products.product')
+      .populate('additionalProducts.product')
+      .exec();
+
+    for (const order of orders) {
+      const { changed, products, additionalProducts } =
+        this.applyOrderCogsRecompute(order);
+      if (changed) {
+        await this.orderModel.updateOne(
+          { _id: order._id },
+          { $set: { products, additionalProducts } },
+        );
+      }
+    }
+  }
+
+  /**
+   * One-time-ish healer: on startup, back-fill COGS snapshots for every PAID
+   * order that still has a line without a current snapshot (e.g. orders taken
+   * before a product's market price was set). Self-limiting — once a line is
+   * snapshotted it no longer matches the filter, so healed orders are skipped on
+   * subsequent boots. Runs detached so it never blocks startup.
+   */
+  private async backfillUnverifiedOrderCogs(): Promise<void> {
+    const unverifiedLine = {
+      $elemMatch: {
+        $or: [
+          { financialSnapshotVersion: { $exists: false } },
+          { financialSnapshotVersion: { $lt: ORDER_FINANCIAL_SNAPSHOT_VERSION } },
+        ],
+      },
+    };
+
+    const cursor = this.orderModel
+      .find({
+        paymentStatus: ORDER_PAYMENT_STATUS.PAID,
+        status: {
+          $nin: [
+            ORDER_STATUS.CANCELLED,
+            ORDER_STATUS.RETURNED,
+            ORDER_STATUS.REFUNDED,
+          ],
+        },
+        $or: [
+          { products: unverifiedLine },
+          { additionalProducts: unverifiedLine },
+        ],
+      })
+      .populate('products.product')
+      .populate('additionalProducts.product')
+      .cursor();
+
+    let healed = 0;
+    for await (const order of cursor) {
+      const { changed, products, additionalProducts } =
+        this.applyOrderCogsRecompute(order);
+      if (changed) {
+        await this.orderModel.updateOne(
+          { _id: order._id },
+          { $set: { products, additionalProducts } },
+        );
+        healed += 1;
+      }
+    }
+
+    if (healed > 0) {
+      console.log(`Back-filled COGS snapshots for ${healed} PAID order(s).`);
+    }
+  }
+
+  onApplicationBootstrap(): void {
+    // Heal historical orders whose cost was fixed after the sale. Detached so a
+    // slow scan never delays the API coming up.
+    void this.backfillUnverifiedOrderCogs().catch((error) => {
+      console.error('COGS backfill on startup failed:', error);
+    });
   }
 
   /**

@@ -15,4 +15,5 @@ export enum PaymentMethod {
 export enum PaymentStatus {
   PAID = 'paid',
   PENDING = 'pending',
+  PARTIAL = 'partial',
 }

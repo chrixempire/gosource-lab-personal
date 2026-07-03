@@ -9,6 +9,7 @@ import {
   Input,
 } from '@gosource/ui';
 import { Check, ChevronDown } from 'lucide-vue-next';
+import { CUSTOMER_MODAL_POPOVER_Z } from '~/lib/customer-overlay-z';
 
 const props = defineProps<{
   email: string;
@@ -99,7 +100,7 @@ function selectBranch(branchId: string) {
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent class="w-[var(--reka-dropdown-menu-trigger-width)]">
+        <DropdownMenuContent :class="`${CUSTOMER_MODAL_POPOVER_Z} w-[var(--reka-dropdown-menu-trigger-width)]`">
           <DropdownMenuItem
             v-for="option in roleOptions"
             :key="option.value"
@@ -136,7 +137,7 @@ function selectBranch(branchId: string) {
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent class="max-h-72 w-[var(--reka-dropdown-menu-trigger-width)] overflow-y-auto">
+        <DropdownMenuContent :class="`${CUSTOMER_MODAL_POPOVER_Z} max-h-72 w-[var(--reka-dropdown-menu-trigger-width)] overflow-y-auto`">
           <div class="px-2 pb-2 pt-1">
             <Input
               :model-value="branchSearch"

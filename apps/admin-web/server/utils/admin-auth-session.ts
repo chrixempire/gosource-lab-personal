@@ -94,7 +94,18 @@ export function setAdminAuthSession(
   setAdminSessionSnapshot(event, session);
 }
 
-export async function refreshAdminSession(event: H3Event) {
+/**
+ * Refresh the admin session and return BOTH the new session and the freshly
+ * minted access token. Callers that need the token must use this and pass the
+ * returned `accessToken` directly — they cannot re-read it via getCookie in the
+ * same request, because setCookie only writes the response headers while
+ * getCookie reads the (still-stale) request headers. Re-reading the cookie
+ * after a refresh yields the OLD/expired token, which is what previously caused
+ * a retried request to 401 and log the admin out mid-session.
+ */
+export async function refreshAdminSessionWithToken(
+  event: H3Event,
+): Promise<{ session: AdminSessionState; accessToken: string }> {
   const refreshToken = getRefreshTokenCookie(event);
 
   if (!refreshToken) {
@@ -147,11 +158,15 @@ export async function refreshAdminSession(event: H3Event) {
       session,
     );
 
-    return session;
+    return { session, accessToken: refreshed.access_token };
   } catch (error) {
     clearAdminAuthCookies(event);
     throw error;
   }
+}
+
+export async function refreshAdminSession(event: H3Event): Promise<AdminSessionState> {
+  return (await refreshAdminSessionWithToken(event)).session;
 }
 
 export function clearAdminAuthCookies(event: H3Event) {

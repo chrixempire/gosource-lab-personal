@@ -26,6 +26,9 @@ const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<Dashb
   },
 );
 
+const { trackDashboardSection } = useDashboardLoading();
+trackDashboardSection('summary', pending);
+
 const showSkeleton = computed(() => pending.value);
 const hasOrderMetrics = computed(() => data.value?.permissions?.orders ?? Boolean(data.value));
 const hasActiveCustomers = computed(
