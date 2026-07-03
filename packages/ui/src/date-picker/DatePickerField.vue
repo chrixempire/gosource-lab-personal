@@ -25,12 +25,15 @@ const emit = defineEmits<{
 
 const open = ref(false);
 const formatter = new DateFormatter('en-GB', { dateStyle: 'medium' });
-const defaultPlaceholder = today(getLocalTimeZone());
 
 const value = computed({
   get: () => (props.modelValue ? parseDate(props.modelValue) : undefined),
   set: (value: DateValue | undefined) => emit('update:modelValue', value ? value.toString() : ''),
 });
+
+// Open the calendar on the already-selected month (falling back to today).
+// The popover content unmounts on close, so this is re-read on every open.
+const defaultPlaceholder = computed(() => value.value ?? today(getLocalTimeZone()));
 
 const displayLabel = computed(() => {
   if (!value.value) {
@@ -63,7 +66,7 @@ const displayLabel = computed(() => {
         <span class="truncate">{{ displayLabel }}</span>
       </button>
     </PopoverTrigger>
-    <PopoverContent class="w-auto p-0">
+    <PopoverContent class="w-auto overflow-hidden p-0">
       <Calendar
         v-model="value"
         :default-placeholder="defaultPlaceholder"
