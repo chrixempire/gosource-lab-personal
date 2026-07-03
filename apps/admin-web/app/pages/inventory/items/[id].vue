@@ -51,7 +51,7 @@ const {
   requestConfirm,
 } = useProductActionConfirm();
 
-const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unknown>(
+const { data, pending, error, status, refresh } = await useAdminAuthenticatedFetch<unknown>(
   () => `/api/products/${productId.value}`,
   {
     watch: [productId],
@@ -265,7 +265,7 @@ useHead({
     />
 
     <LoadErrorState
-      v-if="!pending && (error || !detailsView)"
+      v-if="!detailsView && (error || status === 'success')"
       :error="error"
       not-found-title="Item not found"
       resource-label="item"
