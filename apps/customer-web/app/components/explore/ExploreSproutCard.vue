@@ -135,22 +135,22 @@ async function onAdd(e: MouseEvent) {
 
       <!-- Name + price grouped tightly (no gap). -->
       <div class="w-full space-y-1 px-0.5 pt-3">
-        <h3 class="w-full line-clamp-2 text-left text-[15px] font-bold leading-snug text-grey-900">
+        <h3 class="w-full line-clamp-2 text-left text-[14px] font-medium leading-snug text-grey-900">
           {{ product.name }}
         </h3>
         <div class="flex w-full flex-wrap items-baseline justify-start gap-x-1.5">
-          <span v-if="multi" class="text-[13px] font-semibold leading-none text-negative-500">
+          <span v-if="multi" class="text-[11px] font-semibold leading-none text-negative-500">
             From
           </span>
           <span
-            class="text-[16px] font-bold tabular-nums leading-tight text-grey-900"
+            class="text-[15px] font-bold tabular-nums leading-tight text-grey-900"
             :class="{ 'text-grey-300 line-through': !inStock }"
           >
             {{ formatNaira(smallest.priceNaira) }}
           </span>
         </div>
         <p
-          class="w-full line-clamp-1 text-left text-[12px] text-grey-300"
+          class="w-full line-clamp-1 text-left text-[11px] text-grey-300"
           :class="{ 'line-through': !inStock }"
         >
           {{ unitLine }}
