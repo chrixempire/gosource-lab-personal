@@ -22,6 +22,8 @@ import {
 } from './dto/promotion.dto';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Promotion } from '../../promotion/schemas/promotion.schema';
+import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/promotion')
 @AdminAuth()
@@ -65,27 +67,31 @@ export class PromotionController {
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CREATE_UPDATE_PROMOTION)
   @UseGuards(AdminRolesGuard)
   @ApiOkResponse({ type: Promotion })
+  @SkipActivityLog() // logged explicitly with field old→new
   async update(
     @Param('id') id: string,
     @Body() updatePromotionDto: UpdatePromotionDto,
+    @Admin() admin: any,
   ) {
-    return await this.promotionService.update(id, updatePromotionDto);
+    return await this.promotionService.update(id, updatePromotionDto, admin);
   }
 
   @Patch(':id/activate')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.ACTIVATE_DEACTIVATE_PROMOTION)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with promotion details
   @ApiOkResponse({ type: Promotion })
-  async activate(@Param('id') id: string) {
-    return await this.promotionService.activate(id);
+  async activate(@Param('id') id: string, @Admin() admin: any) {
+    return await this.promotionService.activate(id, admin);
   }
 
   @Patch(':id/deactivate')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.ACTIVATE_DEACTIVATE_PROMOTION)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with promotion details
   @ApiOkResponse({ type: Promotion })
-  async deactivate(@Param('id') id: string) {
-    return await this.promotionService.deactivate(id);
+  async deactivate(@Param('id') id: string, @Admin() admin: any) {
+    return await this.promotionService.deactivate(id, admin);
   }
 
   @Delete(':id')

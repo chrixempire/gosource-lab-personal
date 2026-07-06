@@ -1,6 +1,11 @@
 import { unwrapLegacyPayload } from '~/lib/dashboard-api';
 import { parseInventoryTableMeta } from '~/lib/inventory-api';
-import { ADMIN_PAGE_ROUTES, inventoryItemPath } from '~/lib/admin-routes';
+import {
+  ADMIN_PAGE_ROUTES,
+  inventoryCategoryPath,
+  inventoryItemPath,
+  purchaseOrderEditPath,
+} from '~/lib/admin-routes';
 import type { AdminActivityLogItem } from '~/types/activity-log';
 import type { InventoryTableMeta } from '~/types/inventory';
 
@@ -25,8 +30,14 @@ function resolveActivityObjectLink(module: string, objectId: string | null) {
   if (!objectId) return null;
 
   const normalizedModule = module.trim().toLowerCase();
+  if (normalizedModule.includes('purchaseorder')) {
+    return purchaseOrderEditPath(objectId);
+  }
   if (normalizedModule.includes('product')) {
     return inventoryItemPath(objectId);
+  }
+  if (normalizedModule.includes('category')) {
+    return inventoryCategoryPath(objectId);
   }
   if (normalizedModule.includes('order')) {
     return `${ADMIN_PAGE_ROUTES.ORDERS}/${objectId}`;
@@ -48,15 +59,55 @@ export function mapLegacyActivityLogRow(row: Record<string, unknown>): AdminActi
   const module = String(row.module ?? '—');
   const action = String(row.action ?? '—');
 
+  // The API resolves the initiator's live name/role/email (admin or business)
+  // and returns them as flat fields, falling back to the snapshot taken at log
+  // time. `initiator` itself is the raw id (or null for legacy/system entries).
+  const initiatorObj =
+    row.initiator && typeof row.initiator === 'object'
+      ? (row.initiator as Record<string, unknown>)
+      : null;
+
+  const initiatorId = initiatorObj
+    ? initiatorObj._id == null
+      ? null
+      : String(initiatorObj._id)
+    : row.initiator == null
+      ? null
+      : String(row.initiator);
+
+  const initiatorName =
+    row.initiatorName == null || row.initiatorName === ''
+      ? null
+      : String(row.initiatorName);
+
+  const initiatorRole =
+    row.initiatorRole == null || row.initiatorRole === ''
+      ? null
+      : String(row.initiatorRole);
+
+  const initiatorEmail =
+    row.initiatorEmail == null || row.initiatorEmail === ''
+      ? null
+      : String(row.initiatorEmail);
+
+  const metadata =
+    row.metadata && typeof row.metadata === 'object'
+      ? (row.metadata as Record<string, unknown>)
+      : null;
+
   return {
     id,
     description: String(row.description ?? '—'),
     objectId,
-    initiator: row.initiator == null ? null : String(row.initiator),
+    initiator: initiatorId,
+    initiatorName,
+    initiatorEmail,
+    initiatorRole,
     initiatorType: String(row.initiatorType ?? '—'),
     module,
     action,
     ipAddress: row.ipAddress == null ? null : String(row.ipAddress),
+    metadata,
     createdAt: String(row.createdAt ?? ''),
     createdAtLabel: formatActivityTimestamp(row.createdAt ?? row.updatedAt),
     objectLink: resolveActivityObjectLink(module, objectId),

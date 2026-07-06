@@ -29,6 +29,7 @@ import { OrderFilterParams } from '../../utils/filter';
 import { RequiredPermission } from '../role/enum/required-permission';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
 import { DateFilterDto } from '../product/dto/create-product.dto';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/order')
 @AdminAuth()
@@ -59,8 +60,9 @@ export class OrderController {
   @Patch('/add-products')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.UPDATE_ORDER_ITEMS)
   @UseGuards(AdminRolesGuard)
-  async addProducts(@Body() details: AddNewProductsDto) {
-    return await this.orderService.addProductsToOrder(details);
+  @SkipActivityLog() // logged explicitly with the added items
+  async addProducts(@Body() details: AddNewProductsDto, @Admin() admin: any) {
+    return await this.orderService.addProductsToOrder(details, admin);
   }
 
   @Get(':id/invoice')
@@ -88,6 +90,7 @@ export class OrderController {
   @Patch(':id/update-order-status')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CHANGE_ORDER_STATUS)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with status from→to
   async updateOrderStatus(
     @Param('id') orderId: string,
     @Body() statusDetails: UpdateOrderStatus,
@@ -103,6 +106,7 @@ export class OrderController {
   @Patch(':id/cancel')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CANCEL_ORDER)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly
   async cancelOrder(
     @Param('id') orderId: string,
     @Body() details: CancelOrder,
@@ -121,6 +125,7 @@ export class OrderController {
   @Patch(':id/update-payment-status')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CHANGE_PAYMENT_STATUS)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with payment from→to
   async updatePaymentStatus(
     @Param('id') orderId: string,
     @Body() statusDetails: UpdatePaymentStatus,
@@ -136,6 +141,7 @@ export class OrderController {
   @Patch(':orderId/update-order-products')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.UPDATE_ORDER_ITEMS)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with item old→new + refund
   async updateOrderProducts(
     @Param('orderId') orderId: string,
     @Body() updateOrderProductsDto: UpdateOrderProductsDto,
@@ -151,6 +157,7 @@ export class OrderController {
   @Patch(':orderId/fees')
   @Roles(AdminRoles.SUPER_ADMIN)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with fee field old→new
   async updateOrderFees(
     @Param('orderId') orderId: string,
     @Body() updateOrderFeesDto: UpdateOrderFeesDto,
@@ -180,6 +187,7 @@ export class OrderController {
     RequiredPermission.UPDATE_ORDER_ITEMS,
   )
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with status + delivered items
   async markDeliveredProducts(
     @Param('orderId') id: string,
     @Body() body: MarkDeliveredProductsDto,

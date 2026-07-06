@@ -7,6 +7,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { S3Service } from '../cloudinary/s3.service';
 import { successResponse } from '../utils/responses';
+import { ActivityService } from '../activity/activity.service';
+import { adminInitiator } from '../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../activity/interface/activityLog.interface';
 import { MarketplaceBannerEntryDto } from './dto/marketplace-banner.dto';
 import {
   MarketplaceBannerItem,
@@ -24,6 +27,7 @@ export class MarketplaceBannerService {
     @InjectModel(MarketplaceBannerSettings.name)
     private readonly settingsModel: Model<MarketplaceBannerSettingsDocument>,
     private readonly s3Service: S3Service,
+    private readonly activityService: ActivityService,
   ) {}
 
   async getAdminBanners() {
@@ -49,6 +53,7 @@ export class MarketplaceBannerService {
   async saveBanners(
     entries: MarketplaceBannerEntryDto[],
     files: Express.Multer.File[] = [],
+    admin?: any,
   ) {
     if (!Array.isArray(entries)) {
       throw new BadRequestException('banners payload is required');
@@ -128,8 +133,52 @@ export class MarketplaceBannerService {
       }
     }
 
+    const previousCount = previousById.size;
+    const addedBanners = nextBanners.filter(
+      (banner) => !previousById.has(banner.id),
+    );
+    const updatedBanners = nextBanners.filter((banner) => {
+      const prev = previousById.get(banner.id);
+      if (!prev) return false;
+      return (
+        prev.imageUrl !== banner.imageUrl ||
+        prev.alt !== banner.alt ||
+        (prev.linkUrl ?? '') !== (banner.linkUrl ?? '') ||
+        prev.sortOrder !== banner.sortOrder
+      );
+    });
+
     settings.banners = nextBanners;
     await settings.save();
+
+    try {
+      const summary = [
+        addedBanners.length ? `+${addedBanners.length} added` : '',
+        removedBanners.length ? `-${removedBanners.length} removed` : '',
+        updatedBanners.length ? `~${updatedBanners.length} updated` : '',
+      ]
+        .filter(Boolean)
+        .join(', ');
+      const describe = (banner: MarketplaceBannerItem) =>
+        `${banner.alt || banner.id} → ${banner.linkUrl ?? '/market'}`;
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Marketplace banners',
+        objectId: SETTINGS_KEY,
+        description: `Saved marketplace banners${summary ? ` — ${summary}` : ''}`,
+        metadata: {
+          changes: {
+            'banner count': { old: previousCount, new: nextBanners.length },
+          },
+          added: addedBanners.map(describe),
+          removed: removedBanners.map(describe),
+          updated: updatedBanners.map(describe),
+        },
+      });
+    } catch {
+      /* logging must never break the banner save */
+    }
 
     const activeStorageKeys = new Set(
       nextBanners.map((banner) => banner.storageKey).filter(Boolean),

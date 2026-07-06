@@ -29,6 +29,10 @@ import {
 } from './dto/update-profile.dto';
 import * as bcrypt from 'bcrypt';
 import { AdminAccountStatus } from '../auth/enum/admin.enum';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
+import { buildChanges, describeChanges } from '../../utils/activity-changes.util';
 
 @Injectable()
 export class AdminService {
@@ -54,6 +58,7 @@ export class AdminService {
     private branchModel: Model<Branch>,
     @InjectModel(Category.name)
     private categoryModel: Model<Category>,
+    private readonly activityService: ActivityService,
   ) {}
 
   /**
@@ -111,6 +116,7 @@ export class AdminService {
   async updateProfileBySuperAdmin(
     id: string,
     body: UpdateProfileSuperAdminDto,
+    admin?: any,
   ) {
     if (body.roleId) {
       const roleDetails = await this.roleModel.findById(body.roleId);
@@ -119,6 +125,10 @@ export class AdminService {
         throw new NotFoundException('Role not found');
       }
     }
+
+    const before: any = await this.adminUserModel
+      .findById(id)
+      .populate('roleId');
 
     const getAdmin: any = await this.adminUserModel
       .findByIdAndUpdate(id, body, {
@@ -132,6 +142,42 @@ export class AdminService {
 
     getAdmin.role = getAdmin?.roleId?.name;
     delete getAdmin.roleId;
+
+    const changes = buildChanges(
+      {
+        firstName: before?.firstName,
+        lastName: before?.lastName,
+        phoneNumber: before?.phoneNumber,
+        role: before?.roleId?.name,
+        status: before?.status,
+      },
+      {
+        firstName: getAdmin.firstName,
+        lastName: getAdmin.lastName,
+        phoneNumber: getAdmin.phoneNumber,
+        role: getAdmin.role,
+        status: getAdmin.status,
+      },
+      [
+        { key: 'firstName', label: 'first name' },
+        { key: 'lastName', label: 'last name' },
+        { key: 'phoneNumber', label: 'phone number' },
+        { key: 'role', label: 'role' },
+        { key: 'status', label: 'status' },
+      ],
+    );
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Admins',
+      objectId: id,
+      description: describeChanges(
+        'admin',
+        `${before?.firstName ?? ''} ${before?.lastName ?? ''}`.trim(),
+        changes,
+      ),
+      metadata: { changes },
+    });
 
     return successResponse('Profile updated successfully', getAdmin);
   }

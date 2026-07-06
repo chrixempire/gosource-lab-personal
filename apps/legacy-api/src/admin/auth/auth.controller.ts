@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   HttpCode,
+  Ip,
   Patch,
   Post,
   UseGuards,
@@ -50,8 +51,15 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() data: AdminLoginDto) {
-    return await this.adminAuthService.login(data);
+  async login(@Body() data: AdminLoginDto, @Ip() ip: string) {
+    return await this.adminAuthService.login(data, ip);
+  }
+
+  @AdminAuth()
+  @HttpCode(200)
+  @Post('logout')
+  async logout(@Admin() admin: any, @Ip() ip: string) {
+    return await this.adminAuthService.logout(admin, ip);
   }
 
   @HttpCode(200)

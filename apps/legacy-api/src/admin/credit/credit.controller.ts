@@ -54,6 +54,7 @@ import { RepaymentSchedule } from '../../credit/schema/repaymentSchedule.schema'
 import { CreditRepaymentService } from '../../credit-repayment/credit-repayment.service';
 import { CreditPaymentReference } from '../../credit/schema/creditPaymentReference.schema';
 import { RequiredPermission } from '../role/enum/required-permission';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
 
 @Controller('admin/credit')
@@ -97,6 +98,7 @@ export class CreditController {
   @Patch('requests/:requestId/reject')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_CREDIT)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with status change
   @ApiOkResponse({
     description: 'Reject credit request by id.',
     type: CreditRequest,
@@ -174,6 +176,7 @@ export class CreditController {
   @Patch('requests/:requestId/approve')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_CREDIT)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with approval terms
   @ApiOperation({ summary: 'Update credit request with repayment' })
   async approveCreditRequestWithRepayment(
     @Param('requestId') requestId: string,
@@ -252,6 +255,7 @@ export class CreditController {
     type: Credit,
   })
   @ApiOperation({ summary: 'Reject credit application' })
+  @SkipActivityLog() // logged explicitly with status change
   async rejectCredit(
     @Param('creditId') creditId: string,
     @Body() rejectionDetails: RejectApplicationDto,
@@ -272,6 +276,7 @@ export class CreditController {
     type: Credit,
   })
   @ApiOperation({ summary: 'Approve credit application' })
+  @SkipActivityLog() // logged explicitly with status change
   async approveCredit(
     @Param('creditId') creditId: string,
     @Body() approveDetails: ApproveApplicationDto,
@@ -287,6 +292,7 @@ export class CreditController {
   @Patch(':creditId/update-status')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_CREDIT)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with status change
   @ApiOkResponse({
     description: 'Update a rejected credit application status to pending.',
     type: Credit,

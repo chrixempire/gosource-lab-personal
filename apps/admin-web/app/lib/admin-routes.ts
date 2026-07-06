@@ -10,6 +10,7 @@ export const ADMIN_PAGE_ROUTES = {
   INVENTORY_REPORT: '/inventory/items/inventory-report',
   INVENTORY_CATEGORY: '/inventory/category',
   PURCHASE_ORDERS: '/inventory/purchase-orders',
+  INVENTORY_ACTIVITY_LOG: '/inventory/activity-log',
   CREDIT_ANALYTICS: '/credit/analytics',
   CREDIT_APPLICATIONS: '/credit/application',
   CREDIT_REQUESTS: '/credit/request',
@@ -23,7 +24,7 @@ export const ADMIN_PAGE_ROUTES = {
   MESSAGE_EMAIL_CREATE: '/messages/create-email',
   CUSTOMERS: '/customers',
   FEEDBACK: '/feedback',
-  // ACTIVITY_LOG: '/activity-log', // Feature disabled
+  ACTIVITY_LOG: '/activity-log',
   SETTINGS: '/settings',
   SETTINGS_SECURITY: '/settings/security',
   SETTINGS_USERS: '/settings/users',
@@ -63,6 +64,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
       { label: 'Items', to: ADMIN_PAGE_ROUTES.INVENTORY },
       { label: 'Categories', to: ADMIN_PAGE_ROUTES.INVENTORY_CATEGORY },
       { label: 'Purchase orders', to: ADMIN_PAGE_ROUTES.PURCHASE_ORDERS },
+      { label: 'Activity log', to: ADMIN_PAGE_ROUTES.INVENTORY_ACTIVITY_LOG },
     ],
   },
   {
@@ -85,7 +87,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   },
   { label: 'Customers', icon: 'i-lucide-users', to: ADMIN_PAGE_ROUTES.CUSTOMERS },
   { label: 'Feedbacks & reviews', icon: 'i-lucide-message-circle-heart', to: ADMIN_PAGE_ROUTES.FEEDBACK },
-  // { label: 'Activity log', icon: 'i-lucide-scroll-text', to: ADMIN_PAGE_ROUTES.ACTIVITY_LOG },
+  { label: 'Activity log', icon: 'i-lucide-scroll-text', to: ADMIN_PAGE_ROUTES.ACTIVITY_LOG },
 ];
 
 /** Child nav active state — avoids parent + sibling routes sharing `/inventory` prefix. */
@@ -110,6 +112,10 @@ export function isAdminNavChildActive(path: string, childTo: string) {
       path === ADMIN_PAGE_ROUTES.PURCHASE_ORDERS ||
       path.startsWith(`${ADMIN_PAGE_ROUTES.PURCHASE_ORDERS}/`)
     );
+  }
+
+  if (childTo === ADMIN_PAGE_ROUTES.INVENTORY_ACTIVITY_LOG) {
+    return path === ADMIN_PAGE_ROUTES.INVENTORY_ACTIVITY_LOG;
   }
 
   if (childTo === ADMIN_PAGE_ROUTES.CREDIT_ANALYTICS) {

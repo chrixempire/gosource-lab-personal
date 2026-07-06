@@ -14,6 +14,8 @@ import {
 import { Timeline } from '../../order/entities/timeline.entity';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OrderStatusChangedEvent } from './events/order-status-changed.event';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
 import { ProductStockUpdatedEvent } from '../product/events/product-stock-updated.event';
 import {
   AddNewProductsDto,
@@ -475,6 +477,19 @@ export class OrderService {
       await this.businessModel.findById(order.business);
 
     if (updateOrder) {
+      try {
+        await this.activityLogModel.create({
+          ...adminInitiator(admin),
+          action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+          module: 'Order',
+          objectId: orderId,
+          description: `Order ${(order as any).reference ?? orderId} status: ${order.status} → ${message}`,
+          metadata: { changes: { status: { old: order.status, new: message } } },
+        });
+      } catch {
+        /* logging must never break the order update */
+      }
+
       // Emit event
       this.eventEmitter.emit(
         'order.status.changed',
@@ -548,6 +563,22 @@ export class OrderService {
     const subject = 'Your order has been cancelled';
 
     if (updateOrder) {
+      try {
+        await this.activityLogModel.create({
+          ...adminInitiator(admin),
+          action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+          module: 'Order',
+          objectId: orderId,
+          description: `Cancelled order ${(order as any).reference ?? orderId}${details?.reason ? ` — ${details.reason}` : ''}`,
+          metadata: {
+            changes: { status: { old: order.status, new: ORDER_STATUS.CANCELLED } },
+            reason: details?.reason ?? null,
+          },
+        });
+      } catch {
+        /* logging must never break the cancellation */
+      }
+
       // Emit event
       this.eventEmitter.emit(
         'order.status.changed',
@@ -629,17 +660,24 @@ export class OrderService {
       // a Paystack order that was unconfirmed at approval still gets its base
       // deducted here.
       const alreadyPaid = order.paymentStatus === ORDER_PAYMENT_STATUS.PAID;
+      // Attribute the sale deduction to the order's business so the activity
+      // log resolves "Performed by" instead of showing Unknown.
+      const initiatorBusinessId = order.business
+        ? String((order.business as any)?._id ?? order.business)
+        : null;
       let nextPaymentCount = order.paymentCount || 0;
       if (!alreadyPaid) {
         if ((order.paymentCount || 0) < 1) {
           // Base stock not yet deducted → deduct base + additional.
           await this.requestService.deductProductQuantity(
             combinedProducts as any,
+            initiatorBusinessId,
           );
         } else {
           // Base already deducted at approval → only additional.
           await this.requestService.deductProductQuantity(
             order.additionalProducts || [],
+            initiatorBusinessId,
           );
         }
         nextPaymentCount = (order.paymentCount || 0) + 1;
@@ -681,6 +719,21 @@ export class OrderService {
         initiator: `${admin.firstName} ${admin.lastName}`,
       });
 
+      try {
+        await this.activityLogModel.create({
+          ...adminInitiator(admin),
+          action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+          module: 'Order',
+          objectId: orderId,
+          description: `Order ${(order as any).reference ?? orderId} payment: ${order.paymentStatus} → ${status}`,
+          metadata: {
+            changes: { paymentStatus: { old: order.paymentStatus, new: status } },
+          },
+        });
+      } catch {
+        /* logging must never break the payment update */
+      }
+
       return {
         status: true,
         message: 'Payment status updated successfully',
@@ -689,7 +742,10 @@ export class OrderService {
     }
   }
 
-  async addProductsToOrder(orderDetails: AddNewProductsDto): Promise<any> {
+  async addProductsToOrder(
+    orderDetails: AddNewProductsDto,
+    admin?: any,
+  ): Promise<any> {
     const { orderId, products } = orderDetails;
 
     // Find the order
@@ -700,6 +756,7 @@ export class OrderService {
 
     // Build the additional products array matching your Cart entity structure
     const newAdditionalProducts = [];
+    const addedItems: string[] = [];
 
     for (const cartItem of products as CartItem[]) {
       // Validate product exists
@@ -719,6 +776,9 @@ export class OrderService {
       };
 
       newAdditionalProducts.push(cartProduct);
+      addedItems.push(
+        `${(product as any).name ?? cartItem.product} (${cartItem.quantity} × ${cartItem.unit})`,
+      );
     }
 
     // Handle adding to additionalProducts array
@@ -738,11 +798,38 @@ export class OrderService {
       newAdditionalProducts,
       order.business,
     );
+    const previousTotal = order.additionalTotalPrice;
+    const previousPaymentStatus = order.paymentStatus;
     order.additionalTotalPrice += additionalTotal;
     order.paymentStatus = ORDER_PAYMENT_STATUS.PARTIAL;
 
     // Save the order
     await order.save();
+
+    try {
+      await this.activityLogModel.create({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Order',
+        objectId: orderId,
+        description: `Added ${addedItems.length} item(s) to order: ${addedItems.join(', ')}`,
+        metadata: {
+          changes: {
+            'added items': { old: null, new: addedItems },
+            'additional total': {
+              old: previousTotal,
+              new: order.additionalTotalPrice,
+            },
+            'payment status': {
+              old: previousPaymentStatus,
+              new: order.paymentStatus,
+            },
+          },
+        },
+      });
+    } catch {
+      /* logging must never break the order update */
+    }
 
     return {
       status: true,
@@ -1266,6 +1353,42 @@ export class OrderService {
     // Ensure refundAmount is a valid number
     const validRefundAmount = isNaN(refundAmount) ? 0 : Number(refundAmount);
 
+    // Structured field-level entry in the global activity log.
+    try {
+      const summarize = (list: any[]) =>
+        (list ?? []).map((p) => {
+          const prod = p?.product;
+          const name =
+            prod && typeof prod === 'object'
+              ? ((prod as any).name ?? (prod as any)._id ?? prod)
+              : prod;
+          return `${name} (${p?.quantity} × ${p?.unit})`;
+        });
+      await this.activityLogModel.create({
+        ...adminInitiator(adminUser),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Order',
+        objectId: orderId,
+        description: `Edited order items${validRefundAmount ? ` (refund ₦${validRefundAmount})` : ''}`,
+        metadata: {
+          changes: {
+            items: {
+              old: summarize(originalAdditionalProducts),
+              new: summarize(order.additionalProducts),
+            },
+            'additional total': {
+              old: originalTotalWithFees,
+              new: newAdditionalTotal,
+            },
+          },
+          refundAmount: validRefundAmount,
+          reason: updateOrderProductsDto.reason ?? null,
+        },
+      });
+    } catch {
+      /* logging must never break the order update */
+    }
+
     // Prepare response with refund calculation
     const response = {
       orderId: order._id,
@@ -1412,6 +1535,36 @@ export class OrderService {
       description: timelineDescription,
       initiator: `${adminUser.firstName} ${adminUser.lastName}`,
     });
+
+    // Also record a structured field-level entry in the global activity log.
+    try {
+      const feeChanges: Record<string, { old: unknown; new: unknown }> = {};
+      if (order.deliveryFee !== originalDeliveryFee) {
+        feeChanges['delivery fee'] = {
+          old: originalDeliveryFee,
+          new: order.deliveryFee,
+        };
+      }
+      if (order.serviceCharge !== originalServiceCharge) {
+        feeChanges['service charge'] = {
+          old: originalServiceCharge,
+          new: order.serviceCharge,
+        };
+      }
+      if (order.discount !== originalDiscount) {
+        feeChanges['discount'] = { old: originalDiscount, new: order.discount };
+      }
+      await this.activityLogModel.create({
+        ...adminInitiator(adminUser),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Order',
+        objectId: orderId,
+        description: `Updated order fees${changes.length ? ` — ${changes.join(', ')}` : ''}`,
+        metadata: { changes: feeChanges, reason: reason ?? null },
+      });
+    } catch {
+      /* logging must never break the fee update */
+    }
 
     // Prepare response
     const response = {
@@ -1680,6 +1833,7 @@ export class OrderService {
 
     let updatesMade = false;
     let subject = '';
+    const previousOrderStatus = order.status;
     const cartIdSet = new Set(cartIds.map((id) => id.toString()));
     const now = new Date();
     let deliveredCount = 0;
@@ -1736,6 +1890,24 @@ export class OrderService {
       }
 
       await order.save();
+
+      try {
+        await this.activityLogModel.create({
+          ...adminInitiator(admin),
+          action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+          module: 'Order',
+          objectId: orderId,
+          description: `Marked ${cartIds.length} item(s) delivered`,
+          metadata: {
+            changes: {
+              status: { old: previousOrderStatus, new: order.status },
+            },
+            deliveredItemIds: cartIds,
+          },
+        });
+      } catch {
+        /* logging must never break the delivery update */
+      }
 
       const customer: BusinessCustomerDocument =
         await this.businessModel.findById(order.business);

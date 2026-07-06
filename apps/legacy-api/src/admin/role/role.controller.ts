@@ -16,6 +16,8 @@ import { Roles } from '../auth/decorator/role.decorator';
 import { AdminRoles } from '../auth/enum/admin.enum';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
 import { RequiredPermission } from './enum/required-permission';
+import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 @Controller('admin/role')
 @AdminAuth()
 export class RoleController {
@@ -52,8 +54,13 @@ export class RoleController {
   @Patch(':id')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CREATE_UPDATE_ADMIN_ROLE)
   @UseGuards(AdminRolesGuard)
-  async update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
-    return await this.roleService.update(id, updateRoleDto);
+  @SkipActivityLog() // logged explicitly with permission added/removed delta
+  async update(
+    @Param('id') id: string,
+    @Body() updateRoleDto: UpdateRoleDto,
+    @Admin() admin: any,
+  ) {
+    return await this.roleService.update(id, updateRoleDto, admin);
   }
 
   @Delete(':id')

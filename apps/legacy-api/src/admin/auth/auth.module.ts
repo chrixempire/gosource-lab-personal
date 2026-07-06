@@ -13,6 +13,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AdminOtp, AdminOtpSchema } from './schema/otp.schema';
 import { Role, RoleSchema } from '../role/entities/role.entity';
 import { AdminRolesGuard } from './guard/adminRole.guard';
+import { ActivityModule } from '../../activity/activity.module';
 
 @Global()
 @Module({
@@ -29,6 +30,7 @@ import { AdminRolesGuard } from './guard/adminRole.guard';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '5000h' },
     }),
+    ActivityModule,
   ],
   providers: [AuthService, EmailService, AdminRolesGuard],
   controllers: [AuthController],

@@ -24,9 +24,12 @@ import { UpdatePurchaseOrderDto } from './dto/update-purchaseorder.dto';
 import { FilterPurchaseOrderDto } from './dto/filter - purchaseorder.dto';
 import { plainToInstance } from 'class-transformer';
 import { RequiredPermission } from '../role/enum/required-permission';
+import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/purchase-order')
 @AdminAuth()
+@SkipActivityLog() // writes its own rich activity logs
 export class PurchaseOrderController {
   constructor(private readonly purchaseOrderService: PurchaseOrderService) {}
 
@@ -72,8 +75,8 @@ export class PurchaseOrderController {
     RequiredPermission.CREATE_UPDATE_PURCHASE_ORDER,
   )
   @UseGuards(AdminRolesGuard)
-  cancelRemainingItems(@Param('id') id: string) {
-    return this.purchaseOrderService.cancelRemainingItems(id);
+  cancelRemainingItems(@Admin() admin: any, @Param('id') id: string) {
+    return this.purchaseOrderService.cancelRemainingItems(id, admin);
   }
 
   @Post(':id/receive-items')
@@ -83,10 +86,11 @@ export class PurchaseOrderController {
   )
   @UseGuards(AdminRolesGuard)
   receivedItems(
+    @Admin() admin: any,
     @Param('id') id: string,
     @Body() receivedItemsDto: ReceivedItemsDto,
   ) {
-    return this.purchaseOrderService.receiveItems(id, receivedItemsDto);
+    return this.purchaseOrderService.receiveItems(id, receivedItemsDto, admin);
   }
 
   @Post(':id/send-receipt')
@@ -114,8 +118,8 @@ export class PurchaseOrderController {
   @Delete(':id')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.DELETE_PURCHASE_ORDER)
   @UseGuards(AdminRolesGuard)
-  remove(@Param('id') id: string) {
-    return this.purchaseOrderService.remove(id);
+  remove(@Admin() admin: any, @Param('id') id: string) {
+    return this.purchaseOrderService.remove(id, admin);
   }
 
   @Delete(':purchaseOrderId/products/:productId')
@@ -125,12 +129,14 @@ export class PurchaseOrderController {
   )
   @UseGuards(AdminRolesGuard)
   async removeSingleItem(
+    @Admin() admin: any,
     @Param('purchaseOrderId') purchaseOrderId: string,
     @Param('productId') productId: string,
   ) {
     return this.purchaseOrderService.removeSingleItem(
       purchaseOrderId,
       productId,
+      admin,
     );
   }
 
@@ -141,12 +147,14 @@ export class PurchaseOrderController {
   )
   @UseGuards(AdminRolesGuard)
   async updatePurchaseOrder(
+    @Admin() admin: any,
     @Param('id') purchaseOrderId: string,
     @Body() purchaseOrderData: UpdatePurchaseOrderDto,
   ) {
     return await this.purchaseOrderService.update(
       purchaseOrderId,
       purchaseOrderData,
+      admin,
     );
   }
 
@@ -156,7 +164,13 @@ export class PurchaseOrderController {
     RequiredPermission.CREATE_UPDATE_PURCHASE_ORDER,
   )
   @UseGuards(AdminRolesGuard)
-  async markAllItemsAsReceived(@Param('id') purchaseOrderId: string) {
-    return this.purchaseOrderService.markAllItemsAsReceived(purchaseOrderId);
+  async markAllItemsAsReceived(
+    @Admin() admin: any,
+    @Param('id') purchaseOrderId: string,
+  ) {
+    return this.purchaseOrderService.markAllItemsAsReceived(
+      purchaseOrderId,
+      admin,
+    );
   }
 }

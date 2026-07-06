@@ -12,6 +12,8 @@ import { ApplyCouponDto, CreateCouponDto } from './dto/create-coupon.dto';
 import { RequestDocument, Request } from '../../request/schema/request.schema';
 import { CouponType, CouponCategory } from './coupon.enum';
 import { Order } from '../../order/entities/order.entity';
+import { Product } from '../../product/entities/product.entity';
+import { Category } from '../../category/entities/category.entity';
 import { calculateTotalPrice, calculateDeliveryFee, calculateFrozenDeliveryFee } from '../../utils/helpers';
 import { successResponse } from '../../utils/responses';
 import { RequestStatus } from '../../request/enum/request.enum';
@@ -21,6 +23,37 @@ import {
   isScopedItemCoupon,
   resolveEligibleSubtotal,
 } from './coupon-apply.helpers';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
+import {
+  buildChanges,
+  describeChanges,
+  formatLogDate,
+  formatIdList,
+} from '../../utils/activity-changes.util';
+
+// Coupon expiry is stored on `endDate` (what the admin form's "Set expiry
+// date" field writes, and what apply-time enforcement reads first via
+// `endDate ?? expiryDate`). `expiryDate` is a legacy fallback the UI never
+// edits, so track `endDate` here or expiry changes go unrecorded.
+// Track every editable field so any change shows up in the audit log.
+const COUPON_LOG_FIELDS = [
+  { key: 'code', label: 'code' },
+  { key: 'title', label: 'title' },
+  { key: 'type', label: 'type' },
+  { key: 'category', label: 'category' },
+  { key: 'target', label: 'target' },
+  { key: 'discount', label: 'discount' },
+  { key: 'minimumOrderAmount', label: 'minimum order amount' },
+  { key: 'usageLimit', label: 'usage limit' },
+  { key: 'loyaltyPointsRequired', label: 'loyalty points required' },
+  { key: 'startDate', label: 'start date', format: formatLogDate },
+  { key: 'endDate', label: 'expiry date', format: formatLogDate },
+  { key: 'categoryId', label: 'applicable category', format: formatIdList },
+  { key: 'applicableItems', label: 'applicable items', format: formatIdList },
+  { key: 'comboItems', label: 'combo items', format: formatIdList },
+];
 
 @Injectable()
 export class CouponService {
@@ -28,6 +61,9 @@ export class CouponService {
     @InjectModel(Coupon.name) private couponModel: Model<Coupon>,
     @InjectModel(Request.name) private requestModel: Model<Request>,
     @InjectModel(Order.name) private orderModel: Model<Order>,
+    @InjectModel(Product.name) private productModel: Model<Product>,
+    @InjectModel(Category.name) private categoryModel: Model<Category>,
+    private readonly activityService: ActivityService,
   ) {}
 
   /**
@@ -123,7 +159,11 @@ export class CouponService {
    * @param couponData
    * @returns
    */
-  async updateCoupon(couponId: string, couponData: any): Promise<any> {
+  async updateCoupon(
+    couponId: string,
+    couponData: any,
+    admin?: any,
+  ): Promise<any> {
     const coupon: CouponDocument = await this.couponModel.findById(couponId);
 
     if (!coupon) {
@@ -139,12 +179,73 @@ export class CouponService {
     );
 
     if (update) {
+      const changes = buildChanges(
+        coupon.toObject() as unknown as Record<string, unknown>,
+        update.toObject() as unknown as Record<string, unknown>,
+        COUPON_LOG_FIELDS,
+      );
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Coupon',
+        objectId: couponId,
+        description: describeChanges('coupon', coupon.code, changes),
+        metadata: { changes, details: await this.buildCouponDetails(update) },
+      });
+
       return {
         status: true,
         message: 'Coupon updated successfully',
         data: update,
       };
     }
+  }
+
+  /** Full current-state snapshot of a coupon for the activity-log details. */
+  private async buildCouponDetails(
+    coupon: any,
+  ): Promise<Record<string, unknown>> {
+    // Name resolution is best-effort: a lookup failure must never break the
+    // update response, so fall back to omitting the resolved names.
+    let productNames: string[] = [];
+    let categoryName: string | null = null;
+    try {
+      const applicableItems: any[] = coupon.applicableItems ?? [];
+      if (applicableItems.length) {
+        const products = await this.productModel
+          .find({ _id: { $in: applicableItems } })
+          .select('name')
+          .lean();
+        productNames = products
+          .map((product: any) => product.name)
+          .filter(Boolean);
+      }
+      if (coupon.categoryId) {
+        const category = await this.categoryModel
+          .findById(coupon.categoryId)
+          .select('name')
+          .lean();
+        categoryName = category?.name ?? null;
+      }
+    } catch {
+      /* best-effort name resolution */
+    }
+
+    return {
+      code: coupon.code,
+      title: coupon.title,
+      type: coupon.type,
+      category: coupon.category,
+      target: coupon.target,
+      discount: coupon.discount,
+      status: coupon.isActive ? 'active' : 'inactive',
+      'minimum order amount': coupon.minimumOrderAmount,
+      'usage limit': coupon.usageLimit,
+      'start date': formatLogDate(coupon.startDate),
+      'expiry date': formatLogDate(coupon.endDate),
+      'applicable category': categoryName ?? '',
+      products: productNames.join(', '),
+    };
   }
 
   async removeCoupon(couponId: string): Promise<any> {
