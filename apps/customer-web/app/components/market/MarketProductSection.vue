@@ -3,6 +3,7 @@ import type { MarketCategory } from '~/lib/marketplace-data';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import ExploreMobileProductTripleGrid from '~/components/explore/ExploreMobileProductTripleGrid.vue';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
+import ExploreSproutCard from '~/components/explore/ExploreSproutCard.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -10,8 +11,13 @@ const props = withDefaults(
     /** `rail`: horizontal scroll on desktop. `grid`: wrapped list (category page). */
     layout?: 'rail' | 'grid';
     anchorSection?: boolean;
+    variant?: 'standard' | 'sprout';
   }>(),
-  { layout: 'rail', anchorSection: true },
+  { layout: 'rail', anchorSection: true, variant: 'standard' },
+);
+
+const cardComponent = computed(() =>
+  props.variant === 'sprout' ? ExploreSproutCard : ExploreProductCard,
 );
 
 const isRail = computed(() => props.layout === 'rail');
@@ -119,6 +125,7 @@ watch(
     <ExploreMobileProductTripleGrid
       v-if="isRail"
       :products="category.products"
+      :variant="variant"
       class="min-[900px]:hidden"
     />
 
@@ -133,13 +140,14 @@ watch(
         :key="p.id"
         class="w-[220px] shrink-0"
       >
-        <ExploreProductCard :product="p" />
+        <component :is="cardComponent" :product="p" />
       </div>
     </div>
 
     <ExploreMobileProductTripleGrid
       v-if="!isRail"
       :products="category.products"
+      :variant="variant"
       class="min-[900px]:hidden"
     />
 
@@ -147,7 +155,8 @@ watch(
       v-if="!isRail"
       class="explore-products-grid"
     >
-      <ExploreProductCard
+      <component
+        :is="cardComponent"
         v-for="product in category.products"
         :key="`desktop-${product.id}`"
         :product="product"

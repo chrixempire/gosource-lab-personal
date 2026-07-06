@@ -15,6 +15,14 @@ import {
 import { JOB_NAMES, QUEUE_NAMES } from '../../jobs/constants';
 import { paginationUtil } from '../../utils/pagination';
 import { successResponse } from '../../utils/responses';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
+import {
+  buildChanges,
+  describeChanges,
+  formatLogDate,
+} from '../../utils/activity-changes.util';
 import {
   AdminMessageQueryDto,
   CreateAdminMessageDto,
@@ -37,10 +45,26 @@ export class AdminMessagingService {
     private readonly customerModel: Model<BusinessCustomerDocument>,
     @InjectQueue(QUEUE_NAMES.ADMIN_MESSAGING_EMAIL)
     private readonly emailQueue: Queue<AdminMessageEmailJob>,
+    private readonly activityService: ActivityService,
   ) {}
 
-  async create(dto: CreateAdminMessageDto, adminId?: string) {
+  /** Short, readable label for a message in the activity log. */
+  private messageLabel(message: { message?: string; subject?: string }) {
+    const text = (message.subject || message.message || '').trim();
+    return text.length > 60 ? `${text.slice(0, 57)}…` : text || 'message';
+  }
+
+  /** Fields the alert edit form can change. */
+  private static readonly MESSAGE_LOG_FIELDS = [
+    { key: 'message', label: 'message' },
+    { key: 'theme', label: 'theme' },
+    { key: 'startDate', label: 'start date', format: formatLogDate },
+    { key: 'endDate', label: 'expiry date', format: formatLogDate },
+  ];
+
+  async create(dto: CreateAdminMessageDto, admin?: any) {
     this.validateDateRange(dto.startDate, dto.endDate);
+    const adminId = admin?.id || admin?.userId || admin?.sub;
 
     if (dto.type === AdminMessageType.ALERT) {
       const hasActiveAlert = await this.messageModel.exists({
@@ -61,6 +85,20 @@ export class AdminMessagingService {
         createdBy: this.toOptionalObjectId(adminId),
       });
 
+      await this.logMessageActivity(
+        admin,
+        ACTIVITY_LOG_ACTION_TYPE.CREATE,
+        alert,
+        `Created alert "${this.messageLabel(alert)}"`,
+        {
+          details: {
+            message: alert.message,
+            theme: alert.theme,
+            'start date': formatLogDate(alert.startDate),
+            'end date': formatLogDate(alert.endDate),
+          },
+        },
+      );
       return successResponse('Message created successfully', alert);
     }
 
@@ -77,7 +115,90 @@ export class AdminMessagingService {
     });
 
     await this.enqueueEmail(email, recipients);
+    const recipientNames = recipients
+      .map((recipient: any) => recipient.businessName || recipient.email || '')
+      .filter(Boolean);
+    const recipientSummary =
+      recipientNames.length > 25
+        ? `${recipientNames.slice(0, 25).join(', ')}, +${recipientNames.length - 25} more`
+        : recipientNames.join(', ');
+    await this.logMessageActivity(
+      admin,
+      ACTIVITY_LOG_ACTION_TYPE.CREATE,
+      email,
+      `Sent email "${this.messageLabel(email)}" to ${email.recipientCount} recipient(s)`,
+      {
+        details: {
+          subject: email.subject,
+          message: email.message,
+          recipients: recipientSummary,
+          'recipient count': email.recipientCount,
+        },
+      },
+    );
     return successResponse('Message queued successfully', email);
+  }
+
+  /** Record a messaging action in the activity log. */
+  private async logMessageActivity(
+    admin: any,
+    action: ACTIVITY_LOG_ACTION_TYPE,
+    message: AdminMessageDocument,
+    description: string,
+    metadata?: Record<string, unknown>,
+  ) {
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action,
+      module: 'Messaging',
+      objectId: message.id,
+      description,
+      metadata,
+    });
+  }
+
+  /**
+   * Build a details block (subject/body/dates + recipients) for any message
+   * action, so every log shows the email/alert content and who it reached.
+   */
+  private async buildMessageDetails(
+    message: AdminMessageDocument,
+  ): Promise<Record<string, unknown>> {
+    if (message.type === AdminMessageType.EMAIL) {
+      // Recipient-name resolution is best-effort; never let it break the action.
+      let recipientSummary = '';
+      try {
+        if (Array.isArray(message.users) && message.users.length) {
+          const recipients = await this.customerModel
+            .find({ _id: { $in: message.users } })
+            .select('businessName email')
+            .lean();
+          const names = recipients
+            .map((recipient: any) => recipient.businessName || recipient.email)
+            .filter(Boolean);
+          recipientSummary =
+            names.length > 25
+              ? `${names.slice(0, 25).join(', ')}, +${names.length - 25} more`
+              : names.join(', ');
+        }
+      } catch {
+        /* best-effort recipient resolution */
+      }
+      return {
+        subject: message.subject,
+        message: message.message,
+        recipients: recipientSummary,
+        'recipient count': message.recipientCount,
+      };
+    }
+
+    return {
+      message: message.message,
+      theme: message.theme,
+      audience: message.audience,
+      'start date': formatLogDate(message.startDate),
+      'end date': formatLogDate(message.endDate),
+    };
   }
 
   async findAll(query: AdminMessageQueryDto) {
@@ -167,7 +288,7 @@ export class AdminMessagingService {
     });
   }
 
-  async updateAlert(messageId: string, dto: UpdateAdminAlertDto) {
+  async updateAlert(messageId: string, dto: UpdateAdminAlertDto, admin?: any) {
     this.validateDateRange(dto.startDate, dto.endDate);
     const message = await this.findMessage(messageId);
 
@@ -175,16 +296,31 @@ export class AdminMessagingService {
       throw new BadRequestException("Email messages can't be edited");
     }
 
+    const before = message.toObject();
+
     message.message = dto.message.trim();
     message.theme = dto.theme;
     message.startDate = new Date(dto.startDate);
     message.endDate = new Date(dto.endDate);
     await message.save();
 
+    const changes = buildChanges(
+      before as unknown as Record<string, unknown>,
+      message.toObject() as unknown as Record<string, unknown>,
+      AdminMessagingService.MESSAGE_LOG_FIELDS,
+    );
+    await this.logMessageActivity(
+      admin,
+      ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      message,
+      describeChanges('alert', this.messageLabel(message), changes),
+      { changes, details: await this.buildMessageDetails(message) },
+    );
+
     return successResponse('Message updated successfully', message);
   }
 
-  async resend(messageId: string) {
+  async resend(messageId: string, admin?: any) {
     const message = await this.findMessage(messageId);
     if (message.type !== AdminMessageType.EMAIL) {
       throw new BadRequestException('Only email messages can be resent');
@@ -211,10 +347,17 @@ export class AdminMessagingService {
     await message.save();
 
     await this.enqueueEmail(message, recipients);
+    await this.logMessageActivity(
+      admin,
+      ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      message,
+      `Resent email "${this.messageLabel(message)}" to ${message.recipientCount} recipient(s)`,
+      { details: await this.buildMessageDetails(message) },
+    );
     return successResponse('Message queued for resend successfully', message);
   }
 
-  async activate(messageId: string) {
+  async activate(messageId: string, admin?: any) {
     const message = await this.findAlert(messageId);
 
     await this.messageModel.updateMany(
@@ -228,24 +371,50 @@ export class AdminMessagingService {
 
     message.status = AdminMessageStatus.ACTIVE;
     await message.save();
+    await this.logMessageActivity(
+      admin,
+      ACTIVITY_LOG_ACTION_TYPE.ACTIVATE,
+      message,
+      `Activated alert "${this.messageLabel(message)}"`,
+      { details: await this.buildMessageDetails(message) },
+    );
     return successResponse('Message activated successfully', message);
   }
 
-  async deactivate(messageId: string) {
+  async deactivate(messageId: string, admin?: any) {
     const message = await this.findAlert(messageId);
     message.status = AdminMessageStatus.INACTIVE;
     await message.save();
+    await this.logMessageActivity(
+      admin,
+      ACTIVITY_LOG_ACTION_TYPE.DEACTIVATE,
+      message,
+      `Deactivated alert "${this.messageLabel(message)}"`,
+      { details: await this.buildMessageDetails(message) },
+    );
     return successResponse('Message deactivated successfully', message);
   }
 
-  async remove(messageId: string) {
+  async remove(messageId: string, admin?: any) {
     const message = await this.findMessage(messageId);
     if (message.status === AdminMessageStatus.PENDING) {
       throw new BadRequestException(
         'A message being delivered cannot be deleted',
       );
     }
+    const label = this.messageLabel(message);
+    const removedId = message.id;
+    const isAlert = message.type === AdminMessageType.ALERT;
+    const details = await this.buildMessageDetails(message);
     await message.deleteOne();
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.DELETE,
+      module: 'Messaging',
+      objectId: removedId,
+      description: `Deleted ${isAlert ? 'alert' : 'email'} "${label}"`,
+      metadata: { details },
+    });
     return successResponse('Message deleted successfully');
   }
 

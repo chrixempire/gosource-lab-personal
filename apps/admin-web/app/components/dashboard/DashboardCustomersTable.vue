@@ -85,6 +85,9 @@ const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unkno
   },
 );
 
+const { trackDashboardSection } = useDashboardLoading();
+trackDashboardSection('customer-ranking', pending);
+
 const parsed = computed(() =>
   parseCustomerRankingResponse(data.value, page.value, pageSize.value),
 );

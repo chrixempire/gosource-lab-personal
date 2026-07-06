@@ -11,10 +11,12 @@ import {
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AdminAuth } from '../auth/decorator/admin-auth.decorator';
+import { Admin } from '../auth/decorator/admin.decorator';
 import { Roles } from '../auth/decorator/role.decorator';
 import { AdminRoles } from '../auth/enum/admin.enum';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
 import { RequiredPermission } from '../role/enum/required-permission';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 import { MarketplaceBannerService } from '../../marketplace-banner/marketplace-banner.service';
 import {
   MarketplaceBannerEntryDto,
@@ -65,10 +67,12 @@ export class AdminMarketplaceBannerController {
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CREATE_UPDATE_PROMOTION)
   @UseGuards(AdminRolesGuard)
   @UseInterceptors(AnyFilesInterceptor(bannerUploadOptions))
+  @SkipActivityLog() // logged explicitly with banner add/remove/update detail
   @ApiOkResponse({ type: [MarketplaceBannerPublicDto] })
   async saveBanners(
     @Body('banners') bannersRaw: string,
     @UploadedFiles() files: Express.Multer.File[],
+    @Admin() admin: any,
   ) {
     let banners: MarketplaceBannerEntryDto[] = [];
 
@@ -83,6 +87,6 @@ export class AdminMarketplaceBannerController {
       throw new BadRequestException('Invalid banners payload');
     }
 
-    return this.marketplaceBannerService.saveBanners(banners, files ?? []);
+    return this.marketplaceBannerService.saveBanners(banners, files ?? [], admin);
   }
 }

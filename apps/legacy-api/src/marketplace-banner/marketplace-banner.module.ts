@@ -7,6 +7,7 @@ import {
   MarketplaceBannerSettingsSchema,
 } from './schemas/marketplace-banner-settings.schema';
 import { S3Service } from '../cloudinary/s3.service';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { S3Service } from '../cloudinary/s3.service';
         schema: MarketplaceBannerSettingsSchema,
       },
     ]),
+    ActivityModule,
   ],
   controllers: [MarketplaceBannerController],
   providers: [MarketplaceBannerService, S3Service],

@@ -10,6 +10,8 @@ import type { ActivityLogListFilters } from '~/types/activity-log';
 
 const props = defineProps<{
   filters: ActivityLogListFilters;
+  /** When provided, renders a Module filter (e.g. inventory: Items/Categories/Purchase orders). */
+  moduleOptions?: { value: string; label: string }[];
 }>();
 
 const emit = defineEmits<{
@@ -17,16 +19,19 @@ const emit = defineEmits<{
   clearAll: [];
 }>();
 
+const moduleOpen = ref(false);
 const actionOpen = ref(false);
 const initiatorOpen = ref(false);
 const dateOpen = ref(false);
 
+const draftModule = ref('');
 const draftAction = ref('');
 const draftInitiatorType = ref('');
 const draftStartDate = ref('');
 const draftEndDate = ref('');
 
 function syncDraft() {
+  draftModule.value = props.filters.module;
   draftAction.value = props.filters.action;
   draftInitiatorType.value = props.filters.initiatorType;
   draftStartDate.value = props.filters.startDate;
@@ -38,6 +43,33 @@ watch(() => props.filters, syncDraft, { deep: true, immediate: true });
 
 <template>
   <div class="flex flex-wrap items-center gap-2">
+    <OrderFilterPopover
+      v-if="moduleOptions && moduleOptions.length"
+      v-model:open="moduleOpen"
+      label="Module"
+      :active="Boolean(filters.module)"
+      @open="syncDraft"
+      @apply="emit('apply', { module: draftModule, page: 1 })"
+      @clear="emit('apply', { module: '', page: 1 })"
+    >
+      <RadioGroup v-model="draftModule" class="flex flex-col gap-1">
+        <label
+          class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
+        >
+          <RadioGroupItem value="" />
+          <span>All modules</span>
+        </label>
+        <label
+          v-for="option in moduleOptions"
+          :key="option.value"
+          class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-grey-800 hover:bg-primary-50/60"
+        >
+          <RadioGroupItem :value="option.value" />
+          <span>{{ option.label }}</span>
+        </label>
+      </RadioGroup>
+    </OrderFilterPopover>
+
     <OrderFilterPopover
       v-model:open="actionOpen"
       label="Action"

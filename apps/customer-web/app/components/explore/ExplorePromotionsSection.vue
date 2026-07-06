@@ -3,6 +3,7 @@ import type { MarketProduct, MarketPromotion } from '~/lib/marketplace-data';
 import { useMediaQuery } from '@vueuse/core';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
+import ExploreSproutCard from '~/components/explore/ExploreSproutCard.vue';
 import {
   EXPLORE_MOBILE_PRODUCT_CARD_GAP_PX,
   EXPLORE_MOBILE_PRODUCT_CARD_WIDTH_PX,
@@ -11,9 +12,13 @@ import {
 
 // Renders a single promotion as its own row: its title, its symbol/icon, and
 // its products. The parent renders one of these per active promotion.
-const props = defineProps<{
-  promotion: MarketPromotion;
-}>();
+const props = withDefaults(
+  defineProps<{
+    promotion: MarketPromotion;
+    variant?: 'standard' | 'sprout';
+  }>(),
+  { variant: 'standard' },
+);
 
 const promotionTitle = computed(
   () => props.promotion.name?.trim() || 'Promotion',
@@ -200,7 +205,11 @@ watch(
         :key="product.id"
         class="explore-promotions-card-slot text-left"
       >
-        <ExploreProductCard :product="product" percentage-badge-only />
+        <component
+          :is="variant === 'sprout' ? ExploreSproutCard : ExploreProductCard"
+          :product="product"
+          percentage-badge-only
+        />
       </div>
     </div>
   </section>
@@ -212,7 +221,9 @@ watch(
   gap: 1rem;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  padding-bottom: 0.25rem;
+  /* Top/left/right padding so an in-cart card's border + ring (and the
+     promotion badge) aren't clipped by the scroller's overflow at the edges. */
+  padding: 3px 3px 0.25rem;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

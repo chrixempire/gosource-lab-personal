@@ -24,9 +24,12 @@ import { DeleteCategoryDto } from './dto/delete-category.dto';
 import { FilterCategoryDto } from './dto/filter-category.dto';
 import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
 import { RequiredPermission } from '../role/enum/required-permission';
+import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/category')
 @AdminAuth()
+@SkipActivityLog() // writes its own rich activity logs
 export class CategoryController {
   constructor(private categoryService: CategoryService) {}
 
@@ -40,10 +43,15 @@ export class CategoryController {
     }),
   )
   async createCategory(
+    @Admin() admin: any,
     @Body() categoryDetails: CreateCategoryDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return await this.categoryService.createCategory(categoryDetails, file);
+    return await this.categoryService.createCategory(
+      categoryDetails,
+      file,
+      admin,
+    );
   }
 
   @Get()
@@ -56,8 +64,8 @@ export class CategoryController {
   @Patch('rearrange')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.REARRANGE_CATEGORY)
   @UseGuards(AdminRolesGuard)
-  async rearrangeCategory(@Body() dto: ReorderCategoriesDto) {
-    return await this.categoryService.rearrangeCategory(dto);
+  async rearrangeCategory(@Admin() admin: any, @Body() dto: ReorderCategoriesDto) {
+    return await this.categoryService.rearrangeCategory(dto, admin);
   }
 
   @Patch('assign-positions')
@@ -84,6 +92,7 @@ export class CategoryController {
     }),
   )
   async updateCategory(
+    @Admin() admin: any,
     @Param('id') categoryId: string,
     @Body() categoryData: UpdateCategoryDto,
     @UploadedFile() file: Express.Multer.File,
@@ -92,6 +101,7 @@ export class CategoryController {
       categoryId,
       categoryData,
       file,
+      admin,
     );
   }
 
@@ -99,9 +109,10 @@ export class CategoryController {
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.DELETE_CATEGORY)
   @UseGuards(AdminRolesGuard)
   async deleteCategory(
+    @Admin() admin: any,
     @Param('id') id: string,
     @Body() deleteCategoryDto: DeleteCategoryDto,
   ) {
-    return this.categoryService.remove(id, deleteCategoryDto);
+    return this.categoryService.remove(id, deleteCategoryDto, admin);
   }
 }

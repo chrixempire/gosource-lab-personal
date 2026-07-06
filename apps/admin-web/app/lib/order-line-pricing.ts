@@ -121,14 +121,35 @@ export function resolveOrderLinePricing(
     return { lineTotal: storedTotal, unit };
   }
 
+  const quantity = Math.max(0, toNumber(line.quantity));
+
+  // Prefer the price the order was actually placed at, snapshotted on the line
+  // (financialSnapshotVersion). Recomputing from the live product below would
+  // show the product's *current* price, not what the customer was charged — so
+  // if the price later changed, the order detail would silently drift.
+  const snapshotLineRevenue = toNumber(line.grossLineRevenue);
+  if (snapshotLineRevenue > 0) {
+    return { lineTotal: snapshotLineRevenue, unit };
+  }
+  const snapshotUnitPrice = toNumber(line.unitSellingPrice);
+  if (quantity > 0 && snapshotUnitPrice > 0) {
+    return { lineTotal: quantity * snapshotUnitPrice, unit };
+  }
+
   if (product) {
-    const calculated = calculateLegacyOrderLineTotal(line, product, businessId);
+    // No snapshot (e.g. a pending request): `cartProduct` is the product as it
+    // was priced when the line was added — the price the order is charged at on
+    // approval — so prefer it over the live product, which may have since
+    // changed. Fall back to the live product when the cart snapshot lacks pricing.
+    const cartProduct = asRecord(line.cartProduct);
+    const pricingProduct =
+      cartProduct && hasLegacyProductPricing(cartProduct) ? cartProduct : product;
+    const calculated = calculateLegacyOrderLineTotal(line, pricingProduct, businessId);
     if (calculated > 0) {
       return { lineTotal: calculated, unit };
     }
   }
 
-  const quantity = Math.max(0, toNumber(line.quantity));
   const unitPrice = toNumber(line.unitPrice ?? line.price);
   if (quantity > 0 && unitPrice > 0) {
     return { lineTotal: quantity * unitPrice, unit };

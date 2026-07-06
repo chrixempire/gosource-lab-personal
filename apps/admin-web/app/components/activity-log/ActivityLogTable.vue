@@ -10,33 +10,46 @@ import {
   TableShell,
   TableSkeleton,
 } from '@gosource/ui';
+import { useIntersectionObserver } from '@vueuse/core';
+import { LoaderCircle } from 'lucide-vue-next';
 import CreditTableEmptyBody from '~/components/credit/CreditTableEmptyBody.vue';
-import CreditTablePagination from '~/components/credit/CreditTablePagination.vue';
 import { ACTIVITY_LOG_TABLE_GRID } from '~/lib/activity-log-table-layout';
 import { CREDIT_LIST_PANEL_CLASS } from '~/lib/credit-table-layout';
 import type { AdminActivityLogItem } from '~/types/activity-log';
-import type { InventoryTableMeta } from '~/types/inventory';
 
 defineProps<{
   rows: AdminActivityLogItem[];
-  meta: InventoryTableMeta;
   loading?: boolean;
+  loadingMore?: boolean;
+  hasMore?: boolean;
 }>();
 
 const emit = defineEmits<{
-  page: [page: number];
-  pageSize: [pageSize: number];
+  loadMore: [];
+  rowClick: [row: AdminActivityLogItem];
 }>();
 
 const gridStyle = { gridTemplateColumns: ACTIVITY_LOG_TABLE_GRID };
 
+const sentinelRef = ref<HTMLElement | null>(null);
+useIntersectionObserver(
+  sentinelRef,
+  (entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      emit('loadMore');
+    }
+  },
+  { threshold: 0 },
+);
+
 const skeletonColumns = [
-  { kind: 'line' as const, lineClass: 'w-full' },
-  { kind: 'line' as const, lineClass: 'w-full' },
-  { kind: 'line' as const, lineClass: 'w-full' },
-  { kind: 'line' as const, lineClass: 'w-full' },
-  { kind: 'stack' as const, lineClass: 'w-full', sublineClass: 'w-2/3' },
-  { kind: 'line' as const, lineClass: 'w-full' },
+  { kind: 'line' as const, lineClass: 'w-28' }, // Time
+  { kind: 'line' as const, lineClass: 'w-24' }, // Module
+  { kind: 'line' as const, lineClass: 'h-7 w-24 rounded-full' }, // Action
+  { kind: 'stack' as const, lineClass: 'w-full', sublineClass: 'w-2/3' }, // Initiator (name + type)
+  { kind: 'line' as const, lineClass: 'w-28' }, // Role
+  { kind: 'line' as const, lineClass: 'w-full' }, // Description
+  { kind: 'line' as const, lineClass: 'w-8' }, // link
 ];
 
 function actionVariant(action: string) {
@@ -45,6 +58,23 @@ function actionVariant(action: string) {
   if (normalized === 'UPDATE') return 'warning';
   if (normalized === 'DELETE') return 'negative';
   return 'default';
+}
+
+const MODULE_LABELS: Record<string, string> = {
+  product: 'Items',
+  category: 'Categories',
+  purchaseorder: 'Purchase order',
+};
+
+function moduleLabel(module: string) {
+  return MODULE_LABELS[module.trim().toLowerCase()] ?? module;
+}
+
+function initiatorTypeLabel(type: string) {
+  const normalized = type.trim().toUpperCase();
+  if (normalized === 'ADMIN') return 'Admin';
+  if (normalized === 'BUSINESS') return 'Business';
+  return type;
 }
 </script>
 
@@ -57,18 +87,20 @@ function actionVariant(action: string) {
         <TableCell>Time</TableCell>
         <TableCell>Module</TableCell>
         <TableCell>Action</TableCell>
-        <TableCell>Actor</TableCell>
+        <TableCell>Initiator</TableCell>
+        <TableCell>Role</TableCell>
         <TableCell>Description</TableCell>
         <TableCell />
       </TableHeadRow>
     </TableHeader>
 
-    <div v-if="loading" class="min-h-0 flex-1 overflow-hidden">
+    <div v-if="loading" class="min-h-0 w-full flex-1 overflow-hidden">
       <TableSkeleton
         :columns="skeletonColumns"
         :grid-template-columns="ACTIVITY_LOG_TABLE_GRID"
         :row-count="10"
-        body-class="!max-h-none !overflow-visible"
+        row-class="min-h-16 w-full min-w-full bg-background-on-canvas py-2.5"
+        body-class="w-full !max-h-none !overflow-visible !pt-0"
       />
     </div>
 
@@ -83,35 +115,53 @@ function actionVariant(action: string) {
         v-for="row in rows"
         :key="row.id"
         :style="gridStyle"
+        class="cursor-pointer transition-colors hover:bg-primary-50/45"
+        @click="emit('rowClick', row)"
       >
         <TableCell class="text-sm text-grey-700">{{ row.createdAtLabel }}</TableCell>
-        <TableCell class="text-sm text-grey-700">{{ row.module }}</TableCell>
+        <TableCell class="text-sm text-grey-700">{{ moduleLabel(row.module) }}</TableCell>
         <TableCell>
           <StatusTag :variant="actionVariant(row.action)" size="medium">
             {{ row.action }}
           </StatusTag>
         </TableCell>
-        <TableCell class="text-sm text-grey-700">{{ row.initiatorType }}</TableCell>
-        <TableCell class="text-sm text-grey-900">{{ row.description }}</TableCell>
+        <TableCell>
+          <p class="truncate text-sm font-medium text-grey-900">
+            {{ row.initiatorName || 'Unknown' }}
+          </p>
+          <p class="truncate text-xs text-grey-500">
+            {{ initiatorTypeLabel(row.initiatorType) }}
+          </p>
+        </TableCell>
+        <TableCell class="text-sm text-grey-700">
+          {{ row.initiatorRole || '—' }}
+        </TableCell>
+        <TableCell class="truncate text-sm text-grey-900">{{ row.description }}</TableCell>
         <TableCell>
           <NuxtLink
             v-if="row.objectLink"
             :to="row.objectLink"
             class="text-sm font-medium text-primary-700 hover:underline"
+            @click.stop
           >
             View
           </NuxtLink>
           <span v-else class="text-sm text-grey-400">—</span>
         </TableCell>
       </TableRow>
+      <div ref="sentinelRef" class="h-px w-full shrink-0" aria-hidden="true" />
     </TableBody>
 
     <TableFooter v-if="!loading && rows.length > 0">
-      <CreditTablePagination
-        :meta="meta"
-        @page="emit('page', $event)"
-        @page-size="emit('pageSize', $event)"
-      />
+      <div
+        class="flex shrink-0 items-center justify-center gap-2 border-t border-grey-50 bg-[#FAFBFC] px-4 py-3 text-sm text-grey-300"
+      >
+        <span v-if="loadingMore" class="flex items-center gap-2 text-primary-500">
+          <LoaderCircle class="size-4 animate-spin" />
+          <span>Loading more activity…</span>
+        </span>
+        <span v-else-if="!hasMore">No more activity</span>
+      </div>
     </TableFooter>
   </TableShell>
 </template>

@@ -15,9 +15,13 @@ export const ACTIVITY_LOG_ACTION_OPTIONS: { value: ActivityLogAction; label: str
   { value: 'CREATE', label: 'Create' },
   { value: 'UPDATE', label: 'Update' },
   { value: 'DELETE', label: 'Delete' },
-  { value: 'VIEW', label: 'View' },
+  { value: 'ACTIVATE', label: 'Activate' },
+  { value: 'DEACTIVATE', label: 'Deactivate' },
+  { value: 'STOCK_IN', label: 'Stock in' },
+  { value: 'STOCK_OUT', label: 'Stock out' },
   { value: 'LOGIN', label: 'Login' },
   { value: 'LOGOUT', label: 'Logout' },
+  { value: 'LOGIN_FAILED', label: 'Failed login' },
   { value: 'OTHERS', label: 'Other' },
 ];
 
@@ -85,6 +89,65 @@ export function activityLogFiltersToApiQuery(filters: ActivityLogListFilters) {
     ...(filters.endDate ? { endDate: filters.endDate } : {}),
   };
 }
+
+/**
+ * Backend module names that make up the inventory section. Used to scope the
+ * inventory activity-log page to items, categories and purchase orders.
+ */
+export const INVENTORY_ACTIVITY_MODULES = [
+  'Product',
+  'Category',
+  'PurchaseOrder',
+] as const;
+
+/** Module dropdown options for the inventory activity-log page. */
+export const INVENTORY_ACTIVITY_MODULE_OPTIONS: {
+  value: string;
+  label: string;
+}[] = [
+  { value: 'Product', label: 'Items' },
+  { value: 'Category', label: 'Categories' },
+  { value: 'PurchaseOrder', label: 'Purchase orders' },
+];
+
+/**
+ * API query for the inventory activity-log page. Reuses the shared query
+ * builder but scopes results to the inventory modules — either the single
+ * module the user picked, or all inventory modules via the `modules` $in list.
+ */
+export function inventoryActivityLogApiQuery(filters: ActivityLogListFilters) {
+  const base = activityLogFiltersToApiQuery(filters);
+
+  if (filters.module.trim()) {
+    return base;
+  }
+
+  return {
+    ...base,
+    modules: INVENTORY_ACTIVITY_MODULES.join(','),
+  };
+}
+
+/**
+ * Module dropdown options for the standalone (global) activity-log page —
+ * spans every area of admin-web. Values match the backend `module` strings.
+ */
+export const GLOBAL_ACTIVITY_MODULE_OPTIONS: {
+  value: string;
+  label: string;
+}[] = [
+  { value: 'Auth', label: 'Authentication' },
+  { value: 'Product', label: 'Items' },
+  { value: 'Category', label: 'Categories' },
+  { value: 'Purchase Order', label: 'Purchase orders' },
+  { value: 'Order', label: 'Orders' },
+  { value: 'Customers', label: 'Customers' },
+  { value: 'Credit', label: 'Credit' },
+  { value: 'Messages', label: 'Messages' },
+  { value: 'Coupon', label: 'Coupons' },
+  { value: 'Promotions', label: 'Promotions' },
+  { value: 'Admins', label: 'Admins & roles' },
+];
 
 export function hasActiveActivityLogFilters(filters: ActivityLogListFilters) {
   return Boolean(

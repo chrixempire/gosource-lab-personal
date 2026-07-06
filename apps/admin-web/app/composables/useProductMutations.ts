@@ -13,6 +13,7 @@ export function useProductMutations() {
 
   function invalidateProductListCache() {
     invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.products);
+    invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.activityLogs);
   }
 
   async function activateProduct(productId: string) {

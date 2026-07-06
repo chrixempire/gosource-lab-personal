@@ -16,7 +16,10 @@
   --background-canvas: var(--grey-55);
   --button-neutral: var(--grey-55);
   --disabled-surface: var(--grey-55);
-  --customer-shell-gradient: var(--grey-55);
+  /* shadcn-style shell: muted frame (sidebar + header + surround), white content. */
+  --customer-shell-surface: #f7f9fc;
+  --customer-content-surface: #ffffff;
+  --customer-shell-gradient: var(--customer-shell-surface);
 
   --primary: #0f5c18;
   --primary-foreground: #ecfdf5;
@@ -52,7 +55,10 @@
   --background-canvas: var(--grey-55);
   --button-neutral: var(--grey-55);
   --disabled-surface: var(--grey-55);
-  --customer-shell-gradient: var(--grey-55);
+  /* Dark mirror: darker frame, lighter (elevated) content. */
+  --customer-shell-surface: var(--grey-55);
+  --customer-content-surface: var(--background-on-canvas);
+  --customer-shell-gradient: var(--customer-shell-surface);
 
   --primary: #166534;
   --ring: #22c55e;
@@ -102,6 +108,16 @@ html.customer-theme-switching *::after {
 
   .customer-shell-bg {
     background: var(--customer-shell-gradient);
+  }
+
+  /* Sidebar + header + surrounding frame. */
+  .customer-shell-frame {
+    background-color: var(--customer-shell-surface);
+  }
+
+  /* Page content scroll area. */
+  .customer-content-surface {
+    background-color: var(--customer-content-surface);
   }
 
   .customer-shell-overlay {

@@ -53,6 +53,7 @@ import {
 import { ActivityLog } from '../activity/schema/activityLog.schema';
 import { InventoryMovement } from '../product/entities/inventoryMovement.entity';
 import { ShoppingList } from '../cart/entities/shopping-list.entity';
+import { PaymentReference } from '../paystack/schema/paymentReference.schema';
 import { randomUUID } from 'crypto';
 import { Types } from 'mongoose';
 import { CreditService } from '../credit/credit.service';
@@ -83,6 +84,8 @@ export class RequestService {
     private inventoryMovementModel: Model<InventoryMovement>,
     @InjectModel(ShoppingList.name)
     private shoppingListModel: Model<ShoppingList>,
+    @InjectModel(PaymentReference.name)
+    private paymentReferenceModel: Model<PaymentReference>,
     private creditService: CreditService,
     private systemConfigService: SystemConfigService,
     private eventEmitter: EventEmitter2,
@@ -647,6 +650,25 @@ export class RequestService {
         paymentStatus = PaymentStatus.PAID;
       } else if (requestDetails.paymentMethod === PaymentMethod.WALLET) {
         paymentStatus = PaymentStatus.PAID;
+      } else if (
+        requestDetails.paymentMethod === PaymentMethod.PAYSTACK &&
+        requestDetails.paystackReference
+      ) {
+        // Paystack charge confirmed on the client — verify it server-side (so
+        // the order isn't left PENDING when the webhook doesn't reach us) and
+        // compare the amount paid against the order total: exact/overpayment is
+        // PAID, an underpayment is flagged PARTIAL. A failed/replayed reference
+        // returns null and leaves the order PENDING.
+        const paidKobo = await this.verifyPaystackCharge(
+          requestDetails.paystackReference,
+        );
+        const expectedKobo = Math.round(totalPrice * 100);
+        if (paidKobo !== null) {
+          paymentStatus =
+            paidKobo >= expectedKobo
+              ? PaymentStatus.PAID
+              : PaymentStatus.PARTIAL;
+        }
       }
 
       // Create a new order associated with the approved request
@@ -673,17 +695,14 @@ export class RequestService {
         paymentStatus,
         paidAt: paymentStatus === PaymentStatus.PAID ? new Date() : undefined,
         discount,
-        paymentCount:
-          requestDetails.paymentMethod === PaymentMethod.TRANSFER ? 0 : 1,
+        // paymentCount == 1 means base stock has already been deducted. We set
+        // it only when payment is confirmed at approval (see the post-commit
+        // deduction below); otherwise 0 so the paid-transition deducts it once.
+        paymentCount: paymentStatus === PaymentStatus.PAID ? 1 : 0,
       };
 
       const order: OrderDocument = new this.orderModel(newOrder);
       await order.save({ session });
-
-      // Deduct product quantity if trackQuantity is enabled
-      if (requestDetails.paymentMethod !== PaymentMethod.TRANSFER) {
-        this.deductProductQuantity(request.products, business.id);
-      }
 
       // Remove the used coupon if applicable
       if (coupon && couponObj) {
@@ -710,6 +729,23 @@ export class RequestService {
 
       // Commit the transaction
       await session.commitTransaction();
+
+      // Deduct base stock ONLY once payment is actually confirmed at approval:
+      // Credit/Wallet, an already-paid request, or a verified Paystack charge
+      // (paymentStatus === PAID). Transfer and unconfirmed/partial Paystack
+      // orders are left to the paid-transition (webhook / admin mark-paid) so an
+      // unpaid checkout never depletes stock. Runs post-commit and awaited, so a
+      // rolled-back order never deducts and failures surface instead of leaking.
+      if (paymentStatus === PaymentStatus.PAID) {
+        try {
+          await this.deductProductQuantity(request.products, business.id);
+        } catch (error) {
+          console.error(
+            `Stock deduction after approving order ${order._id} failed:`,
+            error,
+          );
+        }
+      }
 
       // Notify connected admin dashboards (SSE) so they can play a new-order
       // alert. Emitted post-commit so a rolled-back order never fires it.
@@ -910,6 +946,67 @@ export class RequestService {
   //     }
   //   }
   // }
+
+  /**
+   * Verify a Paystack charge server-side using the secret key, so a
+   * client-confirmed payment can confirm the order at approval time without
+   * depending on the (environment-configured) webhook.
+   *
+   * Returns the amount actually paid (in kobo) when Paystack reports the
+   * transaction as successful and the reference has not been used before;
+   * returns null otherwise (failed/unknown charge or a replayed reference).
+   * The caller compares the amount against the order total to decide PAID vs
+   * PARTIAL.
+   */
+  private async verifyPaystackCharge(reference: string): Promise<number | null> {
+    const trimmed = reference?.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    // Dedupe: a reference must confirm exactly one order. Reject any reference
+    // that has already been consumed (by a prior approval or by the webhook).
+    const alreadyUsed = await this.paymentReferenceModel.findOne({
+      data: trimmed,
+    });
+    if (alreadyUsed) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.PAYSTACK_BASE_URL}/transaction/verify/${encodeURIComponent(trimmed)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const payload: any = await response.json();
+      const succeeded =
+        payload?.status === true && payload?.data?.status === 'success';
+      if (!succeeded) {
+        return null;
+      }
+
+      // Paystack amounts are in kobo.
+      const amountKobo = Number(payload?.data?.amount);
+      if (!Number.isFinite(amountKobo) || amountKobo <= 0) {
+        return null;
+      }
+
+      // Record the reference so it can't be replayed against another order.
+      await this.paymentReferenceModel.create({ data: trimmed });
+      return amountKobo;
+    } catch {
+      return null;
+    }
+  }
 
   async deductProductQuantity(
     products: { product: ProductDocument; quantity: number; unit: string }[],
