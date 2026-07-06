@@ -6,7 +6,6 @@ function isPublicCustomerRoute(path: string) {
     path === '/' ||
     path.startsWith('/auth') ||
     path.startsWith('/market') ||
-    path.startsWith('/explore') ||
     path.startsWith('/design-lab')
   );
 }

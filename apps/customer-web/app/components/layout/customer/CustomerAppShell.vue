@@ -83,7 +83,6 @@ const desktopSidebarOpen = useState('customer-shell-sidebar-open', () => true);
 const isDesktopViewport = useMediaQuery('(min-width: 1024px)');
 const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/market', title: 'Market' },
-  { match: '/explore', title: 'Explore' },
   { match: '/business-insight', title: 'Business insight' },
   { match: '/track-orders', title: 'Orders' },
   { match: '/wallet', title: 'Wallet' },
@@ -136,11 +135,7 @@ const showHeaderCart = computed(
 );
 
 const isMarketShellRoute = computed(
-  () =>
-    route.path === '/market' ||
-    route.path.startsWith('/market/') ||
-    route.path === '/explore' ||
-    route.path.startsWith('/explore/'),
+  () => route.path === '/market' || route.path.startsWith('/market/'),
 );
 
 const showMarketHeaderSearch = computed(

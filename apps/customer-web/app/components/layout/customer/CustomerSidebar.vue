@@ -13,7 +13,6 @@ import {
 import {
   ClipboardList,
   BadgePercent,
-  Compass,
   CreditCard,
   ChevronDown,
   BarChart3,
@@ -102,7 +101,6 @@ function onLeave(element: Element) {
 
 const navItems: NavLeaf[] = [
   { label: 'Market', icon: LayoutGrid, path: '/market' },
-  { label: 'Explore', icon: Compass, path: '/explore' },
   { label: 'Business insight', icon: BarChart3, path: '/business-insight' },
   { label: 'Orders', icon: ShoppingBag, path: '/track-orders' },
   { label: 'Wallet', icon: CreditCard, path: '/wallet' },
