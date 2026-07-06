@@ -78,7 +78,7 @@ async function onAdd(e: MouseEvent) {
   <!-- Sprouts-style card: white, clean, rounded; no favourite icon. -->
   <article
     data-testid="explore-sprout-card"
-    class="flex h-full min-w-0 flex-col rounded-[10px] border bg-white p-1 text-left transition"
+    class="flex h-full min-w-0 flex-col rounded-[10px] border bg-background-on-canvas p-1 text-left transition"
     :class="inCartHighlight ? 'border-primary-500 ring-1 ring-primary-500' : 'border-grey-50 hover:border-primary-500'"
   >
     <div
@@ -88,7 +88,7 @@ async function onAdd(e: MouseEvent) {
       @click="onCardClick"
       @keydown.enter.prevent="onCardClick"
     >
-      <div class="group relative aspect-square w-full shrink-0 overflow-hidden rounded-[8px] bg-white">
+      <div class="group relative aspect-square w-full shrink-0 overflow-hidden rounded-[8px] bg-grey-55">
         <MarketProductImage
           :src="product.imageUrl"
           :alt="product.name"
