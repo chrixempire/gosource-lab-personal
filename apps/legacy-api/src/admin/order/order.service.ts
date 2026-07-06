@@ -660,17 +660,24 @@ export class OrderService {
       // a Paystack order that was unconfirmed at approval still gets its base
       // deducted here.
       const alreadyPaid = order.paymentStatus === ORDER_PAYMENT_STATUS.PAID;
+      // Attribute the sale deduction to the order's business so the activity
+      // log resolves "Performed by" instead of showing Unknown.
+      const initiatorBusinessId = order.business
+        ? String((order.business as any)?._id ?? order.business)
+        : null;
       let nextPaymentCount = order.paymentCount || 0;
       if (!alreadyPaid) {
         if ((order.paymentCount || 0) < 1) {
           // Base stock not yet deducted → deduct base + additional.
           await this.requestService.deductProductQuantity(
             combinedProducts as any,
+            initiatorBusinessId,
           );
         } else {
           // Base already deducted at approval → only additional.
           await this.requestService.deductProductQuantity(
             order.additionalProducts || [],
+            initiatorBusinessId,
           );
         }
         nextPaymentCount = (order.paymentCount || 0) + 1;

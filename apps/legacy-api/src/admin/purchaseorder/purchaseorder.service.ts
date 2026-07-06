@@ -310,6 +310,29 @@ export class PurchaseOrderService {
           ),
         );
       }
+    } else {
+      // Product doesn't track quantity — there's no inventory movement to
+      // record, but still log the receipt so every received item gets its own
+      // activity row (mirrors the tracked-item log shape / module). Guarded so
+      // logging never breaks the receive.
+      try {
+        await this.activityLogModel.create({
+          objectId: product._id.toString(),
+          description: `Quantity ${quantityToAdd} ${product.purchaseUnit} of ${product.name} received from purchase order items (quantity not tracked)`,
+          ...adminInitiator(admin),
+          metadata: {
+            productName: product.name,
+            productDescription: product.description,
+            reference,
+            quantityReceived: quantityToAdd,
+            trackQuantity: false,
+          },
+          action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+          module: Product.name,
+        } as IActivityLog);
+      } catch {
+        // never throw from activity logging
+      }
     }
   }
 
