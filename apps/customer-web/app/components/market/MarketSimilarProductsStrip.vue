@@ -3,11 +3,20 @@ import type { MarketProduct } from '~/lib/marketplace-data';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import ExploreMobileProductTripleGrid from '~/components/explore/ExploreMobileProductTripleGrid.vue';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
+import ExploreSproutCard from '~/components/explore/ExploreSproutCard.vue';
 
-defineProps<{
-  products: MarketProduct[];
-  flush?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    products: MarketProduct[];
+    flush?: boolean;
+    variant?: 'standard' | 'sprout';
+  }>(),
+  { variant: 'standard' },
+);
+
+const cardComponent = computed(() =>
+  props.variant === 'sprout' ? ExploreSproutCard : ExploreProductCard,
+);
 
 const mobileGridRef = ref<InstanceType<typeof ExploreMobileProductTripleGrid> | null>(null);
 </script>
@@ -50,11 +59,13 @@ const mobileGridRef = ref<InstanceType<typeof ExploreMobileProductTripleGrid> | 
     <ExploreMobileProductTripleGrid
       ref="mobileGridRef"
       :products="products"
+      :variant="variant"
       class="min-[900px]:hidden"
     />
 
     <div class="explore-products-grid">
-      <ExploreProductCard
+      <component
+        :is="cardComponent"
         v-for="product in products"
         :key="product.id"
         :product="product"

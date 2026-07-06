@@ -230,6 +230,7 @@ onMounted(async () => {
           v-if="filteredCategory && hasMatches"
           :category="filteredCategory"
           layout="grid"
+          variant="sprout"
         />
 
         <div
