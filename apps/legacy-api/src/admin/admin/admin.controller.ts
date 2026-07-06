@@ -21,6 +21,7 @@ import {
 } from './dto/update-profile.dto';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
 import { RequiredPermission } from '../role/enum/required-permission';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/admin')
 @AdminAuth()
@@ -69,11 +70,13 @@ export class AdminController {
   @Patch(':id')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_ADMIN_MEMBERS)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with field old→new
   async updateProfileBySuperAdmin(
     @Param('id') adminId: string,
     @Body() body: UpdateProfileSuperAdminDto,
+    @Admin() admin: any,
   ) {
-    return await this.adminService.updateProfileBySuperAdmin(adminId, body);
+    return await this.adminService.updateProfileBySuperAdmin(adminId, body, admin);
   }
 
   @Patch(':id/activate')

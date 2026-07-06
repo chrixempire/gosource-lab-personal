@@ -20,6 +20,8 @@ import { UpdateCouponDto } from './dto/update-coupon.dto';
 import { Business } from '../../business/decorator/business.decorator';
 import { RequiredPermission } from '../role/enum/required-permission';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
+import { Admin } from '../auth/decorator/admin.decorator';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/coupon')
 export class CouponController {
@@ -75,11 +77,13 @@ export class CouponController {
   @AdminAuth()
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.CREATE_UPDATE_DISCOUNT)
   @UseGuards(AdminRolesGuard)
+  @SkipActivityLog() // logged explicitly with field old→new
   async updateCoupon(
     @Param('id') couponId: string,
     @Body() couponData: UpdateCouponDto,
+    @Admin() admin: any,
   ) {
-    return await this.couponService.updateCoupon(couponId, couponData);
+    return await this.couponService.updateCoupon(couponId, couponData, admin);
   }
 
   @Delete(':id')

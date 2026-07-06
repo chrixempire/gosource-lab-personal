@@ -28,6 +28,9 @@ import { DateFilterDto } from '../product/dto/create-product.dto';
 import { getDateFilter } from '../../utils/helpers';
 import { parseISO } from 'date-fns';
 import { AuthService } from '../../auth/auth.service';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
 
 @Injectable()
 export class CustomerService {
@@ -47,24 +50,52 @@ export class CustomerService {
     @InjectModel(CreditAccount.name)
     private creditAccountModel: Model<CreditAccount>,
     private readonly authService: AuthService,
+    private readonly activityService: ActivityService,
   ) {}
 
-  async resetCustomerPassword(customerId: string) {
+  private customerLabel(customer: { businessName?: string; email?: string }) {
+    return customer?.businessName || customer?.email || '';
+  }
+
+  async resetCustomerPassword(customerId: string, admin?: any) {
     const customer = await this.businessCustomerModel.findById(customerId).exec();
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
+
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.OTHERS,
+      module: 'Customers',
+      objectId: customerId,
+      description: `Reset password for customer ${this.customerLabel(customer)}`.trim(),
+    });
+
     return this.authService.sendPasswordResetMail({ email: customer.email });
   }
 
-  async setCustomerActive(customerId: string, active: boolean) {
+  async setCustomerActive(customerId: string, active: boolean, admin?: any) {
+    const existing = await this.businessCustomerModel.findById(customerId).exec();
+    if (!existing) {
+      throw new NotFoundException('Customer not found');
+    }
+
     const customer = await this.businessCustomerModel
       .findByIdAndUpdate(customerId, { active }, { new: true })
       .exec();
 
-    if (!customer) {
-      throw new NotFoundException('Customer not found');
-    }
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: active
+        ? ACTIVITY_LOG_ACTION_TYPE.ACTIVATE
+        : ACTIVITY_LOG_ACTION_TYPE.DEACTIVATE,
+      module: 'Customers',
+      objectId: customerId,
+      description: `${active ? 'Activated' : 'Deactivated'} customer ${this.customerLabel(existing)}`.trim(),
+      metadata: {
+        changes: { active: { old: existing.active ?? null, new: active } },
+      },
+    });
 
     return successResponse(
       active ? 'Customer activated successfully' : 'Customer deactivated successfully',
@@ -72,13 +103,21 @@ export class CustomerService {
     );
   }
 
-  async deleteCustomer(customerId: string) {
+  async deleteCustomer(customerId: string, admin?: any) {
     const customer = await this.businessCustomerModel.findById(customerId).exec();
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
 
     await this.businessCustomerModel.findByIdAndDelete(customerId).exec();
+
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.DELETE,
+      module: 'Customers',
+      objectId: customerId,
+      description: `Deleted customer ${this.customerLabel(customer)}`.trim(),
+    });
 
     return successResponse('Customer account deleted successfully', null);
   }
@@ -403,7 +442,11 @@ export class CustomerService {
    * @param creditLimit - Optional credit limit amount
    * @returns {object} - Operation status and updated customer data
    */
-  async enableCredit(customerId: string, creditLimit?: number): Promise<any> {
+  async enableCredit(
+    customerId: string,
+    creditLimit?: number,
+    admin?: any,
+  ): Promise<any> {
     try {
       const customer = await this.businessCustomerModel.findById(customerId);
 
@@ -422,6 +465,22 @@ export class CustomerService {
           { new: true },
         )
         .lean();
+
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Customers',
+        objectId: customerId,
+        description: `Enabled credit for customer ${this.customerLabel(customer)}`.trim(),
+        metadata: {
+          changes: {
+            canBuyOnCredit: { old: customer.canBuyOnCredit ?? false, new: true },
+            ...(creditLimit
+              ? { creditAccount: { old: customer.creditAccount ?? null, new: creditLimit } }
+              : {}),
+          },
+        },
+      });
 
       return {
         status: true,
@@ -443,7 +502,7 @@ export class CustomerService {
    * @param customerId - The ID of the customer
    * @returns {object} - Operation status and updated customer data
    */
-  async disableCredit(customerId: string): Promise<any> {
+  async disableCredit(customerId: string, admin?: any): Promise<any> {
     try {
       const customer = await this.businessCustomerModel.findById(customerId);
 
@@ -455,6 +514,19 @@ export class CustomerService {
       const updatedCustomer = await this.businessCustomerModel
         .findByIdAndUpdate(customerId, { canBuyOnCredit: false }, { new: true })
         .lean();
+
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Customers',
+        objectId: customerId,
+        description: `Disabled credit for customer ${this.customerLabel(customer)}`.trim(),
+        metadata: {
+          changes: {
+            canBuyOnCredit: { old: customer.canBuyOnCredit ?? true, new: false },
+          },
+        },
+      });
 
       return {
         status: true,

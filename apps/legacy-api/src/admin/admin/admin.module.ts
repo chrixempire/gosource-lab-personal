@@ -31,6 +31,7 @@ import {
 } from './schema/systemConfig.schema';
 import { SystemConfigService } from './system-config.service';
 import { SystemConfigController } from './system-config.controller';
+import { ActivityModule } from '../../activity/activity.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { SystemConfigController } from './system-config.controller';
       { name: Category.name, schema: CategorySchema },
       { name: SystemConfig.name, schema: SystemConfigSchema },
     ]),
+    ActivityModule,
   ],
   providers: [AdminService, SystemConfigService],
   controllers: [AdminController, SystemConfigController],

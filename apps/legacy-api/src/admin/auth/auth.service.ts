@@ -24,6 +24,12 @@ import {
   VerifyOTPDto,
 } from './dto/set-password.dto';
 import { generateOtp } from '../../utils/helpers';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ActivityService } from '../../activity/activity.service';
+import {
+  ACTIVITY_LOG_ACTION_TYPE,
+  INITIATOR_TYPE,
+} from '../../activity/interface/activityLog.interface';
 import { OtpInterface } from '../../auth/interface/auth.interface';
 import { AdminOtp, AdminOtpDocument } from './schema/otp.schema';
 import { Role } from '../role/entities/role.entity';
@@ -47,6 +53,7 @@ export class AuthService {
     private adminUserRoleModel: Model<AdminUserRole>,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private activityService: ActivityService,
   ) {}
 
   /**
@@ -173,13 +180,14 @@ export class AuthService {
     };
   }
 
-  async login(data: any): Promise<any> {
+  async login(data: any, ipAddress?: string): Promise<any> {
     const admin: any = await this.adminUserModel
       .findOne({ email: data.email })
       .select('+password')
       .populate('roleId');
 
     if (!admin) {
+      await this.logFailedLogin(data.email, ipAddress);
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -191,10 +199,46 @@ export class AuthService {
     const isMatch = await bcrypt.compare(data.password, hash);
 
     if (!isMatch) {
+      await this.logFailedLogin(data.email, ipAddress);
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    await this.activityService.record({
+      initiator: String(admin._id),
+      initiatorName: `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim() || null,
+      initiatorRole: admin.roleId?.name ?? null,
+      initiatorType: INITIATOR_TYPE.ADMIN,
+      action: ACTIVITY_LOG_ACTION_TYPE.LOGIN,
+      module: 'Auth',
+      ipAddress: ipAddress ?? null,
+      description: 'Logged in',
+    });
+
     return this.issueAdminAuthTokens(admin);
+  }
+
+  async logout(admin: any, ipAddress?: string): Promise<{ message: string }> {
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.LOGOUT,
+      module: 'Auth',
+      ipAddress: ipAddress ?? null,
+      description: 'Logged out',
+    });
+
+    return { message: 'Signed out successfully' };
+  }
+
+  private async logFailedLogin(email: string, ipAddress?: string) {
+    await this.activityService.record({
+      initiator: null,
+      initiatorName: email ?? null,
+      initiatorType: INITIATOR_TYPE.ADMIN,
+      action: ACTIVITY_LOG_ACTION_TYPE.LOGIN_FAILED,
+      module: 'Auth',
+      ipAddress: ipAddress ?? null,
+      description: `Failed login attempt for ${email ?? 'unknown'}`,
+    });
   }
 
   async refresh(data: { refreshToken: string }): Promise<any> {

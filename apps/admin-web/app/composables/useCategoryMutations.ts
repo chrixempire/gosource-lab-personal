@@ -14,6 +14,7 @@ export function useCategoryMutations() {
 
   function invalidateCategoryListCache() {
     invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.categories);
+    invalidateAdminListCache(ADMIN_LIST_CACHE_URLS.activityLogs);
   }
 
   async function createCategory(values: CategoryFormValues) {

@@ -85,12 +85,33 @@ export class ProductListener {
       await movement.save();
 
       // 3. Create Activity Log
+      const newQuantity = Number(product.quantity);
+      const delta = Number(quantityChanged);
+      const previousQuantity =
+        Number.isFinite(newQuantity) && Number.isFinite(delta)
+          ? newQuantity - delta
+          : null;
+
+      const enrichedMetadata: Record<string, any> = {
+        ...(metadata ?? {}),
+        productName: product.name,
+        productDescription: product.description,
+      };
+
+      // Record the stock movement as an old → new quantity change.
+      if (previousQuantity != null && delta !== 0) {
+        enrichedMetadata.changes = {
+          ...(enrichedMetadata.changes ?? {}),
+          Quantity: { old: previousQuantity, new: newQuantity },
+        };
+      }
+
       const activityLog = {
         objectId: product._id.toString(),
         description: activityLogDescription,
         initiator,
         initiatorType,
-        metadata,
+        metadata: enrichedMetadata,
         module: Product.name,
         action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
       };

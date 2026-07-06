@@ -360,17 +360,27 @@ export class OrderService {
           { path: 'additionalProducts.product', model: 'Product' },
         ]);
         if (populatedOrder) {
+          // Attribute the sale deduction to the order's business so the
+          // activity log can resolve "Performed by" instead of showing Unknown.
+          const initiatorBusinessId = order.business
+            ? String((order.business as any)?._id ?? order.business)
+            : null;
+
           if ((order.paymentCount || 0) < 1) {
             // Base stock not yet deducted (Transfer, or a Paystack order that
             // was unconfirmed at approval) → deduct base + additional now.
-            await this.deductProductQuantity([
-              ...((populatedOrder.products as any[]) || []),
-              ...((populatedOrder.additionalProducts as any[]) || []),
-            ]);
+            await this.deductProductQuantity(
+              [
+                ...((populatedOrder.products as any[]) || []),
+                ...((populatedOrder.additionalProducts as any[]) || []),
+              ],
+              initiatorBusinessId,
+            );
           } else {
             // Base already deducted at approval → only newly-added additional.
             await this.deductProductQuantity(
               (populatedOrder.additionalProducts as any[]) || [],
+              initiatorBusinessId,
             );
           }
         }

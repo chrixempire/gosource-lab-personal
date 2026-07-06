@@ -14,6 +14,9 @@ import { RequiredPermission } from './enum/required-permission';
 import { successResponse } from '../../utils/responses';
 import { AdminUser } from '../auth/schema/adminUser.schema';
 import { GroupedPermissions } from './groupedPermissions';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
 
 @Injectable()
 export class RoleService {
@@ -21,6 +24,7 @@ export class RoleService {
     @InjectModel(Role.name) private readonly roleModel: Model<Role>,
     @InjectModel(AdminUser.name)
     private readonly adminUserModel: Model<AdminUser>,
+    private readonly activityService: ActivityService,
   ) {}
 
   async create(createRoleDto: CreateRoleDto) {
@@ -127,9 +131,9 @@ export class RoleService {
    * @param updateRoleDto
    * @returns
    */
-  async update(id: string, updateRoleDto: UpdateRoleDto) {
-    const findRole = this.roleModel.findById(id);
-    if (!findRole) {
+  async update(id: string, updateRoleDto: UpdateRoleDto, admin?: any) {
+    const before = await this.roleModel.findById(id);
+    if (!before) {
       throw new NotFoundException('Role not found');
     }
 
@@ -152,7 +156,59 @@ export class RoleService {
       new: true,
     });
 
+    await this.logRoleUpdate(id, before, role, admin);
+
     return successResponse('Role updated successfully', role);
+  }
+
+  /** Logs a role edit with the exact permission delta (added/removed) + name change. */
+  private async logRoleUpdate(
+    id: string,
+    before: RoleDocument,
+    after: RoleDocument | null,
+    admin?: any,
+  ) {
+    const beforePerms: string[] = before?.permissions ?? [];
+    const afterPerms: string[] = after?.permissions ?? [];
+    const added = afterPerms.filter((p) => !beforePerms.includes(p));
+    const removed = beforePerms.filter((p) => !afterPerms.includes(p));
+
+    const summary: string[] = [];
+    if (before?.name !== after?.name) {
+      summary.push(`renamed to "${after?.name}"`);
+    }
+    if (added.length) {
+      summary.push(`+${added.length} permission${added.length > 1 ? 's' : ''}`);
+    }
+    if (removed.length) {
+      summary.push(`-${removed.length} permission${removed.length > 1 ? 's' : ''}`);
+    }
+
+    const changes: Record<string, { old: unknown; new: unknown }> = {};
+    if (before?.name !== after?.name) {
+      changes.name = { old: before?.name, new: after?.name };
+    }
+    if ((before?.description ?? '') !== (after?.description ?? '')) {
+      changes.description = {
+        old: before?.description ?? null,
+        new: after?.description ?? null,
+      };
+    }
+    if (Boolean(before?.isActive) !== Boolean(after?.isActive)) {
+      changes.isActive = { old: before?.isActive, new: after?.isActive };
+    }
+    if (added.length || removed.length) {
+      changes.permissions = { old: beforePerms, new: afterPerms };
+    }
+
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Roles',
+      objectId: id,
+      description: `Updated role ${before?.name ?? ''}${summary.length ? ` — ${summary.join(', ')}` : ''}`.trim(),
+      metadata: { changes, permissionsAdded: added, permissionsRemoved: removed },
+    });
   }
 
   async remove(id: number) {

@@ -32,13 +32,17 @@ export function usePurchaseOrderMutations() {
   const busyOrderId = ref<string | null>(null);
 
   function invalidatePurchaseOrderListCache() {
-    invalidateAdminListCaches([ADMIN_LIST_CACHE_URLS.purchaseOrders]);
+    invalidateAdminListCaches([
+      ADMIN_LIST_CACHE_URLS.purchaseOrders,
+      ADMIN_LIST_CACHE_URLS.activityLogs,
+    ]);
   }
 
   function invalidatePurchaseOrderAndInventoryCaches() {
     invalidateAdminListCaches([
       ADMIN_LIST_CACHE_URLS.purchaseOrders,
       ADMIN_LIST_CACHE_URLS.products,
+      ADMIN_LIST_CACHE_URLS.activityLogs,
     ]);
   }
 

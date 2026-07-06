@@ -19,6 +19,26 @@ import {
   computeDiscountedUnitMap,
   computePercentageDiscountPrice,
 } from '../../utils/promotion-discount.util';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
+import {
+  buildChanges,
+  describeChanges,
+  formatLogDate,
+  formatNameList,
+} from '../../utils/activity-changes.util';
+
+const PROMOTION_LOG_FIELDS = [
+  { key: 'name', label: 'name' },
+  { key: 'description', label: 'description' },
+  { key: 'icon', label: 'icon' },
+  { key: 'startDate', label: 'start date', format: formatLogDate },
+  { key: 'endDate', label: 'end date', format: formatLogDate },
+  { key: 'isPercentageDiscounted', label: 'percentage discount' },
+  { key: 'discountValue', label: 'discount value' },
+  { key: 'products', label: 'items', format: formatNameList },
+];
 
 @Injectable()
 export class PromotionService {
@@ -26,6 +46,7 @@ export class PromotionService {
     @InjectModel(Promotion.name) private promotionModel: Model<Promotion>,
     @InjectModel(Product.name) private productModel: Model<Product>,
     @InjectModel(Order.name) private orderModel: Model<Order>,
+    private readonly activityService: ActivityService,
   ) {}
 
   async create(body: CreatePromotionDto) {
@@ -195,7 +216,7 @@ export class PromotionService {
     });
   }
 
-  async update(id: string, body: UpdatePromotionDto) {
+  async update(id: string, body: UpdatePromotionDto, admin?: any) {
     const { startDate, endDate, isPercentageDiscounted, discountValue } = body;
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
       throw new BadRequestException('Start date must be less than end date');
@@ -229,6 +250,20 @@ export class PromotionService {
     // Apply new discounts
     await this.applyDiscounts(updatedPromotion);
 
+    const changes = buildChanges(
+      existingPromotion.toObject() as unknown as Record<string, unknown>,
+      updatedPromotion?.toObject() as unknown as Record<string, unknown>,
+      PROMOTION_LOG_FIELDS,
+    );
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Promotions',
+      objectId: id,
+      description: describeChanges('promotion', existingPromotion.name, changes),
+      metadata: { changes },
+    });
+
     return successResponse('Update promotion successfully', updatedPromotion);
   }
 
@@ -247,7 +282,39 @@ export class PromotionService {
     return successResponse('Delete promotion successfully');
   }
 
-  async activate(id: string) {
+  /** Record a promotion activate/deactivate with its full details. */
+  private async logPromotionToggle(
+    promotion: any,
+    activated: boolean,
+    admin?: any,
+  ) {
+    const names = formatNameList(promotion.products) as string[];
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: activated
+        ? ACTIVITY_LOG_ACTION_TYPE.ACTIVATE
+        : ACTIVITY_LOG_ACTION_TYPE.DEACTIVATE,
+      module: 'Promotions',
+      objectId: String(promotion._id),
+      description: `${activated ? 'Activated' : 'Deactivated'} promotion "${promotion.name ?? ''}"`.trim(),
+      metadata: {
+        changes: {
+          status: {
+            old: activated ? 'inactive' : 'active',
+            new: activated ? 'active' : 'inactive',
+          },
+        },
+        details: {
+          name: promotion.name,
+          items: Array.isArray(names) ? names.join(', ') : '',
+          'start date': formatLogDate(promotion.startDate),
+          'end date': formatLogDate(promotion.endDate),
+        },
+      },
+    });
+  }
+
+  async activate(id: string, admin?: any) {
     const promotion = await this.promotionModel
       .findById(id)
       .populate('products');
@@ -272,10 +339,12 @@ export class PromotionService {
 
     await this.applyDiscounts(promotion);
 
+    await this.logPromotionToggle(promotion, true, admin);
+
     return successResponse('Promotion activated successfully', promotion);
   }
 
-  async deactivate(id: string) {
+  async deactivate(id: string, admin?: any) {
     const promotion = await this.promotionModel
       .findById(id)
       .populate('products');
@@ -289,6 +358,8 @@ export class PromotionService {
     await promotion.save();
 
     await this.revertDiscounts(promotion);
+
+    await this.logPromotionToggle(promotion, false, admin);
 
     return successResponse('Promotion deactivated successfully', promotion);
   }

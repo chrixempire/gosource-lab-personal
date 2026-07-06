@@ -31,9 +31,11 @@ import {
 import { Admin } from '../auth/decorator/admin.decorator';
 import { RequiredPermission } from '../role/enum/required-permission';
 import { AdminRolesGuard } from '../auth/guard/adminRole.guard';
+import { SkipActivityLog } from '../../activity/skip-activity-log.decorator';
 
 @Controller('admin/product')
 @AdminAuth()
+@SkipActivityLog() // writes its own rich activity logs
 export class ProductController {
   constructor(private productService: ProductService) {}
 
@@ -47,10 +49,11 @@ export class ProductController {
     }),
   )
   async addProduct(
+    @Admin() admin: any,
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Body() productData: CreateProductDto,
   ) {
-    return await this.productService.addProduct(productData, files);
+    return await this.productService.addProduct(productData, files, admin);
   }
 
   @Post('units')
@@ -101,49 +104,71 @@ export class ProductController {
   @Patch(':productId/deactivate')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.ACTIVATE_DEACTIVATE_PRODUCT)
   @UseGuards(AdminRolesGuard)
-  async deactivateProduct(@Param('productId') productId: string) {
-    return await this.productService.deactivateItem(productId);
+  async deactivateProduct(
+    @Admin() admin: any,
+    @Param('productId') productId: string,
+  ) {
+    return await this.productService.deactivateItem(productId, admin);
   }
 
   @Patch(':productId/activate')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.ACTIVATE_DEACTIVATE_PRODUCT)
   @UseGuards(AdminRolesGuard)
-  async activateProduct(@Param('productId') productId: string) {
-    return await this.productService.activateItem(productId);
+  async activateProduct(
+    @Admin() admin: any,
+    @Param('productId') productId: string,
+  ) {
+    return await this.productService.activateItem(productId, admin);
   }
 
   @Patch(':productId/add-stock')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_STOCK)
   @UseGuards(AdminRolesGuard)
   async addBatchProduct(
+    @Admin() admin: any,
     @Body() productData: CreateBatchProductDto,
     @Param('productId') productId: string,
   ) {
-    return await this.productService.addBatchProduct(productData, productId);
+    return await this.productService.addBatchProduct(
+      productData,
+      productId,
+      admin,
+    );
   }
 
   @Patch(':productId/deduct-stock')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_STOCK)
   @UseGuards(AdminRolesGuard)
   async deductBatchProduct(
+    @Admin() admin: any,
     @Body() productData: DeductBatchProductDto,
     @Param('productId') productId: string,
   ) {
-    return await this.productService.deductBatchProduct(productData, productId);
+    return await this.productService.deductBatchProduct(
+      productData,
+      productId,
+      admin,
+    );
   }
 
   @Patch(':productId/in-stock')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_STOCK)
   @UseGuards(AdminRolesGuard)
-  async setProductInStock(@Param('productId') productId: string) {
-    return await this.productService.setProductInStock(productId);
+  async setProductInStock(
+    @Admin() admin: any,
+    @Param('productId') productId: string,
+  ) {
+    return await this.productService.setProductInStock(productId, admin);
   }
 
   @Patch(':productId/out-stock')
   @Roles(AdminRoles.SUPER_ADMIN, RequiredPermission.MANAGE_STOCK)
   @UseGuards(AdminRolesGuard)
-  async setProductOutOfStock(@Param('productId') productId: string) {
-    return await this.productService.setProductOutOfStock(productId);
+  async setProductOutOfStock(
+    @Admin() admin: any,
+    @Param('productId') productId: string,
+  ) {
+    return await this.productService.setProductOutOfStock(productId, admin);
   }
 
   @Patch(':productId')
@@ -156,6 +181,7 @@ export class ProductController {
     }),
   )
   async updateProduct(
+    @Admin() admin: any,
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Body() productData: CreateProductDto,
     @Param('productId') productId: string,
@@ -164,6 +190,7 @@ export class ProductController {
       productData,
       productId,
       files,
+      admin,
     );
   }
 

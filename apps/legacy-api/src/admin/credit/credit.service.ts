@@ -43,6 +43,9 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JOB_NAMES, QUEUE_NAMES } from '../../jobs/constants';
 import { AccountingService } from '../../accounting/accounting.service';
+import { ActivityService } from '../../activity/activity.service';
+import { adminInitiator } from '../../utils/activity-initiator.util';
+import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
 
 @Injectable()
 export class CreditService {
@@ -57,6 +60,7 @@ export class CreditService {
     @InjectConnection() private readonly connection: Connection,
     @InjectQueue(QUEUE_NAMES.CREDIT_REPAYMENT) private creditQueue: Queue,
     private accountingService: AccountingService,
+    private activityService: ActivityService,
   ) {}
 
   /**
@@ -103,6 +107,18 @@ export class CreditService {
     });
 
     await creditApplication.save();
+
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Credit',
+      objectId: creditId,
+      description: `Rejected credit application for ${(creditApplication.business as any)?.businessName ?? ''}`.trim(),
+      metadata: {
+        changes: { status: { old: CreditStatus.PENDING, new: CreditStatus.REJECTED } },
+        reason: rejectionReason ?? null,
+      },
+    });
 
     // Send email to business with rejection reason
     await this.sendCreditNotification(
@@ -164,6 +180,20 @@ export class CreditService {
     });
 
     await credit.save();
+
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Credit',
+      objectId: creditId,
+      description: 'Reopened credit application to pending',
+      metadata: {
+        changes: {
+          status: { old: CreditStatus.REJECTED, new: CreditStatus.PENDING },
+        },
+        reason: data.reason ?? null,
+      },
+    });
 
     return successResponse(
       'Credit application status updated to pending successfully',
@@ -359,6 +389,20 @@ export class CreditService {
       { $inc: { creditRequestRejectCounts: 1 } },
     );
 
+    await this.activityService.record({
+      ...adminInitiator(admin),
+      action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+      module: 'Credit',
+      objectId: requestId,
+      description: `Rejected credit request for ${(request.business as any)?.businessName ?? ''}`.trim(),
+      metadata: {
+        changes: {
+          status: { old: CreditStatus.PENDING, new: CreditStatus.REJECTED },
+        },
+        reason: rejectionReason ?? null,
+      },
+    });
+
     await this.sendCreditNotification(
       request.business._id,
       {
@@ -494,6 +538,18 @@ export class CreditService {
       });
 
       await session.commitTransaction();
+
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Credit',
+        objectId: creditId,
+        description: `Approved credit for ${(creditApplication.business as any)?.businessName ?? ''} — ${approvedAmountInMoney.format()}`.trim(),
+        metadata: {
+          changes: { status: { old: CreditStatus.PENDING, new: CreditStatus.APPROVED } },
+          approvedAmount: approvedAmountInMoney.format(),
+        },
+      });
 
       // Send email to business with approval details (AFTER COMMIT)
       await this.sendCreditNotification(
@@ -762,6 +818,31 @@ export class CreditService {
       );
 
       await session.commitTransaction();
+
+      await this.activityService.record({
+        ...adminInitiator(admin),
+        action: ACTIVITY_LOG_ACTION_TYPE.UPDATE,
+        module: 'Credit',
+        objectId: String(creditRequest._id),
+        description: `Approved credit request for ${(creditRequest.business as any)?.businessName ?? ''}`.trim(),
+        metadata: {
+          changes: {
+            status: { old: CreditStatus.PENDING, new: CreditStatus.APPROVED },
+          },
+          terms: {
+            approvedAmountKobo: creditRequest.approvedAmountKobo,
+            repaymentFrequency: creditRequest.repaymentFrequency,
+            repaymentDuration: creditRequest.repaymentDuration,
+            customFrequencyDays: creditRequest.customFrequencyDays,
+            interestRate: creditRequest.interestRate,
+            gracePeriodDays: creditRequest.gracePeriodDays,
+            overdueChargeRate: creditRequest.overdueChargeRate,
+            firstPaymentDate: creditRequest.firstPaymentDate,
+            finalPaymentDate: creditRequest.finalPaymentDate,
+            totalRepaymentAmountKobo: creditRequest.totalRepaymentAmountKobo,
+          },
+        },
+      });
 
       // SEND APPROVAL EMAIL TO BUSINESS
       await this.sendRequestApprovalNotifications(schedules, creditRequest);
