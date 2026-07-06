@@ -12,6 +12,7 @@ import CheckoutPaymentSummary from '~/components/checkout/CheckoutPaymentSummary
 import CheckoutRequestItems from '~/components/checkout/CheckoutRequestItems.vue';
 import CheckoutCutoffNoticeDialog from '~/components/checkout/CheckoutCutoffNoticeDialog.vue';
 import CheckoutSuccessDialog from '~/components/checkout/CheckoutSuccessDialog.vue';
+import CheckoutReviewDialog from '~/components/checkout/CheckoutReviewDialog.vue';
 import CheckoutTransferDialog from '~/components/checkout/CheckoutTransferDialog.vue';
 import { useAuthenticatedAsyncData } from '~/composables/useAuthenticatedAsyncData';
 import { useCustomerListReturn } from '~/composables/useCustomerListReturn';
@@ -58,6 +59,8 @@ const approvedOrderId = ref<string | null>(null);
 const selectedMethod = ref<CheckoutPaymentMethodValue | null>(null);
 const transferDialogOpen = ref(false);
 const successDialogOpen = ref(false);
+const reviewDialogOpen = ref(false);
+const reviewOrderId = ref<string | null>(null);
 const cutoffNoticeOpen = ref(false);
 
 // Orders placed past the 1pm cutoff are processed the next day. Notify the
@@ -353,6 +356,22 @@ function applyApprovedCheckout(response: ApproveRequestResponse) {
   resetCartState();
   void loadCart(true);
   invalidateCheckoutMutationListCaches();
+
+  // Show the review modal first; the success modal follows once it's done.
+  reviewOrderId.value = orderId ?? null;
+  const alreadyReviewed =
+    orderId &&
+    import.meta.client &&
+    localStorage.getItem(`checkout-reviewed-${orderId}`) === '1';
+  if (orderId && !alreadyReviewed) {
+    reviewDialogOpen.value = true;
+  } else {
+    successDialogOpen.value = true;
+  }
+}
+
+function onReviewDone() {
+  reviewDialogOpen.value = false;
   successDialogOpen.value = true;
 }
 
@@ -585,6 +604,13 @@ const canSubmitCheckout = computed(
       :loading="submitting"
       @update:open="transferDialogOpen = $event"
       @confirm="processApproval('Transfer')"
+    />
+
+    <CheckoutReviewDialog
+      :open="reviewDialogOpen"
+      :order-id="reviewOrderId"
+      @update:open="reviewDialogOpen = $event"
+      @done="onReviewDone"
     />
 
     <CheckoutSuccessDialog

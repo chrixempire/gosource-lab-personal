@@ -25,6 +25,9 @@ const { data, pending, error, refresh } = await useAdminAuthenticatedFetch<unkno
   },
 );
 
+const { trackDashboardSection } = useDashboardLoading();
+trackDashboardSection('order-metrics', pending);
+
 const metrics = computed(() => parseOrderMetrics(data.value, props.filter));
 const trendPoints = computed(() => metrics.value.trendPoints);
 const statusSlices = computed(() => metrics.value.statusSlices);

@@ -4,15 +4,22 @@ import { buildOrderInvoiceViewModel } from '../utils/order-invoice-view';
 import { InjectModel } from '@nestjs/mongoose';
 import { Order, OrderDocument } from './entities/order.entity';
 import { Model, Types } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cart } from 'src/cart/entities/cart.entity';
-import { Product } from 'src/product/entities/product.entity';
+import { Product, ProductDocument } from 'src/product/entities/product.entity';
 import { ORDER_PAYMENT_STATUS } from './interface/order.interface';
 import { Timeline } from './entities/timeline.entity';
 import { PaymentReference } from '../paystack/schema/paymentReference.schema';
 import { BusinessCustomer } from '../business/schema/business.schema';
 import { Request, RequestDocument } from '../request/schema/request.schema';
-import { PaymentStatus } from '../request/enum/request.enum';
-import { snapshotOrderFinancialLines } from './order-financials';
+import { PaymentMethod, PaymentStatus } from '../request/enum/request.enum';
+import {
+  resolvePurchaseUnitConversion,
+  snapshotOrderFinancialLines,
+} from './order-financials';
+import { ProductStockUpdatedEvent } from '../admin/product/events/product-stock-updated.event';
+import { INITIATOR_TYPE } from '../activity/interface/activityLog.interface';
+import { createMoney } from '../utils/money';
 import { OrderFilterUtil } from '../utils/filter';
 @Injectable()
 export class OrderService {
@@ -25,6 +32,8 @@ export class OrderService {
     @InjectModel(Request.name) private requestModel: Model<Request>,
     @InjectModel(BusinessCustomer.name)
     private businessModel: Model<BusinessCustomer>,
+    @InjectModel(Product.name) private productModel: Model<Product>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async calculateOrderPrice(order: Order, business: string) {
@@ -317,27 +326,89 @@ export class OrderService {
     orderId: string,
     paymentReference: string,
   ): Promise<any> {
-    const [order, request] = await Promise.all([
+    // Paystack order payments carry the REQUEST id in metadata (the order does
+    // not exist yet at payment time), so resolve the order by its own id OR by
+    // the request it was created from — otherwise a webhook that arrives after
+    // approval can never mark the created order paid, leaving it stuck PENDING.
+    const [orderById, request] = await Promise.all([
       this.orderModel.findById(orderId),
       this.requestModel.findById(orderId),
     ]);
+
+    const order =
+      orderById ?? (await this.orderModel.findOne({ request: orderId }));
 
     if (!order && !request) {
       return;
     }
 
     if (order) {
-      order.paymentStatus = ORDER_PAYMENT_STATUS.PAID;
-      order.paidAt = order.paidAt ?? new Date();
-      order.products = snapshotOrderFinancialLines(
-        order.products as any[],
-        order.business,
-        order.discount,
-      ) as any;
-      await order.save();
+      // Idempotency: payment webhooks can be delivered more than once. Only run
+      // the paid-transition (and stock deduction) the first time the order
+      // becomes PAID so inventory is never deducted twice on webhook retries.
+      if (order.paymentStatus !== ORDER_PAYMENT_STATUS.PAID) {
+        // Deduct inventory now that payment is confirmed. We read a separately
+        // populated copy purely to feed deductProductQuantity (which needs the
+        // product documents); the persisted `order` below keeps its original
+        // shape (products.product stays an id ref — not embedded). Transfer
+        // orders aren't deducted at creation, so on their first payment we
+        // deduct base + additional products; other methods already deducted the
+        // base at creation, so we only deduct additional products here. Mirrors
+        // the admin updatePaymentStatus path; gated per-product by trackQuantity.
+        const populatedOrder = await this.orderModel.findById(order._id).populate([
+          { path: 'products.product', model: 'Product' },
+          { path: 'additionalProducts.product', model: 'Product' },
+        ]);
+        if (populatedOrder) {
+          if ((order.paymentCount || 0) < 1) {
+            // Base stock not yet deducted (Transfer, or a Paystack order that
+            // was unconfirmed at approval) → deduct base + additional now.
+            await this.deductProductQuantity([
+              ...((populatedOrder.products as any[]) || []),
+              ...((populatedOrder.additionalProducts as any[]) || []),
+            ]);
+          } else {
+            // Base already deducted at approval → only newly-added additional.
+            await this.deductProductQuantity(
+              (populatedOrder.additionalProducts as any[]) || [],
+            );
+          }
+        }
+
+        // Persist the payment transition. Fold any additional products into the
+        // main lines and clear them, so a later admin "mark as paid" cannot
+        // deduct the same additional products again (mirrors updatePaymentStatus).
+        const hadAdditional =
+          Array.isArray(order.additionalProducts) &&
+          (order.additionalProducts as any[]).length > 0;
+        order.paymentStatus = ORDER_PAYMENT_STATUS.PAID;
+        order.paidAt = order.paidAt ?? new Date();
+        order.products = [
+          ...snapshotOrderFinancialLines(
+            order.products as any[],
+            order.business,
+            order.discount,
+          ),
+          ...snapshotOrderFinancialLines(
+            (order.additionalProducts as any[]) || [],
+            order.business,
+            0,
+          ),
+        ] as any;
+        if (hadAdditional) {
+          order.totalPrice =
+            (order.totalPrice || 0) + (order.additionalTotalPrice || 0);
+          order.additionalProducts = [] as any;
+          order.additionalTotalPrice = 0;
+        }
+        order.paymentCount = (order.paymentCount || 0) + 1;
+        await order.save();
+      }
     } else if (request) {
-      request.paymentStatus = PaymentStatus.PAID;
-      await request.save();
+      if (request.paymentStatus !== PaymentStatus.PAID) {
+        request.paymentStatus = PaymentStatus.PAID;
+        await request.save();
+      }
     }
 
     // Save Reference
@@ -346,6 +417,95 @@ export class OrderService {
     });
 
     return;
+  }
+
+  /**
+   * Deduct stock for paid order lines. Kept local (instead of reusing
+   * RequestService) to avoid a circular module dependency — PaystackModule
+   * already injects this OrderService, so OrderModule cannot import
+   * RequestModule. Mirrors RequestService.deductProductQuantity: gated
+   * per-product by trackQuantity, atomically decrements quantity/totalPrice,
+   * and emits `product.stock.updated` so the ProductListener recomputes
+   * inStock/isLowStock and records the inventory movement.
+   */
+  private async deductProductQuantity(
+    products: { product: ProductDocument; quantity: number; unit: string }[],
+    businessId: string | null = null,
+  ): Promise<void> {
+    for (const item of products) {
+      const product = item.product;
+      if (!product?.trackQuantity) {
+        continue;
+      }
+
+      let quantityToDeduct = item.quantity;
+      const purchaseUnitConversion = resolvePurchaseUnitConversion(
+        product as any,
+        item.unit,
+      );
+      if (purchaseUnitConversion !== null) {
+        quantityToDeduct = item.quantity * purchaseUnitConversion;
+      }
+
+      const totalDeductionCost = product.marketPrice * quantityToDeduct;
+
+      const updatedProduct = await this.productModel.findByIdAndUpdate(
+        product._id,
+        {
+          $inc: {
+            quantity: -quantityToDeduct,
+            totalPrice: -totalDeductionCost,
+          },
+        },
+        { new: true },
+      );
+
+      if (updatedProduct) {
+        const customerUnitPrice = this.getUnitPrice(updatedProduct, item.unit);
+        const totalCost = item.quantity * customerUnitPrice;
+
+        const movementDescription = `Sale deduction: ${item.quantity} ${item.unit} (equivalent to ${quantityToDeduct} ${updatedProduct.purchaseUnit}) worth ${createMoney(totalCost, 'naira').format()}. Remaining ${updatedProduct.quantity} quantity.`;
+        const activityLogDescription = `Quantity ${item.quantity} ${item.unit} (equivalent to ${quantityToDeduct} ${updatedProduct.purchaseUnit}) worth ${createMoney(totalCost, 'naira').format()} deducted from sales. Remaining ${updatedProduct.quantity} quantity.`;
+
+        this.eventEmitter.emit(
+          'product.stock.updated',
+          new ProductStockUpdatedEvent(
+            updatedProduct,
+            -quantityToDeduct,
+            'SALE',
+            'DIRECT_SALE',
+            movementDescription,
+            activityLogDescription,
+            businessId,
+            INITIATOR_TYPE.BUSINESS,
+            {
+              customerUnit: item.unit,
+              customerQuantity: item.quantity,
+              baseUnit: updatedProduct.purchaseUnit,
+              baseQuantityDeducted: quantityToDeduct,
+              unitPrice: customerUnitPrice,
+              totalCost,
+            },
+          ),
+        );
+      }
+    }
+  }
+
+  // Resolve the customer-facing price for a specific unit (mirrors RequestService).
+  private getUnitPrice(product: ProductDocument, unit: string): number {
+    if (product.newUnit) {
+      try {
+        const newUnits = JSON.parse(product.newUnit);
+        const unitMapping = newUnits.find((u: any) => u.unit === unit);
+        if (unitMapping && unitMapping.price) {
+          return parseFloat(unitMapping.price);
+        }
+      } catch (error) {
+        console.error('Error parsing newUnit for price:', error);
+      }
+    }
+    return product.marketPrice;
   }
 
   buildResponse(data: any, message: string = 'successfully') {

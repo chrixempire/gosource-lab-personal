@@ -17,6 +17,7 @@ import {
   OrderActivityLog,
   OrderActivityLogSchema,
 } from './entities/activity.entity';
+import { Product, ProductSchema } from '../product/entities/product.entity';
 
 @Module({
   imports: [
@@ -27,6 +28,9 @@ import {
       { name: Request.name, schema: RequestSchema },
       { name: BusinessCustomer.name, schema: BusinessCustomerSchema },
       { name: OrderActivityLog.name, schema: OrderActivityLogSchema },
+      // Product model so the webhook can deduct stock on payment confirmation
+      // (kept local to avoid a circular dep with RequestModule).
+      { name: Product.name, schema: ProductSchema },
     ]),
   ],
   controllers: [OrderController],

@@ -23,7 +23,7 @@ export class EmployeeInvite {
     unique: false,
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: BusinessCustomer.name,
+    ref: Branch.name,
   })
   branchId: Branch;
 

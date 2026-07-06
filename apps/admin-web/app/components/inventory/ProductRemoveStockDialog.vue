@@ -13,6 +13,7 @@ import {
 import InventorySearchableSelect from '~/components/inventory/InventorySearchableSelect.vue';
 import { ADMIN_MODAL_TITLE_CLASS } from '~/lib/admin-dialog';
 import {
+  blockExtraDecimal,
   formatNumericString,
   PRODUCT_ITEM_INPUT_CLASS,
   PRODUCT_ITEM_TEXTAREA_CLASS,
@@ -53,8 +54,8 @@ const unitSelectOptions = computed(() =>
 );
 
 function updateQuantity(value: string) {
-  const sanitized = stripToNumeric(value, false) || '';
-  form.quantity = formatNumericString(sanitized, false);
+  const sanitized = stripToNumeric(value, true) || '';
+  form.quantity = formatNumericString(sanitized, true);
 }
 
 function applyUnitPrefill() {
@@ -136,8 +137,9 @@ function onSubmit() {
             :disabled="loading"
             :invalid="Boolean(fieldErrors.quantity)"
             :class="PRODUCT_ITEM_INPUT_CLASS"
-            inputmode="numeric"
+            inputmode="decimal"
             placeholder="0"
+            @keypress="blockExtraDecimal"
             @update:model-value="updateQuantity"
           />
           <p v-if="fieldErrors.quantity" class="mt-1 text-xs text-negative-500">

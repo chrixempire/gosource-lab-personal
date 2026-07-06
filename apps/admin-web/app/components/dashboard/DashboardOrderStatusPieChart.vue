@@ -52,9 +52,9 @@ const chartConfig = computed((): ChartConfiguration<'doughnut'> => ({
       legend: {
         position: 'bottom',
         labels: {
-          boxWidth: 10,
-          padding: 8,
-          font: { size: 11 },
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 14 },
         },
       },
       tooltip: {

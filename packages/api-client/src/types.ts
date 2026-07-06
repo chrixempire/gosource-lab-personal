@@ -418,6 +418,9 @@ export interface ListRequestsQuery {
 export interface ApproveRequestPayload {
   paymentStatus?: RequestRecord['paymentStatus'];
   paymentMethod?: string;
+  /** Paystack transaction reference from a confirmed client-side charge; the
+   * backend verifies it server-side and marks the order paid on approval. */
+  paystackReference?: string;
 }
 
 export interface ApproveRequestResponse extends RequestResponse {

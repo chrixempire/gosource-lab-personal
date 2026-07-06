@@ -13,6 +13,7 @@ import {
 } from '~/lib/product-form';
 import { mapLegacyUnits } from '~/lib/product-details';
 
+const router = useRouter();
 const { updateHeader } = useAdminHeader();
 const { createProduct } = useProductMutations();
 
@@ -33,6 +34,12 @@ const categoryOptions = computed(() => parseCategoryOptions(categoriesPayload.va
 const customerOptions = computed(() => parseOrderCustomersResponse(customersPayload.value));
 
 function goBack() {
+  // Preserve the list's page/limit/filters by returning to the referrer URL;
+  // fall back to a plain navigation when there's no history to go back to.
+  if (import.meta.client && window.history.length > 1) {
+    router.back();
+    return;
+  }
   void navigateTo(ADMIN_PAGE_ROUTES.INVENTORY);
 }
 
@@ -47,7 +54,7 @@ async function onSubmit() {
   submitting.value = true;
   try {
     await createProduct(form);
-    await navigateTo(ADMIN_PAGE_ROUTES.INVENTORY);
+    goBack();
   } catch {
     // toast in composable
   } finally {

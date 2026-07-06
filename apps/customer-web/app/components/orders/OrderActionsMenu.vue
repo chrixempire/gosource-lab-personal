@@ -34,11 +34,11 @@ const emit = defineEmits<{
           variant="ghost"
           class="!size-9 !rounded-full !border !border-grey-50 !bg-background-on-canvas !p-0"
           aria-label="Order actions"
-          :disabled="reorderLoading"
+          :disabled="isReordering"
         >
           <LoaderCircle
             v-if="isReordering"
-            class="size-4 animate-spin"
+            class="size-4 animate-spin !text-primary-500"
           />
           <Ellipsis
             v-else

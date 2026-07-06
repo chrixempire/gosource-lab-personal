@@ -668,7 +668,9 @@ export class EmployeeService {
    * @returns {object}
    */
   async getPendingInviteByBusinessId(businessId: string): Promise<any> {
-    const invites = await this.employeeInviteModel.find({ businessId });
+    const invites = await this.employeeInviteModel
+      .find({ businessId })
+      .populate('branchId');
 
     return this.buildResponse(invites, 'Invites retrieved successfully');
   }

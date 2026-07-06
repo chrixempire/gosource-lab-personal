@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { PaymentMethod } from '../enum/request.enum';
 
 export class CreateRequestDto {
@@ -94,4 +94,10 @@ export class ApproveRequestDto {
   @IsNotEmpty()
   @IsEnum(PaymentMethod)
   paymentMethod: string;
+
+  /** Confirmed Paystack transaction reference; verified server-side to mark the
+   * order paid on approval (webhook-independent). */
+  @IsOptional()
+  @IsString()
+  paystackReference?: string;
 }
