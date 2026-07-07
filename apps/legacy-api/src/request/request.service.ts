@@ -59,6 +59,11 @@ import { Types } from 'mongoose';
 import { CreditService } from '../credit/credit.service';
 import { SystemConfigService } from '../admin/admin/system-config.service';
 import { createMoney } from '../utils/money';
+import { NotificationService } from '../notification/notification.service';
+import {
+  NOTIFICATION_RECIPIENT_TYPE,
+  NOTIFICATION_TYPE,
+} from '../notification/interface/notification.interface';
 import {
   resolvePurchaseUnitConversion,
   snapshotOrderFinancialLines,
@@ -89,6 +94,7 @@ export class RequestService {
     private creditService: CreditService,
     private systemConfigService: SystemConfigService,
     private eventEmitter: EventEmitter2,
+    private notificationService: NotificationService,
   ) {}
 
   private async getAuthBusinessId(authId: string) {
@@ -417,6 +423,22 @@ export class RequestService {
     }
 
     if (newRequest) {
+      // In-app notification to the business super admin that a request is
+      // pending. Only when an employee raised it (a super admin creating their
+      // own request doesn't need to notify themselves).
+      if (initiator === 'employee') {
+        await this.notificationService.create({
+          recipient: String(businessId),
+          recipientType: NOTIFICATION_RECIPIENT_TYPE.BUSINESS,
+          businessId: String(businessId),
+          type: NOTIFICATION_TYPE.REQUEST_CREATED,
+          title: 'New procurement request',
+          message: `A new request (${reference}) is awaiting your approval.`,
+          link: `/manage-requests/${this.resolveEntityId(newRequest._id ?? newRequest.id)}`,
+          metadata: { requestId: String(newRequest._id ?? newRequest.id), reference },
+        });
+      }
+
       // Send an email notification if the initiator is an employee
       if (initiator === 'employee' && branch) {
         const businessOwner =
@@ -828,6 +850,22 @@ export class RequestService {
           };
 
           this.emailService.sendMail(emailEmployeeData);
+
+          // In-app notification to the employee who raised the request.
+          await this.notificationService.create({
+            recipient: this.resolveEntityId(request.initiator._id),
+            recipientType: NOTIFICATION_RECIPIENT_TYPE.EMPLOYEE,
+            businessId: String(business.id ?? business._id ?? ''),
+            type: NOTIFICATION_TYPE.REQUEST_APPROVED,
+            title: 'Request approved',
+            message: `Your request ${request.reference} was approved and an order was created.`,
+            link: `/manage-requests/${this.resolveEntityId(request._id ?? request.id)}`,
+            metadata: {
+              requestId: String(request._id ?? request.id),
+              reference: request.reference,
+              orderReference: order?.reference,
+            },
+          });
         }
 
         // Send notification emails to admins
@@ -1141,7 +1179,23 @@ export class RequestService {
     request.rejectedReasons = rejectionDetails.rejectionReasons;
     request.status = RequestStatus.REJECTED;
     request.rejectedBy = business.id;
-    request.save();
+    await request.save();
+
+    // In-app notification to whoever raised the request.
+    await this.notificationService.create({
+      recipient: this.resolveEntityId(request.initiator),
+      recipientType: NOTIFICATION_RECIPIENT_TYPE.EMPLOYEE,
+      businessId: String(business.id ?? business._id ?? ''),
+      type: NOTIFICATION_TYPE.REQUEST_REJECTED,
+      title: 'Request rejected',
+      message: `Your request ${request.reference} was rejected.`,
+      link: `/manage-requests/${this.resolveEntityId(request._id ?? request.id)}`,
+      metadata: {
+        requestId: String(request._id ?? request.id),
+        reference: request.reference,
+        reasons: rejectionDetails.rejectionReasons,
+      },
+    });
 
     return {
       status: true,
