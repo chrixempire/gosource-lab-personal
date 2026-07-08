@@ -18,11 +18,25 @@ export type OrderFinancialSnapshot = {
   grossProfit: number;
 };
 
+/**
+ * A single order line whose cost could not be resolved (no market price and/or no
+ * unit conversion), which is what disqualifies the whole order from the verified
+ * profit calculation. Surfaced so admins can see exactly which item to fix.
+ */
+export type UnresolvedCostLine = {
+  productName: string;
+  unit: string | null;
+  quantity: number | null;
+  marketPrice: number | null;
+  sellingPrice: number | null;
+};
+
 export type OrderFinancialSummary = {
   revenue: number;
   costOfGoodsSold: number;
   grossProfit: number;
   verified: boolean;
+  unresolvedLines: UnresolvedCostLine[];
 };
 
 function finiteNumber(value: unknown): number | null {
@@ -296,13 +310,52 @@ export function summarizeOrderFinancials(
       : []),
   ];
 
-  // The recorded payable total is authoritative for historical revenue. Fees are
-  // removed because the dashboard reports merchandise revenue only.
+  // Merchandise revenue is summed from the (frozen) per-line snapshots when the
+  // order carries them, NOT from the stored order.totalPrice. The payable total
+  // can drift out of sync with the actual line items when products are added or
+  // edited after checkout (it is not recomputed on every mutation), so deriving
+  // revenue from it under- or over-counts and disagrees with the order-detail
+  // line list. Line prices are frozen at order time (cartProduct snapshot), so
+  // summing the lines stays "historical" while being immune to totalPrice drift.
+  //
+  // netLineRevenue is already net of the allocated order discount; a line missing
+  // that snapshot falls back to grossLineRevenue, then to a live price off the
+  // frozen cart line. Legacy orders whose lines carry no priceable data at all
+  // (line sum resolves to 0) fall back to the recorded payable total minus fees,
+  // which was the original definition. Fees are never line items, so revenue
+  // excludes delivery/service either way.
+  let lineRevenue = 0;
+  for (const source of lines) {
+    const line = plainLine(source);
+
+    const netLineRevenue = finiteNumber(line.netLineRevenue);
+    if (netLineRevenue !== null) {
+      lineRevenue += netLineRevenue;
+      continue;
+    }
+
+    const grossLineRevenue = finiteNumber(line.grossLineRevenue);
+    if (grossLineRevenue !== null && grossLineRevenue >= 0) {
+      lineRevenue += grossLineRevenue;
+      continue;
+    }
+
+    const product = lineProduct(line);
+    const quantity = finiteNumber(line.quantity);
+    const unitSellingPrice =
+      product && quantity !== null && quantity > 0
+        ? resolveSellingPrice(line, product, order.business)
+        : null;
+    if (unitSellingPrice !== null && quantity !== null) {
+      lineRevenue += Math.max(0, unitSellingPrice * quantity);
+    }
+  }
+
   const payableTotal = finiteNumber(order.totalPrice);
   const additionalTotal = finiteNumber(order.additionalTotalPrice) ?? 0;
   const deliveryFee = finiteNumber(order.deliveryFee) ?? 0;
   const serviceCharge = finiteNumber(order.serviceCharge) ?? 0;
-  const revenue =
+  const payableRevenue =
     payableTotal === null
       ? 0
       : Math.max(
@@ -310,8 +363,13 @@ export function summarizeOrderFinancials(
           payableTotal + additionalTotal - deliveryFee - serviceCharge,
         );
 
+  // Prefer the drift-proof line sum; fall back to the payable total only when the
+  // lines carry no priceable data (e.g. legacy orders predating line snapshots).
+  const revenue = lineRevenue > 0 ? Math.max(0, lineRevenue) : payableRevenue;
+
   let costOfGoodsSold = 0;
   let verified = payableTotal !== null && lines.length > 0;
+  const unresolvedLines: UnresolvedCostLine[] = [];
 
   for (const source of lines) {
     const line = plainLine(source);
@@ -337,6 +395,20 @@ export function summarizeOrderFinancials(
       conversion === null
     ) {
       verified = false;
+      // Record the offending line so the dashboard can list what to fix. The
+      // market price is whatever cost is on the line (usually null/0 — the reason
+      // it failed); the selling price often still resolves, so we surface both.
+      unresolvedLines.push({
+        productName: String(
+          record(product)?.name ?? line.name ?? 'Unknown product',
+        ),
+        unit: line.unit != null ? String(line.unit) : null,
+        quantity,
+        marketPrice: product ? finiteNumber(record(product)?.marketPrice) : null,
+        sellingPrice: product
+          ? resolveSellingPrice(line, product, order.business)
+          : null,
+      });
       continue;
     }
     costOfGoodsSold += quantity * conversion * cost;
@@ -347,5 +419,6 @@ export function summarizeOrderFinancials(
     costOfGoodsSold,
     grossProfit: verified ? revenue - costOfGoodsSold : 0,
     verified,
+    unresolvedLines,
   };
 }
