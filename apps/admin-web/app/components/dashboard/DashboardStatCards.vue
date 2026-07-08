@@ -58,7 +58,7 @@ const purchaseOrderSpendLabel = 'Purchase order spend';
     class="grid grid-cols-2 items-start gap-4 xl:grid-cols-4"
   >
     <DashboardStatCardSkeleton
-      v-for="index in 7"
+      v-for="index in 8"
       :key="index"
       class="w-full min-w-0"
     />
@@ -84,6 +84,21 @@ const purchaseOrderSpendLabel = 'Purchase order spend';
     <DashboardStatCard
       v-else
       label="Revenue"
+      value="—"
+      hint="Requires order view permission"
+      class="w-full min-w-0"
+    />
+
+    <DashboardStatCard
+      v-if="hasFinancialMetrics"
+      label="Total product cost"
+      :value="formatDashboardCurrency(data?.costOfGoods ?? 0)"
+      hint="Verified inventory cost (market price) of paid items"
+      class="w-full min-w-0"
+    />
+    <DashboardStatCard
+      v-else
+      label="Total product cost"
       value="—"
       hint="Requires order view permission"
       class="w-full min-w-0"

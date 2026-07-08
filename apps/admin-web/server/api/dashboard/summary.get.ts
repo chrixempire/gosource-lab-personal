@@ -86,6 +86,20 @@ export default defineEventHandler(async (event) => {
   const summary = asRecord(trends?.summary);
   const financials = asRecord(metricsBody?.financials);
 
+  const unresolvedCostItems = (
+    Array.isArray(financials?.unresolvedCostItems) ? financials.unresolvedCostItems : []
+  )
+    .map((entry) => asRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+    .map((entry) => ({
+      orderRef: String(entry.orderRef ?? ''),
+      productName: String(entry.productName ?? 'Unknown product'),
+      unit: entry.unit == null ? null : String(entry.unit),
+      quantity: Number.isFinite(Number(entry.quantity)) ? Number(entry.quantity) : null,
+      marketPrice: Number.isFinite(Number(entry.marketPrice)) ? Number(entry.marketPrice) : null,
+      sellingPrice: Number.isFinite(Number(entry.sellingPrice)) ? Number(entry.sellingPrice) : null,
+    }));
+
   return {
     orders: Number(summary?.orderCount) || 0,
     totalOrdersAmount: Number(summary?.totalValue) || 0,
@@ -94,10 +108,12 @@ export default defineEventHandler(async (event) => {
     purchaseOrderSpend:
       purchaseOrderSpendResult.status === 'fulfilled' ? purchaseOrderSpendResult.value : 0,
     revenue: Number(financials?.revenue) || 0,
+    costOfGoods: Number(financials?.costOfGoodsSold) || 0,
     grossProfit: Number(financials?.grossProfit) || 0,
     grossMarginPercent: Number(financials?.grossMarginPercent) || 0,
     historicalProfitCoveragePercent:
       Number(financials?.historicalCoveragePercent) || 0,
+    unresolvedCostItems,
     qualifyingRevenueOrderCount: Number(financials?.qualifyingOrderCount) || 0,
     unverifiedProfitOrderCount:
       Number(financials?.unverifiedProfitOrderCount) || 0,

@@ -3,6 +3,7 @@ import { useAdminHeader } from '~/composables/useAdminHeader';
 import { useDashboardDateFilter } from '~/composables/useDashboardDateFilter';
 import DashboardDateFilter from '~/components/dashboard/DashboardDateFilter.vue';
 import DashboardStatCards from '~/components/dashboard/DashboardStatCards.vue';
+import DashboardUnresolvedCostItems from '~/components/dashboard/DashboardUnresolvedCostItems.vue';
 import DashboardChartsRow from '~/components/dashboard/DashboardChartsRow.vue';
 import DashboardTablesRow from '~/components/dashboard/DashboardTablesRow.vue';
 
@@ -19,6 +20,8 @@ updateHeader({
     <DashboardDateFilter v-model="filter" />
 
     <DashboardStatCards :filter="filter" />
+
+    <DashboardUnresolvedCostItems :filter="filter" />
 
     <DashboardChartsRow :filter="filter" />
 

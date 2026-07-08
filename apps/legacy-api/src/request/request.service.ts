@@ -32,7 +32,7 @@ import {
 } from './enum/request.enum';
 import { Order, OrderDocument } from '../order/entities/order.entity';
 import { ORDER_STATUS } from '../order/interface/order.interface';
-import { CouponType } from '../admin/coupon/coupon.enum';
+import { CouponType, CouponCategory } from '../admin/coupon/coupon.enum';
 import { QueryParamsDto } from '../analytics/dto/query-param.dto';
 import { NewEmailInterface } from '../notification/email/email.interface';
 import { EmailService } from '../notification/email/email.service';
@@ -1593,15 +1593,31 @@ export class RequestService {
    * Total = subtotal + delivery + service charge − discount.
    */
   private resolveBillableDiscount(request: any): number {
+    // Free-delivery coupons carry NO monetary discount — the benefit is the
+    // zeroed delivery fee. Detect via type OR category so it still resolves to 0
+    // when only one is set. (When couponDetails is an unpopulated ObjectId ref
+    // neither is available; the boolean guard below is the backstop for that.)
     const couponType = request.couponDetails?.type;
+    const couponCategory = request.couponDetails?.category;
     if (
       couponType === CouponType.FREE_DELIVERY ||
-      couponType === 'free_delivery'
+      couponType === 'free_delivery' ||
+      couponCategory === CouponCategory.FREE_DELIVERY ||
+      couponCategory === 'free_delivery'
     ) {
       return 0;
     }
 
-    return Number(request.discount ?? 0);
+    // Guard against a coupon *flag* leaking in as a monetary discount. `discount`
+    // is a Number field and Mongoose casts boolean `true` → 1, so a stray boolean
+    // would surface as a phantom ₦1 on the order. Only a finite, positive number
+    // is a real discount; a boolean / NaN / negative is treated as no discount.
+    const rawDiscount = request.discount;
+    if (typeof rawDiscount === 'boolean') {
+      return 0;
+    }
+    const discount = Number(rawDiscount);
+    return Number.isFinite(discount) && discount > 0 ? discount : 0;
   }
 
   private resolveRequestMoneyTotals(request: any, businessId: string) {

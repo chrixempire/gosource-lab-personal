@@ -103,6 +103,7 @@ describe('order financials', () => {
       costOfGoodsSold: 64000,
       grossProfit: 4000,
       verified: true,
+      unresolvedLines: [],
     });
   });
 
@@ -130,6 +131,7 @@ describe('order financials', () => {
       costOfGoodsSold: 30000,
       grossProfit: 20000,
       verified: true,
+      unresolvedLines: [],
     });
   });
 
@@ -180,5 +182,58 @@ describe('order financials', () => {
     expect(result.costOfGoodsSold).toBe(9000);
     expect(result.grossProfit).toBe(6000);
     expect(result.verified).toBe(true);
+  });
+
+  it('sums revenue from the frozen line snapshots, ignoring a stale totalPrice', () => {
+    // Real prod case: an item was added to the order after checkout, so the
+    // stored totalPrice (₦70,800) lags the actual line items (net ₦77,799).
+    // Revenue must follow the frozen per-line snapshots, not the drifted total.
+    const result = summarizeOrderFinancials({
+      totalPrice: 70800, // stale — not recomputed when the last line was added
+      deliveryFee: 0,
+      serviceCharge: 0,
+      additionalTotalPrice: 0,
+      products: [
+        { financialSnapshotVersion: 3, netLineRevenue: 70799, totalCost: 60000 },
+        { financialSnapshotVersion: 3, netLineRevenue: 7000, totalCost: 6750 },
+      ],
+    });
+
+    expect(result.revenue).toBe(77799);
+    expect(result.costOfGoodsSold).toBe(66750);
+    expect(result.grossProfit).toBe(11049);
+    expect(result.verified).toBe(true);
+  });
+
+  it('lists the offending line(s) that block an order from the profit calc', () => {
+    // Lemon Grass has no resolvable cost (no market price / no unit conversion),
+    // so the whole order is unverified. The dashboard needs to name that line.
+    const result = summarizeOrderFinancials({
+      totalPrice: 20000,
+      products: [
+        {
+          quantity: 3,
+          unit: 'bunch',
+          cartProduct: {
+            name: 'Lemon Grass',
+            version: 'v2',
+            unit: JSON.stringify({ bunch: 1500 }), // sells for ₦1,500 …
+            purchaseUnit: 'kilogram', // … but no marketPrice / no bunch conversion
+            newUnit: JSON.stringify([{ unit: 'kilogram', quantity: 1 }]),
+          },
+        },
+      ],
+    });
+
+    expect(result.verified).toBe(false);
+    expect(result.unresolvedLines).toEqual([
+      {
+        productName: 'Lemon Grass',
+        unit: 'bunch',
+        quantity: 3,
+        marketPrice: null, // the reason it's excluded
+        sellingPrice: 1500, // still known, so we can show it
+      },
+    ]);
   });
 });
