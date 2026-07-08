@@ -1939,15 +1939,14 @@ export class OrderService {
     const bucketFormat = getTrendDateBucketFormat(filterType);
     const dashboardTimezone = getDashboardTimezone();
 
+    // Revenue/profit are attributed by the order's CREATION date (matching the
+    // Orders list and the trends chart), not the payment date. So an order
+    // created earlier but paid today counts toward its creation day, never
+    // today. Still paid-only (unpaid/partial excluded) via the cursor's
+    // paymentStatus filter below.
     const createdAtRange = (dateFilter as any).createdAt;
     const financialDateFilter = createdAtRange
-      ? {
-          $or: [
-            { paidAt: createdAtRange },
-            { paidAt: { $exists: false }, createdAt: createdAtRange },
-            { paidAt: null, createdAt: createdAtRange },
-          ],
-        }
+      ? { createdAt: createdAtRange }
       : {};
 
     const [trendRows, statusRows] = await Promise.all([
