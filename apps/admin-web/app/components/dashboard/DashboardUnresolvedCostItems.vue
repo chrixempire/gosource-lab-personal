@@ -36,6 +36,10 @@ function totalSellingPrice(item: { sellingPrice: number | null; quantity: number
   }
   return item.sellingPrice * item.quantity;
 }
+
+function reasonLabel(reason: string) {
+  return reason === 'suspected_price' ? 'Suspected price' : 'No market price';
+}
 </script>
 
 <template>
@@ -63,10 +67,10 @@ function totalSellingPrice(item: { sellingPrice: number | null; quantity: number
         </span>
         <span class="min-w-0">
           <span class="block text-sm font-semibold text-[#92400E]">
-            {{ count }} item{{ count === 1 ? '' : 's' }} with no market price — profit not calculated
+            {{ count }} item{{ count === 1 ? '' : 's' }} need pricing attention
           </span>
           <span class="block truncate text-xs text-[#B45309]">
-            These orders have an item with no recorded cost, so they're left out of gross profit.
+            No-market-price items are left out of profit; suspected prices are still counted — review both.
           </span>
         </span>
       </span>
@@ -95,7 +99,7 @@ function totalSellingPrice(item: { sellingPrice: number | null; quantity: number
       <div class="overflow-hidden">
         <div class="border-t border-[#F6D365]/60 bg-white/80">
           <div class="w-full overflow-x-auto">
-            <table class="w-full min-w-[46rem] border-collapse text-sm">
+            <table class="w-full min-w-[52rem] border-collapse text-sm">
               <thead>
                 <tr class="border-b border-[#F6D365]/50 text-left text-xs font-medium uppercase tracking-wide text-[#B45309]/70">
                   <th class="px-4 py-2.5 font-medium">S/N</th>
@@ -105,6 +109,7 @@ function totalSellingPrice(item: { sellingPrice: number | null; quantity: number
                   <th class="px-4 py-2.5 font-medium">Quantity</th>
                   <th class="px-4 py-2.5 font-medium">Market price</th>
                   <th class="px-4 py-2.5 font-medium">Total selling price</th>
+                  <th class="px-4 py-2.5 font-medium">Issue</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,6 +138,14 @@ function totalSellingPrice(item: { sellingPrice: number | null; quantity: number
                       class="text-grey-800"
                     >{{ formatDashboardCurrency(totalSellingPrice(item)!) }}</span>
                     <span v-else class="text-grey-400">—</span>
+                  </td>
+                  <td class="px-4 py-2.5">
+                    <span
+                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      :class="item.reason === 'suspected_price'
+                        ? 'bg-[#FFF1C2] text-[#B45309]'
+                        : 'bg-rose-50 text-rose-600'"
+                    >{{ reasonLabel(item.reason) }}</span>
                   </td>
                 </tr>
               </tbody>

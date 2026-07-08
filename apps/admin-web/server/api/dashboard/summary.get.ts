@@ -98,6 +98,7 @@ export default defineEventHandler(async (event) => {
       quantity: Number.isFinite(Number(entry.quantity)) ? Number(entry.quantity) : null,
       marketPrice: Number.isFinite(Number(entry.marketPrice)) ? Number(entry.marketPrice) : null,
       sellingPrice: Number.isFinite(Number(entry.sellingPrice)) ? Number(entry.sellingPrice) : null,
+      reason: entry.reason === 'suspected_price' ? 'suspected_price' : 'no_market_price',
     }));
 
   return {

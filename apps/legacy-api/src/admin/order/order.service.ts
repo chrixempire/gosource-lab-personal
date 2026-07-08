@@ -2032,19 +2032,27 @@ export class OrderService {
       quantity: number | null;
       marketPrice: number | null;
       sellingPrice: number | null;
+      reason: string;
     }> = [];
 
     for await (const order of financialOrderCursor) {
       const calculated = summarizeOrderFinancials(order as any);
+      // Profit is attributed line by line: every order contributes the margin of
+      // its costed lines. A no-market-price line is left out (order counts as
+      // unverified); a suspected-price line is still counted but flagged.
       financialSummary.revenue += calculated.revenue;
       financialSummary.qualifyingOrderCount += 1;
+      financialSummary.verifiedRevenue += calculated.costedRevenue;
+      financialSummary.costOfGoodsSold += calculated.costOfGoodsSold;
+      financialSummary.grossProfit += calculated.grossProfit;
       if (calculated.verified) {
-        financialSummary.verifiedRevenue += calculated.revenue;
-        financialSummary.costOfGoodsSold += calculated.costOfGoodsSold;
-        financialSummary.grossProfit += calculated.grossProfit;
         financialSummary.verifiedProfitOrderCount += 1;
       } else {
         financialSummary.unverifiedProfitOrderCount += 1;
+      }
+      // Surface flagged lines (no-market-price AND suspected-price) regardless of
+      // whether the order is otherwise verified.
+      if (calculated.unresolvedLines.length) {
         const orderRef = String(
           (order as any).reference ?? (order as any)._id ?? '',
         );
