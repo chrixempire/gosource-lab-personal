@@ -26,6 +26,8 @@ export type DashboardStatsResponse = {
   };
 };
 
+export type DashboardUnresolvedCostReason = 'no_market_price' | 'suspected_price';
+
 export type DashboardUnresolvedCostItem = {
   orderRef: string;
   productName: string;
@@ -33,6 +35,7 @@ export type DashboardUnresolvedCostItem = {
   quantity: number | null;
   marketPrice: number | null;
   sellingPrice: number | null;
+  reason: DashboardUnresolvedCostReason;
 };
 
 export type DashboardSummaryResponse = {
