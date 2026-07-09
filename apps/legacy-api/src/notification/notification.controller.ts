@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -72,6 +73,21 @@ export class NotificationController {
   async markRead(@Req() req: any, @Param('id') id: string) {
     await this.notificationService.markRead(String(req.user.id), id);
     return { status: true, message: 'Notification marked as read' };
+  }
+
+  // NB: the static `read` route must precede `:id` so ':id' doesn't capture it.
+  @Delete('read')
+  @ApiOperation({ summary: 'Delete all of the user’s read notifications' })
+  async removeAllRead(@Req() req: any) {
+    await this.notificationService.removeAllRead(String(req.user.id));
+    return { status: true, message: 'Read notifications cleared' };
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a single notification' })
+  async remove(@Req() req: any, @Param('id') id: string) {
+    await this.notificationService.remove(String(req.user.id), id);
+    return { status: true, message: 'Notification deleted' };
   }
 
   /**

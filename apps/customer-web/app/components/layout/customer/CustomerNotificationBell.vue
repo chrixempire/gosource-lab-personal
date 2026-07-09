@@ -139,6 +139,16 @@ async function onRowClick(n: NotificationItem) {
           </li>
         </ul>
       </div>
+
+      <div class="border-t border-grey-50 px-4 py-2.5 text-center">
+        <NuxtLink
+          to="/notifications"
+          class="text-xs font-semibold text-primary-500 hover:underline"
+          @click="open = false"
+        >
+          View all notifications
+        </NuxtLink>
+      </div>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>

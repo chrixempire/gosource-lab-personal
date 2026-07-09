@@ -49,6 +49,8 @@ export const PROXY_ROUTE_RULES: ProxyRouteRule[] = [
   { methods: ["GET"], pattern: /^notification\/unread-count$/ },
   { methods: ["PATCH"], pattern: /^notification\/read-all$/ },
   { methods: ["PATCH"], pattern: /^notification\/[^/]+\/read$/ },
+  { methods: ["DELETE"], pattern: /^notification\/read$/ },
+  { methods: ["DELETE"], pattern: /^notification\/[^/]+$/ },
   { methods: ["POST"], pattern: /^admin\/coupon\/apply\/[^/]+\/request$/ },
   { methods: ["DELETE"], pattern: /^admin\/coupon\/apply\/[^/]+\/request$/ },
   { methods: ["GET"], pattern: /^category$/ },

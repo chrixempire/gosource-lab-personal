@@ -123,4 +123,16 @@ export class NotificationService {
       )
       .exec();
   }
+
+  /** Delete one notification — scoped to the recipient so users can't touch others'. */
+  async remove(recipient: string, id: string): Promise<void> {
+    await this.notificationModel.deleteOne({ _id: id, recipient }).exec();
+  }
+
+  /** Delete all of the recipient's read notifications (leaves unread intact). */
+  async removeAllRead(recipient: string): Promise<void> {
+    await this.notificationModel
+      .deleteMany({ recipient, read: true })
+      .exec();
+  }
 }
