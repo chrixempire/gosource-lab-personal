@@ -43,6 +43,7 @@ import { getDateFilter } from '../../utils/helpers';
 import { Order } from '../../order/entities/order.entity';
 import {
   ORDER_FINANCIAL_SNAPSHOT_VERSION,
+  resolvePurchaseUnitConversion,
   snapshotOrderFinancialLines,
 } from '../../order/order-financials';
 import {
@@ -565,15 +566,36 @@ export class ProductService implements OnApplicationBootstrap {
 
       await this.invalidateProductListCaches();
 
-      // Heal past PAID orders that were snapshotted with no cost (₦0 profit)
-      // whenever the product now carries a market price. Keyed on the price
-      // being present — not just changed — so re-saving an already-priced
-      // product also back-fills historical orders. Runs in the background so
-      // the product save stays fast; recompute is a no-op when nothing needs it.
-      if (Number((updatedProduct as { marketPrice?: unknown }).marketPrice) > 0) {
-        void this.recomputeOrderCogsForProduct(productId).catch((error) => {
+      // Heal historical PAID orders in the background so the product save stays
+      // fast. Two distinct heals, run in sequence (never concurrently — each
+      // rewrites the full line arrays, so parallel writes would clobber):
+      //
+      //  1. Cost heal — back-fills lines snapshotted with NO cost (₦0 profit)
+      //     once the product carries a market price. Keyed on the price being
+      //     present (not just changed) so re-saving an already-priced product
+      //     also back-fills. Leaves already-costed snapshots untouched.
+      //  2. Conversion heal — ONLY when the unit conversion basis (stock unit or
+      //     a unit's Q/U) changed. A unit correction is a data fix, so it DOES
+      //     rewrite already-valid snapshots — but only their unit math: each line
+      //     keeps its frozen baseUnitCost (the price at sale time). A price-only
+      //     change never reaches here, so history keeps the price it sold at.
+      const shouldHealCost =
+        Number((updatedProduct as { marketPrice?: unknown }).marketPrice) > 0;
+      const shouldHealConversion = this.conversionBasisChanged(
+        product,
+        updatedProduct,
+      );
+      if (shouldHealCost || shouldHealConversion) {
+        void (async () => {
+          if (shouldHealCost) {
+            await this.recomputeOrderCogsForProduct(productId);
+          }
+          if (shouldHealConversion) {
+            await this.recomputeConversionForProduct(productId);
+          }
+        })().catch((error) => {
           console.error(
-            `Failed to recompute order COGS for product ${productId}:`,
+            `Failed to heal order COGS for product ${productId}:`,
             error,
           );
         });
@@ -682,6 +704,185 @@ export class ProductService implements OnApplicationBootstrap {
     for (const order of orders) {
       const { changed, products, additionalProducts } =
         this.applyOrderCogsRecompute(order);
+      if (changed) {
+        await this.orderModel.updateOne(
+          { _id: order._id },
+          { $set: { products, additionalProducts } },
+        );
+      }
+    }
+  }
+
+  private normalizePurchaseUnit(value: unknown): string {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase();
+  }
+
+  /** Map of normalized selling unit -> its Q/U (base units per selling unit). */
+  private quantityPerUnitMap(rawNewUnit: unknown): Record<string, number> {
+    let data: unknown = rawNewUnit;
+    if (typeof rawNewUnit === 'string') {
+      try {
+        data = JSON.parse(rawNewUnit);
+      } catch {
+        return {};
+      }
+    }
+    const map: Record<string, number> = {};
+    if (Array.isArray(data)) {
+      for (const entry of data) {
+        if (entry && (entry as any).unit != null) {
+          const quantity = Number((entry as any).quantity);
+          map[this.normalizePurchaseUnit((entry as any).unit)] =
+            Number.isFinite(quantity) ? quantity : 1;
+        }
+      }
+    }
+    return map;
+  }
+
+  /**
+   * True when the unit conversion basis changed between two product states — the
+   * stock (purchase) unit, or any selling unit's Q/U. Deliberately ignores
+   * prices: a market-price or selling-price change must NOT re-cost history.
+   */
+  private conversionBasisChanged(oldProduct: any, newProduct: any): boolean {
+    if (
+      this.normalizePurchaseUnit(oldProduct?.purchaseUnit) !==
+      this.normalizePurchaseUnit(newProduct?.purchaseUnit)
+    ) {
+      return true;
+    }
+    const oldMap = this.quantityPerUnitMap(oldProduct?.newUnit);
+    const newMap = this.quantityPerUnitMap(newProduct?.newUnit);
+    const keys = new Set([...Object.keys(oldMap), ...Object.keys(newMap)]);
+    for (const key of keys) {
+      if ((oldMap[key] ?? null) !== (newMap[key] ?? null)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Recompute ONLY the unit conversion (and the cost/profit that depend on it)
+   * for a product's historical PAID order lines after its unit was corrected.
+   * Each line keeps its frozen `baseUnitCost` — the price at sale time — so the
+   * quantity math is fixed without rewriting historical prices. Unlike the cost
+   * heal, this overwrites already-valid snapshots for the target product.
+   */
+  private applyConversionRecompute(
+    order: any,
+    productId: string,
+  ): {
+    changed: boolean;
+    products: any[] | undefined;
+    additionalProducts: any[] | undefined;
+  } {
+    let changed = false;
+
+    const lineProductId = (line: any): string => {
+      const product = line?.product;
+      if (!product) return '';
+      if (typeof product === 'object') return String(product._id ?? product.id ?? '');
+      return String(product);
+    };
+
+    const recompute = (lines: any[] | undefined): any[] | undefined => {
+      if (!Array.isArray(lines) || lines.length === 0) {
+        return lines;
+      }
+      return lines.map((source) => {
+        const line =
+          typeof source?.toObject === 'function' ? source.toObject() : { ...source };
+        const populatedProduct =
+          line.product && typeof line.product === 'object' ? line.product : null;
+
+        const isTarget = lineProductId(line) === String(productId);
+        const hasValidSnapshot =
+          Number(line.financialSnapshotVersion) >= ORDER_FINANCIAL_SNAPSHOT_VERSION;
+        const baseUnitCost = Number(line.baseUnitCost);
+
+        if (
+          isTarget &&
+          hasValidSnapshot &&
+          Number.isFinite(baseUnitCost) &&
+          baseUnitCost > 0 &&
+          populatedProduct
+        ) {
+          const newConversion = resolvePurchaseUnitConversion(
+            populatedProduct,
+            line.unit,
+          );
+          const prevConversion = Number(line.baseQuantityPerSellingUnit);
+          if (
+            newConversion !== null &&
+            newConversion > 0 &&
+            (!Number.isFinite(prevConversion) || prevConversion !== newConversion)
+          ) {
+            const quantity = Math.max(0, Number(line.quantity) || 0);
+            const totalBaseQuantity = quantity * newConversion;
+            const totalCost = baseUnitCost * totalBaseQuantity;
+            const netLineRevenue = Number.isFinite(Number(line.netLineRevenue))
+              ? Number(line.netLineRevenue)
+              : Number(line.grossLineRevenue) || 0;
+            line.baseQuantityPerSellingUnit = newConversion;
+            line.totalBaseQuantity = totalBaseQuantity;
+            line.totalCost = totalCost;
+            line.grossProfit = netLineRevenue - totalCost;
+            changed = true;
+          }
+        }
+
+        // Persist the product as an id ref, never the populated document.
+        if (populatedProduct && populatedProduct._id) {
+          line.product = populatedProduct._id;
+        }
+        return line;
+      });
+    };
+
+    // Run both BEFORE reading `changed` (object-literal props evaluate in order).
+    const products = recompute(order?.products);
+    const additionalProducts = recompute(order?.additionalProducts);
+    return { changed, products, additionalProducts };
+  }
+
+  /**
+   * Force a conversion-only COGS refresh across a product's historical PAID
+   * orders after its unit was corrected. See {@link applyConversionRecompute}.
+   */
+  private async recomputeConversionForProduct(productId: string): Promise<void> {
+    let productObjectId: Types.ObjectId;
+    try {
+      productObjectId = new Types.ObjectId(productId);
+    } catch {
+      return;
+    }
+
+    const orders = await this.orderModel
+      .find({
+        paymentStatus: ORDER_PAYMENT_STATUS.PAID,
+        status: {
+          $nin: [
+            ORDER_STATUS.CANCELLED,
+            ORDER_STATUS.RETURNED,
+            ORDER_STATUS.REFUNDED,
+          ],
+        },
+        $or: [
+          { 'products.product': productObjectId },
+          { 'additionalProducts.product': productObjectId },
+        ],
+      })
+      .populate('products.product')
+      .populate('additionalProducts.product')
+      .exec();
+
+    for (const order of orders) {
+      const { changed, products, additionalProducts } =
+        this.applyConversionRecompute(order, productId);
       if (changed) {
         await this.orderModel.updateOne(
           { _id: order._id },
