@@ -724,9 +724,25 @@ export class OrderService {
         nextPaymentCount = (order.paymentCount || 0) + 1;
       }
 
-      // Add additional total price to main total price
-      const updatedTotalPrice =
-        (order.totalPrice || 0) + (order.additionalTotalPrice || 0);
+      // Recompute the payable total from the finalized (merged) product lines
+      // instead of carrying forward the stored totalPrice + additionalTotalPrice.
+      // The stored total can drift when items are added/edited after checkout;
+      // recomputing here from the frozen line prices (cartProduct) keeps the
+      // persisted total in sync with the actual line items. Fees are preserved
+      // as-is and the order-level discount is subtracted once. This equals the
+      // old `totalPrice + additionalTotalPrice` for healthy orders and self-heals
+      // any that had drifted.
+      const mergedSubtotal = calculateTotalPrice(
+        combinedProducts,
+        order.business,
+      );
+      const updatedTotalPrice = Math.max(
+        0,
+        mergedSubtotal +
+          (order.deliveryFee || 0) +
+          (order.serviceCharge || 0) -
+          (order.discount || 0),
+      );
 
       // Update the order with combined products and clear additional fields
       updateData = {
@@ -1987,15 +2003,14 @@ export class OrderService {
     const bucketFormat = getTrendDateBucketFormat(filterType);
     const dashboardTimezone = getDashboardTimezone();
 
+    // Revenue/profit are attributed by the order's CREATION date (matching the
+    // Orders list and the trends chart), not the payment date. So an order
+    // created earlier but paid today counts toward its creation day, never
+    // today. Still paid-only (unpaid/partial excluded) via the cursor's
+    // paymentStatus filter below.
     const createdAtRange = (dateFilter as any).createdAt;
     const financialDateFilter = createdAtRange
-      ? {
-          $or: [
-            { paidAt: createdAtRange },
-            { paidAt: { $exists: false }, createdAt: createdAtRange },
-            { paidAt: null, createdAt: createdAtRange },
-          ],
-        }
+      ? { createdAt: createdAtRange }
       : {};
 
     const [trendRows, statusRows] = await Promise.all([
@@ -2053,22 +2068,45 @@ export class OrderService {
         },
       })
       .select(
-        'products additionalProducts totalPrice additionalTotalPrice deliveryFee serviceCharge discount',
+        'reference products additionalProducts totalPrice additionalTotalPrice deliveryFee serviceCharge discount',
       )
       .lean()
       .cursor();
 
+    const unresolvedCostItems: Array<{
+      orderRef: string;
+      productName: string;
+      unit: string | null;
+      quantity: number | null;
+      marketPrice: number | null;
+      sellingPrice: number | null;
+      reason: string;
+    }> = [];
+
     for await (const order of financialOrderCursor) {
       const calculated = summarizeOrderFinancials(order as any);
+      // Profit is attributed line by line: every order contributes the margin of
+      // its costed lines. A no-market-price line is left out (order counts as
+      // unverified); a suspected-price line is still counted but flagged.
       financialSummary.revenue += calculated.revenue;
       financialSummary.qualifyingOrderCount += 1;
+      financialSummary.verifiedRevenue += calculated.costedRevenue;
+      financialSummary.costOfGoodsSold += calculated.costOfGoodsSold;
+      financialSummary.grossProfit += calculated.grossProfit;
       if (calculated.verified) {
-        financialSummary.verifiedRevenue += calculated.revenue;
-        financialSummary.costOfGoodsSold += calculated.costOfGoodsSold;
-        financialSummary.grossProfit += calculated.grossProfit;
         financialSummary.verifiedProfitOrderCount += 1;
       } else {
         financialSummary.unverifiedProfitOrderCount += 1;
+      }
+      // Surface flagged lines (no-market-price AND suspected-price) regardless of
+      // whether the order is otherwise verified.
+      if (calculated.unresolvedLines.length) {
+        const orderRef = String(
+          (order as any).reference ?? (order as any)._id ?? '',
+        );
+        for (const line of calculated.unresolvedLines) {
+          unresolvedCostItems.push({ orderRef, ...line });
+        }
       }
     }
 
@@ -2135,6 +2173,7 @@ export class OrderService {
         ...financialSummary,
         grossMarginPercent,
         historicalCoveragePercent,
+        unresolvedCostItems,
       },
       dateRange: {
         filterType: filterType ?? DateFilterType.ALL_TIME,
