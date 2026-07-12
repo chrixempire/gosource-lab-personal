@@ -7,7 +7,28 @@ const produce = [
   { src: '/images/hero-food-01.png', cls: 'right-[4%] top-[52%] w-20 sm:w-24 lg:w-28', rot: '-12deg', dur: '7.5s', delay: '1s', hideSm: true },
   { src: '/images/hero-food-07.png', cls: 'right-[24%] bottom-[16%] w-14 sm:w-16 lg:w-20', rot: '-6deg', dur: '6s', delay: '0.9s', hideSm: false },
   { src: '/images/hero-food-06.png', cls: 'right-[34%] bottom-[6%] w-12 sm:w-14 lg:w-16', rot: '10deg', dur: '6.8s', delay: '0.2s', hideSm: false },
+  { src: '/images/hero-food-04.png', cls: 'right-[44%] top-[24%] w-14 sm:w-16 lg:w-20', rot: '5deg', dur: '7.2s', delay: '0.45s', hideSm: true },
+  { src: '/images/hero-food-03.png', cls: 'right-[12%] bottom-[36%] w-14 sm:w-16 lg:w-20', rot: '-11deg', dur: '6.4s', delay: '0.7s', hideSm: false },
 ];
+
+// Live category images (transparent PNGs) drift in the hero when available; falls back
+// to the static illustrations otherwise. Keeps each slot's position/size/animation.
+interface HeroCategory {
+  image: string;
+}
+
+const { data: liveCategories } = useFetch<HeroCategory[]>('/api/catalog', {
+  lazy: true,
+  default: () => [] as HeroCategory[],
+});
+
+const floats = computed(() => {
+  const images = (liveCategories.value ?? []).map((category) => category.image).filter(Boolean);
+  if (images.length < produce.length) {
+    return produce;
+  }
+  return produce.map((slot, index) => ({ ...slot, src: images[index] }));
+});
 </script>
 
 <template>
@@ -15,7 +36,7 @@ const produce = [
     <div class="site-container">
       <div
         class="relative isolate overflow-hidden rounded-3xl bg-supporting-900 px-6 py-14 sm:px-10 sm:py-16 lg:rounded-[2.5rem] lg:px-16 lg:py-20"
-        style="background: radial-gradient(140% 130% at 84% -6%, #19b820 0%, #128317 24%, #0d5f11 48%, #041c05 100%);"
+        style="background: radial-gradient(135% 130% at 80% 0%, #26c62e 0%, #19b820 32%, #12921a 60%, #0a640f 100%);"
       >
         <!-- Animated brand-green aurora glows -->
         <div class="animate-aurora pointer-events-none absolute -right-16 -top-24 z-0 h-80 w-80 rounded-full bg-primary-500/40 blur-[90px]" aria-hidden="true" />
@@ -46,12 +67,12 @@ const produce = [
 
         <!-- floating produce -->
         <img
-          v-for="(p, i) in produce"
+          v-for="(p, i) in floats"
           :key="i"
           :src="p.src"
           alt=""
           aria-hidden="true"
-          class="animate-float pointer-events-none absolute drop-shadow-xl"
+          class="animate-float pointer-events-none absolute max-h-24 object-contain drop-shadow-xl sm:max-h-28"
           :class="[p.cls, p.hideSm ? 'hidden sm:block' : '']"
           :style="{ '--rot': p.rot, '--float-dur': p.dur, '--float-delay': p.delay }"
         />
