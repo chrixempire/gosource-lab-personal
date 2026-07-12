@@ -21,7 +21,6 @@ import {
 import { Menu } from 'lucide-vue-next';
 import CustomerPageTitleInfo from '~/components/layout/customer/CustomerPageTitleInfo.vue';
 import CustomerSidebar from '~/components/layout/customer/CustomerSidebar.vue';
-import CustomerThemeToggle from '~/components/layout/customer/CustomerThemeToggle.vue';
 import CustomerFeedbackWidget from '~/components/feedback/CustomerFeedbackWidget.vue';
 import {
   CUSTOMER_FLOATING_CONTENT_Z,
@@ -312,7 +311,7 @@ async function confirmLogout() {
               <MarketSearch v-if="showMarketHeaderSearch" class="shrink-0 lg:min-w-0 lg:flex-1" />
 
               <div class="ml-auto flex shrink-0 items-center gap-2">
-                <CustomerThemeToggle />
+                <!-- Theme toggle now lives under Settings in the sidebar. -->
                 <!-- Notification bell is intentionally disabled until the in-app notification flow is implemented. -->
                 <MarketHeaderCartButton v-if="showHeaderCart" />
               </div>
