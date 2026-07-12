@@ -25,7 +25,7 @@ async function openCart() {
 <template>
   <button
     type="button"
-    class="flex h-10 max-w-[min(52vw,14rem)] shrink-0 cursor-pointer items-center gap-2 rounded-full bg-button-primary py-1.5 pl-2.5 pr-3 text-white shadow-md transition hover:bg-button-primary-clicked sm:max-w-none sm:pr-3.5"
+    class="flex h-10 max-w-[min(52vw,14rem)] shrink-0 cursor-pointer items-center gap-2 rounded-full bg-button-primary py-1.5 pl-2.5 pr-3 text-white transition hover:bg-button-primary-clicked sm:max-w-none sm:pr-3.5"
     :aria-label="isAddingToRequest ? 'View request items' : 'Open cart'"
     @click="openCart"
   >

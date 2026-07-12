@@ -373,7 +373,7 @@ const stripInputClass = computed(() => {
         : '!text-[14px]';
   const height = isExplore.value ? '!h-7' : isModal.value ? '!h-11' : isCart.value ? '!h-6' : '!h-8';
 
-  return `${base} ${height} ${size} !rounded-md !border-2 !border-white !bg-white !text-[#04550B] focus:!border-white focus:!ring-2 focus:!ring-white/80 disabled:!bg-white`;
+  return `${base} ${height} ${size} !rounded-md !border-2 !border-white !bg-white !text-[#0f7d14] focus:!border-white focus:!ring-2 focus:!ring-white/80 disabled:!bg-white`;
 });
 
 const iconSizeClass = computed(() =>
