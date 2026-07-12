@@ -18,6 +18,10 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
+    // Server-only: normalized live catalog feed used by the "Customer favorites" section.
+    // Points at the customer app's public proxy, which already normalizes prices/images.
+    catalogApiUrl:
+      process.env.NUXT_CATALOG_API_URL ?? 'https://dashboard.gosource.app/api/proxy/category',
     public: {
       apiUrl: process.env.NUXT_PUBLIC_API_URL ?? 'https://gosource-api-v2-g7clw.ondigitalocean.app/v2',
     },

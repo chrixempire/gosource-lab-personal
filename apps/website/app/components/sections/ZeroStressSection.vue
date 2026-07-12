@@ -22,7 +22,7 @@ import { CUSTOMER_MARKET_URL } from '~/lib/customer-app';
 
       <div v-reveal="120" class="mt-14 overflow-hidden rounded-3xl shadow-large">
         <img
-          src="/images/woman-market.png"
+          src="/images/zero-stress.png"
           alt="A vendor at a vibrant local market in Lagos"
           class="aspect-[16/9] w-full object-cover"
         />

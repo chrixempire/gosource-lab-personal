@@ -182,10 +182,10 @@ async function onAdd(e: MouseEvent) {
       </div>
     </div>
 
-    <!-- Divider: edge-to-edge (breaks the card's p-2.5), 4px gap above (details) and below (button / qty strip). -->
-    <div class="-mx-2.5 mt-1 h-px shrink-0 bg-grey-50" aria-hidden="true" />
+    <!-- Divider: edge-to-edge (breaks the card's p-2.5), 6px gap above (details) and below (button / qty strip). -->
+    <div class="-mx-2.5 mt-1.5 h-px shrink-0 bg-grey-50" aria-hidden="true" />
 
-    <div class="w-full shrink-0 px-0 pb-0 pt-1" @click.stop>
+    <div class="w-full shrink-0 px-0 pb-0 pt-1.5" @click.stop>
       <button
         v-if="!inStock"
         type="button"

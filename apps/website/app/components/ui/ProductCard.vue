@@ -62,10 +62,10 @@ function remove() {
 
     <!-- Body -->
     <div class="flex flex-1 flex-col gap-1.5 px-3 pb-2.5 pt-2.5">
-      <h3 class="line-clamp-2 min-h-[2.5rem] text-[0.875rem] font-medium leading-snug text-grey-900">
+      <h3 class="line-clamp-2 text-[0.875rem] font-medium leading-snug text-grey-900">
         {{ name }}
       </h3>
-      <div class="mt-auto space-y-1">
+      <div class="space-y-1">
         <div class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
           <span class="text-[0.9375rem] font-bold leading-tight tabular-nums text-grey-900">{{ price }}</span>
           <span v-if="oldPrice" class="text-[0.75rem] tabular-nums text-grey-400 line-through">{{ oldPrice }}</span>
