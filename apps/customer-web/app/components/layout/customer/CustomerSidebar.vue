@@ -19,11 +19,13 @@ import {
   LayoutGrid,
   Layers3,
   MessageCircleQuestion,
+  Moon,
   NotebookPen,
   Settings,
   ShieldCheck,
   ShoppingBag,
   Store,
+  Sun,
   Users,
 } from 'lucide-vue-next';
 import CustomerSidebarBranchSwitcher from './CustomerSidebarBranchSwitcher.vue';
@@ -49,6 +51,8 @@ const emit = defineEmits<{
 const route = useRoute();
 const settingsOpen = ref(false);
 const signInTo = computed(() => customerSignInLocation(route.fullPath));
+
+const { isDark, toggleTheme } = useCustomerTheme();
 
 const isGuest = computed(() => !props.session?.data?.businessId);
 
@@ -216,6 +220,20 @@ function closeMobileNav() {
                     <span>{{ item.label }}</span>
                   </SidebarMenuButton>
                 </NuxtLink>
+              </SidebarMenuItem>
+
+              <!-- Theme toggle: label + icon show the action (the mode a click switches to). -->
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  as="button"
+                  type="button"
+                  class="rounded-[14px] px-2 py-2"
+                  :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                  @click="toggleTheme"
+                >
+                  <component :is="isDark ? Sun : Moon" class="size-4" />
+                  <span>{{ isDark ? 'Light mode' : 'Dark mode' }}</span>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </div>

@@ -26,6 +26,18 @@ export type DashboardStatsResponse = {
   };
 };
 
+export type DashboardUnresolvedCostReason = 'no_market_price' | 'suspected_price';
+
+export type DashboardUnresolvedCostItem = {
+  orderRef: string;
+  productName: string;
+  unit: string | null;
+  quantity: number | null;
+  marketPrice: number | null;
+  sellingPrice: number | null;
+  reason: DashboardUnresolvedCostReason;
+};
+
 export type DashboardSummaryResponse = {
   orders: number;
   totalOrdersAmount: number;
@@ -33,9 +45,11 @@ export type DashboardSummaryResponse = {
   inactiveCustomers: number;
   purchaseOrderSpend: number;
   revenue: number;
+  costOfGoods: number;
   grossProfit: number;
   grossMarginPercent: number;
   historicalProfitCoveragePercent: number;
+  unresolvedCostItems: DashboardUnresolvedCostItem[];
   qualifyingRevenueOrderCount: number;
   unverifiedProfitOrderCount: number;
   permissions?: {
@@ -87,6 +101,7 @@ export type DashboardOrderMetricsResponse = {
       grossProfit: number;
       grossMarginPercent: number;
       historicalCoveragePercent: number;
+      unresolvedCostItems?: DashboardUnresolvedCostItem[];
       qualifyingOrderCount: number;
       verifiedProfitOrderCount: number;
       unverifiedProfitOrderCount: number;

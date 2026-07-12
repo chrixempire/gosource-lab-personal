@@ -38,7 +38,7 @@ async function openCart() {
     type="button"
     data-testid="explore-floating-cart"
     :class="[
-      'customer-brand-hero flex max-w-[min(100vw-2rem,18.5rem)] cursor-pointer items-center gap-3 rounded-full py-2 pl-2 pr-3.5 text-left shadow-[0_20px_48px_-16px_rgba(11,61,18,0.5),0_12px_32px_-12px_rgba(16,24,40,0.4)] transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background-on-canvas dark:shadow-[0_20px_48px_-16px_rgba(0,0,0,0.5)]',
+      'flex max-w-[min(100vw-2rem,18.5rem)] cursor-pointer items-center gap-3 rounded-full bg-button-primary py-2 pl-2 pr-3.5 text-left transition hover:bg-button-primary-clicked focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background-on-canvas',
       positionClass,
     ]"
     :aria-label="isAddingToRequest ? 'View request items' : 'Open cart'"

@@ -184,11 +184,11 @@ function accordionLeave(el: Element, done: () => void) {
       <div class="hidden items-center gap-3 lg:flex">
         <a
           :href="customerSignInUrl"
-          class="px-3 py-2 text-[0.95rem] font-medium text-grey-700 transition-colors hover:text-grey-900"
+          class="login-fill px-3 py-2 text-[0.95rem] font-medium"
         >
           Log in
         </a>
-        <AppButton variant="white" size="sm" :href="customerMarketUrl" class="!h-10 !px-5">
+        <AppButton variant="white" size="sm" fill :href="customerMarketUrl" class="!h-10 !px-5 hover:!border-primary-500">
           Explore market
           <Icon name="lucide:chevron-right" class="size-4" />
         </AppButton>
@@ -436,7 +436,31 @@ function accordionLeave(el: Element, done: () => void) {
   }
 }
 
+/* Log in: green sweeps across the letters (L → O → G → I → N) on hover. */
+.login-fill {
+  background-image: linear-gradient(
+    to right,
+    var(--color-primary-600) 50%,
+    var(--color-grey-700) 50%
+  );
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  transition: background-position 0.5s ease;
+}
+
+.login-fill:hover {
+  background-position: 0 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .login-fill {
+    transition: none;
+  }
+
   .mobile-drawer-enter-active .mobile-nav-item,
   .mobile-drawer-enter-active .mobile-nav-actions {
     animation: none;

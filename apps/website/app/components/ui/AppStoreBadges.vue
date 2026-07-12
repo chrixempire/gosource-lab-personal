@@ -4,10 +4,8 @@ import { MOBILE_DOWNLOAD_LINKS } from '~/lib/mobile-download';
 withDefaults(
   defineProps<{
     size?: 'md' | 'lg';
-    /** White layer behind Google Play badge — use on dark backgrounds (e.g. homepage hero). */
-    playStoreBg?: boolean;
   }>(),
-  { size: 'lg', playStoreBg: false },
+  { size: 'lg' },
 );
 
 const badgeClass = {
@@ -23,17 +21,12 @@ const badgeClass = {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Download GoSource on Google Play"
-      class="relative inline-block transition-transform duration-200 hover:scale-[1.02]"
+      class="inline-block transition-transform duration-200 hover:scale-[1.02]"
     >
-      <span
-        v-if="playStoreBg"
-        class="pointer-events-none absolute inset-0 rounded-lg bg-white"
-        aria-hidden="true"
-      />
       <img
-        src="/images/google-play.svg"
+        src="/images/google-play.png"
         alt=""
-        :class="[badgeClass[size], 'relative block']"
+        :class="[badgeClass[size], 'block']"
         loading="lazy"
       />
     </a>

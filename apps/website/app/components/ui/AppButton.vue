@@ -9,8 +9,10 @@ const props = withDefaults(
     href?: string;
     block?: boolean;
     type?: 'button' | 'submit';
+    /** On hover, sweep a primary-green fill in from the left and turn the label white. */
+    fill?: boolean;
   }>(),
-  { variant: 'primary', size: 'md', type: 'button', block: false },
+  { variant: 'primary', size: 'md', type: 'button', block: false, fill: false },
 );
 
 const base =
@@ -38,6 +40,7 @@ const classes = computed(() => [
   variants[props.variant],
   sizes[props.size],
   props.block ? 'w-full' : '',
+  props.fill ? 'relative overflow-hidden' : '',
 ]);
 
 const component = computed(() => (props.to ? resolveComponent('NuxtLink') : props.href ? 'a' : 'button'));
@@ -51,6 +54,18 @@ const component = computed(() => (props.to ? resolveComponent('NuxtLink') : prop
     :type="!to && !href ? type : undefined"
     :class="classes"
   >
-    <slot />
+    <template v-if="fill">
+      <!-- Green wipe fills from the left on hover; the label turns white in sync. -->
+      <span
+        class="pointer-events-none absolute inset-0 z-0 origin-left scale-x-0 bg-primary-500 transition-transform duration-500 ease-out group-hover:scale-x-100"
+        aria-hidden="true"
+      />
+      <span
+        class="relative z-10 inline-flex items-center gap-2 transition-colors duration-500 ease-out group-hover:text-white"
+      >
+        <slot />
+      </span>
+    </template>
+    <slot v-else />
   </component>
 </template>

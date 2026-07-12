@@ -293,11 +293,78 @@
   animation: skeleton-shimmer 1.6s var(--ease-spring) infinite;
 }
 
+/* Hero: brand-green accent text with a slow highlight sweep */
+.hero-accent {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-primary-300) 0%,
+    var(--color-primary-400) 28%,
+    #f0fff3 50%,
+    var(--color-primary-400) 72%,
+    var(--color-primary-300) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: hero-shine 7s linear infinite;
+}
+
+@keyframes hero-shine {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+/* Hero: drifting brand-green aurora glows behind the produce */
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(7%, -9%, 0) scale(1.18);
+  }
+}
+
+@keyframes aurora-drift-alt {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.12);
+  }
+  50% {
+    transform: translate3d(-9%, 7%, 0) scale(0.92);
+  }
+}
+
+@keyframes hero-slow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-aurora {
+  animation: aurora-drift 16s ease-in-out infinite;
+}
+
+.animate-aurora-alt {
+  animation: aurora-drift-alt 20s ease-in-out infinite;
+}
+
+.animate-hero-spin {
+  animation: hero-slow-spin 44s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .animate-float,
   .animate-vscroll,
   .animate-hscroll,
+  .animate-aurora,
+  .animate-aurora-alt,
+  .animate-hero-spin,
+  .hero-accent,
   .skeleton::after {
     animation: none;
   }

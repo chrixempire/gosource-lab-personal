@@ -46,7 +46,7 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
               <img
                 src="/images/all-food-items.png"
                 alt="GoSource marketplace with bulk food items"
-                class="h-full w-full object-cover object-top"
+                class="h-full w-full object-cover object-top transition-transform duration-500 ease-in-out group-hover:scale-[1.06]"
               />
             </template>
             Buy food supplies in large quantities at wholesale prices and save
@@ -55,13 +55,13 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
 
           <div
             v-reveal="100"
-            class="overflow-hidden rounded-xl border border-grey-100 bg-white p-1.5 shadow-small lg:w-[23.6875rem] lg:shrink-0 lg:self-stretch"
+            class="group overflow-hidden rounded-xl border border-grey-100 bg-white p-1.5 shadow-small lg:w-[23.6875rem] lg:shrink-0 lg:self-stretch"
           >
             <div class="h-[20rem] overflow-hidden rounded-lg lg:h-full lg:min-h-[35rem]">
               <img
-                src="/images/shopper-food-wall.png"
-                alt="Shopper browsing a wall of fresh food categories"
-                class="h-full w-full object-cover"
+                src="/images/gs-woman.png"
+                alt="A customer enjoying fresh food from a GoSource store"
+                class="h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-[1.06]"
               />
             </div>
           </div>
@@ -81,7 +81,7 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
               <img
                 src="/images/buy-now-pay-later.png"
                 alt="Choosing pay with credit at checkout"
-                class="h-full w-full object-cover object-left-top"
+                class="h-full w-full object-cover object-left-top transition-transform duration-500 ease-in-out group-hover:scale-[1.06]"
               />
             </template>
             Get the supplies you need today and pay weekly or monthly — flexible
@@ -100,7 +100,7 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
               <img
                 src="/images/track-your-purchase.png"
                 alt="Wallet balance and order purchase confirmation"
-                class="h-full w-full object-cover object-left-top"
+                class="h-full w-full object-cover object-left-top transition-transform duration-500 ease-in-out group-hover:scale-[1.06]"
               />
             </template>
             Every order, every payment — recorded for your convenience.
@@ -111,13 +111,13 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
         <div class="flex flex-col gap-10 lg:flex-row">
           <div
             v-reveal="100"
-            class="order-2 overflow-hidden rounded-xl border border-grey-100 bg-white p-1.5 shadow-small lg:order-1 lg:w-[23.6875rem] lg:shrink-0 lg:self-stretch"
+            class="group order-2 overflow-hidden rounded-xl border border-grey-100 bg-white p-1.5 shadow-small lg:order-1 lg:w-[23.6875rem] lg:shrink-0 lg:self-stretch"
           >
             <div class="h-[20rem] overflow-hidden rounded-lg lg:h-full lg:min-h-[35rem]">
               <img
-                src="/images/chef-dashboard.png"
-                alt="Chef reviewing live dashboard insights"
-                class="h-full w-full object-cover"
+                src="/images/gs-man.png"
+                alt="A shopper choosing fresh produce in a GoSource store"
+                class="h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-[1.06]"
               />
             </div>
           </div>
@@ -135,7 +135,7 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
               <img
                 src="/images/get-dashboard-insight.png"
                 alt="Dashboard with total amount and total orders charts"
-                class="h-full w-full object-cover object-top"
+                class="h-full w-full object-cover object-top transition-transform duration-500 ease-in-out group-hover:scale-[1.06]"
               />
             </template>
             You get to see an overview of how you spend and buy products.

@@ -6,10 +6,6 @@ import {
   type CustomerThemePreference,
   type CustomerResolvedTheme,
 } from '~/lib/customer-theme';
-import {
-  getCustomerScheduleTheme,
-  getMsUntilNextScheduleThemeFlip,
-} from '~/lib/customer-time-of-day';
 
 export function useCustomerTheme() {
   const preference = useState<CustomerThemePreference>(
@@ -18,41 +14,39 @@ export function useCustomerTheme() {
   );
   const resolved = useState<CustomerResolvedTheme>('customer-theme-resolved', () => 'light');
   const ready = useState('customer-theme-ready', () => false);
+  // False once the user picks a theme manually; while true the app tracks the OS setting live.
+  const followsSystem = useState('customer-theme-follows-system', () => true);
 
-  let scheduleTimer: ReturnType<typeof setTimeout> | undefined;
+  let media: MediaQueryList | undefined;
+  let mediaListener: ((event: MediaQueryListEvent) => void) | undefined;
 
-  function clearScheduleTimer() {
-    if (scheduleTimer) {
-      clearTimeout(scheduleTimer);
-      scheduleTimer = undefined;
+  function detachMediaListener() {
+    if (media && mediaListener) {
+      media.removeEventListener('change', mediaListener);
     }
+    media = undefined;
+    mediaListener = undefined;
   }
 
-  function applyScheduledThemeIfAllowed() {
-    if (!import.meta.client) {
+  function attachMediaListener() {
+    if (!import.meta.client || typeof window.matchMedia !== 'function') {
       return;
     }
 
-    if (readStoredCustomerThemePreference()) {
-      return;
-    }
+    detachMediaListener();
+    media = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaListener = (event) => {
+      // An explicit stored preference always wins over the OS setting.
+      if (readStoredCustomerThemePreference()) {
+        return;
+      }
 
-    const next = getCustomerScheduleTheme();
-    resolved.value = next;
-    applyCustomerThemeToDocument(next);
-  }
-
-  function scheduleNextThemeFlip() {
-    clearScheduleTimer();
-
-    if (!import.meta.client || readStoredCustomerThemePreference()) {
-      return;
-    }
-
-    scheduleTimer = setTimeout(() => {
-      applyScheduledThemeIfAllowed();
-      scheduleNextThemeFlip();
-    }, getMsUntilNextScheduleThemeFlip());
+      const next: CustomerResolvedTheme = event.matches ? 'dark' : 'light';
+      resolved.value = next;
+      followsSystem.value = true;
+      applyCustomerThemeToDocument(next);
+    };
+    media.addEventListener('change', mediaListener);
   }
 
   function syncFromDocument() {
@@ -64,9 +58,10 @@ export function useCustomerTheme() {
     const next = resolveCustomerThemePreference();
     preference.value = stored ?? next;
     resolved.value = next;
+    followsSystem.value = !stored;
     applyCustomerThemeToDocument(next);
     ready.value = true;
-    scheduleNextThemeFlip();
+    attachMediaListener();
   }
 
   function setTheme(next: CustomerThemePreference) {
@@ -76,9 +71,9 @@ export function useCustomerTheme() {
 
     preference.value = next;
     resolved.value = next;
+    followsSystem.value = false;
     persistCustomerThemePreference(next);
     applyCustomerThemeToDocument(next);
-    scheduleNextThemeFlip();
   }
 
   function toggleTheme() {
@@ -92,7 +87,7 @@ export function useCustomerTheme() {
   });
 
   onUnmounted(() => {
-    clearScheduleTimer();
+    detachMediaListener();
   });
 
   return {
@@ -100,6 +95,7 @@ export function useCustomerTheme() {
     resolved,
     ready,
     isDark,
+    followsSystem,
     setTheme,
     toggleTheme,
     syncFromDocument,

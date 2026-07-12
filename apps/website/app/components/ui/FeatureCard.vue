@@ -21,7 +21,7 @@ const tagTintClass = computed(() => props.tagTint ?? props.tint);
 <template>
   <div
     v-reveal
-    class="flex h-full flex-col overflow-hidden rounded-xl border border-grey-100 bg-white p-1.5 shadow-small lg:min-h-[608px]"
+    class="group flex h-full flex-col overflow-hidden rounded-xl border border-grey-100 bg-white p-1.5 shadow-small lg:min-h-[608px]"
   >
     <div class="relative h-[360px] shrink-0 overflow-hidden rounded-lg" :class="tint">
       <slot name="mock" />
