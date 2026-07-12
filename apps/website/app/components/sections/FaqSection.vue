@@ -91,7 +91,7 @@ function toggle(i: number) {
         >
           <button
             type="button"
-            class="flex w-full items-start justify-between gap-6 text-left"
+            class="flex w-full cursor-pointer items-start justify-between gap-6 text-left"
             :aria-expanded="open === i"
             @click="toggle(i)"
           >
