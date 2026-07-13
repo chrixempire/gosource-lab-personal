@@ -13,7 +13,7 @@ const aboutQuote =
 </script>
 
 <template>
-  <section class="bg-white py-16 lg:py-24">
+  <section class="mt-[50px] bg-grey-50 py-16 lg:py-24">
     <div class="site-container flex flex-col items-center gap-8 lg:gap-8">
       <h2
         v-reveal
