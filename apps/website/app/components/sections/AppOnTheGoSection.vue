@@ -128,24 +128,25 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="bg-white py-16 lg:py-24">
-    <div class="site-container grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+    <div class="site-container grid items-center gap-12 lg:grid-cols-2 lg:items-stretch lg:gap-20">
       <!-- Copy + features -->
-      <div>
-        <SectionHeading
-          eyebrow="Built for you"
-          eyebrow-class="!text-orange-500"
-          title="GoSource on the go"
-          max-width="28rem"
-        >
-          Browse products, place orders, and track deliveries on the move. With
-          GoSource at your fingertips, managing food supplies has never been
-          easier.
-          <template #actions>
-            <AppStoreBadges />
-          </template>
-        </SectionHeading>
+      <div class="flex flex-col justify-center gap-10 lg:gap-16">
+        <div class="flex flex-col gap-6 lg:gap-8">
+          <p class="text-lg font-semibold tracking-[0.02em] text-orange-500">Built for you</p>
+          <div class="flex flex-col gap-2">
+            <h2 class="font-display text-[2.25rem] font-medium leading-[1.1] tracking-[-0.04em] text-grey-900 lg:text-5xl lg:leading-[1.05]">
+              GoSource on the go
+            </h2>
+            <p class="max-w-md text-base leading-6 text-grey-500">
+              Browse products, place orders, and track deliveries on the move. With
+              GoSource at your fingertips, managing food supplies has never been
+              easier.
+            </p>
+          </div>
+          <AppStoreBadges />
+        </div>
 
-        <dl class="mt-12 grid gap-x-8 gap-y-7 sm:grid-cols-2">
+        <dl class="grid gap-x-8 gap-y-6 sm:grid-cols-2">
           <div v-for="(f, i) in features" :key="f.title" v-reveal="i * 80" class="flex gap-3.5">
             <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-orange-25 text-orange-500">
               <Icon :name="f.icon" class="size-5" />
@@ -158,17 +159,21 @@ onBeforeUnmount(() => {
         </dl>
       </div>
 
-      <!-- Phone mockup — a live simulation of the customer-web mobile market -->
-      <div v-reveal="120" class="flex justify-center lg:justify-end">
-        <div class="relative w-[18rem] sm:w-[20rem]">
-          <!-- glow -->
-          <div class="absolute -inset-6 -z-10 rounded-[3rem] bg-gradient-to-br from-primary-100/60 to-grey-50 blur-2xl" />
+      <!-- Phone mockup — a live simulation of the customer-web mobile market,
+           clipped inside a framed panel so it reads as a "half" device (Figma). -->
+      <div
+        v-reveal="120"
+        class="relative h-[26rem] overflow-hidden rounded-2xl bg-grey-50 sm:h-[30rem] lg:h-auto lg:min-h-[34rem] lg:self-stretch"
+      >
+        <!-- 408px screen (≈436px device) positioned 27px from the top, clipped at the
+             bottom by the panel so it reads as a "half" phone (Figma 891:24211). -->
+        <div class="absolute left-1/2 top-[27px] w-[min(25.5rem,86vw)] -translate-x-1/2">
           <!-- device -->
-          <div class="relative overflow-hidden rounded-[2.75rem] border-[10px] border-grey-900 bg-grey-900 shadow-large">
+          <div class="relative overflow-hidden rounded-[3rem] border-[14px] border-grey-900 bg-grey-900 shadow-large">
             <!-- notch -->
-            <div class="absolute left-1/2 top-2.5 z-20 h-5 w-28 -translate-x-1/2 rounded-full bg-grey-900" />
+            <div class="absolute left-1/2 top-3 z-20 h-6 w-32 -translate-x-1/2 rounded-full bg-grey-900" />
             <!-- screen -->
-            <div class="relative flex h-[34rem] flex-col overflow-hidden rounded-[2.1rem] bg-white">
+            <div class="relative flex h-[38rem] flex-col overflow-hidden rounded-[2.1rem] bg-white">
               <!-- Fixed top: brand + green cart pill + pill search -->
               <div class="shrink-0 bg-white pb-2">
                 <div class="flex items-center justify-between px-4 pb-3 pt-7">
