@@ -19,12 +19,20 @@ const {
   markAllRead,
   startPolling,
   stopPolling,
+  startStream,
+  stopStream,
 } = useNotifications();
 
 const open = ref(false);
 
-onMounted(() => startPolling());
-onBeforeUnmount(() => stopPolling());
+onMounted(() => {
+  startPolling();
+  startStream();
+});
+onBeforeUnmount(() => {
+  stopPolling();
+  stopStream();
+});
 
 // Load the list the first time the dropdown opens, and refresh on each open.
 watch(open, (isOpen) => {
@@ -35,6 +43,21 @@ watch(open, (isOpen) => {
 
 const badgeLabel = computed(() =>
   unreadCount.value > 99 ? '99+' : String(unreadCount.value),
+);
+
+/**
+ * Keep the popup lean: always surface unread, but drop read notifications 24h
+ * after they were read (falling back to createdAt if readAt is missing).
+ * Nothing is lost — they remain on the /notifications page. Unread items stay
+ * regardless of age.
+ */
+const READ_POPUP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const visibleItems = computed(() =>
+  items.value.filter((n) => {
+    if (!n.read) return true;
+    const readTime = new Date(n.readAt ?? n.createdAt ?? 0).getTime();
+    return Date.now() - readTime < READ_POPUP_MAX_AGE_MS;
+  }),
 );
 
 function formatWhen(iso?: string) {
@@ -55,9 +78,9 @@ function formatWhen(iso?: string) {
 async function onRowClick(n: NotificationItem) {
   await markRead(n._id);
   open.value = false;
-  if (n.link) {
-    await navigateTo(n.link);
-  }
+  // From the bell, always route to the full notifications page (details/actions
+  // live there); the notification's deep link is reachable from that view.
+  await navigateTo('/notifications');
 }
 </script>
 
@@ -72,7 +95,7 @@ async function onRowClick(n: NotificationItem) {
         <Bell class="size-5" aria-hidden="true" />
         <span
           v-if="unreadCount > 0"
-          class="absolute -right-0.5 -top-0.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-negative-500 px-1 text-[10px] font-bold leading-none text-white"
+          class="absolute right-0.5 top-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-negative-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-background-on-canvas"
         >
           {{ badgeLabel }}
         </span>
@@ -105,7 +128,7 @@ async function onRowClick(n: NotificationItem) {
         </div>
 
         <div
-          v-else-if="loaded && !items.length"
+          v-else-if="loaded && !visibleItems.length"
           class="px-4 py-10 text-center text-sm text-grey-300"
         >
           You’re all caught up.
@@ -113,13 +136,13 @@ async function onRowClick(n: NotificationItem) {
 
         <ul v-else class="divide-y divide-grey-50">
           <li
-            v-for="n in items"
+            v-for="n in visibleItems"
             :key="n._id"
             role="button"
             tabindex="0"
             :class="[
               'flex cursor-pointer gap-3 px-4 py-3 transition hover:bg-grey-55/60',
-              n.read ? '' : 'bg-primary-50/40',
+              n.read ? '' : 'bg-primary-50/40 dark:bg-primary-500/10',
             ]"
             @click="onRowClick(n)"
             @keydown.enter.prevent="onRowClick(n)"
@@ -133,7 +156,7 @@ async function onRowClick(n: NotificationItem) {
             />
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-semibold text-grey-900">{{ n.title }}</p>
-              <p class="mt-0.5 line-clamp-2 text-xs text-grey-600">{{ n.message }}</p>
+              <p class="mt-0.5 line-clamp-2 text-xs text-grey-600 dark:text-grey-300">{{ n.message }}</p>
               <p class="mt-1 text-[11px] text-grey-300">{{ formatWhen(n.createdAt) }}</p>
             </div>
           </li>

@@ -23,7 +23,7 @@ import {
 import { Menu } from 'lucide-vue-next';
 import CustomerPageTitleInfo from '~/components/layout/customer/CustomerPageTitleInfo.vue';
 import CustomerSidebar from '~/components/layout/customer/CustomerSidebar.vue';
-import CustomerThemeToggle from '~/components/layout/customer/CustomerThemeToggle.vue';
+import CustomerNotificationBell from '~/components/layout/customer/CustomerNotificationBell.vue';
 import CustomerFeedbackWidget from '~/components/feedback/CustomerFeedbackWidget.vue';
 import {
   CUSTOMER_FLOATING_CONTENT_Z,
@@ -87,6 +87,7 @@ const pageTitleMap: Array<{ match: string; title: string }> = [
   { match: '/market', title: 'Market' },
   { match: '/business-insight', title: 'Business insight' },
   { match: '/track-orders', title: 'Orders' },
+  { match: '/notifications', title: 'Notifications' },
   { match: '/wallet', title: 'Wallet' },
   { match: '/credit', title: 'Credit' },
   { match: '/manage-requests', title: 'Request' },
@@ -308,8 +309,7 @@ async function confirmLogout() {
             <MarketSearch v-if="showMarketHeaderSearch" class="shrink-0 lg:min-w-0 lg:flex-1" />
 
             <div class="ml-auto flex shrink-0 items-center gap-2">
-              <CustomerThemeToggle />
-              <!-- Notification bell is intentionally disabled until the in-app notification flow is implemented. -->
+              <CustomerNotificationBell />
               <MarketHeaderCartButton v-if="showHeaderCart" />
             </div>
           </div>

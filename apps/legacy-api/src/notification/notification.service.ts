@@ -124,6 +124,38 @@ export class NotificationService {
       .exec();
   }
 
+  /** Mark one notification unread — scoped to the recipient. */
+  async markUnread(recipient: string, id: string): Promise<void> {
+    await this.notificationModel
+      .updateOne(
+        { _id: id, recipient, read: true },
+        { $set: { read: false }, $unset: { readAt: '' } },
+      )
+      .exec();
+  }
+
+  /** Mark a specific set of notifications read — scoped to the recipient. */
+  async markManyRead(recipient: string, ids: string[]): Promise<void> {
+    if (!ids?.length) return;
+    await this.notificationModel
+      .updateMany(
+        { _id: { $in: ids }, recipient, read: false },
+        { $set: { read: true, readAt: new Date() } },
+      )
+      .exec();
+  }
+
+  /** Mark a specific set of notifications unread — scoped to the recipient. */
+  async markManyUnread(recipient: string, ids: string[]): Promise<void> {
+    if (!ids?.length) return;
+    await this.notificationModel
+      .updateMany(
+        { _id: { $in: ids }, recipient, read: true },
+        { $set: { read: false }, $unset: { readAt: '' } },
+      )
+      .exec();
+  }
+
   /** Delete one notification — scoped to the recipient so users can't touch others'. */
   async remove(recipient: string, id: string): Promise<void> {
     await this.notificationModel.deleteOne({ _id: id, recipient }).exec();
@@ -133,6 +165,14 @@ export class NotificationService {
   async removeAllRead(recipient: string): Promise<void> {
     await this.notificationModel
       .deleteMany({ recipient, read: true })
+      .exec();
+  }
+
+  /** Delete a specific set of notifications — scoped to the recipient. */
+  async removeMany(recipient: string, ids: string[]): Promise<void> {
+    if (!ids?.length) return;
+    await this.notificationModel
+      .deleteMany({ _id: { $in: ids }, recipient })
       .exec();
   }
 }

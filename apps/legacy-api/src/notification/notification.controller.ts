@@ -68,6 +68,24 @@ export class NotificationController {
     return { status: true, message: 'All notifications marked as read' };
   }
 
+  // NB: static `bulk-*` routes must precede `:id/*` so ':id' doesn't capture them.
+  @Patch('bulk-read')
+  @ApiOperation({ summary: 'Mark a selected set of notifications as read' })
+  async markManyRead(@Req() req: any, @Body('ids') ids: string[]) {
+    await this.notificationService.markManyRead(String(req.user.id), ids ?? []);
+    return { status: true, message: 'Notifications marked as read' };
+  }
+
+  @Patch('bulk-unread')
+  @ApiOperation({ summary: 'Mark a selected set of notifications as unread' })
+  async markManyUnread(@Req() req: any, @Body('ids') ids: string[]) {
+    await this.notificationService.markManyUnread(
+      String(req.user.id),
+      ids ?? [],
+    );
+    return { status: true, message: 'Notifications marked as unread' };
+  }
+
   @Patch(':id/read')
   @ApiOperation({ summary: 'Mark a single notification as read' })
   async markRead(@Req() req: any, @Param('id') id: string) {
@@ -75,12 +93,26 @@ export class NotificationController {
     return { status: true, message: 'Notification marked as read' };
   }
 
-  // NB: the static `read` route must precede `:id` so ':id' doesn't capture it.
+  @Patch(':id/unread')
+  @ApiOperation({ summary: 'Mark a single notification as unread' })
+  async markUnread(@Req() req: any, @Param('id') id: string) {
+    await this.notificationService.markUnread(String(req.user.id), id);
+    return { status: true, message: 'Notification marked as unread' };
+  }
+
+  // NB: the static `read`/`bulk` routes must precede `:id` so ':id' doesn't capture them.
   @Delete('read')
   @ApiOperation({ summary: 'Delete all of the user’s read notifications' })
   async removeAllRead(@Req() req: any) {
     await this.notificationService.removeAllRead(String(req.user.id));
     return { status: true, message: 'Read notifications cleared' };
+  }
+
+  @Delete('bulk')
+  @ApiOperation({ summary: 'Delete a selected set of notifications' })
+  async removeMany(@Req() req: any, @Body('ids') ids: string[]) {
+    await this.notificationService.removeMany(String(req.user.id), ids ?? []);
+    return { status: true, message: 'Notifications deleted' };
   }
 
   @Delete(':id')

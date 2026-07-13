@@ -54,6 +54,12 @@ export function useNotifications() {
   const unreadCount = useState<number>('customer-notifications-unread', () => 0);
   const loading = useState<boolean>('customer-notifications-loading', () => false);
   const loaded = useState<boolean>('customer-notifications-loaded', () => false);
+  // Last notification pushed over SSE — a shared signal any view can watch to
+  // update its own state live (the full-page list keeps its own copy).
+  const latestStreamed = useState<NotificationItem | null>(
+    'customer-notifications-latest',
+    () => null,
+  );
 
   async function fetchUnreadCount() {
     if (!hasSession.value) {
@@ -114,6 +120,9 @@ export function useNotifications() {
   async function apiMarkRead(id: string) {
     await $fetch(`/api/proxy/notification/${id}/read`, { method: 'PATCH' });
   }
+  async function apiMarkUnread(id: string) {
+    await $fetch(`/api/proxy/notification/${id}/unread`, { method: 'PATCH' });
+  }
   async function apiMarkAllRead() {
     await $fetch('/api/proxy/notification/read-all', { method: 'PATCH' });
   }
@@ -123,14 +132,34 @@ export function useNotifications() {
   async function apiRemoveAllRead() {
     await $fetch('/api/proxy/notification/read', { method: 'DELETE' });
   }
+  async function apiBulkMarkRead(ids: string[]) {
+    await $fetch('/api/proxy/notification/bulk-read', {
+      method: 'PATCH',
+      body: { ids },
+    });
+  }
+  async function apiBulkMarkUnread(ids: string[]) {
+    await $fetch('/api/proxy/notification/bulk-unread', {
+      method: 'PATCH',
+      body: { ids },
+    });
+  }
+  async function apiBulkRemove(ids: string[]) {
+    await $fetch('/api/proxy/notification/bulk', {
+      method: 'DELETE',
+      body: { ids },
+    });
+  }
 
   async function markRead(id: string) {
     const target = items.value.find((n) => n._id === id);
     if (!target || target.read) {
       return;
     }
-    // Optimistic — flip locally, then persist.
+    // Optimistic — flip locally (stamp readAt so age-based views are correct),
+    // then persist.
     target.read = true;
+    target.readAt = new Date().toISOString();
     unreadCount.value = Math.max(0, unreadCount.value - 1);
     try {
       await apiMarkRead(id);
@@ -143,7 +172,10 @@ export function useNotifications() {
     if (!unreadCount.value) {
       return;
     }
-    items.value = items.value.map((n) => ({ ...n, read: true }));
+    const now = new Date().toISOString();
+    items.value = items.value.map((n) =>
+      n.read ? n : { ...n, read: true, readAt: now },
+    );
     unreadCount.value = 0;
     try {
       await apiMarkAllRead();
@@ -192,11 +224,88 @@ export function useNotifications() {
     }
   }
 
+  // --- Live push (SSE) + sound ---------------------------------------------
+  let source: EventSource | null = null;
+  let audio: HTMLAudioElement | null = null;
+
+  function playSound() {
+    if (!import.meta.client) return;
+    try {
+      if (!audio) {
+        audio = new Audio('/sounds/notification.wav');
+        audio.volume = 0.5;
+      }
+      audio.currentTime = 0;
+      void audio.play().catch(() => {
+        // Autoplay may be blocked until the user interacts — ignore silently.
+      });
+    } catch {
+      // no Audio support — ignore
+    }
+  }
+
+  function handleStreamPayload(raw: string) {
+    let payload: { type?: string; notification?: NotificationItem } | null = null;
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (!payload || payload.type !== 'notification' || !payload.notification) {
+      return; // ignore heartbeats / malformed frames
+    }
+
+    const incoming = payload.notification;
+    // De-dupe: a frame can race an in-flight fetch that already has the item.
+    const isDuplicate = items.value.some((n) => n._id === incoming._id);
+    if (!isDuplicate) {
+      items.value = [incoming, ...items.value];
+      if (!incoming.read) {
+        unreadCount.value += 1;
+      }
+      loaded.value = true;
+    }
+    // Broadcast to any live view (e.g. the full-page list) regardless of the
+    // bell's own de-dupe; the page de-dupes against its own list.
+    latestStreamed.value = incoming;
+    if (!isDuplicate) {
+      playSound();
+    }
+  }
+
+  /**
+   * Open the live notification stream. Cheap and idempotent — the browser's
+   * EventSource auto-reconnects on drop, and the proxy re-auths per connection.
+   */
+  function startStream() {
+    if (!import.meta.client || source || !hasSession.value) {
+      return;
+    }
+    try {
+      source = new EventSource('/api/notifications/stream');
+      source.onmessage = (ev: MessageEvent) => handleStreamPayload(ev.data);
+      source.onerror = () => {
+        // EventSource reconnects on its own; nothing to do. If the session is
+        // gone the reconnect 401s and it keeps retrying until sign-in.
+      };
+    } catch {
+      source = null;
+    }
+  }
+
+  function stopStream() {
+    if (source) {
+      source.close();
+      source = null;
+    }
+  }
+
   return {
     items,
     unreadCount,
     loading,
     loaded,
+    latestStreamed,
     fetchList,
     fetchPage,
     fetchUnreadCount,
@@ -205,10 +314,16 @@ export function useNotifications() {
     remove,
     removeAllRead,
     apiMarkRead,
+    apiMarkUnread,
     apiMarkAllRead,
     apiRemove,
     apiRemoveAllRead,
+    apiBulkMarkRead,
+    apiBulkMarkUnread,
+    apiBulkRemove,
     startPolling,
     stopPolling,
+    startStream,
+    stopStream,
   };
 }

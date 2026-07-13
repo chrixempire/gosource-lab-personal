@@ -427,15 +427,26 @@ export class RequestService {
       // pending. Only when an employee raised it (a super admin creating their
       // own request doesn't need to notify themselves).
       if (initiator === 'employee') {
+        const memberName = [employee.firstName, employee.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+        const message = memberName
+          ? `A new request from ${memberName} (${reference}) is awaiting your approval.`
+          : `A new request (${reference}) is awaiting your approval.`;
         await this.notificationService.create({
           recipient: String(businessId),
           recipientType: NOTIFICATION_RECIPIENT_TYPE.BUSINESS,
           businessId: String(businessId),
           type: NOTIFICATION_TYPE.REQUEST_CREATED,
           title: 'New procurement request',
-          message: `A new request (${reference}) is awaiting your approval.`,
+          message,
           link: `/manage-requests/${this.resolveEntityId(newRequest._id ?? newRequest.id)}`,
-          metadata: { requestId: String(newRequest._id ?? newRequest.id), reference },
+          metadata: {
+            requestId: String(newRequest._id ?? newRequest.id),
+            reference,
+            memberName,
+          },
         });
       }
 

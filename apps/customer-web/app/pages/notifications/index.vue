@@ -1,8 +1,26 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'customer-market' });
 
-import { PaginationBar, toast } from '@gosource/ui';
-import { Bell, CheckCheck, Trash2 } from 'lucide-vue-next';
+import {
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  PaginationBar,
+  toast,
+} from '@gosource/ui';
+import {
+  Bell,
+  CheckCheck,
+  Ellipsis,
+  Eye,
+  Loader2,
+  Mail,
+  MailOpen,
+  Trash2,
+  X,
+} from 'lucide-vue-next';
 import {
   useNotifications,
   type NotificationItem,
@@ -12,17 +30,22 @@ import { useCustomerSession } from '~/composables/useCustomerSession';
 
 const {
   unreadCount,
+  latestStreamed,
   fetchPage,
   fetchUnreadCount,
   apiMarkRead,
+  apiMarkUnread,
   apiMarkAllRead,
   apiRemove,
   apiRemoveAllRead,
+  apiBulkMarkRead,
+  apiBulkMarkUnread,
+  apiBulkRemove,
 } = useNotifications();
 const { whenReady } = useCustomerSession();
 
 type Tab = 'all' | 'unread';
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 25;
 
 const activeTab = ref<Tab>('all');
 const page = ref(1);
@@ -31,7 +54,33 @@ const meta = ref<NotificationListMeta>({});
 const loading = ref(false);
 const loaded = ref(false);
 
+const selectedIds = ref<string[]>([]);
+const bulkLoading = ref<'read' | 'unread' | 'delete' | null>(null);
+const headerLoading = ref<'markAll' | 'clearRead' | null>(null);
+const openMenuId = ref<string | null>(null);
+
 const hasReadItems = computed(() => list.value.some((n) => n.read));
+const selectedCount = computed(() => selectedIds.value.length);
+const selectedItems = computed(() =>
+  list.value.filter((n) => selectedIds.value.includes(n._id)),
+);
+const allSelected = computed(
+  () => list.value.length > 0 && selectedIds.value.length === list.value.length,
+);
+const someSelected = computed(
+  () => selectedIds.value.length > 0 && !allSelected.value,
+);
+const headerCheckboxValue = computed<boolean | 'indeterminate'>(() =>
+  allSelected.value ? true : someSelected.value ? 'indeterminate' : false,
+);
+const selectedHasUnread = computed(() =>
+  selectedItems.value.some((n) => !n.read),
+);
+const selectedHasRead = computed(() => selectedItems.value.some((n) => n.read));
+
+function clearSelection() {
+  selectedIds.value = [];
+}
 
 async function load() {
   loading.value = true;
@@ -45,6 +94,7 @@ async function load() {
     meta.value = res.meta;
     unreadCount.value = res.unreadCount;
     loaded.value = true;
+    clearSelection();
   } catch {
     // leave the previous view in place
   } finally {
@@ -64,6 +114,16 @@ async function onPageChange(next: number) {
   await load();
 }
 
+function toggleSelect(id: string) {
+  selectedIds.value = selectedIds.value.includes(id)
+    ? selectedIds.value.filter((x) => x !== id)
+    : [...selectedIds.value, id];
+}
+
+function toggleSelectAll() {
+  selectedIds.value = allSelected.value ? [] : list.value.map((n) => n._id);
+}
+
 function formatWhen(iso?: string) {
   if (!iso) return '';
   const then = new Date(iso).getTime();
@@ -80,6 +140,28 @@ function formatWhen(iso?: string) {
 }
 
 async function onRowClick(n: NotificationItem) {
+  // A row click only marks the notification read — it does not navigate. The
+  // deep link (and full detail) live behind the ⋯ menu → View details → Open.
+  if (n.read) return;
+  n.read = true;
+  unreadCount.value = Math.max(0, unreadCount.value - 1);
+  try {
+    await apiMarkRead(n._id);
+    void fetchUnreadCount();
+  } catch {
+    // next load reconciles
+  }
+  if (activeTab.value === 'unread') {
+    list.value = list.value.filter((item) => item._id !== n._id);
+  }
+}
+
+/**
+ * "View details" — mark the notification read and route to the resource it
+ * refers to (e.g. the updated order). Notifications without a deep link just
+ * get marked read.
+ */
+async function viewDetails(n: NotificationItem) {
   if (!n.read) {
     n.read = true;
     unreadCount.value = Math.max(0, unreadCount.value - 1);
@@ -89,26 +171,49 @@ async function onRowClick(n: NotificationItem) {
     } catch {
       // next load reconciles
     }
-    // On the Unread tab a now-read item no longer belongs here.
-    if (activeTab.value === 'unread') {
-      list.value = list.value.filter((item) => item._id !== n._id);
-    }
   }
   if (n.link) {
     await navigateTo(n.link);
+  } else {
+    toast.info('No details to open for this notification');
+  }
+}
+
+async function toggleReadOne(n: NotificationItem) {
+  if (n.read) {
+    n.read = false;
+    unreadCount.value += 1;
+    try {
+      await apiMarkUnread(n._id);
+      void fetchUnreadCount();
+    } catch {
+      // next load reconciles
+    }
+  } else {
+    n.read = true;
+    unreadCount.value = Math.max(0, unreadCount.value - 1);
+    try {
+      await apiMarkRead(n._id);
+      void fetchUnreadCount();
+    } catch {
+      // next load reconciles
+    }
+    if (activeTab.value === 'unread') {
+      list.value = list.value.filter((item) => item._id !== n._id);
+    }
   }
 }
 
 async function onDelete(n: NotificationItem) {
   const wasUnread = !n.read;
   list.value = list.value.filter((item) => item._id !== n._id);
+  selectedIds.value = selectedIds.value.filter((id) => id !== n._id);
   if (wasUnread) {
     unreadCount.value = Math.max(0, unreadCount.value - 1);
   }
   try {
     await apiRemove(n._id);
     void fetchUnreadCount();
-    // Refill the page (pull in the next item / correct the count).
     await load();
   } catch {
     toast.error('Could not delete notification');
@@ -116,8 +221,69 @@ async function onDelete(n: NotificationItem) {
   }
 }
 
+async function bulkMarkRead() {
+  if (bulkLoading.value) return;
+  const ids = selectedItems.value.filter((n) => !n.read).map((n) => n._id);
+  if (!ids.length) {
+    clearSelection();
+    return;
+  }
+  bulkLoading.value = 'read';
+  try {
+    await apiBulkMarkRead(ids);
+    void fetchUnreadCount();
+    await load();
+    toast.success(`${ids.length} marked as read`);
+  } catch {
+    toast.error('Could not mark as read');
+  } finally {
+    bulkLoading.value = null;
+  }
+}
+
+async function bulkMarkUnread() {
+  if (bulkLoading.value) return;
+  const ids = selectedItems.value.filter((n) => n.read).map((n) => n._id);
+  if (!ids.length) {
+    clearSelection();
+    return;
+  }
+  bulkLoading.value = 'unread';
+  try {
+    await apiBulkMarkUnread(ids);
+    void fetchUnreadCount();
+    await load();
+    toast.success(`${ids.length} marked as unread`);
+  } catch {
+    toast.error('Could not mark as unread');
+  } finally {
+    bulkLoading.value = null;
+  }
+}
+
+async function bulkDelete() {
+  if (bulkLoading.value) return;
+  const ids = selectedItems.value.map((n) => n._id);
+  if (!ids.length) return;
+  // Deleting the whole page: step back a page so we don't land on an empty one.
+  if (page.value > 1 && ids.length >= list.value.length) page.value -= 1;
+  bulkLoading.value = 'delete';
+  try {
+    await apiBulkRemove(ids);
+    void fetchUnreadCount();
+    await load();
+    toast.success(`${ids.length} deleted`);
+  } catch {
+    toast.error('Could not delete notifications');
+    await load();
+  } finally {
+    bulkLoading.value = null;
+  }
+}
+
 async function markAllRead() {
-  if (!unreadCount.value) return;
+  if (headerLoading.value || !unreadCount.value) return;
+  headerLoading.value = 'markAll';
   try {
     await apiMarkAllRead();
     void fetchUnreadCount();
@@ -125,11 +291,14 @@ async function markAllRead() {
     toast.success('All notifications marked as read');
   } catch {
     toast.error('Could not mark all as read');
+  } finally {
+    headerLoading.value = null;
   }
 }
 
 async function clearRead() {
-  if (!hasReadItems.value) return;
+  if (headerLoading.value || !hasReadItems.value) return;
+  headerLoading.value = 'clearRead';
   try {
     await apiRemoveAllRead();
     if (page.value > 1) page.value = 1;
@@ -138,8 +307,40 @@ async function clearRead() {
     toast.success('Read notifications cleared');
   } catch {
     toast.error('Could not clear read notifications');
+  } finally {
+    headerLoading.value = null;
   }
 }
+
+/**
+ * Merge a live (SSE-pushed) notification into the page's own list without a
+ * reload. New notifications are always unread, so they belong in both tabs.
+ */
+function onStreamNotification(n: NotificationItem) {
+  // Only page 1 shows the newest items; on later pages, leave ordering intact.
+  if (page.value !== 1) {
+    meta.value = { ...meta.value, total: (meta.value.total ?? 0) + 1 };
+    return;
+  }
+  if (list.value.some((item) => item._id === n._id)) return;
+  if (activeTab.value === 'unread' && n.read) return;
+
+  const next = [n, ...list.value];
+  const overflow = next.length > PAGE_SIZE;
+  if (overflow) next.pop();
+  list.value = next;
+  const total = (meta.value.total ?? 0) + 1;
+  meta.value = {
+    ...meta.value,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    hasNext: (meta.value.hasNext ?? false) || overflow,
+  };
+}
+
+watch(latestStreamed, (n) => {
+  if (n) onStreamNotification(n);
+});
 
 onMounted(async () => {
   await whenReady();
@@ -148,31 +349,32 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+  <div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-xl font-semibold text-grey-900">Notifications</h1>
-        <p class="mt-0.5 text-sm text-grey-500">
-          {{ unreadCount > 0 ? `${unreadCount} unread` : 'You’re all caught up.' }}
-        </p>
-      </div>
+      <p class="text-sm text-grey-500">
+        {{ unreadCount > 0 ? `${unreadCount} unread` : 'You’re all caught up.' }}
+      </p>
       <div class="flex items-center gap-3">
         <button
           v-if="unreadCount > 0"
           type="button"
-          class="inline-flex items-center gap-1 text-sm font-medium text-primary-500 hover:underline"
+          :disabled="headerLoading !== null"
+          class="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-primary-500 hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:no-underline"
           @click="markAllRead"
         >
-          <CheckCheck class="size-4" aria-hidden="true" />
+          <Loader2 v-if="headerLoading === 'markAll'" class="size-4 animate-spin" aria-hidden="true" />
+          <CheckCheck v-else class="size-4" aria-hidden="true" />
           Mark all read
         </button>
         <button
           v-if="hasReadItems"
           type="button"
-          class="inline-flex items-center gap-1 text-sm font-medium text-negative-500 hover:underline"
+          :disabled="headerLoading !== null"
+          class="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-negative-500 hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:no-underline"
           @click="clearRead"
         >
-          <Trash2 class="size-4" aria-hidden="true" />
+          <Loader2 v-if="headerLoading === 'clearRead'" class="size-4 animate-spin" aria-hidden="true" />
+          <Trash2 v-else class="size-4" aria-hidden="true" />
           Clear read
         </button>
       </div>
@@ -184,7 +386,7 @@ onMounted(async () => {
         :key="tab"
         type="button"
         :class="[
-          '-mb-px border-b-2 px-3 py-2 text-sm font-medium capitalize transition',
+          '-mb-px cursor-pointer border-b-2 px-3 py-2 text-sm font-medium capitalize transition',
           activeTab === tab
             ? 'border-primary-500 text-primary-600'
             : 'border-transparent text-grey-500 hover:text-grey-800',
@@ -195,13 +397,79 @@ onMounted(async () => {
       </button>
     </div>
 
-    <div class="mt-4 rounded-xl border border-grey-50">
-      <div
-        v-if="loading && !list.length"
-        class="px-4 py-16 text-center text-sm text-grey-300"
+    <!-- Bulk action bar -->
+    <div
+      v-if="selectedCount > 0"
+      class="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-grey-50 px-3 py-2.5"
+    >
+      <button
+        type="button"
+        class="inline-flex cursor-pointer items-center gap-1 rounded-md p-1 text-grey-500 hover:bg-grey-55 hover:text-grey-800"
+        aria-label="Clear selection"
+        @click="clearSelection"
       >
-        Loading…
+        <X class="size-4" aria-hidden="true" />
+      </button>
+      <span class="text-sm font-medium text-grey-800">
+        {{ selectedCount }} selected
+      </span>
+      <div class="ml-auto flex flex-wrap items-center gap-1.5">
+        <button
+          v-if="selectedHasUnread"
+          type="button"
+          :disabled="bulkLoading !== null"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-grey-50 bg-background-on-canvas px-2.5 py-1.5 text-xs font-medium text-grey-800 transition hover:bg-grey-55/60 disabled:cursor-not-allowed disabled:opacity-60"
+          @click="bulkMarkRead"
+        >
+          <Loader2 v-if="bulkLoading === 'read'" class="size-4 animate-spin" aria-hidden="true" />
+          <MailOpen v-else class="size-4" aria-hidden="true" />
+          Mark as read
+        </button>
+        <button
+          v-if="selectedHasRead"
+          type="button"
+          :disabled="bulkLoading !== null"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-grey-50 bg-background-on-canvas px-2.5 py-1.5 text-xs font-medium text-grey-800 transition hover:bg-grey-55/60 disabled:cursor-not-allowed disabled:opacity-60"
+          @click="bulkMarkUnread"
+        >
+          <Loader2 v-if="bulkLoading === 'unread'" class="size-4 animate-spin" aria-hidden="true" />
+          <Mail v-else class="size-4" aria-hidden="true" />
+          Mark as unread
+        </button>
+        <button
+          type="button"
+          :disabled="bulkLoading !== null"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-negative-100 bg-background-on-canvas px-2.5 py-1.5 text-xs font-medium text-negative-500 transition hover:bg-negative-50 disabled:cursor-not-allowed disabled:opacity-60"
+          @click="bulkDelete"
+        >
+          <Loader2 v-if="bulkLoading === 'delete'" class="size-4 animate-spin" aria-hidden="true" />
+          <Trash2 v-else class="size-4" aria-hidden="true" />
+          Delete
+        </button>
       </div>
+    </div>
+
+    <div class="mt-4 rounded-xl border border-grey-50">
+      <ul
+        v-if="loading && !list.length"
+        class="divide-y divide-grey-50"
+        aria-hidden="true"
+      >
+        <li
+          v-for="i in 6"
+          :key="i"
+          class="flex items-start gap-3 px-4 py-3.5"
+        >
+          <div class="mt-0.5 size-4 shrink-0 animate-pulse rounded-[5px] bg-grey-50" />
+          <div class="mt-1.5 size-2 shrink-0 animate-pulse rounded-full bg-grey-50" />
+          <div class="min-w-0 flex-1 space-y-2">
+            <div class="h-3.5 w-2/5 animate-pulse rounded-md bg-grey-50" />
+            <div class="h-3 w-4/5 animate-pulse rounded-md bg-grey-50" />
+            <div class="h-2.5 w-16 animate-pulse rounded-md bg-grey-50" />
+          </div>
+          <div class="size-7 shrink-0 animate-pulse rounded-md bg-grey-50" />
+        </li>
+      </ul>
 
       <div
         v-else-if="loaded && !list.length"
@@ -213,43 +481,100 @@ onMounted(async () => {
         </p>
       </div>
 
-      <ul v-else class="divide-y divide-grey-50">
-        <li
-          v-for="n in list"
-          :key="n._id"
-          :class="[
-            'group flex gap-3 px-4 py-3.5 transition hover:bg-grey-55/60',
-            n.read ? '' : 'bg-primary-50/40',
-          ]"
+      <template v-else>
+        <!-- Select-all header -->
+        <div
+          class="flex items-center gap-3 border-b border-grey-50 px-4 py-2.5"
         >
-          <span
-            :class="[
-              'mt-1.5 size-2 shrink-0 rounded-full',
-              n.read ? 'bg-transparent' : 'bg-primary-500',
-            ]"
-            aria-hidden="true"
+          <Checkbox
+            :model-value="headerCheckboxValue"
+            aria-label="Select all notifications"
+            @update:model-value="toggleSelectAll"
           />
-          <div
-            role="button"
-            tabindex="0"
-            class="min-w-0 flex-1 cursor-pointer"
-            @click="onRowClick(n)"
-            @keydown.enter.prevent="onRowClick(n)"
+          <span class="text-xs font-medium text-grey-400">
+            {{ selectedCount > 0 ? `${selectedCount} selected` : 'Select all' }}
+          </span>
+        </div>
+
+        <ul class="divide-y divide-grey-50">
+          <li
+            v-for="n in list"
+            :key="n._id"
+            :class="[
+              'group flex items-start gap-3 px-4 py-3.5 transition hover:bg-grey-55/60',
+              selectedIds.includes(n._id)
+                ? 'bg-primary-50/60 dark:bg-primary-500/20'
+                : n.read
+                  ? ''
+                  : 'bg-primary-50/40 dark:bg-primary-500/10',
+            ]"
           >
-            <p class="truncate text-sm font-semibold text-grey-900">{{ n.title }}</p>
-            <p class="mt-0.5 text-xs text-grey-600">{{ n.message }}</p>
-            <p class="mt-1 text-[11px] text-grey-300">{{ formatWhen(n.createdAt) }}</p>
-          </div>
-          <button
-            type="button"
-            class="self-start rounded-md p-1.5 text-grey-300 opacity-0 transition hover:bg-negative-50 hover:text-negative-500 focus:opacity-100 group-hover:opacity-100"
-            aria-label="Delete notification"
-            @click.stop="onDelete(n)"
-          >
-            <Trash2 class="size-4" aria-hidden="true" />
-          </button>
-        </li>
-      </ul>
+            <div class="mt-0.5 shrink-0" @click.stop>
+              <Checkbox
+                :model-value="selectedIds.includes(n._id)"
+                aria-label="Select notification"
+                @update:model-value="() => toggleSelect(n._id)"
+              />
+            </div>
+
+            <span
+              :class="[
+                'mt-1.5 size-2 shrink-0 rounded-full',
+                n.read ? 'bg-transparent' : 'bg-primary-500',
+              ]"
+              aria-hidden="true"
+            />
+
+            <div
+              role="button"
+              tabindex="0"
+              class="min-w-0 flex-1 cursor-pointer"
+              @click="onRowClick(n)"
+              @keydown.enter.prevent="onRowClick(n)"
+            >
+              <p class="truncate text-sm font-semibold text-grey-900">{{ n.title }}</p>
+              <p class="mt-0.5 text-xs text-grey-600 dark:text-grey-300">{{ n.message }}</p>
+              <p class="mt-1 text-[11px] text-grey-300">{{ formatWhen(n.createdAt) }}</p>
+            </div>
+
+            <!-- Per-row actions menu (kebab) — far right, revealed on hover/focus -->
+            <div
+              class="shrink-0 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 data-[open=true]:opacity-100"
+              :data-open="openMenuId === n._id"
+              @click.stop
+            >
+              <DropdownMenu @update:open="(o: boolean) => (openMenuId = o ? n._id : null)">
+                <DropdownMenuTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-grey-400 transition hover:bg-grey-55 hover:text-grey-800"
+                    aria-label="Notification actions"
+                  >
+                    <Ellipsis class="size-4" aria-hidden="true" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-52">
+                  <DropdownMenuItem class="gap-2.5" @select="viewDetails(n)">
+                    <Eye class="size-4" />
+                    View details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem class="gap-2.5" @select="toggleReadOne(n)">
+                    <component :is="n.read ? Mail : MailOpen" class="size-4" />
+                    {{ n.read ? 'Mark as unread' : 'Mark as read' }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    class="gap-2.5 text-negative-500 hover:bg-negative-50! hover:text-negative-500! data-highlighted:bg-negative-50! data-highlighted:text-negative-500! focus:bg-negative-50! focus:text-negative-500!"
+                    @select="onDelete(n)"
+                  >
+                    <Trash2 class="size-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </li>
+        </ul>
+      </template>
     </div>
 
     <PaginationBar
