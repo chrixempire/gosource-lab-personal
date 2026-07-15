@@ -89,7 +89,7 @@ async function onRowClick(n: NotificationItem) {
     <DropdownMenuTrigger as-child>
       <button
         type="button"
-        class="relative inline-flex size-10 items-center justify-center rounded-full border border-grey-50 bg-background-on-canvas text-grey-900 transition hover:bg-grey-55/60"
+        class="relative inline-flex size-10 cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-background-on-canvas text-grey-900 transition hover:bg-grey-55/60 hover:text-primary-500"
         aria-label="Notifications"
       >
         <Bell class="size-5" aria-hidden="true" />
