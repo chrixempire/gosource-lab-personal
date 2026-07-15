@@ -52,6 +52,11 @@ import {
 import { ActivityLog } from '../../activity/schema/activityLog.schema';
 import { InventoryMovement } from '../../product/entities/inventoryMovement.entity';
 import { RequestService } from '../../request/request.service';
+import { NotificationService } from '../../notification/notification.service';
+import {
+  NOTIFICATION_RECIPIENT_TYPE,
+  NOTIFICATION_TYPE,
+} from '../../notification/interface/notification.interface';
 import { randomUUID } from 'crypto';
 import { createMoney } from '../../utils/money';
 import { buildOrderInvoiceViewModel } from '../../utils/order-invoice-view';
@@ -91,7 +96,36 @@ export class OrderService {
     @InjectModel(Request.name)
     private requestModel: Model<Request>,
     private requestService: RequestService,
+    private notificationService: NotificationService,
   ) {}
+
+  /** Notify the order's business customer of an order lifecycle change. */
+  private async notifyOrderBusiness(
+    order: any,
+    type: NOTIFICATION_TYPE,
+    title: string,
+    message: string,
+  ): Promise<void> {
+    const businessId = order?.business
+      ? String((order.business as any)?._id ?? order.business)
+      : null;
+    if (!businessId) {
+      return;
+    }
+    await this.notificationService.create({
+      recipient: businessId,
+      recipientType: NOTIFICATION_RECIPIENT_TYPE.BUSINESS,
+      businessId,
+      type,
+      title,
+      message,
+      link: `/track-orders/${String(order?._id ?? order?.id ?? '')}`,
+      metadata: {
+        orderId: String(order?._id ?? order?.id ?? ''),
+        reference: order?.reference,
+      },
+    });
+  }
 
   private resolveDocumentId(value: unknown): string | null {
     if (!value) {
@@ -503,6 +537,13 @@ export class OrderService {
         ),
       );
 
+      await this.notifyOrderBusiness(
+        order,
+        NOTIFICATION_TYPE.ORDER_STATUS_CHANGED,
+        'Order status updated',
+        `Order ${(order as any).reference ?? orderId} is now ${message}.`,
+      );
+
       return {
         status: true,
         message: 'Order status updated successfully',
@@ -749,6 +790,13 @@ export class OrderService {
       } catch {
         /* logging must never break the payment update */
       }
+
+      await this.notifyOrderBusiness(
+        order,
+        NOTIFICATION_TYPE.ORDER_PAYMENT_STATUS_CHANGED,
+        'Payment status updated',
+        `Payment for order ${(order as any).reference ?? orderId} is now ${status}.`,
+      );
 
       return {
         status: true,

@@ -8,7 +8,8 @@ type OrderStatusTagVariant =
   | 'warning'
   | 'ready'
   | 'partiallyDelivered'
-  | 'accepted';
+  | 'accepted'
+  | 'glory';
 
 export type OrderListItem = {
   id: string;
@@ -83,6 +84,10 @@ export function getOrderStatusVariant(status: OrderStatus) {
 
   if (status === 'accepted') {
     return 'accepted' as const;
+  }
+
+  if (status === 'shipped') {
+    return 'glory' as const; // purple
   }
 
   if (['delivered', 'completed'].includes(status)) {

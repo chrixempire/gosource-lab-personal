@@ -46,6 +46,11 @@ import { AccountingService } from '../../accounting/accounting.service';
 import { ActivityService } from '../../activity/activity.service';
 import { adminInitiator } from '../../utils/activity-initiator.util';
 import { ACTIVITY_LOG_ACTION_TYPE } from '../../activity/interface/activityLog.interface';
+import { NotificationService } from '../../notification/notification.service';
+import {
+  NOTIFICATION_RECIPIENT_TYPE,
+  NOTIFICATION_TYPE,
+} from '../../notification/interface/notification.interface';
 
 @Injectable()
 export class CreditService {
@@ -61,7 +66,35 @@ export class CreditService {
     @InjectQueue(QUEUE_NAMES.CREDIT_REPAYMENT) private creditQueue: Queue,
     private accountingService: AccountingService,
     private activityService: ActivityService,
+    private notificationService: NotificationService,
   ) {}
+
+  /** In-app notification to a business about a credit application decision. */
+  private async notifyCreditBusiness(
+    creditApplication: any,
+    type: NOTIFICATION_TYPE,
+    title: string,
+    message: string,
+  ): Promise<void> {
+    const businessId = creditApplication?.business?._id
+      ? String(creditApplication.business._id)
+      : creditApplication?.business
+        ? String(creditApplication.business)
+        : null;
+    if (!businessId) {
+      return;
+    }
+    await this.notificationService.create({
+      recipient: businessId,
+      recipientType: NOTIFICATION_RECIPIENT_TYPE.BUSINESS,
+      businessId,
+      type,
+      title,
+      message,
+      link: '/credit',
+      metadata: { creditId: String(creditApplication?._id ?? '') },
+    });
+  }
 
   /**
    * Rejects a credit application for a business.
@@ -119,6 +152,13 @@ export class CreditService {
         reason: rejectionReason ?? null,
       },
     });
+
+    await this.notifyCreditBusiness(
+      creditApplication,
+      NOTIFICATION_TYPE.CREDIT_APPLICATION_REJECTED,
+      'Credit application rejected',
+      'Your credit application was rejected. Check your email for details.',
+    );
 
     // Send email to business with rejection reason
     await this.sendCreditNotification(
@@ -550,6 +590,13 @@ export class CreditService {
           approvedAmount: approvedAmountInMoney.format(),
         },
       });
+
+      await this.notifyCreditBusiness(
+        creditApplication,
+        NOTIFICATION_TYPE.CREDIT_APPLICATION_APPROVED,
+        'Credit application approved',
+        `Your credit application was approved — ${approvedAmountInMoney.format()}.`,
+      );
 
       // Send email to business with approval details (AFTER COMMIT)
       await this.sendCreditNotification(
