@@ -125,7 +125,7 @@ const panels = ['purple', 'peach', 'purple'] as const;
             <!-- ============ PURPLE SLIDE ============ -->
             <div
               v-if="type === 'purple'"
-              class="relative flex min-h-[26rem] flex-col justify-center overflow-hidden bg-purple-50 px-6 py-14 sm:px-12 lg:h-[567px] lg:px-20 lg:py-0"
+              class="relative flex h-full min-h-[26rem] flex-col justify-center overflow-hidden rounded-[32px] bg-purple-50 px-6 py-14 sm:px-12 lg:h-[567px] lg:px-20 lg:py-0"
             >
               <!-- Background particles — positioned per Figma 952:7806 (card 1346×567) -->
               <img src="/images/hero/p-shape-br.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[44%] top-[30%] z-0 hidden w-[48.5%] select-none sm:block">
@@ -183,7 +183,7 @@ const panels = ['purple', 'peach', 'purple'] as const;
             <!-- ============ PEACH / DEALS SLIDE ============ -->
             <div
               v-else
-              class="relative flex min-h-[26rem] flex-col justify-center overflow-hidden bg-[#fcece9] px-6 py-14 sm:px-12 lg:h-[567px] lg:px-20 lg:py-0"
+              class="relative flex h-full min-h-[26rem] flex-col justify-center overflow-hidden rounded-[32px] bg-[#fcece9] px-6 py-14 sm:px-12 lg:h-[567px] lg:px-20 lg:py-0"
             >
               <!-- Background particles — positioned per Figma 952:8136 (card 1346×567) -->
               <img src="/images/hero/pe-confetti-2.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[27%] -top-[27%] z-0 hidden w-[48.4%] select-none sm:block">
