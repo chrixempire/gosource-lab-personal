@@ -3,7 +3,7 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
 import { MOBILE_DOWNLOAD_LINKS } from '~/lib/mobile-download';
 
 useHead({
-  link: [{ rel: 'preload', as: 'image', href: '/images/hero/hero-basket.png' }],
+  link: [{ rel: 'preload', as: 'image', href: '/images/hero/hero-basket.svg', type: 'image/svg+xml' }],
 });
 
 /**
@@ -143,16 +143,16 @@ function isPurpleClone(index: number) {
                 </div>
               </div>
 
-              <!-- Basket — gosource.app asset is 524×548, seated on the hero bottom edge -->
+              <!-- Basket — gosource.app SVG (524×548), cropped to sit flush on the hero bottom -->
               <img
-                src="/images/hero/hero-basket.png"
+                src="/images/hero/hero-basket.svg"
                 alt="Grocery bag filled with fresh food supplies"
                 width="524"
-                height="548"
+                height="481"
                 fetchpriority="high"
                 loading="eager"
                 decoding="async"
-                class="pointer-events-none absolute bottom-0 right-0 z-10 h-auto w-[min(72vw,300px)] object-contain object-bottom drop-shadow-xl sm:w-[380px] lg:w-[524px] lg:max-h-full"
+                class="pointer-events-none absolute bottom-0 right-0 z-10 block w-[min(72vw,300px)] sm:w-[380px] lg:w-[524px] [filter:drop-shadow(0_-8px_24px_rgba(16,25,40,0.12))]"
               >
             </div>
 
