@@ -278,10 +278,7 @@ watch(
     data-testid="explore-category-filter-bar"
     :class="EXPLORE_CATEGORY_FILTER_STICKY_CLASS"
   >
-    <div
-      class="flex w-full min-w-0 items-center"
-      :class="canScrollCategories ? 'gap-2' : ''"
-    >
+    <div class="flex w-full min-w-0 items-center gap-2">
       <button
         v-if="canScrollCategories"
         type="button"
@@ -295,7 +292,7 @@ watch(
 
       <div
         ref="scrollerRef"
-        class="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto px-2 [-ms-overflow-style:none] [scrollbar-width:none] lg:gap-4 [&::-webkit-scrollbar]:hidden"
+        class="flex min-w-0 shrink grow-0 items-center gap-3 overflow-x-auto px-2 [-ms-overflow-style:none] [scrollbar-width:none] lg:gap-4 [&::-webkit-scrollbar]:hidden"
       >
         <div class="flex shrink-0 items-start gap-1">
           <button
@@ -363,59 +360,6 @@ watch(
             </span>
           </button>
         </div>
-
-        <div
-          v-if="!hideFilters"
-          class="h-10 w-px shrink-0 self-center bg-[#d0d5dd]"
-          aria-hidden="true"
-        />
-
-        <div v-if="!hideFilters" class="flex shrink-0 items-center gap-2">
-          <button
-            v-if="!hideInStockFilter"
-            type="button"
-            class="shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-sm font-medium transition"
-            :class="
-              inStockOnly
-                ? activePillClass + ' border-primary-500'
-                : 'border-grey-50 bg-background-on-canvas text-grey-300 customer-sidebar-nav-hover hover:border-primary-300'
-            "
-            :aria-pressed="inStockOnly"
-            @click="toggleInStock"
-          >
-            In stock only
-          </button>
-
-          <OrderFilterPopover
-            v-model:open="priceOpen"
-            label="Price"
-            :active="priceActive"
-            @apply="applyPrice"
-            @clear="clearPrice"
-            @update:open="(value) => value && openPrice()"
-          >
-            <div class="grid gap-3">
-              <label class="grid gap-1.5 text-sm text-grey-text">
-                <span class="font-medium">Minimum</span>
-                <Input
-                  :model-value="draftPriceMin"
-                  inputmode="numeric"
-                  placeholder="0"
-                  @update:model-value="onDraftPriceMinInput"
-                />
-              </label>
-              <label class="grid gap-1.5 text-sm text-grey-text">
-                <span class="font-medium">Maximum</span>
-                <Input
-                  :model-value="draftPriceMax"
-                  inputmode="numeric"
-                  placeholder="Any"
-                  @update:model-value="onDraftPriceMaxInput"
-                />
-              </label>
-            </div>
-          </OrderFilterPopover>
-        </div>
       </div>
 
       <button
@@ -428,6 +372,73 @@ watch(
       >
         <ChevronRight class="size-5" aria-hidden="true" />
       </button>
+
+      <!--
+        Separator + price filter are pinned to the right of the bar and stay visible
+        at all times. The categories scroll in the flex-1 region to their left, so
+        overflowing categories slide under the right chevron toward this cluster
+        instead of pushing it off-screen.
+      -->
+      <div
+        v-if="!hideFilters"
+        class="h-10 w-px shrink-0 self-center bg-[#d0d5dd]"
+        aria-hidden="true"
+      />
+
+      <div v-if="!hideFilters" class="flex shrink-0 items-center gap-2">
+        <button
+          v-if="!hideInStockFilter"
+          type="button"
+          class="shrink-0 cursor-pointer rounded-full border px-3.5 py-2 text-sm font-medium transition"
+          :class="
+            inStockOnly
+              ? activePillClass + ' border-primary-500'
+              : 'border-grey-50 bg-background-on-canvas text-grey-300 customer-sidebar-nav-hover hover:border-primary-300'
+          "
+          :aria-pressed="inStockOnly"
+          @click="toggleInStock"
+        >
+          In stock only
+        </button>
+
+        <OrderFilterPopover
+          v-model:open="priceOpen"
+          label="Price"
+          :active="priceActive"
+          @apply="applyPrice"
+          @clear="clearPrice"
+          @update:open="(value) => value && openPrice()"
+        >
+          <div class="grid gap-3">
+            <label class="grid gap-1.5 text-sm text-grey-text">
+              <span class="font-medium">Minimum</span>
+              <Input
+                :model-value="draftPriceMin"
+                inputmode="numeric"
+                placeholder="0"
+                @update:model-value="onDraftPriceMinInput"
+              />
+            </label>
+            <label class="grid gap-1.5 text-sm text-grey-text">
+              <span class="font-medium">Maximum</span>
+              <Input
+                :model-value="draftPriceMax"
+                inputmode="numeric"
+                placeholder="Any"
+                @update:model-value="onDraftPriceMaxInput"
+              />
+            </label>
+          </div>
+        </OrderFilterPopover>
+      </div>
+
+      <!--
+        Trailing spacer: grows to eat leftover width so the separator + price sit
+        directly beside the categories (and clear of the right wall) when the rail
+        fits. When categories overflow there is no leftover width, the spacer
+        collapses to zero, the scroller shrinks + scrolls, and the price pins right.
+      -->
+      <div class="min-w-0 flex-1" aria-hidden="true" />
     </div>
   </div>
 </template>
