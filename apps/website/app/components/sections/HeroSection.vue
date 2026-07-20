@@ -2,6 +2,10 @@
 import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
 import { MOBILE_DOWNLOAD_LINKS } from '~/lib/mobile-download';
 
+useHead({
+  link: [{ rel: 'preload', as: 'image', href: '/images/hero/hero-basket.png' }],
+});
+
 /**
  * Hero slider (Figma 891-23356). Two full-width rounded slides:
  *  0 — purple: headline + CTAs, with the grocery basket illustration on the right.
@@ -75,27 +79,27 @@ const trackStyle = computed(() => ({
 // The three panels: purple, peach, purple (clone for a seamless left loop).
 const panels = ['purple', 'peach', 'purple'] as const;
 
-/** Only the first purple slide carries visible copy/media — the clone is for the loop. */
-function isPrimaryPurple(type: (typeof panels)[number], index: number) {
-  return type === 'purple' && index === 0;
+/** Clone panel (index 2) mirrors slide 0 for the seamless loop — hide from assistive tech. */
+function isPurpleClone(index: number) {
+  return index === 2;
 }
 </script>
 
 <template>
   <section class="bg-white pt-3 sm:pt-4">
     <div class="site-container">
-      <div class="overflow-hidden rounded-[32px]">
+      <div class="overflow-hidden rounded-[32px] min-h-[26rem] lg:h-[600px]">
         <div class="flex w-full" :style="trackStyle">
           <div
             v-for="(type, i) in panels"
             :key="i"
-            class="relative min-w-full flex-[0_0_100%] overflow-hidden rounded-[32px]"
+            class="relative min-h-[26rem] min-w-full flex-[0_0_100%] overflow-hidden rounded-[32px] lg:h-[600px]"
           >
             <!-- ============ PURPLE SLIDE ============ -->
             <div
               v-if="type === 'purple'"
-              class="relative flex h-full min-h-[26rem] flex-col justify-center overflow-hidden rounded-[32px] bg-purple-50 px-6 py-14 sm:px-12 lg:h-[600px] lg:px-20 lg:py-0"
-              :aria-hidden="!isPrimaryPurple(type, i) || undefined"
+              class="relative flex h-full flex-col overflow-hidden rounded-[32px] bg-purple-50 px-6 py-14 sm:px-12 lg:px-20 lg:py-0"
+              :aria-hidden="isPurpleClone(i) || undefined"
             >
               <!-- Background particles — positioned per Figma 952:7806 (card 1346×567) -->
               <img src="/images/hero/p-shape-br.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[44%] top-[30%] z-0 hidden w-[48.5%] select-none sm:block">
@@ -104,58 +108,58 @@ function isPrimaryPurple(type: (typeof panels)[number], index: number) {
               <img src="/images/hero/p-ribbon.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[77%] top-[76%] z-0 hidden w-[5%] min-w-[30px] select-none sm:block">
               <img src="/images/hero/p-dot-br.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[89.5%] top-[77%] z-0 w-[13.2%] min-w-[42px] select-none">
 
-              <template v-if="isPrimaryPurple(type, i)">
-                <div class="relative z-10 flex w-full flex-col gap-8 lg:h-full lg:flex-row lg:items-stretch lg:gap-10">
-                  <div class="flex min-w-0 w-full max-w-xl flex-1 flex-col justify-center">
-                    <h1 class="text-display !leading-[0.98] text-[#650e65]">
-                      All your food supplies in
-                      <span class="block text-serif-accent text-[1.06em] leading-[0.95] text-purple-500">
-                        one platform
-                      </span>
-                    </h1>
-                    <p class="mt-6 max-w-lg text-base leading-relaxed text-grey-700 sm:text-lg">
-                      GoSource is the modern way to source food in Nigeria — connecting
-                      restaurants, hotels, caterers and households to fresh supplies at
-                      bulk prices.
-                    </p>
-                    <div class="mt-8 flex flex-wrap items-center gap-4">
-                      <a
-                        :href="CUSTOMER_REGISTER_URL"
-                        class="inline-flex h-12 items-center gap-2 rounded-full bg-primary-500 px-6 text-lg font-semibold text-white transition hover:bg-primary-600"
-                      >
-                        Get started for free
-                        <Icon name="lucide:chevron-right" class="size-4" />
-                      </a>
-                      <a
-                        :href="MOBILE_DOWNLOAD_LINKS.ios"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-lg font-semibold text-grey-900 shadow-sm transition hover:bg-grey-50"
-                      >
-                        <Icon name="lucide:apple" class="size-4" />
-                        <Icon name="lucide:play" class="size-3.5" />
-                        Download app
-                      </a>
-                    </div>
-                  </div>
-
-                  <div class="flex w-full flex-1 items-end justify-center lg:justify-end">
-                    <img
-                      src="/images/hero/hero-basket.png"
-                      alt="Grocery bag filled with fresh food supplies"
-                      width="600"
-                      height="600"
-                      class="size-[280px] object-contain object-bottom drop-shadow-xl sm:size-[400px] lg:size-[600px]"
+              <div class="relative z-10 flex h-full w-full flex-col justify-center pb-56 sm:pb-64 lg:max-w-[58%] lg:pb-0 lg:pr-6">
+                <div class="flex min-w-0 w-full max-w-xl flex-col justify-center">
+                  <h1 class="text-display !leading-[0.98] text-[#650e65]">
+                    All your food supplies in
+                    <span class="block text-serif-accent text-[1.06em] leading-[0.95] text-purple-500">
+                      one platform
+                    </span>
+                  </h1>
+                  <p class="mt-6 max-w-lg text-base leading-relaxed text-grey-700 sm:text-lg">
+                    GoSource is the modern way to source food in Nigeria — connecting
+                    restaurants, hotels, caterers and households to fresh supplies at
+                    bulk prices.
+                  </p>
+                  <div class="mt-8 flex flex-wrap items-center gap-4">
+                    <a
+                      :href="CUSTOMER_REGISTER_URL"
+                      class="inline-flex h-12 items-center gap-2 rounded-full bg-primary-500 px-6 text-lg font-semibold text-white transition hover:bg-primary-600"
                     >
+                      Get started for free
+                      <Icon name="lucide:chevron-right" class="size-4" />
+                    </a>
+                    <a
+                      :href="MOBILE_DOWNLOAD_LINKS.ios"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-lg font-semibold text-grey-900 shadow-sm transition hover:bg-grey-50"
+                    >
+                      <Icon name="lucide:apple" class="size-4" />
+                      <Icon name="lucide:play" class="size-3.5" />
+                      Download app
+                    </a>
                   </div>
                 </div>
-              </template>
+              </div>
+
+              <!-- Basket — gosource.app asset is 524×548, seated on the hero bottom edge -->
+              <img
+                src="/images/hero/hero-basket.png"
+                alt="Grocery bag filled with fresh food supplies"
+                width="524"
+                height="548"
+                fetchpriority="high"
+                loading="eager"
+                decoding="async"
+                class="pointer-events-none absolute bottom-0 right-0 z-10 h-auto w-[min(72vw,300px)] object-contain object-bottom drop-shadow-xl sm:w-[380px] lg:w-[524px] lg:max-h-full"
+              >
             </div>
 
             <!-- ============ PEACH / DEALS SLIDE ============ -->
             <div
               v-else
-              class="relative flex h-full min-h-[26rem] flex-col justify-center overflow-hidden rounded-[32px] bg-[#fcece9] px-6 py-14 sm:px-12 lg:h-[567px] lg:px-20 lg:py-0"
+              class="relative flex h-full flex-col justify-center overflow-hidden rounded-[32px] bg-[#fcece9] px-6 py-14 sm:px-12 lg:px-20 lg:py-0"
             >
               <!-- Background particles — positioned per Figma 952:8136 (card 1346×567) -->
               <img src="/images/hero/pe-confetti-2.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[27%] -top-[27%] z-0 hidden w-[48.4%] select-none sm:block">
