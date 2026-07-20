@@ -182,7 +182,10 @@ async function onAdd(e: MouseEvent) {
       </div>
     </div>
 
-    <div class="w-full shrink-0 px-0 pb-0 pt-2.5" @click.stop>
+    <!-- Divider: edge-to-edge (breaks the card's p-2.5), 6px gap above (details) and below (button / qty strip). -->
+    <div class="-mx-2.5 mt-1.5 h-px shrink-0 bg-grey-50" aria-hidden="true" />
+
+    <div class="w-full shrink-0 px-0 pb-0 pt-1.5" @click.stop>
       <button
         v-if="!inStock"
         type="button"
@@ -196,11 +199,20 @@ async function onAdd(e: MouseEvent) {
       <button
         v-else-if="showAddButton"
         type="button"
-        class="flex h-10 w-full shrink-0 cursor-pointer items-center justify-center gap-1 self-stretch rounded-[100px] border-2 border-white bg-[#F0F2F5] px-4 text-base font-bold text-[#101928] shadow-[0_4px_8px_0_rgba(71,83,103,0.10)] transition-colors hover:bg-[#E4E7EC] dark:border-primary-500/40 dark:bg-primary-500/12 dark:text-[#22c55e] dark:shadow-none dark:hover:bg-primary-500/20"
+        class="group relative flex h-10 w-full shrink-0 cursor-pointer items-center justify-center self-stretch overflow-hidden rounded-[100px] border-2 border-white bg-[#F0F2F5] px-4 text-base font-bold text-[#101928] shadow-[0_4px_8px_0_rgba(71,83,103,0.10)] dark:border-primary-500/40 dark:bg-primary-500/12 dark:text-[#22c55e] dark:shadow-none"
         @click="onAdd"
       >
-        <Plus class="size-[18px] stroke-[3]" aria-hidden="true" />
-        Add
+        <!-- Green wipe: fills from the left on hover, retracts to the left on leave. -->
+        <span
+          class="pointer-events-none absolute inset-0 z-0 origin-left scale-x-0 bg-primary-500 transition-transform duration-500 ease-out group-hover:scale-x-100"
+          aria-hidden="true"
+        />
+        <span
+          class="relative z-10 inline-flex items-center gap-1 transition-colors duration-500 ease-out group-hover:text-white"
+        >
+          <Plus class="size-[18px] stroke-[3]" aria-hidden="true" />
+          Add
+        </span>
       </button>
 
       <div v-else-if="showQtyStrip" class="w-full">

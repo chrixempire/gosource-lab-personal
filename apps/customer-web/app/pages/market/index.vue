@@ -465,7 +465,7 @@ onUnmounted(() => {
           v-for="promotion in promotions"
           :key="promotion.id"
           :promotion="promotion"
-          variant="sprout"
+          variant="standard"
         />
       </div>
 
@@ -499,7 +499,7 @@ onUnmounted(() => {
           v-for="section in exploreSections"
           :key="section.id"
           :section="section"
-          variant="sprout"
+          variant="standard"
         />
 
         <p
