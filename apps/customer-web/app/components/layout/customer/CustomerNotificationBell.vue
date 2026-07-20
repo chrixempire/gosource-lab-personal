@@ -25,18 +25,55 @@ const {
 
 const open = ref(false);
 
+let idleHandle: number | null = null;
+let idleTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function cancelDeferredStream() {
+  if (idleHandle != null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+    window.cancelIdleCallback(idleHandle);
+    idleHandle = null;
+  }
+  if (idleTimeout != null) {
+    clearTimeout(idleTimeout);
+    idleTimeout = null;
+  }
+}
+
+function deferLiveStream() {
+  cancelDeferredStream();
+  const start = () => {
+    idleHandle = null;
+    idleTimeout = null;
+    startStream();
+  };
+
+  // Only SSE is deferred — it's the heavy/long-lived connection. Unread badge
+  // polling starts immediately so the count is correct on first paint.
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    idleHandle = window.requestIdleCallback(start, { timeout: 800 });
+  } else {
+    idleTimeout = setTimeout(start, 300);
+  }
+}
+
 onMounted(() => {
+  // Light GET for badge + 30s poll — does not wait for idle.
   startPolling();
-  startStream();
+  deferLiveStream();
 });
+
 onBeforeUnmount(() => {
+  cancelDeferredStream();
   stopPolling();
   stopStream();
 });
 
 // Load the list the first time the dropdown opens, and refresh on each open.
+// Also kick the live stream immediately if the user opens the bell before idle.
 watch(open, (isOpen) => {
   if (isOpen) {
+    cancelDeferredStream();
+    startStream();
     void fetchList();
   }
 });

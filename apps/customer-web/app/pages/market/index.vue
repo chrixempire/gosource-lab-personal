@@ -7,7 +7,6 @@ import ExplorePromotionsSection from "~/components/explore/ExplorePromotionsSect
 import ExploreRecentOrdersSection from "~/components/explore/ExploreRecentOrdersSection.vue";
 // import MarketNewsRail from "~/components/market/MarketNewsRail.vue";
 import MarketActiveAlert from "~/components/market/MarketActiveAlert.vue";
-import MarketProductDetailSlideModal from "~/components/market/MarketProductDetailSlideModal.vue";
 import { useAuthenticatedAsyncData } from "~/composables/useAuthenticatedAsyncData";
 import { useBusinessBranchContext } from "~/composables/useBusinessBranchContext";
 import { useCustomerSession } from "~/composables/useCustomerSession";
@@ -26,6 +25,10 @@ import {
 import { readCachedCategoriesFromStorage } from "~/services/market.service";
 import { useCustomerMarketService } from "~/services/market.service";
 
+const MarketProductDetailSlideModal = defineAsyncComponent(
+  () => import("~/components/market/MarketProductDetailSlideModal.vue"),
+);
+
 definePageMeta({
   layout: "customer-explore",
 });
@@ -42,18 +45,18 @@ const {
   isReady: branchContextReady,
 } = useBusinessBranchContext();
 
-const { categories, catalogList, hydrateFromStorage, setCategories } =
+const { categories, catalogList, setCategories } =
   useMarketCatalog();
 const { listCategories, listPromotions, listRecentOrders } =
   useCustomerMarketService();
 
 if (import.meta.client) {
-  const persisted = readCachedCategoriesFromStorage({ allowStale: true }) ?? [];
+  // Only hydrate first paint from a fresh cache (< 1h). Stale blobs wait for network.
+  const persisted = readCachedCategoriesFromStorage({ allowStale: false }) ?? [];
   if (persisted.length > 0 && catalogList().length === 0) {
     categories.value = persisted;
   }
 }
-hydrateFromStorage();
 
 const initialRouteFilters = parseExploreFiltersFromRoute(route.query);
 
@@ -120,7 +123,13 @@ const { data: catalogPayload, pending: catalogPending } =
   await useAuthenticatedAsyncData(
     "market-catalog",
     async () => {
-      const response = await listCategories({ force: true, quiet: true });
+      // Fresh cache (< 1h): paint immediately + background revalidate.
+      // Missing/stale: await network so we never flash hour-old products.
+      const fresh = readCachedCategoriesFromStorage({ allowStale: false });
+      const response = await listCategories({
+        force: !(fresh && fresh.length > 0),
+        quiet: true,
+      });
       return response.data ?? [];
     },
     {
@@ -377,16 +386,8 @@ watch(hasSession, (loggedIn) => {
 onMounted(async () => {
   await startExploreHeroBootstrap();
 
-  if (import.meta.client) {
-    try {
-      const response = await listCategories({ force: true, quiet: true });
-      if (response.data?.length) {
-        setCategories(response.data);
-      }
-    } catch {
-      // keep hydrated catalog when refresh fails
-    }
-  }
+  // Catalog is already loaded via useAuthenticatedAsyncData (cache + background
+  // revalidate). Avoid a second force:true network hit on every mount.
 
   nextTick(() => {
     attachScrollListener();
