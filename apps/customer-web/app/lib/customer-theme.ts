@@ -21,10 +21,13 @@ export function readStoredCustomerThemePreference(): CustomerThemePreference | n
   }
 }
 
-/** Dark mode from 7:00 p.m. until before 7:00 a.m. (local time). */
-function resolveScheduleTheme(): CustomerThemePreference {
-  const hour = new Date().getHours();
-  return hour >= 19 || hour < 7 ? 'dark' : 'light';
+/** Follow the operating system's / phone's colour scheme (prefers-color-scheme). */
+export function resolveSystemTheme(): CustomerThemePreference {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return 'light';
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 export function resolveCustomerThemePreference(): CustomerThemePreference {
@@ -33,7 +36,7 @@ export function resolveCustomerThemePreference(): CustomerThemePreference {
     return stored;
   }
 
-  return resolveScheduleTheme();
+  return resolveSystemTheme();
 }
 
 export function applyCustomerThemeToDocument(theme: CustomerResolvedTheme) {
@@ -63,5 +66,17 @@ export function persistCustomerThemePreference(theme: CustomerThemePreference) {
   }
 }
 
+/** Forget the explicit choice so the app follows the OS setting again. */
+export function clearStoredCustomerThemePreference() {
+  try {
+    localStorage.removeItem(CUSTOMER_THEME_STORAGE_KEY);
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+/** Tri-state control value: an explicit theme, or "system" (follow the OS). */
+export type CustomerThemeMode = CustomerThemePreference | 'system';
+
 /** Inline bootstrap for nuxt head — must stay in sync with resolveCustomerThemePreference. */
-export const CUSTOMER_THEME_BOOTSTRAP_SCRIPT = `(function(){try{var k=${JSON.stringify(CUSTOMER_THEME_STORAGE_KEY)};var s=localStorage.getItem(k);var h=new Date().getHours();var scheduleDark=h>=19||h<7;var d=s==='dark'||(s!=='light'&&scheduleDark);var e=document.documentElement;if(d){e.classList.add('dark');e.style.colorScheme='dark';}else{e.classList.remove('dark');e.style.colorScheme='light';}}catch(e){}})();`;
+export const CUSTOMER_THEME_BOOTSTRAP_SCRIPT = `(function(){try{var k=${JSON.stringify(CUSTOMER_THEME_STORAGE_KEY)};var s=localStorage.getItem(k);var systemDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var d=s==='dark'||(s!=='light'&&systemDark);var e=document.documentElement;if(d){e.classList.add('dark');e.style.colorScheme='dark';}else{e.classList.remove('dark');e.style.colorScheme='light';}}catch(e){}})();`;

@@ -32,7 +32,7 @@ import {
 } from './enum/request.enum';
 import { Order, OrderDocument } from '../order/entities/order.entity';
 import { ORDER_STATUS } from '../order/interface/order.interface';
-import { CouponType } from '../admin/coupon/coupon.enum';
+import { CouponType, CouponCategory } from '../admin/coupon/coupon.enum';
 import { QueryParamsDto } from '../analytics/dto/query-param.dto';
 import { NewEmailInterface } from '../notification/email/email.interface';
 import { EmailService } from '../notification/email/email.service';
@@ -59,6 +59,11 @@ import { Types } from 'mongoose';
 import { CreditService } from '../credit/credit.service';
 import { SystemConfigService } from '../admin/admin/system-config.service';
 import { createMoney } from '../utils/money';
+import { NotificationService } from '../notification/notification.service';
+import {
+  NOTIFICATION_RECIPIENT_TYPE,
+  NOTIFICATION_TYPE,
+} from '../notification/interface/notification.interface';
 import {
   resolvePurchaseUnitConversion,
   snapshotOrderFinancialLines,
@@ -89,6 +94,7 @@ export class RequestService {
     private creditService: CreditService,
     private systemConfigService: SystemConfigService,
     private eventEmitter: EventEmitter2,
+    private notificationService: NotificationService,
   ) {}
 
   private async getAuthBusinessId(authId: string) {
@@ -417,6 +423,33 @@ export class RequestService {
     }
 
     if (newRequest) {
+      // In-app notification to the business super admin that a request is
+      // pending. Only when an employee raised it (a super admin creating their
+      // own request doesn't need to notify themselves).
+      if (initiator === 'employee') {
+        const memberName = [employee.firstName, employee.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+        const message = memberName
+          ? `A new request from ${memberName} (${reference}) is awaiting your approval.`
+          : `A new request (${reference}) is awaiting your approval.`;
+        await this.notificationService.create({
+          recipient: String(businessId),
+          recipientType: NOTIFICATION_RECIPIENT_TYPE.BUSINESS,
+          businessId: String(businessId),
+          type: NOTIFICATION_TYPE.REQUEST_CREATED,
+          title: 'New procurement request',
+          message,
+          link: `/manage-requests/${this.resolveEntityId(newRequest._id ?? newRequest.id)}`,
+          metadata: {
+            requestId: String(newRequest._id ?? newRequest.id),
+            reference,
+            memberName,
+          },
+        });
+      }
+
       // Send an email notification if the initiator is an employee
       if (initiator === 'employee' && branch) {
         const businessOwner =
@@ -828,6 +861,22 @@ export class RequestService {
           };
 
           this.emailService.sendMail(emailEmployeeData);
+
+          // In-app notification to the employee who raised the request.
+          await this.notificationService.create({
+            recipient: this.resolveEntityId(request.initiator._id),
+            recipientType: NOTIFICATION_RECIPIENT_TYPE.EMPLOYEE,
+            businessId: String(business.id ?? business._id ?? ''),
+            type: NOTIFICATION_TYPE.REQUEST_APPROVED,
+            title: 'Request approved',
+            message: `Your request ${request.reference} was approved and an order was created.`,
+            link: `/manage-requests/${this.resolveEntityId(request._id ?? request.id)}`,
+            metadata: {
+              requestId: String(request._id ?? request.id),
+              reference: request.reference,
+              orderReference: order?.reference,
+            },
+          });
         }
 
         // Send notification emails to admins
@@ -1141,7 +1190,23 @@ export class RequestService {
     request.rejectedReasons = rejectionDetails.rejectionReasons;
     request.status = RequestStatus.REJECTED;
     request.rejectedBy = business.id;
-    request.save();
+    await request.save();
+
+    // In-app notification to whoever raised the request.
+    await this.notificationService.create({
+      recipient: this.resolveEntityId(request.initiator),
+      recipientType: NOTIFICATION_RECIPIENT_TYPE.EMPLOYEE,
+      businessId: String(business.id ?? business._id ?? ''),
+      type: NOTIFICATION_TYPE.REQUEST_REJECTED,
+      title: 'Request rejected',
+      message: `Your request ${request.reference} was rejected.`,
+      link: `/manage-requests/${this.resolveEntityId(request._id ?? request.id)}`,
+      metadata: {
+        requestId: String(request._id ?? request.id),
+        reference: request.reference,
+        reasons: rejectionDetails.rejectionReasons,
+      },
+    });
 
     return {
       status: true,
@@ -1593,15 +1658,31 @@ export class RequestService {
    * Total = subtotal + delivery + service charge − discount.
    */
   private resolveBillableDiscount(request: any): number {
+    // Free-delivery coupons carry NO monetary discount — the benefit is the
+    // zeroed delivery fee. Detect via type OR category so it still resolves to 0
+    // when only one is set. (When couponDetails is an unpopulated ObjectId ref
+    // neither is available; the boolean guard below is the backstop for that.)
     const couponType = request.couponDetails?.type;
+    const couponCategory = request.couponDetails?.category;
     if (
       couponType === CouponType.FREE_DELIVERY ||
-      couponType === 'free_delivery'
+      couponType === 'free_delivery' ||
+      couponCategory === CouponCategory.FREE_DELIVERY ||
+      couponCategory === 'free_delivery'
     ) {
       return 0;
     }
 
-    return Number(request.discount ?? 0);
+    // Guard against a coupon *flag* leaking in as a monetary discount. `discount`
+    // is a Number field and Mongoose casts boolean `true` → 1, so a stray boolean
+    // would surface as a phantom ₦1 on the order. Only a finite, positive number
+    // is a real discount; a boolean / NaN / negative is treated as no discount.
+    const rawDiscount = request.discount;
+    if (typeof rawDiscount === 'boolean') {
+      return 0;
+    }
+    const discount = Number(rawDiscount);
+    return Number.isFinite(discount) && discount > 0 ? discount : 0;
   }
 
   private resolveRequestMoneyTotals(request: any, businessId: string) {

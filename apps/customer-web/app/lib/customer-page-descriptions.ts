@@ -6,6 +6,8 @@ const PAGE_DESCRIPTIONS: Record<string, string> = {
     'View spending, procurement breakdown, and recent orders for your branches.',
   '/track-orders':
     'View procurement insight and track fulfillment for orders placed after checkout.',
+  '/notifications':
+    'Stay on top of order, payment, request, and credit updates across your workspace.',
   '/lists':
     'Add products from the market with Add to list, then open a list to view and edit items. Create a request when you are ready.',
   '/branches': "Create and manage your company's branches.",

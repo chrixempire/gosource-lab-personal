@@ -12,6 +12,17 @@ import {
   validatePhoneNumber,
   validateRequiredText,
 } from '~/utils/auth-validation';
+import type { CustomerThemeMode } from '~/lib/customer-theme';
+
+const { mode: themeMode, setMode: setThemeMode } = useCustomerTheme();
+const themeOptions = [
+  { label: 'Light', value: 'light' },
+  { label: 'Dark', value: 'dark' },
+  { label: 'System', value: 'system' },
+];
+function onThemeChange(value: string) {
+  setThemeMode(value as CustomerThemeMode);
+}
 
 const session = useState<CustomerMeResponse | null>('customer-session', () => null);
 const { updateMyProfile, getBusinessAccount } = useCustomerProfileService();
@@ -278,6 +289,20 @@ onMounted(() => {
         </Button>
       </div>
       </form>
+
+      <section class="mt-2 rounded-[24px] border border-grey-50 bg-background-on-canvas p-6">
+        <h2 class="text-[15px] font-semibold text-grey-900">Appearance</h2>
+        <p class="mt-1 text-sm text-grey-300">
+          Choose how GoSource looks. <span class="font-medium text-grey-900">System</span>
+          follows your device’s light or dark setting.
+        </p>
+        <SegmentedControl
+          class="mt-4 w-full max-w-sm"
+          :model-value="themeMode"
+          :options="themeOptions"
+          @update:model-value="onThemeChange"
+        />
+      </section>
     </template>
 
     <template v-else>

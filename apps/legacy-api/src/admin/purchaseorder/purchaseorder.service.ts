@@ -184,11 +184,51 @@ export class PurchaseOrderService {
       createPurchaseOrderDto,
     );
 
+    // Capture a full snapshot of what was ordered into the activity log so the
+    // audit trail shows the items, prices and supplier — not just a count.
+    // Supplier names are read via a throwaway populated query so the returned
+    // `newPurchaseOrder` keeps its id refs (the API response shape is unchanged).
+    const productNameById = new Map(
+      existingProducts.map((p) => [String(p._id), p.name]),
+    );
+    const items = products.map((item) => ({
+      name: productNameById.get(String(item.product)) ?? 'Unknown product',
+      quantity: item.quantity,
+      totalPrice: item.totalPrice,
+    }));
+    const itemsTotal = items.reduce(
+      (sum, item) => sum + (Number(item.totalPrice) || 0),
+      0,
+    );
+
+    let supplierNames: string[] = [];
+    try {
+      const populated = await this.purchaseOrderModel
+        .findById(newPurchaseOrder.id)
+        .populate('suppliers', 'firstName lastName email')
+        .lean();
+      supplierNames = ((populated?.suppliers as any[]) ?? []).map((s) => {
+        const name = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim();
+        return name || s?.email || 'Unknown supplier';
+      });
+    } catch {
+      // Best-effort: fall back to raw supplier ids if the lookup fails.
+      supplierNames = (newPurchaseOrder.suppliers ?? []).map((id) => String(id));
+    }
+
     await this.activityLogModel.create({
       objectId: newPurchaseOrder.id,
       description: `Created purchase order with ${newPurchaseOrder.products?.length ?? 0} item(s)`,
       ...adminInitiator(user),
-      metadata: { itemCount: newPurchaseOrder.products?.length ?? 0 },
+      metadata: {
+        itemCount: items.length,
+        items,
+        itemsTotal,
+        suppliers: supplierNames.join(', '),
+        logisticsAmount: newPurchaseOrder.logisticsAmount ?? 0,
+        productType: newPurchaseOrder.productType ?? null,
+        note: newPurchaseOrder.note ?? '',
+      },
       action: ACTIVITY_LOG_ACTION_TYPE.CREATE,
       module: PurchaseOrder.name,
     } as IActivityLog);

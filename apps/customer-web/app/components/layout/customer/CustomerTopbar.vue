@@ -2,6 +2,7 @@
 import { BrandLogo } from '@gosource/ui';
 import { Menu } from 'lucide-vue-next';
 import CustomerUserMenu from './CustomerUserMenu.vue';
+import CustomerNotificationBell from './CustomerNotificationBell.vue';
 
 defineProps<{
   title: string;
@@ -48,7 +49,10 @@ const emit = defineEmits<{
         </div>
       </div>
 
-      <CustomerUserMenu :session="session" @settings="emit('settings')" @logout-request="emit('logoutRequest')" />
+      <div class="flex items-center gap-2">
+        <CustomerNotificationBell />
+        <CustomerUserMenu :session="session" @settings="emit('settings')" @logout-request="emit('logoutRequest')" />
+      </div>
     </div>
   </header>
 </template>

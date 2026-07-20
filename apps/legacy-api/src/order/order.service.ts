@@ -21,6 +21,7 @@ import { ProductStockUpdatedEvent } from '../admin/product/events/product-stock-
 import { INITIATOR_TYPE } from '../activity/interface/activityLog.interface';
 import { createMoney } from '../utils/money';
 import { OrderFilterUtil } from '../utils/filter';
+import { calculateTotalPrice } from '../utils/helpers';
 @Injectable()
 export class OrderService {
   constructor(
@@ -405,9 +406,20 @@ export class OrderService {
             0,
           ),
         ] as any;
+        // Keep the persisted payable total in sync with the finalized (merged)
+        // line items rather than carrying forward a possibly-stale totalPrice.
+        // Prices are frozen at order time (cartProduct), so this stays historical
+        // while being immune to drift when items were added/edited post-checkout.
+        // Fees preserved; the order-level discount subtracted once. Equals the old
+        // `totalPrice + additionalTotalPrice` for healthy orders.
+        order.totalPrice = Math.max(
+          0,
+          calculateTotalPrice(order.products as any[], order.business) +
+            (order.deliveryFee || 0) +
+            (order.serviceCharge || 0) -
+            (order.discount || 0),
+        );
         if (hadAdditional) {
-          order.totalPrice =
-            (order.totalPrice || 0) + (order.additionalTotalPrice || 0);
           order.additionalProducts = [] as any;
           order.additionalTotalPrice = 0;
         }
