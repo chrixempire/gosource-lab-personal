@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { CUSTOMER_APP_BASE } from '~/lib/customer-app';
 
 const dismissed = ref(false);
 </script>
@@ -16,7 +17,9 @@ const dismissed = ref(false);
       class="relative z-50 flex items-center justify-center gap-3 bg-[var(--color-announce)] px-4 py-3 text-center"
     >
       <a
-        href="#"
+        :href="CUSTOMER_APP_BASE"
+        target="_blank"
+        rel="noopener noreferrer"
         class="group flex items-center gap-2.5 text-[0.8125rem] text-white/95 sm:text-sm"
       >
         <span
@@ -25,8 +28,7 @@ const dismissed = ref(false);
           🎉 New
         </span>
         <span class="line-clamp-1">
-          9 popular markets in Lagos you need to visit if you need to buy
-          pocket-friendly foodstuffs
+          Multi-level request approval for members and live notification updates
         </span>
         <Icon
           name="lucide:arrow-right"
