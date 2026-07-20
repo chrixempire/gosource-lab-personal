@@ -2,7 +2,12 @@ import { useCustomerSession } from '~/composables/useCustomerSession';
 import { customerSignInLocation } from '~/lib/auth-redirect';
 
 function isPublicCustomerRoute(path: string) {
-  return path === '/' || path.startsWith('/auth') || path.startsWith('/market');
+  return (
+    path === '/' ||
+    path.startsWith('/auth') ||
+    path.startsWith('/market') ||
+    path.startsWith('/design-lab')
+  );
 }
 
 export default defineNuxtRouteMiddleware(async (to) => {

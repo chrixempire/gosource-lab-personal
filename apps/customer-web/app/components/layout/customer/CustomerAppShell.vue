@@ -2,7 +2,6 @@
 import type { CustomerMeResponse } from '@gosource/api-client';
 import { useMediaQuery } from '@vueuse/core';
 import {
-  BrandLogo,
   Button,
   Dialog,
   DialogBody,
@@ -15,7 +14,6 @@ import {
   Sidebar,
   SidebarInset,
   SidebarProvider,
-  SidebarRail,
   SidebarTrigger,
   TooltipProvider,
   toast,
@@ -243,96 +241,88 @@ async function confirmLogout() {
         aria-hidden="true"
       />
       <div
-        class="customer-shell-bg flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden text-grey-900 lg:h-screen lg:max-h-screen"
+        class="customer-shell-frame flex h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden text-grey-900 lg:h-screen lg:max-h-screen"
       >
-        <header
-          class="relative z-50 flex h-16 max-lg:h-16 shrink-0 items-stretch border-b border-grey-50 bg-background-on-canvas lg:h-[72px]"
-        >
-          <div class="flex w-[52px] shrink-0 items-center justify-center border-r border-grey-50 lg:hidden">
-            <button
-              type="button"
-              class="inline-flex size-10 items-center justify-center rounded-xl border border-grey-50 bg-background-on-canvas text-grey-900 transition-colors duration-300"
-              @click="mobileNavOpen = true"
-            >
-              <span class="sr-only">Open navigation</span>
-              <Menu class="size-5" />
-            </button>
-          </div>
-
-          <div
-            class="hidden min-w-0 shrink-0 items-center lg:flex lg:w-[250px] lg:px-6"
-          >
-            <BrandLogo class="h-auto w-[128px] max-w-none" />
-          </div>
-
-          <SidebarRail class="hidden bg-grey-50 lg:block" />
-
-          <div class="hidden w-[72px] shrink-0 items-center justify-center lg:flex">
-            <SidebarTrigger class="text-grey-900 transition-colors duration-300 hover:bg-grey-55" />
-          </div>
-
-          <div class="hidden items-center py-4 lg:flex">
-            <SidebarRail class="h-full bg-grey-50" />
-          </div>
-
-          <div
-            class="flex min-w-0 flex-1 items-center gap-2 px-2.5 sm:gap-3 sm:px-4 lg:gap-4 lg:px-6"
-            :class="showMarketHeaderSearch ? '' : 'justify-between'"
-          >
-            <div
-              v-if="!hidePageTitle"
-              class="flex min-w-0 items-center gap-0.5"
-              :class="
-                showMarketHeaderSearch
-                  ? 'flex-1 lg:max-w-[min(100%,12rem)] lg:shrink-0 lg:flex-none'
-                  : 'flex-1'
-              "
-            >
-              <h1 class="min-w-0 truncate text-h5 lg:text-h3">
-                <span class="lg:hidden">{{ mobileHeaderTitle }}</span>
-                <span v-if="isMarketRecentOrdersPage" class="hidden lg:contents">
-                  <span>Market</span>
-                  <span class="mx-1 font-normal">/</span>
-                  <span class="text-grey-300">Recently ordered</span>
-                </span>
-                <span v-else class="hidden lg:inline">{{ pageTitle }}</span>
-              </h1>
-              <CustomerPageTitleInfo
-                v-if="pageDescription"
-                :description="pageDescription"
-                class="shrink-0"
-              />
-            </div>
-
-            <div v-else class="min-w-0 flex-1" aria-hidden="true" />
-
-            <MarketSearch v-if="showMarketHeaderSearch" class="shrink-0 lg:min-w-0 lg:flex-1" />
-
-            <div class="ml-auto flex shrink-0 items-center gap-2">
-              <CustomerNotificationBell />
-              <MarketHeaderCartButton v-if="showHeaderCart" />
-            </div>
-          </div>
-        </header>
-
-        <div class="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-          <Sidebar
-            class="hidden h-[calc(100vh-72px)] border-r border-grey-50 bg-background-on-canvas lg:flex"
-            width="251px"
-            collapsed-width="0rem"
-          >
+        <!-- Desktop sidebar: shares the frame surface (no border); brand lives at its top. -->
+        <div class="hidden shrink-0 lg:block">
+          <Sidebar class="h-screen" width="250px" collapsed-width="0rem">
             <CustomerSidebar
               :session="session"
               @logout-request="openLogoutConfirm"
               @mobile-nav-close="mobileNavOpen = false"
             />
           </Sidebar>
+        </div>
 
-          <SidebarInset class="flex min-h-0 min-w-0 flex-1 flex-col">
+        <!-- Content: a floating, rounded white card inset from the frame on desktop. -->
+        <SidebarInset class="flex min-h-0 min-w-0 flex-1 flex-col p-0 lg:p-2">
+          <div
+            class="customer-content-surface flex min-h-0 flex-1 flex-col overflow-hidden border-grey-50 shadow-[0_1px_2px_0_rgba(16,24,40,0.04)] lg:rounded-xl lg:border"
+          >
+            <header
+              class="relative z-30 flex h-16 shrink-0 items-center gap-2 border-b border-grey-50 px-3 sm:gap-3 sm:px-4 lg:h-[60px] lg:px-5"
+              :class="showMarketHeaderSearch ? '' : 'justify-between'"
+            >
+              <!-- Mobile: open the navigation drawer. -->
+              <button
+                type="button"
+                class="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-grey-900 transition-colors hover:bg-grey-55 lg:hidden"
+                @click="mobileNavOpen = true"
+              >
+                <span class="sr-only">Open navigation</span>
+                <Menu class="size-5" />
+              </button>
+
+              <!-- Desktop: collapse / expand the sidebar. -->
+              <SidebarTrigger
+                class="hidden shrink-0 cursor-pointer text-grey-900 transition-colors hover:bg-grey-55 lg:inline-flex"
+              />
+
+              <span
+                class="hidden h-5 w-px shrink-0 bg-grey-50 lg:block"
+                aria-hidden="true"
+              />
+
+              <div
+                v-if="!hidePageTitle"
+                class="flex min-w-0 items-center gap-0.5"
+                :class="
+                  showMarketHeaderSearch
+                    ? 'flex-1 lg:max-w-[min(100%,12rem)] lg:shrink-0 lg:flex-none'
+                    : 'flex-1'
+                "
+              >
+                <h1 class="min-w-0 truncate text-h5 lg:text-h4">
+                  <span class="lg:hidden">{{ mobileHeaderTitle }}</span>
+                  <span v-if="isMarketRecentOrdersPage" class="hidden lg:contents">
+                    <span>Market</span>
+                    <span class="mx-1 font-normal">/</span>
+                    <span class="text-grey-300">Recently ordered</span>
+                  </span>
+                  <span v-else class="hidden lg:inline">{{ pageTitle }}</span>
+                </h1>
+                <CustomerPageTitleInfo
+                  v-if="pageDescription"
+                  :description="pageDescription"
+                  class="shrink-0"
+                />
+              </div>
+
+              <div v-else class="min-w-0 flex-1" aria-hidden="true" />
+
+              <MarketSearch v-if="showMarketHeaderSearch" class="shrink-0 lg:min-w-0 lg:flex-1" />
+
+              <div class="ml-auto flex shrink-0 items-center gap-2">
+                <CustomerThemeToggle />
+                <CustomerNotificationBell />
+                <MarketHeaderCartButton v-if="showHeaderCart" />
+              </div>
+            </header>
+
             <main
               id="customer-shell-scroll"
               :class="[
-                'min-h-0 flex-1 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-y-contain bg-background-canvas px-4 [-webkit-overflow-scrolling:touch] sm:px-5 lg:max-h-none lg:h-[calc(100vh-72px)] lg:px-6',
+                'customer-content-surface min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 [-webkit-overflow-scrolling:touch] sm:px-5 lg:px-6',
                 mainPaddingClass,
               ]"
             >
@@ -341,8 +331,8 @@ async function confirmLogout() {
                 <slot />
               </div>
             </main>
-          </SidebarInset>
-        </div>
+          </div>
+        </SidebarInset>
 
         <Teleport to="body">
           <Transition
@@ -371,7 +361,7 @@ async function confirmLogout() {
           >
             <aside
               v-if="mobileNavOpen"
-              class="fixed inset-y-0 left-0 w-[min(84vw,20rem)] border-r border-grey-50 bg-background-on-canvas shadow-[24px_0_64px_-24px_rgba(16,24,40,0.32)] lg:hidden"
+              class="customer-shell-frame fixed inset-y-0 left-0 w-[min(84vw,20rem)] border-r border-grey-50 shadow-[24px_0_64px_-24px_rgba(16,24,40,0.32)] lg:hidden"
               :class="CUSTOMER_MOBILE_NAV_DRAWER_Z"
             >
               <CustomerSidebar

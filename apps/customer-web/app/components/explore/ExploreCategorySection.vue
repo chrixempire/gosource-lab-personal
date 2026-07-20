@@ -4,10 +4,15 @@ import { ChevronRight } from 'lucide-vue-next';
 import { isMarketProductInStock } from '~/lib/marketplace-data';
 import ExploreMobileProductTripleGrid from '~/components/explore/ExploreMobileProductTripleGrid.vue';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
+import ExploreSproutCard from '~/components/explore/ExploreSproutCard.vue';
 
-const props = defineProps<{
-  section: ExploreCategorySection;
-}>();
+const props = withDefaults(
+  defineProps<{
+    section: ExploreCategorySection;
+    variant?: 'standard' | 'sprout';
+  }>(),
+  { variant: 'standard' },
+);
 
 const MAX_VISIBLE_PRODUCTS = 15;
 
@@ -61,11 +66,13 @@ const visibleProducts = computed(() =>
     <template v-if="visibleProducts.length > 0">
       <ExploreMobileProductTripleGrid
         :products="visibleProducts"
+        :variant="variant"
         class="min-[900px]:hidden"
       />
 
       <div class="explore-products-grid">
-        <ExploreProductCard
+        <component
+          :is="variant === 'sprout' ? ExploreSproutCard : ExploreProductCard"
           v-for="product in visibleProducts"
           :key="`desktop-${product.id}`"
           :product="product"

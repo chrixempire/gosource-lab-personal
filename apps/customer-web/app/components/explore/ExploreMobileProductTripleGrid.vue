@@ -2,12 +2,17 @@
 import type { MarketProduct } from '~/lib/marketplace-data';
 import { useMediaQuery } from '@vueuse/core';
 import ExploreProductCard from '~/components/explore/ExploreProductCard.vue';
+import ExploreSproutCard from '~/components/explore/ExploreSproutCard.vue';
 import { useExploreMobileProductScroller } from '~/composables/useExploreMobileProductScroller';
 import { exploreMobileTripleScrollMediaQuery } from '~/lib/explore-product-layout';
 
-const props = defineProps<{
-  products: MarketProduct[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    products: MarketProduct[];
+    variant?: 'standard' | 'sprout';
+  }>(),
+  { variant: 'standard' },
+);
 
 /** ≤600px: fixed card width + horizontal scroll for the 3rd column. */
 const isTripleScrollViewport = useMediaQuery(exploreMobileTripleScrollMediaQuery);
@@ -71,7 +76,7 @@ defineExpose({
         :key="product.id"
         class="explore-mobile-triple-grid-cell"
       >
-        <ExploreProductCard :product="product" />
+        <component :is="variant === 'sprout' ? ExploreSproutCard : ExploreProductCard" :product="product" />
       </div>
     </div>
   </div>

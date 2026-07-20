@@ -132,18 +132,18 @@ function closeMobileNav() {
 </script>
 
 <template>
-  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-background-on-canvas text-grey-900">
-    <div class="shrink-0 border-b border-grey-50 px-4 pb-4 pt-5 lg:hidden">
+  <div class="customer-shell-frame flex h-full w-full min-w-0 flex-col overflow-hidden text-grey-900">
+    <div class="shrink-0 pl-5 pr-5 pb-3 pt-5 lg:pr-0">
       <NuxtLink
         to="/market"
         class="inline-flex no-underline"
         @click="closeMobileNav"
       >
-        <BrandLogo class="h-6 w-auto max-w-[7.25rem]" />
+        <BrandLogo class="h-6 w-auto max-w-[7.5rem]" />
       </NuxtLink>
     </div>
 
-    <SidebarContent class="min-h-0 px-4 py-4 lg:py-5">
+    <SidebarContent class="min-h-0 pl-4 pr-4 py-4 lg:py-5 lg:pr-0">
       <SidebarMenu>
         <SidebarMenuItem v-for="item in visibleNavItems" :key="item.label">
           <NuxtLink :to="item.path" class="block w-full min-w-0 no-underline" @click="closeMobileNav">
@@ -165,7 +165,7 @@ function closeMobileNav() {
       </SidebarMenu>
     </SidebarContent>
 
-    <SidebarFooter class="w-full px-4 pb-0">
+    <SidebarFooter class="w-full pl-4 pr-4 pb-0 lg:pr-0">
       <template v-if="isGuest">
         <div class="flex w-full flex-col gap-3 border-t border-grey-50 pb-4 pt-4">
           <NuxtLink to="/auth/register" class="block w-full no-underline" @click="closeMobileNav">

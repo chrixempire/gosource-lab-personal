@@ -39,13 +39,12 @@ describe('EmployeeController (e2e)', () => {
       const employeeData: CreateEmployeeDto = {
         firstName: faker.person.firstName(),
         lastName: faker.person.lastName(),
-        phone_no: faker.phone.number(),
-        email: faker.internet.email(),
-        otp: faker.word.noun(),
+        phoneNumber: faker.phone.number(),
+        role: faker.person.jobType(),
         password: 'password',
         position: faker.company.buzzNoun(),
       };
-      await employeeService.setupAccount(employeeData);
+      await employeeService.setupAccount(employeeData, faker.database.mongodbObjectId());
       return request(app.getHttpServer())
         .post('/employee/admin/invite-member')
         .send(createEmployeeDto)

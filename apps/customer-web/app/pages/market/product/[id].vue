@@ -319,27 +319,24 @@ async function onAddToList() {
               <h2 class="text-[12px] font-semibold uppercase tracking-[0.14em] text-grey-300">
                 Select preferred unit
               </h2>
-              <RadioGroup v-model="selectedUnit" :name="`market-unit-page-${product.id}`" class="flex w-full flex-col gap-1.5">
+              <RadioGroup v-model="selectedUnit" :name="`market-unit-page-${product.id}`" class="grid w-full grid-cols-2 gap-2">
                 <label
                   v-for="opt in displayUnitChoices"
                   :key="opt!.name"
                   :class="[
-                    'flex w-full cursor-pointer items-center gap-3 rounded-[12px] border px-3 py-2.5 transition-colors',
+                    'flex cursor-pointer flex-col gap-1 rounded-[12px] border px-3 py-2.5 transition-colors',
                     selectedUnit === opt!.name
                       ? 'border-primary-500 bg-primary-50/70 hover:border-primary-500 hover:bg-primary-50/70 dark:border-primary-500/45 dark:bg-primary-500/12 dark:hover:bg-primary-500/12'
                       : 'border-grey-50 bg-grey-55/40 hover:border-primary-500/40 hover:bg-primary-50/40 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/8',
                   ]"
                 >
-                  <RadioGroupItem :value="opt!.name" />
-                  <span class="min-w-0 flex-1 text-[15px] font-medium capitalize text-grey-900">
-                    {{ opt!.name }}
-                  </span>
-                  <span
-                    :class="[
-                      'shrink-0 rounded-lg px-2.5 py-1 text-[13px] font-semibold text-grey-900',
-                      selectedUnit === opt!.name ? 'bg-transparent' : 'bg-grey-55',
-                    ]"
-                  >
+                  <div class="flex items-center gap-2">
+                    <RadioGroupItem :value="opt!.name" />
+                    <span class="min-w-0 flex-1 text-[15px] font-medium capitalize text-grey-900">
+                      {{ opt!.name }}
+                    </span>
+                  </div>
+                  <span class="text-[13px] font-semibold text-grey-900">
                     <span v-if="opt!.measure">1{{ opt!.measure }} = </span>
                     <span :class="{ 'line-through text-grey-300': hasUnitSalePrice(opt!) }">
                       {{ formatNaira(opt!.priceNaira) }}
@@ -372,7 +369,7 @@ async function onAddToList() {
       </div>
 
       <div class="-mx-4 mt-8 border-t border-grey-50 px-4 pb-6 pt-6 sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6">
-        <MarketSimilarProductsStrip flush :products="similar" />
+        <MarketSimilarProductsStrip flush :products="similar" variant="standard" />
       </div>
     </div>
 
