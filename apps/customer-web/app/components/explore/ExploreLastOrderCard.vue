@@ -67,7 +67,7 @@ function onReview() {
       Your last basket, ready in two taps.
     </p>
 
-    <div class="mt-4 flex min-w-0 items-center gap-3">
+    <div class="mt-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
       <div class="flex min-w-0 items-center gap-2">
         <div class="flex items-center">
           <div
@@ -103,12 +103,12 @@ function onReview() {
         </p>
       </div>
 
-      <p class="shrink-0 text-base font-semibold tabular-nums text-white">
+      <p class="shrink-0 text-base font-semibold tabular-nums text-white sm:ml-auto">
         {{ totalLabel }}
       </p>
     </div>
 
-    <div class="mt-auto grid w-full grid-cols-[minmax(0,13fr)_minmax(0,7fr)] items-center gap-2 pt-5">
+    <div class="mt-auto flex w-full flex-col gap-2 pt-5 sm:grid sm:grid-cols-[minmax(0,13fr)_minmax(0,7fr)] sm:items-center">
       <Button
         type="button"
         size="small"
