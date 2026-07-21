@@ -252,7 +252,7 @@ watch(
     >
       <aside
         v-if="open"
-        class="fixed right-2 top-2 bottom-2 z-[90] flex w-[calc(100%-1rem)] flex-col border border-grey-50 bg-background-on-canvas shadow-[var(--customer-drawer-shadow)] transition-colors duration-300 sm:max-w-[35%]"
+        class="fixed inset-y-0 right-0 z-[90] flex w-full flex-col border border-grey-50 bg-background-on-canvas shadow-[var(--customer-drawer-shadow)] transition-colors duration-300 sm:w-[35%] sm:max-w-[35%]"
         role="dialog"
         aria-modal="true"
         :aria-label="isAddingToRequest ? 'Request items' : 'Shopping cart'"
