@@ -59,8 +59,8 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
           >
             <div class="h-[20rem] overflow-hidden rounded-lg lg:h-full lg:min-h-[35rem]">
               <img
-                src="/images/gs-woman.png"
-                alt="A customer enjoying fresh food from a GoSource store"
+                src="/images/woman-peppers.jpeg"
+                alt="A customer holding fresh peppers from the market"
                 class="h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-[1.06]"
               />
             </div>
@@ -115,8 +115,8 @@ import { CUSTOMER_MARKET_URL, CUSTOMER_REGISTER_URL } from '~/lib/customer-app';
           >
             <div class="h-[20rem] overflow-hidden rounded-lg lg:h-full lg:min-h-[35rem]">
               <img
-                src="/images/gs-man.png"
-                alt="A shopper choosing fresh produce in a GoSource store"
+                src="/images/man-smiling.jpeg"
+                alt="A restaurant manager checking orders on a tablet in the kitchen"
                 class="h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-[1.06]"
               />
             </div>
