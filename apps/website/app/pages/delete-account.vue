@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import emailjs from '@emailjs/browser';
 import { Button, Input, RadioGroup, RadioGroupItem } from '@gosource/ui';
 import { ChevronRight } from 'lucide-vue-next';
 
 useHead({ title: 'Delete your GoSource account' });
 
-const config = useRuntimeConfig();
+const EMAILJS_SERVICE_ID = 'service_s9jaqze';
+const EMAILJS_TEMPLATE_ID = 'template_rp1lkn2';
+const EMAILJS_PUBLIC_KEY = 'pkiUTlw0kZvmcebV-';
 
 const reasons = [
   'I no longer use the app',
@@ -55,27 +58,32 @@ async function submit() {
   feedbackMessage.value = '';
 
   try {
-    const response = await $fetch<{ message?: string }>(`${config.public.apiUrl}/auth/send-email`, {
-      method: 'POST',
-      body: {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        businessName: formData.businessName,
-        reasons: formData.reason,
-        phone: formData.phone,
+    await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      {
+        to_email: 'anyikamaduchris@gmail.com',
+        from_name: `${formData.firstName} ${formData.lastName}`,
+        from_email: formData.email,
+        message: `
+Email: ${formData.email}
+Phone: ${formData.phone}
+First name: ${formData.firstName}
+Last name: ${formData.lastName}
+Business name: ${formData.businessName}
+Reason: ${formData.reason}
+Message: ${formData.message}
+`.trim(),
       },
-    });
+      EMAILJS_PUBLIC_KEY,
+    );
 
     feedbackIsError.value = false;
-    feedbackMessage.value = response.message ?? 'Email sent successfully';
+    feedbackMessage.value = 'Email sent successfully';
     resetForm();
-  } catch (error: unknown) {
+  } catch {
     feedbackIsError.value = true;
-    feedbackMessage.value =
-      error && typeof error === 'object' && 'data' in error
-        ? String((error as { data?: { message?: string } }).data?.message ?? 'Unable to submit request right now')
-        : 'Unable to submit request right now';
+    feedbackMessage.value = 'Unable to submit request right now';
   } finally {
     isLoading.value = false;
 
