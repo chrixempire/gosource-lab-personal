@@ -50,9 +50,8 @@ const emit = defineEmits<{
 
 const route = useRoute();
 const settingsOpen = ref(false);
-const signInTo = computed(() => customerSignInLocation(route.fullPath));
-
 const { isDark, toggleTheme } = useCustomerTheme();
+const signInTo = computed(() => customerSignInLocation(route.fullPath));
 
 const isGuest = computed(() => !props.session?.data?.businessId);
 

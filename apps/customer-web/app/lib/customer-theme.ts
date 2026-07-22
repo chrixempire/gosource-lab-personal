@@ -21,7 +21,7 @@ export function readStoredCustomerThemePreference(): CustomerThemePreference | n
   }
 }
 
-/** Follow the operating system's colour scheme (prefers-color-scheme). */
+/** Follow the operating system's / phone's colour scheme (prefers-color-scheme). */
 export function resolveSystemTheme(): CustomerThemePreference {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return 'light';
@@ -65,6 +65,18 @@ export function persistCustomerThemePreference(theme: CustomerThemePreference) {
     // ignore quota / private mode
   }
 }
+
+/** Forget the explicit choice so the app follows the OS setting again. */
+export function clearStoredCustomerThemePreference() {
+  try {
+    localStorage.removeItem(CUSTOMER_THEME_STORAGE_KEY);
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+/** Tri-state control value: an explicit theme, or "system" (follow the OS). */
+export type CustomerThemeMode = CustomerThemePreference | 'system';
 
 /** Inline bootstrap for nuxt head — must stay in sync with resolveCustomerThemePreference. */
 export const CUSTOMER_THEME_BOOTSTRAP_SCRIPT = `(function(){try{var k=${JSON.stringify(CUSTOMER_THEME_STORAGE_KEY)};var s=localStorage.getItem(k);var systemDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var d=s==='dark'||(s!=='light'&&systemDark);var e=document.documentElement;if(d){e.classList.add('dark');e.style.colorScheme='dark';}else{e.classList.remove('dark');e.style.colorScheme='light';}}catch(e){}})();`;

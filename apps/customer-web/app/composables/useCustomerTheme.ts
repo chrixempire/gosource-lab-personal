@@ -1,8 +1,11 @@
 import {
   applyCustomerThemeToDocument,
+  clearStoredCustomerThemePreference,
   persistCustomerThemePreference,
   readStoredCustomerThemePreference,
   resolveCustomerThemePreference,
+  resolveSystemTheme,
+  type CustomerThemeMode,
   type CustomerThemePreference,
   type CustomerResolvedTheme,
 } from '~/lib/customer-theme';
@@ -76,11 +79,39 @@ export function useCustomerTheme() {
     applyCustomerThemeToDocument(next);
   }
 
+  /** Return to following the OS setting — forgets any explicit choice. */
+  function useSystemTheme() {
+    if (!import.meta.client) {
+      return;
+    }
+
+    clearStoredCustomerThemePreference();
+    const next = resolveSystemTheme();
+    preference.value = next;
+    resolved.value = next;
+    followsSystem.value = true;
+    applyCustomerThemeToDocument(next);
+    attachMediaListener();
+  }
+
+  /** Tri-state setter for a Light / Dark / System control. */
+  function setMode(next: CustomerThemeMode) {
+    if (next === 'system') {
+      useSystemTheme();
+    } else {
+      setTheme(next);
+    }
+  }
+
   function toggleTheme() {
     setTheme(resolved.value === 'dark' ? 'light' : 'dark');
   }
 
   const isDark = computed(() => resolved.value === 'dark');
+  /** Current control value: 'system' while following the OS, else the explicit theme. */
+  const mode = computed<CustomerThemeMode>(() =>
+    followsSystem.value ? 'system' : resolved.value,
+  );
 
   onMounted(() => {
     syncFromDocument();
@@ -95,8 +126,11 @@ export function useCustomerTheme() {
     resolved,
     ready,
     isDark,
+    mode,
     followsSystem,
     setTheme,
+    setMode,
+    useSystemTheme,
     toggleTheme,
     syncFromDocument,
   };

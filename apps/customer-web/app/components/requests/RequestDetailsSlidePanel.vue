@@ -75,7 +75,7 @@ onUnmounted(() => {
       <aside
         v-if="open"
         data-testid="request-details-slide-panel"
-        class="fixed right-2 top-2 bottom-2 z-[90] flex w-[calc(100%-1rem)] max-w-[560px] flex-col overflow-hidden border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300"
+        class="fixed inset-y-0 right-0 z-[90] flex w-full max-w-[560px] flex-col overflow-hidden border border-grey-50 bg-background-on-canvas shadow-[var(--customer-panel-shadow)] transition-colors duration-300"
         role="dialog"
         aria-modal="true"
         :aria-label="panelTitle"
