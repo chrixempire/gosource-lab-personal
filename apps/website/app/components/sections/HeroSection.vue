@@ -98,17 +98,19 @@ function isPurpleClone(index: number) {
             <!-- ============ PURPLE SLIDE ============ -->
             <div
               v-if="type === 'purple'"
-              class="relative flex h-full flex-col overflow-hidden rounded-[32px] bg-purple-50 px-6 py-14 sm:px-12 lg:px-20 lg:py-0"
+              class="relative flex h-full flex-col overflow-hidden rounded-[32px] bg-purple-50 px-6 pb-8 pt-10 sm:px-12 sm:pt-14 lg:px-20 lg:pb-0 lg:pt-0"
               :aria-hidden="isPurpleClone(i) || undefined"
             >
               <!-- Background particles — positioned per Figma 952:7806 (card 1346×567) -->
               <img src="/images/hero/p-shape-br.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[44%] top-[30%] z-0 hidden w-[48.5%] select-none sm:block">
-              <img src="/images/hero/p-leaves-bl.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-0 top-[78%] z-0 w-[15.8%] min-w-[66px] select-none">
-              <img src="/images/hero/p-squiggle.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[65%] top-[60%] z-0 w-[6.6%] min-w-[38px] select-none">
+              <!-- Flowers: pinned to card bottom on mobile; Figma top-% from sm up -->
+              <img src="/images/hero/p-leaves-bl.svg" alt="" aria-hidden="true" class="pointer-events-none absolute bottom-0 left-0 z-0 w-[15.8%] min-w-[66px] select-none sm:bottom-auto sm:top-[78%]">
+              <!-- Floating tomato — desktop only; hidden on mobile -->
+              <img src="/images/hero/p-squiggle.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[65%] top-[60%] z-0 hidden w-[6.6%] min-w-[38px] select-none sm:block">
               <img src="/images/hero/p-ribbon.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[77%] top-[76%] z-0 hidden w-[5%] min-w-[30px] select-none sm:block">
-              <img src="/images/hero/p-dot-br.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[89.5%] top-[77%] z-0 w-[13.2%] min-w-[42px] select-none">
+              <img src="/images/hero/p-dot-br.svg" alt="" aria-hidden="true" class="pointer-events-none absolute bottom-0 right-0 z-0 w-[13.2%] min-w-[42px] select-none sm:bottom-auto sm:left-[89.5%] sm:right-auto sm:top-[77%]">
 
-              <div class="relative z-10 flex h-full w-full flex-col justify-center pb-56 sm:pb-64 lg:max-w-[58%] lg:pb-0 lg:pr-6">
+              <div class="relative z-20 flex h-full w-full flex-col justify-start pb-52 sm:pb-64 lg:max-w-[58%] lg:justify-center lg:pb-0 lg:pr-6">
                 <div class="flex min-w-0 w-full max-w-xl flex-col justify-center">
                   <h1 class="text-display !leading-[0.98] text-[#650e65]">
                     All your food supplies in
@@ -143,7 +145,7 @@ function isPurpleClone(index: number) {
                 </div>
               </div>
 
-              <!-- Basket — gosource.app SVG (524×548), cropped to sit flush on the hero bottom -->
+              <!-- Basket — behind CTAs on mobile so Download stays readable -->
               <img
                 src="/images/hero/hero-basket.svg"
                 alt="Grocery bag filled with fresh food supplies"
@@ -152,23 +154,25 @@ function isPurpleClone(index: number) {
                 fetchpriority="high"
                 loading="eager"
                 decoding="async"
-                class="pointer-events-none absolute bottom-0 right-0 z-10 block w-[min(72vw,300px)] sm:w-[380px] lg:w-[524px] [filter:drop-shadow(0_-8px_24px_rgba(16,25,40,0.12))]"
+                class="pointer-events-none absolute bottom-0 right-0 z-0 block w-[min(72vw,300px)] sm:w-[380px] lg:z-10 lg:w-[524px] [filter:drop-shadow(0_-8px_24px_rgba(16,25,40,0.12))]"
               >
             </div>
 
             <!-- ============ PEACH / DEALS SLIDE ============ -->
             <div
               v-else
-              class="relative flex h-full flex-col justify-center overflow-hidden rounded-[32px] bg-[#fcece9] px-6 py-14 sm:px-12 lg:px-20 lg:py-0"
+              class="relative flex h-full flex-col justify-start overflow-hidden rounded-[32px] bg-[#fcece9] px-6 pb-8 pt-10 sm:px-12 sm:pt-14 lg:justify-center lg:px-20 lg:pb-0 lg:pt-0"
             >
               <!-- Background particles — positioned per Figma 952:8136 (card 1346×567) -->
               <img src="/images/hero/pe-confetti-2.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[27%] -top-[27%] z-0 hidden w-[48.4%] select-none sm:block">
               <img src="/images/hero/pe-confetti-1.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[35%] top-[20%] z-0 w-[65%] select-none">
-              <img src="/images/hero/pe-leaves-bl.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-0 top-[78%] z-0 w-[15.8%] min-w-[66px] select-none">
+              <!-- Flowers: pinned to card bottom on mobile; Figma top-% from sm up -->
+              <img src="/images/hero/pe-leaves-bl.svg" alt="" aria-hidden="true" class="pointer-events-none absolute bottom-0 left-0 z-0 w-[15.8%] min-w-[66px] select-none sm:bottom-auto sm:top-[78%]">
               <img src="/images/hero/pe-squiggle-tr.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[85%] top-[10%] z-0 w-[6.6%] min-w-[38px] select-none">
-              <img src="/images/hero/pe-dot-br.svg" alt="" aria-hidden="true" class="pointer-events-none absolute left-[89.5%] top-[77%] z-0 w-[13.2%] min-w-[42px] select-none">
+              <img src="/images/hero/pe-dot-br.svg" alt="" aria-hidden="true" class="pointer-events-none absolute bottom-0 right-0 z-0 w-[13.2%] min-w-[42px] select-none sm:bottom-auto sm:left-[89.5%] sm:right-auto sm:top-[77%]">
 
-              <div class="relative z-10 max-w-xl">
+              <!-- Text stays at top on mobile; bike rides in the lower half -->
+              <div class="relative z-10 max-w-xl pb-44 sm:pb-52 lg:pb-0">
                 <h2 class="text-display !leading-[0.98] text-[#7e2412]">
                   Deals combo
                   <span class="block text-serif-accent text-[1.06em] leading-[0.95] text-orange-500">
@@ -190,14 +194,14 @@ function isPurpleClone(index: number) {
                 </div>
               </div>
 
-              <!-- Delivery rider — drives right → left across the slide -->
+              <!-- Delivery rider — drives right → left across the lower area under the copy -->
               <img
                 src="/images/hero/rider-figure.svg"
                 alt=""
                 aria-hidden="true"
                 width="382"
                 height="367"
-                class="pointer-events-none absolute bottom-[12%] z-10 h-auto w-52 -scale-x-100 select-none object-contain drop-shadow-xl will-change-transform sm:w-64 lg:w-[21rem]"
+                class="pointer-events-none absolute bottom-0 z-10 h-auto w-52 -scale-x-100 select-none object-contain drop-shadow-xl will-change-transform sm:w-64 lg:bottom-[12%] lg:w-[21rem]"
                 :class="riding ? 'hero-ride' : 'left-full opacity-0'"
               >
             </div>
